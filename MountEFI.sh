@@ -123,6 +123,7 @@ printf '\nPartition: '$string' ''mounted.\n\n'
     open "$vname"
 printf 'Exit the program. \n\n\n\n''\e[3J'
 	fi
+sleep 1.2
    osascript -e 'tell application "Terminal" to close first window' & exit
 
 fi
@@ -176,7 +177,7 @@ printf 'Введите число от 0 до '$ch':  '
 			else
 printf 'Enter a number from 0 to '$ch':  '
 	fi
-read choice
+read -n1 choice
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
 done
 }
@@ -250,6 +251,6 @@ printf '\nPartition: '${string:num:7}' ''mounted.\n\n'
     open "$vname"
 printf 'Exit the program... \n\n\n\n''\e[3J'
 	fi
-sleep 0.3
+sleep 1.2
     osascript -e 'tell application "Terminal" to close first window' & exit
 exit
