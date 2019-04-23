@@ -56,6 +56,7 @@ fi
 declare -a nlist 
 
 
+
 GETARR(){
 
 string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
@@ -101,6 +102,43 @@ fi
 	fi
 }
 
+
+
+UNMOUNTS(){
+
+if [ $loc = "ru" ]; then
+	printf '\n\n  Oтключаем EFI разделы ...  '
+				else
+	printf '\n\n  Unmounting EFI partitions .... '
+			fi
+
+GETARR
+
+var0=$pos
+num=0
+spin='-\|/'
+i=0
+
+while [ $var0 != 0 ] 
+do 
+
+	pnum=${nlist[num]}
+	string=`echo ${dlist[$pnum]}`
+	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+	
+	let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+
+if [ $mcheck = "Yes" ]; then
+	diskutil quiet umount  /dev/${string}
+	fi
+
+
+let "num=num+1"
+	let "var0--"
+done
+}
 
 GETARR
 
@@ -272,7 +310,11 @@ rm ~/.MountEFItemp.txt
 	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n' 
 	fi
 
-
+	if [ $loc = "ru" ]; then
+	printf '      U)  '' отключить ВСЕ! подключенные разделы  EFI \n' 
+			else
+	printf '      U)  ''  unmount ALL mounted  EFI partitions \n' 
+	fi
 
 printf '\n\n' 
 
@@ -281,11 +323,13 @@ unset choice
 while [[ ! ${choice} =~ ^[0-9]+$ ]]; do
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
-printf '  Введите число от 0 до '$ch':  '
+printf '  Введите число от 0 до '$ch' (или букву U ):  '
 			else
-printf '  Enter a number from 0 to '$ch':  '
+printf '  Enter a number from 0 to '$ch' (or letter U):  '
 	fi
 read  -n1 choice
+if [[ ! $choice =~ ^[0-9uU]$ ]]; then unset choice; fi
+if [[ ${choice} = [uU] ]]; then UNMOUNTS; choice="0"; fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
 done
 }
