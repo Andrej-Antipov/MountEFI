@@ -327,7 +327,14 @@ printf '  Введите число от 0 до '$ch' (или букву U ):  '
 			else
 printf '  Enter a number from 0 to '$ch' (or letter U):  '
 	fi
+
+
+if [[ ${ch} -le 8 ]]; then 
 read  -n1 choice
+else
+read choice
+fi
+
 if [[ ! $choice =~ ^[0-9uU]$ ]]; then unset choice; fi
 if [[ ${choice} = [uU] ]]; then UNMOUNTS; choice="0"; fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
