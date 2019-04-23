@@ -140,6 +140,7 @@ mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | s
 	printf  ${string}"%"$corr"s"
 
     	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+	
 	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
     corr=`echo ${#dsize}`
     let "corr=corr-5"
@@ -188,34 +189,45 @@ num=0
 ch=0
 unset string
 
+rm -f   ~/.MountEFItemp.txt
+touch  ~/.MountEFItemp.txt
 
-		if [ $loc = "ru" ]; then
+			if [ $loc = "ru" ]; then
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
-	printf '\n      0)  повторить поиск разделов\n'
+	printf '\n      0)  поиск разделов ..... '
 		else
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
-	printf '\n      0)  update EFI partitions list\n'
+	printf '\n      0)  updating partitions list ..... '
         fi
+
+
+spin='-\|/'
+i=0
+printf "$1${spin:$i:1}"
 
 while [ $var0 != 0 ] 
 do 
 	let "ch++"
-	
+
+	let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-
+		
 				if [ $loc = "ru" ]; then
 		if [ ! $mcheck = "Yes" ]; then
-			printf '\n      '$ch')    ...      '
+			printf '\n      '$ch')    ...      '  >> ~/.MountEFItemp.txt
 		else
-			printf '\n      '$ch')         +   '
+			printf '\n      '$ch')         +   ' >> ~/.MountEFItemp.txt
 		fi
 				else
 		if [ ! $mcheck = "Yes" ]; then
-			printf '\n         '$ch')    ...      '
+			printf '\n         '$ch')    ...      ' >> ~/.MountEFItemp.txt
 		else
-			printf '\n         '$ch')         +   '
+			printf '\n         '$ch')         +   ' >> ~/.MountEFItemp.txt
 		fi
 				fi
 	
@@ -223,25 +235,46 @@ do
 		dlenth=`echo ${#dstring}`
 
 	let "corr=9-dlenth"
-	printf  ${string}"%"$corr"s"
+	printf  ${string}"%"$corr"s" >> ~/.MountEFItemp.txt
 
     	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+
+	let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+	
 	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
     corr=`echo ${#dsize}`
     let "corr=corr-5"
     let "corr=6-corr"
-	printf '  '"%"$corr"s""$dsize"'   * '"$drive"
+	printf '  '"%"$corr"s""$dsize"'   * '"$drive" >> ~/.MountEFItemp.txt
 	let "num=num+1"
 	let "var0--"
 done
 
+printf "\n\r\n\033[5A"
+
+		if [ $loc = "ru" ]; then
+	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'  
+	printf '\n      0)  повторить поиск разделов\n' 
+		else
+	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
+	printf '\n      0)  update EFI partitions list             \n' 
+        fi
+
+cat  -v ~/.MountEFItemp.txt
+rm ~/.MountEFItemp.txt
+
 	let "ch++"
 	if [ $loc = "ru" ]; then
-	printf '\n\n      '$ch')  '' выход из программы не подключая EFI\n'
+	printf '\n\n      '$ch')  '' выход из программы не подключая EFI\n' 
 			else
-	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n'
+	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n' 
 	fi
-printf '\n\n'
+
+
+
+printf '\n\n' 
 
 
 unset choice
