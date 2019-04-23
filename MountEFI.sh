@@ -174,10 +174,10 @@ unset string
 
 		if [ $loc = "ru" ]; then
 	printf '\n 0)  повторить поиск разделов'
-	printf '\n\n Подключить EFI разделы: (    * -  уже подключенные) \n'
+	printf '\n\n Подключить EFI разделы: (    + -  уже подключенные) \n'
 		else
 	printf '\n 0)  update EFI partitions list'
-	printf '\n\n Mount EFI partitions:  (   * -  already mounted) \n'
+	printf '\n\n Mount EFI partitions:  (   + -  already mounted) \n'
 		fi
 
 while [ $var0 != 0 ] 
@@ -192,13 +192,13 @@ do
 		if [ ! $mcheck = "Yes" ]; then
 			printf '\n      '$ch')    ...      '
 		else
-			printf '\n      '$ch')         *   '
+			printf '\n      '$ch')         +   '
 		fi
 				else
 		if [ ! $mcheck = "Yes" ]; then
 			printf '\n         '$ch')    ...      '
 		else
-			printf '\n         '$ch')         *   '
+			printf '\n         '$ch')         +   '
 		fi
 				fi
 	
@@ -213,7 +213,7 @@ do
     corr=`echo ${#dsize}`
     let "corr=corr-5"
     let "corr=6-corr"
-	printf '  '"%"$corr"s""$dsize"'   . '"$drive"
+	printf '  '"%"$corr"s""$dsize"'   * '"$drive"
 	let "num=num+1"
 	let "var0--"
 done
