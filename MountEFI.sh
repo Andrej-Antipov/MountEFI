@@ -64,6 +64,7 @@ dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
 
+pos=1
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
@@ -125,7 +126,28 @@ string=`echo ${dlist[0]}`
 mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [ ! $mcheck = "Yes" ]; then
 
-		if [ $flag = 1 ]; then sudo diskutil quiet mount /dev/${string}
+            
+		if [ $flag = 1 ]; then 
+                    
+                    if [ $loc = "ru" ]; then
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
+			else
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+	                 fi
+                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+		dlenth=`echo ${#dstring}`
+    printf '\n\n     '
+	let "corr=9-dlenth"
+	printf  ${string}"%"$corr"s"
+
+    	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    corr=`echo ${#dsize}`
+    let "corr=corr-5"
+    let "corr=6-corr"
+	printf '  '"%"$corr"s""$dsize"'   * '"$drive"
+                    printf '\n\n\n '; sudo printf ' '
+                sudo diskutil quiet mount /dev/${string}
             		else
                 			diskutil quiet mount /dev/${string}
 		fi
@@ -161,11 +183,6 @@ fi
 
 
 GETLIST(){
-#		if [ $loc = "ru" ]; then
-#	printf '     Выберите действия:\n'
-#			else
-#	printf '      Select actions:\n'
-#		fi
 
 var0=$pos
 num=0
@@ -176,12 +193,10 @@ unset string
 		if [ $loc = "ru" ]; then
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
 	printf '\n      0)  повторить поиск разделов\n'
-#	printf '\n\n Подключить EFI разделы: (    + -  уже подключенные) \n'
 		else
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
 	printf '\n      0)  update EFI partitions list\n'
-#	printf '\n\n Mount EFI partitions:  (   + -  already mounted) \n'
-		fi
+        fi
 
 while [ $var0 != 0 ] 
 do 
@@ -276,12 +291,17 @@ let "num=chs-1"
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 
-    if [ $flag = 1 ]; then sudo diskutil quiet mount  /dev/${string}
+mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+if [ ! $mcheck = "Yes" ]; then
+
+    if [ $flag = 1 ]; then 
+                printf '\n  '; sudo printf ' '
+            sudo diskutil quiet mount  /dev/${string}
         else 
             diskutil quiet mount  /dev/${string}
     fi
     mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-if [ ! $mcheck = "Yes" ]; then
+ if [ ! $mcheck = "Yes" ]; then
 	if [ $loc = "ru" ]; then
 printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
 printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
@@ -290,8 +310,8 @@ printf '\n\n  !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
 printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 exit 1 
+ fi
 fi
-
     vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [ $loc = "ru" ]; then
 printf '\n\n  Раздел: '${string}' ''подключен.\n\n'
