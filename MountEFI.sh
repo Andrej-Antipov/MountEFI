@@ -161,11 +161,12 @@ fi
 
 
 GETLIST(){
-		if [ $loc = "ru" ]; then
-	printf '\n     Выберите действия:\n'
-			else
-	printf '\n      Select actions:\n'
-		fi
+#		if [ $loc = "ru" ]; then
+#	printf '     Выберите действия:\n'
+#			else
+#	printf '      Select actions:\n'
+#		fi
+
 var0=$pos
 num=0
 ch=0
@@ -173,11 +174,13 @@ unset string
 
 
 		if [ $loc = "ru" ]; then
-	printf '\n 0)  повторить поиск разделов'
-	printf '\n\n Подключить EFI разделы: (    + -  уже подключенные) \n'
+	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
+	printf '\n      0)  повторить поиск разделов\n'
+#	printf '\n\n Подключить EFI разделы: (    + -  уже подключенные) \n'
 		else
-	printf '\n 0)  update EFI partitions list'
-	printf '\n\n Mount EFI partitions:  (   + -  already mounted) \n'
+	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
+	printf '\n      0)  update EFI partitions list\n'
+#	printf '\n\n Mount EFI partitions:  (   + -  already mounted) \n'
 		fi
 
 while [ $var0 != 0 ] 
@@ -220,9 +223,9 @@ done
 
 	let "ch++"
 	if [ $loc = "ru" ]; then
-	printf '\n\n '$ch')  '' выход из программы не подключая EFI\n'
+	printf '\n\n      '$ch')  '' выход из программы не подключая EFI\n'
 			else
-	printf '\n\n '$ch')  ''  exit from the program without mounting EFI\n'
+	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n'
 	fi
 printf '\n\n'
 
@@ -231,9 +234,9 @@ unset choice
 while [[ ! ${choice} =~ ^[0-9]+$ ]]; do
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
-printf 'Введите число от 0 до '$ch':  '
+printf '  Введите число от 0 до '$ch':  '
 			else
-printf 'Enter a number from 0 to '$ch':  '
+printf '  Enter a number from 0 to '$ch':  '
 	fi
 read  -n1 choice
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
@@ -245,9 +248,9 @@ chs=0
 while [ $chs = 0 ]; do
         clear && printf '\e[3J'
 	if [ $loc = "ru" ]; then
-        printf '\n\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 			else
-        printf '\n\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	fi
         unset nlist
         declare -a nlist
@@ -258,9 +261,9 @@ done
 
 if  [ $chs = $ch ]; then
 	if [ $loc = "ru" ]; then
-printf '\nВыходим. Конец программы. \n\n\n\n''\e[3J'
+printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 			else
-printf '\nThe end of the program. \n\n\n\n''\e[3J'
+printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 sleep 1.2
     osascript -e 'tell application "Terminal" to close first window' & exit
@@ -280,24 +283,24 @@ string=`echo ${dlist[$pnum]}`
     mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 if [ ! $mcheck = "Yes" ]; then
 	if [ $loc = "ru" ]; then
-printf '\n\n !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
-printf '\nВыходим. Конец программы. \n\n\n\n''\e[3J'
+printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
+printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 			else
-printf '\n\n !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
-printf '\nThe end of the program. \n\n\n\n''\e[3J'
+printf '\n\n  !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
+printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 exit 1 
 fi
 
     vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [ $loc = "ru" ]; then
-printf '\nРаздел: '${string}' ''подключен.\n\n'
+printf '\n\n  Раздел: '${string}' ''подключен.\n\n'
     open "$vname"
-printf 'Выходим.. \n\n\n\n''\e[3J'
+printf '  Выходим.. \n\n\n\n''\e[3J'
 			else
-printf '\nPartition: '${string}' ''mounted.\n\n'
+printf '\n\n  Partition: '${string}' ''mounted.\n\n'
     open "$vname"
-printf 'Exit the program... \n\n\n\n''\e[3J'
+printf '\n  Exit the program... \n\n\n\n''\e[3J'
 	fi
 sleep 1.2
     osascript -e 'tell application "Terminal" to close first window' & exit
