@@ -64,7 +64,6 @@ dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
 
-pos=1
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
