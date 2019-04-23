@@ -1,5 +1,28 @@
 #!/bin/sh
 
+stop=0
+demo=0
+deb=0
+
+DEBUG(){
+if [[ ! $deb = 0 ]]; then
+printf '\n Точка останова '$stop'  :\n\n'
+printf '............................................................\n'
+echo "choice = "$choice
+echo "chs = "$chs
+echo "ch = "$ch
+echo "dlist = "${dlist[@]}
+echo "nlist = "${nlist[@]}
+echo "num = "$num
+echo "pnum ="$pnum
+echo "pos = "$pos
+echo "string = "$string
+printf '............................................................\n'
+sleep 1
+read  -n1 demo
+fi
+}
+
 clear
 
 osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
@@ -54,7 +77,7 @@ fi
 
 
 declare -a nlist 
-
+declare -a dlist 
 
 
 GETARR(){
@@ -65,6 +88,7 @@ dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
 
+stop=0; DEBUG
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
@@ -112,20 +136,20 @@ if [ $loc = "ru" ]; then
 	printf '\n\n  Unmounting EFI partitions .... '
 			fi
 
-GETARR
 
-var0=$pos
+		GETARR
+var1=$pos
 num=0
 spin='-\|/'
 i=0
 
-while [ $var0 != 0 ] 
+while [ $var1 != 0 ] 
 do 
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	
+stop=6; DEBUG	
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
@@ -136,10 +160,15 @@ if [ $mcheck = "Yes" ]; then
 
 
 let "num=num+1"
-	let "var0--"
+	let "var1--"
 done
+
+stop=7; DEBUG
+
+
 }
 
+	
 GETARR
 
 
@@ -320,7 +349,7 @@ printf '\n\n'
 
 
 unset choice
-while [[ ! ${choice} =~ ^[0-9]+$ ]]; do
+while [[ ! ${choice} =~ ^[0-9uU]+$ ]]; do
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
 printf '  Введите число от 0 до '$ch' (или букву U ):  '
@@ -336,43 +365,22 @@ read choice
 fi
 
 if [[ ! $choice =~ ^[0-9uU]$ ]]; then unset choice; fi
-if [[ ${choice} = [uU] ]]; then UNMOUNTS; choice="0"; fi
+if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="0"; fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
+
 done
 }
 
-chs=0
-
-while [ $chs = 0 ]; do
-        clear && printf '\e[3J'
-	if [ $loc = "ru" ]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
-			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
-	fi
-        unset nlist
-        declare -a nlist
-        GETARR
-        GETLIST
-        chs=$choice
-done
-
-if  [ $chs = $ch ]; then
-	if [ $loc = "ru" ]; then
-printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
-			else
-printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
-	fi
-sleep 1.2
-    osascript -e 'tell application "Terminal" to close first window' & exit
-
-fi
-
+MOUNTS(){
 printf '\n'
 let "num=chs-1"
 
+stop=10;DEBUG
+
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
+
+stop=11;DEBUG
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 if [ ! $mcheck = "Yes" ]; then
@@ -398,13 +406,55 @@ fi
     vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [ $loc = "ru" ]; then
 printf '\n\n  Раздел: '${string}' ''подключен.\n\n'
-    open "$vname"
-printf '  Выходим.. \n\n\n\n''\e[3J'
-			else
+    		else
 printf '\n\n  Partition: '${string}' ''mounted.\n\n'
+	fi
+
     open "$vname"
-printf '\n  Exit the program... \n\n\n\n''\e[3J'
+
+}
+
+stop=1; DEBUG
+
+chs=0
+
+while [ $chs = 0 ]; do
+        clear && printf '\e[3J'
+	if [ $loc = "ru" ]; then
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
+			else
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+	fi
+        unset nlist
+        declare -a nlist
+        GETARR
+
+stop=2;DEBUG
+
+        GETLIST
+
+stop=3;DEBUG
+
+        chs=$choice
+
+if  [ $chs = $ch ]; then
+	if [ $loc = "ru" ]; then
+printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
+			else
+printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 sleep 1.2
     osascript -e 'tell application "Terminal" to close first window' & exit
+fi
+
+stop=4;DEBUG
+
+if [[ ! ${chs} = 0 ]]; then MOUNTS; chs=0; fi
+
+stop=5;DEBUG
+
+
+done
+
+
 exit
