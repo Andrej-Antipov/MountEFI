@@ -6,7 +6,7 @@ deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-printf '\n Точка останова '$stop'  :\n\n'
+printf '\n Останов '"$stop"'  :\n\n'
 printf '............................................................\n'
 echo "choice = "$choice
 echo "chs = "$chs
@@ -88,7 +88,7 @@ dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
 
-stop=0; DEBUG
+	stop="GETADDR AFTER dlist INIT"; DEBUG
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
@@ -111,7 +111,7 @@ if [[ ! $pos = 0 ]]; then
 		let "var0=var0-1"
 		let "num=num+1"
 	done
-
+	stop="GETADDR AFTER nlist INIT"; DEBUG	
 fi
 
 	if [[ $pos = 0 ]]; then
@@ -143,19 +143,23 @@ num=0
 spin='-\|/'
 i=0
 
+
 while [ $var1 != 0 ] 
 do 
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-stop=6; DEBUG	
+
+stop="UNMOUNTS AFTER pnum"; DEBUG	
+
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
 
 if [ $mcheck = "Yes" ]; then
 	diskutil quiet umount  /dev/${string}
+	order=1; let "chs=num+1"; UPDATELIST
 	fi
 
 
@@ -163,8 +167,10 @@ let "num=num+1"
 	let "var1--"
 done
 
-stop=7; DEBUG
+stop="UNMOUNTS AFTER ALL"; DEBUG	
 
+
+nogetlist=1
 
 }
 
@@ -330,7 +336,7 @@ printf "\n\r\n\033[5A"
         fi
 
 cat  -v ~/.MountEFItemp.txt
-rm ~/.MountEFItemp.txt
+#rm ~/.MountEFItemp.txt
 
 	let "ch++"
 	if [ $loc = "ru" ]; then
@@ -347,7 +353,56 @@ rm ~/.MountEFItemp.txt
 
 printf '\n\n' 
 
+}
 
+UPDATELIST(){
+
+
+	if [[ $order = 0 ]]; then
+cat  ~/.MountEFItemp.txt | sed "s/$chs)    ...     /$chs)         +  /" >> ~/.MountEFItemp2.txt
+	else
+cat  ~/.MountEFItemp.txt | sed "s/$chs)         +  /$chs)    ...     /" >> ~/.MountEFItemp2.txt
+	fi
+
+rm ~/.MountEFItemp.txt
+mv  ~/.MountEFItemp2.txt ~/.MountEFItemp.txt
+cat  -v ~/.MountEFItemp.txt
+#printf "\033[0;0H"
+clear
+
+		if [ $loc = "ru" ]; then
+        	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
+	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'  
+	printf '\n      0)  повторить поиск разделов\n' 
+			else
+        	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
+	printf '\n      0)  update EFI partitions list             \n' 
+		fi
+
+cat  -v ~/.MountEFItemp.txt
+printf "\r\033[1A"
+
+	if [ $loc = "ru" ]; then
+	printf '\n\n      '$ch')  '' выход из программы не подключая EFI\n' 
+	printf '      U)  '' отключить ВСЕ! подключенные разделы  EFI \n'
+			else
+	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n' 
+	printf '      U)  ''  unmount ALL mounted  EFI partitions \n' 
+	fi
+	printf '\n\n' 
+
+	printf "\r\n\033[1A"
+	if [ $loc = "ru" ]; then
+printf '  Введите число от 0 до '$ch' (или букву U ):  '
+			else
+printf '  Enter a number from 0 to '$ch' (or letter U):  '
+	fi
+
+
+}
+
+GETKEYS(){
 unset choice
 while [[ ! ${choice} =~ ^[0-9uU]+$ ]]; do
 printf "\r\n\033[1A"
@@ -365,22 +420,27 @@ read choice
 fi
 
 if [[ ! $choice =~ ^[0-9uU]$ ]]; then unset choice; fi
-if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="0"; fi
+if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
 
 done
+
+chs=$choice
+if [[ $chs = 0 ]]; then nogetlist=0; fi
+
 }
+
 
 MOUNTS(){
 printf '\n'
 let "num=chs-1"
 
-stop=10;DEBUG
+stop="MOUNTS TILL pnum"; DEBUG	
 
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 
-stop=11;DEBUG
+stop="MOUNTS AFTER pnum"; DEBUG	
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 if [ ! $mcheck = "Yes" ]; then
@@ -402,40 +462,49 @@ printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 exit 1 
  fi
+	order=0; UPDATELIST
+
+else 
+	printf "\r\033[1A"
 fi
     vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [ $loc = "ru" ]; then
-printf '\n\n  Раздел: '${string}' ''подключен.\n\n'
-    		else
-printf '\n\n  Partition: '${string}' ''mounted.\n\n'
-	fi
 
-    open "$vname"
+open "$vname"
+
+nogetlist=1
+
 
 }
 
-stop=1; DEBUG
+
+
+stop="MAIN CYCLE BEFORE MAIN"; DEBUG	
 
 chs=0
+nogetlist=0
 
 while [ $chs = 0 ]; do
+if [[ ! $nogetlist = 1 ]]; then
         clear && printf '\e[3J'
+
 	if [ $loc = "ru" ]; then
         printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 			else
         printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	fi
+fi
         unset nlist
         declare -a nlist
         GETARR
 
-stop=2;DEBUG
+stop="MAIN CYCLE BEFORE GETLIST"; DEBUG	
 
-        GETLIST
+ if [[ ! $nogetlist = 1  ]]; then  GETLIST; fi
 
-stop=3;DEBUG
+stop="MAIN CYCLE AFTER GETLIST"; DEBUG
 
-        chs=$choice
+	GETKEYS	
+
 
 if  [ $chs = $ch ]; then
 	if [ $loc = "ru" ]; then
@@ -444,14 +513,15 @@ printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 sleep 1.2
+	rm -f ~/.MountEFItemp.txt
     osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 
-stop=4;DEBUG
+stop="MAIN CYCLE BEFOR MOUNTS CALL"; DEBUG	
 
-if [[ ! ${chs} = 0 ]]; then MOUNTS; chs=0; fi
+if [[ ! ${chs} = 0 ]]; then MOUNTS;  chs=0; fi
 
-stop=5;DEBUG
+stop="MAIN CYCLE AFTER MOUNTS CALL"; DEBUG	
 
 
 done
