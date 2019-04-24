@@ -1,33 +1,43 @@
-#!/bin/sh
+#!/bin/bash
+clear
 
-stop=0
+# функция отладки ###############################################
 demo=0
 deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-printf '\n Останов '"$stop"'  :\n\n'
+printf '\n\n Останов '"$stop"'  :\n\n'
 printf '............................................................\n'
-echo "choice = "$choice
-echo "chs = "$chs
-echo "ch = "$ch
-echo "dlist = "${dlist[@]}
-echo "nlist = "${nlist[@]}
-echo "num = "$num
-echo "pnum ="$pnum
-echo "pos = "$pos
-echo "string = "$string
-printf '............................................................\n'
-sleep 1
+#term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
+#echo "choice = "$choice
+#echo "chs = "$chs
+#echo "ch = "$ch
+#echo "dlist = "${dlist[@]}
+#echo "nlist = "${nlist[@]}
+#echo "num = "$num
+#echo "pnum ="$pnum
+#echo "pos = "$pos
+#echo "string = "$string
+printf '............................................................\n\n'
+sleep 0.5
 read  -n1 demo
 fi
 }
+####################################################################
 
-clear
+
 
 osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
 osascript -e "tell application \"Terminal\" to set background color of window 1 to {1028, 12850, 65535}"
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to {65535, 65535, 65535}"
+
+clear
+
+#запоминаем на каком терминале и сколько процессов у нашего скрипта
+MyTTY=`tty | tr -d " dev/\n"`
+term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
+################################################################
 
 parm="$1"
 
@@ -79,6 +89,26 @@ fi
 declare -a nlist 
 declare -a dlist 
 
+# Блок определения функций ########################################################
+
+# Возвращает в переменной TTYcount 0 если наш терминал один
+CHECK_TTY_COUNT(){
+term=`ps`
+AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`
+let "TTYcount=AllTTYcount-MyTTYcount"
+}
+
+# Выход из программы с проверкой - выгружать терминал из трея или нет
+EXIT_PROGRAM(){
+CHECK_TTY_COUNT	
+if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app"' & exit
+	else
+    sleep 1.2; osascript -e 'tell application "Terminal" to close first window' & exit
+fi
+}
+
+# Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
+# И список указателей на валидные значения в нём - nlist
 
 GETARR(){
 
@@ -115,34 +145,40 @@ if [[ ! $pos = 0 ]]; then
 fi
 
 	if [[ $pos = 0 ]]; then
+clear
 		if [ $loc = "ru" ]; then
 	printf '\nНеизвестная ошибка. Нет разделов EFI для монтирования\n'
 	printf 'Конец программы...\n\n\n\n''\e[3J'
+	printf 'Нажмите любую клавишу закрыть терминал  '
 			else
 	printf '\nUnknown error. No EFI partition found for mount\n'
 	printf 'The end of the program...\n\n\n\n''\e[3J'
+	printf 'Press any key to close the window  '
 		fi
-	exit 1
+sleep 0.5
+read  -n1 demo
+EXIT_PROGRAM
 	fi
 }
 
 
+# Функция отключения EFI разделов
 
 UNMOUNTS(){
 
-if [ $loc = "ru" ]; then
-	printf '\n\n  Oтключаем EFI разделы ...  '
-				else
-	printf '\n\n  Unmounting EFI partitions .... '
-			fi
-
+#		if [ $loc = "ru" ]; then
+#	printf '\n\n  Oтключаем EFI разделы ...  '
+#				else
+#	printf '\n\n  Unmounting EFI partitions ....  '
+#			fi
+            
 
 		GETARR
 var1=$pos
 num=0
 spin='-\|/'
 i=0
-
+noefi=1
 
 while [ $var1 != 0 ] 
 do 
@@ -153,15 +189,16 @@ do
 
 stop="UNMOUNTS AFTER pnum"; DEBUG	
 
+
+if [ $mcheck = "Yes" ]; then
+	noefi=0
+	diskutil quiet umount  /dev/${string}
+	order=1; let "chs=num+1"; UPDATELIST
+
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
-
-if [ $mcheck = "Yes" ]; then
-	diskutil quiet umount  /dev/${string}
-	order=1; let "chs=num+1"; UPDATELIST
 	fi
-
 
 let "num=num+1"
 	let "var1--"
@@ -169,15 +206,21 @@ done
 
 stop="UNMOUNTS AFTER ALL"; DEBUG	
 
-
+#printf '\r                                      '
+#if [[ ${noefi} = 0 ]]; then printf "\r\033[2A"
+printf '\r                                                          '
+printf "\r\033[2A"
+printf '\r                                                          '
+printf '\n\n'
+#else 
+#printf 'n\n'
+#fi
 nogetlist=1
-
+if [[ ${noefi} = 0 ]]; then order=2; fi
 }
 
-	
-GETARR
-
-
+# У Эль Капитан другой термин для размера раздела
+# Установка флага необходимости в SUDO - flag	
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
@@ -189,6 +232,9 @@ if [ "$macos" = "1014" ] || [ "$macos" = "1013" ] || [ "$macos" = "1012" ]; then
         flag=0
 fi
 
+# Блок обработки ситуации если найден всего один раздел EFI ########################
+###################################################################################
+GETARR
 
 if [[ $pos = 1 ]]; then
     clear 
@@ -227,18 +273,23 @@ mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | s
 
 mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 		if [ ! $mcheck = "Yes" ]; then
+clear
 			if [ $loc = "ru" ]; then
 printf '\n\n !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
 printf '\nВыходим. Конец программы. \n\n\n\n''\e[3J'
+printf 'Нажмите любую клавишу закрыть терминал  '
 				else
 printf '\n\n !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
 printf '\nThe end of the program. \n\n\n\n''\e[3J'
+printf 'Press any key to close the window  '
 			fi
-     		 exit 
+		     sleep 0.5
+		     read  -n1 demo
+     		     EXIT_PROGRAM
 		fi
 	fi
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-
+clear
 		if [ $loc = "ru" ]; then
 			printf '\nРаздел: '${string}' ''подключен.\n\n'
    		 open "$vname"
@@ -248,13 +299,14 @@ vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev 
    		 open "$vname"
 			printf 'Exit the program. \n\n\n\n''\e[3J'
 		fi
-sleep 1.2
 
-osascript -e 'tell application "Terminal" to close first window' & exit
+EXIT_PROGRAM
 			
 fi
+# Конец блока обработки если один  раздел EFI #################################################
+###########################################################################################
 
-
+# Определение  функции построения и вывода списка разделов 
 GETLIST(){
 
 var0=$pos
@@ -354,7 +406,9 @@ cat  -v ~/.MountEFItemp.txt
 printf '\n\n' 
 
 }
+# Конец определения GETLIST ###########################################################
 
+# Определение функции обновления информации на крана при подключении и отключении разделов
 UPDATELIST(){
 
 
@@ -390,21 +444,36 @@ printf "\r\033[1A"
 	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n' 
 	printf '      U)  ''  unmount ALL mounted  EFI partitions \n' 
 	fi
-	printf '\n\n' 
-
+	
+	printf '\n\n'
+	
 	printf "\r\n\033[1A"
+	
 	if [ $loc = "ru" ]; then
 printf '  Введите число от 0 до '$ch' (или букву U ):  '
 			else
 printf '  Enter a number from 0 to '$ch' (or letter U):  '
 	fi
-
-
+	if [[ $order = 1 ]]; then
+		if [ $loc = "ru" ]; then
+	printf '\n\n  Oтключаем EFI разделы ...  '
+				else
+	printf '\n\n  Unmounting EFI partitions ....  '
+			fi
+	fi
 }
+# Конец определения функции UPDATELIST ######################################################
 
+# Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
 unset choice
 while [[ ! ${choice} =~ ^[0-9uU]+$ ]]; do
+if [[ $order = 2 ]]; then 
+printf '\r                                                          '
+printf "\r\033[2A"
+printf '\r                                                          '
+order=0
+fi
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
 printf '  Введите число от 0 до '$ch' (или букву U ):  '
@@ -429,8 +498,9 @@ chs=$choice
 if [[ $chs = 0 ]]; then nogetlist=0; fi
 
 }
+# Конец определения GETKEYS #######################################
 
-
+# Определение функции монтирования разделов EFI ##########################################
 MOUNTS(){
 printf '\n'
 let "num=chs-1"
@@ -453,14 +523,19 @@ if [ ! $mcheck = "Yes" ]; then
     fi
     mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
  if [ ! $mcheck = "Yes" ]; then
+clear
 	if [ $loc = "ru" ]; then
 printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
 printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
+printf 'Нажмите любую клавишу закрыть терминал  '
 			else
 printf '\n\n  !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
 printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
+printf 'Press any key to close the window  '
 	fi
-exit 1 
+ sleep 0.5
+read  -n1 demo
+EXIT_PROGRAM
  fi
 	order=0; UPDATELIST
 
@@ -473,14 +548,18 @@ open "$vname"
 
 nogetlist=1
 
-
 }
+# Конец определения MOUNTS #################################################################
 
-
+# Начало основноо цикла программы ###########################################################
+############################ MAIN MAIN MAIN ################################################
 
 stop="MAIN CYCLE BEFORE MAIN"; DEBUG	
 
 chs=0
+# переменная nogetlist является флагом - будет ли экран обновлён GETLIST или UPDATELIST
+# если nogetlist=0 то обновление через функцию UPDATELIST
+# значением этого флага управляют MOUNTS, UNMOUNTS
 nogetlist=0
 
 while [ $chs = 0 ]; do
@@ -505,20 +584,23 @@ stop="MAIN CYCLE AFTER GETLIST"; DEBUG
 
 	GETKEYS	
 
-
+# Если нажата клавиша выхода из программы
 if  [ $chs = $ch ]; then
+clear
 	if [ $loc = "ru" ]; then
 printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 			else
 printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
-sleep 1.2
+
 	rm -f ~/.MountEFItemp.txt
-    osascript -e 'tell application "Terminal" to close first window' & exit
+
+EXIT_PROGRAM
 fi
 
 stop="MAIN CYCLE BEFOR MOUNTS CALL"; DEBUG	
 
+# Монтировать раздел если он выбран (chs - номер в списке разделов)
 if [[ ! ${chs} = 0 ]]; then MOUNTS;  chs=0; fi
 
 stop="MAIN CYCLE AFTER MOUNTS CALL"; DEBUG	
@@ -526,5 +608,6 @@ stop="MAIN CYCLE AFTER MOUNTS CALL"; DEBUG
 
 done
 
-
+# Конец основного цикла программы ####################################################################
+########################################## END MAIN #################################################
 exit
