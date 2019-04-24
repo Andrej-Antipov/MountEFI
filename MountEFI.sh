@@ -1,42 +1,6 @@
 #!/bin/bash
 clear
 
-# функция отладки ###############################################
-demo=0
-deb=0
-
-DEBUG(){
-if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n'
-#printf '............................................................\n'
-#term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
-#echo "choice = "$choice
-#echo "chs = "$chs
-#echo "ch = "$ch
-#echo "dlist = "${dlist[@]}
-#echo "nlist = "${nlist[@]}
-#echo "num = "$num
-#echo "pnum ="$pnum
-#echo "pos = "$pos
-#echo "string = "$string
-#echo "ttys001 --------------------------------------------"
-#echo "UID = "$MY_uid
-#echo "PID = "$PID_ttys001
-#echo "Time001 = "$Time001
-#echo "-----------------------------------------------------"
-#echo
-#echo "ttys000 --------------------------------------------"
-#echo "PID = "$PID_ttys000
-#echo "Time000 = "$Time000
-#echo "-----------------------------------------------------"
-#echo "Time Diff = "$TimeDiff
-
-#printf '............................................................\n\n'
-sleep 0.5
-read  -n1 demo
-fi
-}
-####################################################################
 
 
 
@@ -48,8 +12,8 @@ clear
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #избавляемся от второго окна терминала по оценке времени с моментв запуска
+#############################################################################################################################
 MyTTY=`tty | tr -d " dev/\n"`
-#if [[ ${MyTTY} = "ttys001" ]]; then osascript -e 'tell application "Terminal" to close second  window'; fi
 #Если мы на первой консоли - значит есть нулевая и её время жизни надо проверить
 if [[ ${MyTTY} = "ttys001" ]]; then
 # Получаем uid и pid первой консоли
@@ -60,18 +24,14 @@ temp=`ps -ef | grep ttys000 | grep $MY_uid`; PID_ttys000=`echo $temp | awk  '{pr
 Time001=`ps -p $PID_ttys001 -oetime= | tr '-' ':' | awk -F: '{ total=0; m=1; } { for (i=0; i < NF; i++) {total += $(NF-i)*m; m *= i >= 2 ? 24 : 60 }} {print total}'`
 # Вычисляем время жизни нулевой консоли в секундах
 Time000=`ps -p $PID_ttys000 -oetime= | tr '-' ':' | awk -F: '{ total=0; m=1; } { for (i=0; i < NF; i++) {total += $(NF-i)*m; m *= i >= 2 ? 24 : 60 }} {print total}'`
-	if [[ ${Time001} -lt ${Time000} ]]; then 
+	if [[ ${Time001} -le ${Time000} ]]; then 
 let "TimeDiff=Time000-Time001"
 # Здесь задаётся постоянная в секундах по которой можно считать что нулевая консоль запущена сразу перед первой и потому её надо закрыть
-		if [[ ${TimeDiff} -le 5 ]]; then osascript -e 'tell application "Terminal" to close second  window'; fi
-
-stop="значения времени жизни консолей"; DEBUG
-
+		if [[ ${TimeDiff} -le 4 ]]; then osascript -e 'tell application "Terminal" to close second  window'; fi
 	fi	
 fi
-
 term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
-################################################################
+##############################################################################################################################
 
 parm="$1"
 
@@ -152,7 +112,6 @@ dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
 
-	stop="GETADDR AFTER dlist INIT"; DEBUG
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
@@ -175,7 +134,7 @@ if [[ ! $pos = 0 ]]; then
 		let "var0=var0-1"
 		let "num=num+1"
 	done
-	stop="GETADDR AFTER nlist INIT"; DEBUG	
+
 fi
 
 	if [[ $pos = 0 ]]; then
@@ -221,8 +180,6 @@ do
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 
-stop="UNMOUNTS AFTER pnum"; DEBUG	
-
 
 if [ $mcheck = "Yes" ]; then
 	noefi=0
@@ -238,7 +195,6 @@ let "num=num+1"
 	let "var1--"
 done
 
-stop="UNMOUNTS AFTER ALL"; DEBUG	
 
 #printf '\r                                      '
 #if [[ ${noefi} = 0 ]]; then printf "\r\033[2A"
@@ -539,12 +495,9 @@ MOUNTS(){
 printf '\n'
 let "num=chs-1"
 
-stop="MOUNTS TILL pnum"; DEBUG	
-
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
-
-stop="MOUNTS AFTER pnum"; DEBUG	
+	
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 if [ ! $mcheck = "Yes" ]; then
@@ -588,7 +541,6 @@ nogetlist=1
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
 
-stop="MAIN CYCLE BEFORE "; DEBUG	
 
 chs=0
 # переменная nogetlist является флагом - будет ли экран обновлён GETLIST или UPDATELIST
@@ -610,11 +562,9 @@ fi
         declare -a nlist
         GETARR
 
-stop="MAIN CYCLE BEFORE GETLIST"; DEBUG	
 
  if [[ ! $nogetlist = 1  ]]; then  GETLIST; fi
 
-stop="MAIN CYCLE AFTER GETLIST"; DEBUG
 
 	GETKEYS	
 
@@ -632,12 +582,10 @@ printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 EXIT_PROGRAM
 fi
 
-stop="MAIN CYCLE BEFOR MOUNTS CALL"; DEBUG	
 
 # Монтировать раздел если он выбран (chs - номер в списке разделов)
 if [[ ! ${chs} = 0 ]]; then MOUNTS;  chs=0; fi
-
-stop="MAIN CYCLE AFTER MOUNTS CALL"; DEBUG	
+	
 
 
 done
