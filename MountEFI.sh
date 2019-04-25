@@ -309,10 +309,12 @@ touch  ~/.MountEFItemp.txt
 
 			if [ $loc = "ru" ]; then
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
-	printf '\n      0)  поиск разделов ..... '
+
+	printf '\n\n      0)  поиск разделов ..... '
 		else
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
-	printf '\n      0)  updating partitions list ..... '
+
+	printf '\n\n      0)  updating partitions list ..... '
         fi
 
 
@@ -330,69 +332,79 @@ do
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
-	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-		
-				if [ $loc = "ru" ]; then
-		if [ ! $mcheck = "Yes" ]; then
-			printf '\n      '$ch')    ...      '  >> ~/.MountEFItemp.txt
-		else
-			printf '\n      '$ch')         +   ' >> ~/.MountEFItemp.txt
-		fi
-				else
-		if [ ! $mcheck = "Yes" ]; then
-			printf '\n         '$ch')    ...      ' >> ~/.MountEFItemp.txt
-		else
-			printf '\n         '$ch')         +   ' >> ~/.MountEFItemp.txt
-		fi
-				fi
 	
+		
+				
 		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
+		let "corr=9-dlenth"
 
-	let "corr=9-dlenth"
-	printf  ${string}"%"$corr"s" >> ~/.MountEFItemp.txt
+		drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+		dcorr=`echo ${#drive}`
+		if [[ ${dcorr} -gt 30 ]]; then dcorr=30; drive=`echo ${drive:0:29}`; fi
+		let "dcorr=30-dcorr"
 
-    	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
 	
-	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-    corr=`echo ${#dsize}`
-    let "corr=corr-5"
-    let "corr=6-corr"
-	printf '  '"%"$corr"s""$dsize"'   * '"$drive" >> ~/.MountEFItemp.txt
-	let "num=num+1"
+
+    		scorr=`echo ${#dsize}`
+    		let "scorr=scorr-5"
+    		let "scorr=6-scorr"
+
+	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#          вывод подготовленного формата строки в файл "буфер экрана"
+	if [ ! $mcheck = "Yes" ]; then
+			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"  >> ~/.MountEFItemp.txt
+		else
+			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize" >> ~/.MountEFItemp.txt
+		fi
+
+
+	let "num++"
 	let "var0--"
 done
 
 printf "\n\r\n\033[5A"
 
 		if [ $loc = "ru" ]; then
-	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'  
-	printf '\n      0)  повторить поиск разделов\n' 
+	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '\n\n      0)  повторить поиск разделов\n' 
 		else
-	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
-	printf '\n      0)  update EFI partitions list             \n' 
+	printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
+	
 cat  -v ~/.MountEFItemp.txt
 #rm ~/.MountEFItemp.txt
 
 	let "ch++"
+	
+	printf '\n\n     '
+	printf '.%.0s' {1..68}
 	if [ $loc = "ru" ]; then
-	printf '\n\n      '$ch')  '' выход из программы не подключая EFI\n' 
+
+	printf '\n      U  -   отключить ВСЕ подключенные разделы  EFI \n' 
 			else
-	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n' 
+	printf '\n      U  -   unmount ALL mounted  EFI partitions \n' 
 	fi
 
+	
 	if [ $loc = "ru" ]; then
-	printf '      U)  '' отключить ВСЕ! подключенные разделы  EFI \n' 
+	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '      U)  ''  unmount ALL mounted  EFI partitions \n' 
+	printf '       Q  -  close terminal and exit from the program\n' 
 	fi
 
+	
 printf '\n\n' 
 
 }
@@ -403,9 +415,9 @@ UPDATELIST(){
 
 
 	if [[ $order = 0 ]]; then
-cat  ~/.MountEFItemp.txt | sed "s/$chs)    ...     /$chs)         +  /" >> ~/.MountEFItemp2.txt
+cat  ~/.MountEFItemp.txt | sed "s/$chs) ...  /$chs)   +  /" >> ~/.MountEFItemp2.txt
 	else
-cat  ~/.MountEFItemp.txt | sed "s/$chs)         +  /$chs)    ...     /" >> ~/.MountEFItemp2.txt
+cat  ~/.MountEFItemp.txt | sed "s/$chs)   +  /$chs) ...  /" >> ~/.MountEFItemp2.txt
 	fi
 
 rm ~/.MountEFItemp.txt
@@ -416,23 +428,29 @@ clear
 
 		if [ $loc = "ru" ]; then
         	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
-	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'  
-	printf '\n      0)  повторить поиск разделов\n' 
+	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '\n\n      0)  повторить поиск разделов\n' 
 			else
         	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+	printf '     '
+	printf '.%.0s' {1..68}
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
-	printf '\n      0)  update EFI partitions list             \n' 
+	printf '\n\n      0)  update EFI partitions list             \n' 
 		fi
 
 cat  -v ~/.MountEFItemp.txt
 printf "\r\033[1A"
-
+	
+	printf '\n\n     '
+	printf '.%.0s' {1..68}
 	if [ $loc = "ru" ]; then
-	printf '\n\n      '$ch')  '' выход из программы не подключая EFI\n' 
-	printf '      U)  '' отключить ВСЕ! подключенные разделы  EFI \n'
+	printf '\n      U  -   отключить ВСЕ подключенные разделы  EFI \n'
+	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '\n\n      '$ch')  ''  exit from the program without mounting EFI\n' 
-	printf '      U)  ''  unmount ALL mounted  EFI partitions \n' 
+	printf '\n      U  -   unmount ALL mounted  EFI partitions \n' 
+	printf '       Q  -  close terminal and exit from the program\n' 
 	fi
 	
 	printf '\n\n'
@@ -440,9 +458,10 @@ printf "\r\033[1A"
 	printf "\r\n\033[1A"
 	
 	if [ $loc = "ru" ]; then
-printf '  Введите число от 0 до '$ch' (или букву U ):  '
+let "schs=$ch-1"
+printf '  Введите число от 0 до '$schs' (или  U, Q ):  '
 			else
-printf '  Enter a number from 0 to '$ch' (or letter U):  '
+printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -457,7 +476,7 @@ printf '  Enter a number from 0 to '$ch' (or letter U):  '
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
 unset choice
-while [[ ! ${choice} =~ ^[0-9uU]+$ ]]; do
+while [[ ! ${choice} =~ ^[0-9uUqQ]+$ ]]; do
 if [[ $order = 2 ]]; then 
 printf '\r                                                          '
 printf "\r\033[2A"
@@ -466,9 +485,10 @@ order=0
 fi
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
-printf '  Введите число от 0 до '$ch' (или букву U ):  '
+let "schs=$ch-1"
+printf '  Введите число от 0 до '$schs' (или  U, Q ):  '
 			else
-printf '  Enter a number from 0 to '$ch' (or letter U):  '
+printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
 	fi
 
 
@@ -478,8 +498,9 @@ else
 read choice
 fi
 
-if [[ ! $choice =~ ^[0-9uU]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQ]$ ]]; then unset choice; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
+if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
 
 done
@@ -545,7 +566,7 @@ nogetlist=1
 chs=0
 # переменная nogetlist является флагом - будет ли экран обновлён GETLIST или UPDATELIST
 # если nogetlist=1 то обновление через функцию UPDATELIST
-# значением этого флага управляют MOUNTS, UNMOUNTS
+# значением этого флага управляют MOUNTS, UNMOUNTS, GETKEYS
 nogetlist=0
 
 while [ $chs = 0 ]; do
