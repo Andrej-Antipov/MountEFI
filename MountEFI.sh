@@ -273,7 +273,7 @@ fi
 
 	if [[ $pos = 0 ]]; then
 clear
-		if [ $loc = "ru" ]; then
+		if [[ $loc = "ru" ]]; then
 	printf '\nНеизвестная ошибка. Нет разделов EFI для монтирования\n'
 	printf 'Конец программы...\n\n\n\n''\e[3J'
 	printf 'Нажмите любую клавишу закрыть терминал  '
@@ -290,7 +290,7 @@ EXIT_PROGRAM
 
 DO_MOUNT(){
 
-		if [ $flag = 1 ]; then
+		if [[ $flag = 1 ]]; then
 
        	 printf '\n\n  '; sudo printf ' '
 
@@ -335,10 +335,10 @@ fi
 MOUNTED_CHECK(){
 
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [ ! $mcheck = "Yes" ]; then
+	if [[ ! $mcheck = "Yes" ]]; then
 
 	clear
-			if [ $loc = "ru" ]; then
+			if [[ $loc = "ru" ]]; then
 	printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
 	printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 	printf 'Нажмите любую клавишу закрыть терминал  '
@@ -358,7 +358,7 @@ MOUNTED_CHECK(){
 UNMOUNTED_CHECK(){
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [ $mcheck = "Yes" ]; then
+	if [[ $mcheck = "Yes" ]]; then
 		
 		sleep 1.5
 
@@ -367,7 +367,7 @@ mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | se
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 
-	if [ $mcheck = "Yes" ]; then
+	if [[ $mcheck = "Yes" ]]; then
 
 		printf '\n\n  '; sudo printf ' '
 
@@ -403,7 +403,7 @@ stop="перед PNUM"; DEBUG
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [ ! $mcheck = "Yes" ]; then 
+	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
 stop="после mcheck"; DEBUG	
@@ -469,7 +469,7 @@ stop="перед PNUM"; DEBUG
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [ ! $mcheck = "Yes" ]; then 
+	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
 stop="после mcheck"; DEBUG	
@@ -543,7 +543,7 @@ do
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 
 
-if [ $mcheck = "Yes" ]; then
+if [[ $mcheck = "Yes" ]]; then
 	noefi=0
 	diskutil quiet umount force  /dev/${string}
 
@@ -576,9 +576,9 @@ if [[ ${noefi} = 0 ]]; then order=2; fi
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
-if [ "$macos" = "1014" ] || [ "$macos" = "1013" ] || [ "$macos" = "1012" ]; then
+if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]; then
         vmacos="Disk Size:"
-        if [ "$macos" = "1014" ] || [ "$macos" = "1013" ]; then flag=1; else flag=0; fi
+        if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
     else
         vmacos="Total Size:"
         flag=0
@@ -594,11 +594,11 @@ unset string
 string=`echo ${dlist[0]}`
 
 mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [ ! $mcheck = "Yes" ]; then
+	if [[ ! $mcheck = "Yes" ]]; then
 
             
                     
-                    if [ $loc = "ru" ]; then
+                    if [[ $loc = "ru" ]]; then
         printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 			else
         printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
@@ -622,7 +622,7 @@ MOUNTED_CHECK
 	fi
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 clear
-		if [ $loc = "ru" ]; then
+		if [[ $loc = "ru" ]]; then
 			printf '\nРаздел: '${string}' ''подключен.\n\n'
    		 open "$vname"
 			printf 'Выходим.. \n\n\n\n''\e[3J'
@@ -652,7 +652,7 @@ unset string
 rm -f   ~/.MountEFItemp.txt
 touch  ~/.MountEFItemp.txt
 
-			if [ $loc = "ru" ]; then
+			if [[ $loc = "ru" ]]; then
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
 
 	printf '\n\n      0)  поиск разделов ..... '
@@ -702,7 +702,7 @@ do
 
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 #          вывод подготовленного формата строки в файл "буфер экрана"
-	if [ ! $mcheck = "Yes" ]; then
+	if [[ ! $mcheck = "Yes" ]]; then
 			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"  >> ~/.MountEFItemp.txt
 		else
 			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize" >> ~/.MountEFItemp.txt
@@ -715,7 +715,7 @@ done
 
 printf "\n\r\n\033[5A"
 
-		if [ $loc = "ru" ]; then
+		if [[ $loc = "ru" ]]; then
 	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
 	printf '.%.0s' {1..68} 
@@ -735,7 +735,7 @@ cat  -v ~/.MountEFItemp.txt
 	
 	printf '\n\n     '
 	printf '.%.0s' {1..68}
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
 
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
@@ -745,7 +745,7 @@ cat  -v ~/.MountEFItemp.txt
 	fi
 
 	
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
 	printf '      Q  -   close terminal and exit from the program\n' 
@@ -773,7 +773,7 @@ cat  -v ~/.MountEFItemp.txt
 #printf "\033[0;0H"
 clear
 
-		if [ $loc = "ru" ]; then
+		if [[ $loc = "ru" ]]; then
         	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
@@ -792,7 +792,7 @@ printf "\r\033[1A"
 	
 	printf '\n\n     '
 	printf '.%.0s' {1..68}
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
@@ -834,7 +834,7 @@ printf '\r                                                          '
 order=0
 fi
 printf "\r\n\033[1A"
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
 let "schs=$ch-1"
 
 printf '  Введите число от 0 до '$schs' (или  U, E, Q ):   '
@@ -879,7 +879,7 @@ string=`echo ${dlist[$pnum]}`
 	
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-if [ ! $mcheck = "Yes" ]; then
+if [[ ! $mcheck = "Yes" ]]; then
 
     if [ $flag = 1 ]; then 
                 printf '\n  '; sudo printf ' '
@@ -888,9 +888,9 @@ if [ ! $mcheck = "Yes" ]; then
             diskutil quiet mount  /dev/${string}
     fi
     mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
- if [ ! $mcheck = "Yes" ]; then
+ if [[ ! $mcheck = "Yes" ]]; then
 clear
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
 printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
 printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 printf 'Нажмите любую клавишу закрыть терминал  '
@@ -931,7 +931,7 @@ while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
         clear && printf '\e[3J'
 
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
         printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 			else
         printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
@@ -948,9 +948,9 @@ fi
 	GETKEYS	
 
 # Если нажата клавиша выхода из программы
-if  [ $chs = $ch ]; then
+if  [[ $chs = $ch ]]; then
 clear
-	if [ $loc = "ru" ]; then
+	if [[ $loc = "ru" ]]; then
 printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 			else
 printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
