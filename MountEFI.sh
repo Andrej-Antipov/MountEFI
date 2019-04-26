@@ -1,14 +1,47 @@
 #!/bin/bash
 clear
 
-
-
-
 osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
 osascript -e "tell application \"Terminal\" to set background color of window 1 to {1028, 12850, 65535}"
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to {65535, 65535, 65535}"
 
 clear
+# функция отладки ###############################################
+demo=0
+deb=0
+
+DEBUG(){
+if [[ ! $deb = 0 ]]; then
+printf '\n\n Останов '"$stop"'  :\n\n'
+printf '............................................................\n'
+#term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
+#echo "choice = "$choice
+#echo "chs = "$chs
+#echo "ch = "$ch
+#echo "dlist = "${dlist[@]}
+#echo "nlist = "${nlist[@]}
+#echo "num = "$num
+#echo "pnum ="$pnum
+#echo "pos = "$pos
+echo "string = "$string
+#echo "ttys001 --------------------------------------------"
+echo "mcheck = "$mcheck
+#echo "mounted= "$mounted
+echo "was mounted = "$was_mounted
+echo "vname = "$vname
+#echo "-----------------------------------------------------"
+#echo
+#echo "ttys000 --------------------------------------------"
+#echo "PID = "$PID_ttys000
+#echo "Time000 = "$Time000
+#echo "-----------------------------------------------------"
+#echo "Time Diff = "$TimeDiff
+
+printf '............................................................\n\n'
+sleep 0.5
+read  -n1 demo
+fi
+}
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #избавляемся от второго окна терминала по оценке времени с моментв запуска
@@ -81,7 +114,9 @@ fi
 
 
 declare -a nlist 
-declare -a dlist 
+declare -a dlist
+lists_updated=0
+
 
 # Блок определения функций ########################################################
 
@@ -101,6 +136,32 @@ if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app
 fi
 }
 
+# Определение функции обработки ввода кирилицы вместо латиницы
+#############################
+CYRILLIC_TRANSLIT(){
+
+if [[ ${choice} = [у?] ]]; then unset choice; choice="e"; fi
+#if [[ ${choice} = [г?] ]]; then unset choice; choice="u"; fi
+#if [[ ${choice} = [й?] ]]; then unset choice; choice="q"; fi
+#if [[ ${choice} = [с?] ]]; then unset choice; choice="c"; fi
+
+#case ${choice} in
+
+# [г?] ) unset choice; choice="u";;
+# [с?] ) unset choice; choice="c";;
+ #[й?] ) unset choice; choice="q";;
+# [у?] ) unset choice; choice="e";;
+# [Г?] ) unset choice; choice="U";;
+# [У?] ) unset choice; choice="E";;
+ #[С?] ) unset choice; choice="C";;
+# [Й?] ) unset choice; choice="Q";;
+
+#esac
+}
+#############################
+###############################################################
+
+
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
 
@@ -111,7 +172,7 @@ IFS=';'
 dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
-
+lists_updated=1
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
@@ -131,8 +192,8 @@ if [[ ! $pos = 0 ]]; then
 		else 
 		nlist+=( $num )
 		fi
-		let "var0=var0-1"
-		let "num=num+1"
+		let "var0--"
+		let "num++"
 	done
 
 fi
@@ -154,17 +215,243 @@ EXIT_PROGRAM
 	fi
 }
 
+DO_MOUNT(){
+
+		if [ $flag = 1 ]; then
+
+       	 printf '\n\n  '; sudo printf ' '
+
+        	 	sudo diskutil quiet mount  /dev/${string}
+
+	printf "\r\033[1A"
+	printf '                                                                  '
+	printf "\r\n\033[2A"
+
+       		 else
+
+        	 	diskutil quiet mount  /dev/${string}
+
+		fi
+
+}
+
+
+
+# Определение функции получения информаци о системном разделе EFI
+GET_SYSTEM_EFI(){
+
+if [[ ${lists_updated} = 1 ]]; then
+sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+var2=$pos
+num=0
+while [ $var2 != 0 ] 
+do 
+pnum=${nlist[num]}
+string=`echo ${dlist[$pnum]}`
+dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+dname=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+if [[ "$edname" = "$dname" ]]; then estring=`echo ${string}` ; enum=$pnum;  var2=1; fi
+let "num++"
+let "var2--"
+done
+lists_updated=0
+fi
+}
+
+MOUNTED_CHECK(){
+
+	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+	if [ ! $mcheck = "Yes" ]; then
+
+	clear
+			if [ $loc = "ru" ]; then
+	printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
+	printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
+	printf 'Нажмите любую клавишу закрыть терминал  '
+			else
+	printf '\n\n  !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
+	printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
+	printf 'Press any key to close the window  '
+			fi
+
+ 	sleep 0.5
+	read  -n1 demo
+	EXIT_PROGRAM
+
+	fi
+}
+
+UNMOUNTED_CHECK(){
+
+mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+	if [ $mcheck = "Yes" ]; then
+		
+		sleep 1.5
+
+		diskutil quiet umount force  /dev/${string}
+
+
+mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+
+	if [ $mcheck = "Yes" ]; then
+
+		printf '\n\n  '; sudo printf ' '
+
+		sleep 1.5
+
+
+        	 	sudo diskutil quiet umount force  /dev/${string}
+
+	printf "\r\033[1A"
+	printf '                                                                  '
+	printf "\r\n\033[2A"
+
+
+	fi
+fi
+}
+
+# Определение функции розыска Clover в виде проверки бинарика EFI/BOOT/bootx64.efi 
+##############################################################################
+FIND_CLOVER(){
+
+
+was_mounted=0
+var1=$pos
+num=0
+spin='-\|/'
+i=0
+noefi=1
+
+while [ $var1 != 0 ] 
+do 
+stop="перед PNUM"; DEBUG
+	pnum=${nlist[num]}
+	string=`echo ${dlist[$pnum]}`
+	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+	if [ ! $mcheck = "Yes" ]; then 
+
+	was_mounted=0
+stop="после mcheck"; DEBUG	
+       	
+	DO_MOUNT	
+
+	MOUNTED_CHECK
+
+	else
+		was_mounted=1
+stop="после was_mounted=1"; DEBUG
+	fi
+stop="перед vname"; DEBUG
+vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+stop="после VNAME"; DEBUG
+	if [[ -d "$vname"/EFI/BOOT ]]; then
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+stop="после проверки наличия bootx64"; DEBUG
+					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover revision:"` ; check_loader=`echo ${check_loader:0:16}`
+stop="перед проверкой на кловерность"; DEBUG
+                					if [[ ${check_loader} = "Clover revision:" ]]; then
+stop="после проверки на кловерность"; DEBUG
+                       						 open "$vname/EFI"
+							 was_mounted=1
+stop="после открытия папки EFI"; DEBUG
+                 fi   
+	   fi
+	fi
+
+stop="перед  проверкой на отключение раздела"; DEBUG
+		if [[ "$was_mounted" = 0 ]]; then
+stop="после проверки на отключение раздела"; DEBUG
+	diskutil quiet  umount  force /dev/${string}; mounted=0
+		
+		UNMOUNTED_CHECK		
+
+		fi
+		
+let "num++"
+let "var1--"
+
+done
+
+nogetlist=1
+
+
+}
+
+
+FIND_OPENCORE(){
+
+
+was_mounted=0
+var1=$pos
+num=0
+spin='-\|/'
+i=0
+noefi=1
+
+while [ $var1 != 0 ] 
+do 
+stop="перед PNUM"; DEBUG
+	pnum=${nlist[num]}
+	string=`echo ${dlist[$pnum]}`
+	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+	if [ ! $mcheck = "Yes" ]; then 
+
+	was_mounted=0
+stop="после mcheck"; DEBUG	
+       	
+	DO_MOUNT	
+
+	MOUNTED_CHECK
+
+	else
+		was_mounted=1
+stop="после was_mounted=1"; DEBUG
+	fi
+stop="перед vname"; DEBUG
+vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+stop="после VNAME"; DEBUG
+	if [[ -d "$vname"/EFI/BOOT ]]; then
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+stop="после проверки наличия bootx64"; DEBUG
+					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
+stop="перед проверкой на кловерность"; DEBUG
+                					if [[ ${check_loader} = "OpenCore" ]]; then
+stop="после проверки на кловерность"; DEBUG
+                       						 open "$vname/EFI"
+							 was_mounted=1
+stop="после открытия папки EFI"; DEBUG
+                 fi   
+	   fi
+	fi
+
+stop="перед  проверкой на отключение раздела"; DEBUG
+		if [[ "$was_mounted" = 0 ]]; then
+stop="после проверки на отключение раздела"; DEBUG
+	diskutil quiet  umount  force /dev/${string}; mounted=0
+		
+		UNMOUNTED_CHECK		
+
+		fi
+		
+let "num++"
+let "var1--"
+
+done
+
+nogetlist=1
+
+
+}
+
+
+
 
 # Функция отключения EFI разделов
 
 UNMOUNTS(){
 
-#		if [ $loc = "ru" ]; then
-#	printf '\n\n  Oтключаем EFI разделы ...  '
-#				else
-#	printf '\n\n  Unmounting EFI partitions ....  '
-#			fi
-            
 
 		GETARR
 var1=$pos
@@ -172,6 +459,8 @@ num=0
 spin='-\|/'
 i=0
 noefi=1
+
+cd ~
 
 while [ $var1 != 0 ] 
 do 
@@ -183,7 +472,10 @@ do
 
 if [ $mcheck = "Yes" ]; then
 	noefi=0
-	diskutil quiet umount  /dev/${string}
+	diskutil quiet umount force  /dev/${string}
+
+	UNMOUNTED_CHECK	
+
 	order=1; let "chs=num+1"; UPDATELIST
 
 	let "i++"
@@ -191,20 +483,17 @@ if [ $mcheck = "Yes" ]; then
 	printf "\b$1${spin:$i:1}"
 	fi
 
-let "num=num+1"
+    let "num++"
 	let "var1--"
 done
 
 
-#printf '\r                                      '
-#if [[ ${noefi} = 0 ]]; then printf "\r\033[2A"
+
 printf '\r                                                          '
 printf "\r\033[2A"
 printf '\r                                                          '
 printf '\n\n'
-#else 
-#printf 'n\n'
-#fi
+
 nogetlist=1
 if [[ ${noefi} = 0 ]]; then order=2; fi
 }
@@ -235,48 +524,28 @@ mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | s
 	if [ ! $mcheck = "Yes" ]; then
 
             
-		if [ $flag = 1 ]; then 
                     
                     if [ $loc = "ru" ]; then
         printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 			else
         printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	                 fi
-                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+                    	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
-    printf '\n\n     '
+    	printf '\n\n     '
 	let "corr=9-dlenth"
 	printf  ${string}"%"$corr"s"
 
     	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 	
 	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-    corr=`echo ${#dsize}`
-    let "corr=corr-5"
-    let "corr=6-corr"
-	printf '  '"%"$corr"s""$dsize"'   * '"$drive"
-                    printf '\n\n\n '; sudo printf ' '
-                sudo diskutil quiet mount /dev/${string}
-            		else
-                			diskutil quiet mount /dev/${string}
-		fi
+    	corr=`echo ${#dsize}`
+    	let "corr=corr-5"
+    	let "corr=6-corr"
+			
+DO_MOUNT
 
-mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-		if [ ! $mcheck = "Yes" ]; then
-clear
-			if [ $loc = "ru" ]; then
-printf '\n\n !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
-printf '\nВыходим. Конец программы. \n\n\n\n''\e[3J'
-printf 'Нажмите любую клавишу закрыть терминал  '
-				else
-printf '\n\n !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
-printf '\nThe end of the program. \n\n\n\n''\e[3J'
-printf 'Press any key to close the window  '
-			fi
-		     sleep 0.5
-		     read  -n1 demo
-     		     EXIT_PROGRAM
-		fi
+MOUNTED_CHECK
 	fi
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 clear
@@ -296,8 +565,11 @@ fi
 # Конец блока обработки если один  раздел EFI #################################################
 ###########################################################################################
 
+
+
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
+
 
 var0=$pos
 num=0
@@ -392,16 +664,18 @@ cat  -v ~/.MountEFItemp.txt
 	printf '.%.0s' {1..68}
 	if [ $loc = "ru" ]; then
 
-	printf '\n      U  -   отключить ВСЕ подключенные разделы  EFI \n' 
+	printf '\n      E  -   найти и подключить EFI системного диска \n'
+	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
 			else
-	printf '\n      U  -   unmount ALL mounted  EFI partitions \n' 
+	printf '\n      E  -   find and mount this system drive EFI \n' 
+	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
 	fi
 
 	
 	if [ $loc = "ru" ]; then
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '       Q  -  close terminal and exit from the program\n' 
+	printf '      Q  -   close terminal and exit from the program\n' 
 	fi
 
 	
@@ -446,11 +720,13 @@ printf "\r\033[1A"
 	printf '\n\n     '
 	printf '.%.0s' {1..68}
 	if [ $loc = "ru" ]; then
-	printf '\n      U  -   отключить ВСЕ подключенные разделы  EFI \n'
+	printf '\n      E  -   найти и подключить EFI системного диска \n'
+	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '\n      U  -   unmount ALL mounted  EFI partitions \n' 
-	printf '       Q  -  close terminal and exit from the program\n' 
+	printf '\n      E  -   find and mount this system drive EFI \n' 
+	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
+	printf '      Q   -  close terminal and exit from the program\n' 
 	fi
 	
 	printf '\n\n'
@@ -459,9 +735,9 @@ printf "\r\033[1A"
 	
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, Q ):  '
+printf '  Введите число от 0 до '$schs' (или  U, E, Q ):  '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
+printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -475,6 +751,7 @@ printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
+
 unset choice
 while [[ ! ${choice} =~ ^[0-9uUqQ]+$ ]]; do
 if [[ $order = 2 ]]; then 
@@ -486,22 +763,29 @@ fi
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, Q ):  '
+
+printf '  Введите число от 0 до '$schs' (или  U, E, Q ):   '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
+printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):   '
+
 	fi
 
 
 if [[ ${ch} -le 8 ]]; then 
-read  -n1 choice
+read   -n1 choice
 else
-read choice
+read   choice
 fi
 
-if [[ ! $choice =~ ^[0-9uUqQ]$ ]]; then unset choice; fi
+CYRILLIC_TRANSLIT
+
+if [[ ! $choice =~ ^[0-9uUqQeEcCoO]$ ]]; then unset choice; fi
+if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; fi
+if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
-! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
+if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
+! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
 
 done
 
