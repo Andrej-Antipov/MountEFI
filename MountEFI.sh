@@ -1,6 +1,9 @@
 #!/bin/bash
 clear
 
+
+
+
 osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
 osascript -e "tell application \"Terminal\" to set background color of window 1 to {1028, 12850, 65535}"
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to {65535, 65535, 65535}"
@@ -78,9 +81,7 @@ fi
 
 
 declare -a nlist 
-declare -a dlist
-lists_updated=0
-
+declare -a dlist 
 
 # Блок определения функций ########################################################
 
@@ -110,7 +111,7 @@ IFS=';'
 dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
-lists_updated=1
+
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
@@ -153,51 +154,17 @@ EXIT_PROGRAM
 	fi
 }
 
-# Определение функции получения информаци о системном разделе EFI
-GET_SYSTEM_EFI(){
-
-if [[ ${lists_updated} = 1 ]]; then
-sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
-edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
-var2=$pos
-num=0
-while [ $var2 != 0 ] 
-do 
-pnum=${nlist[num]}
-string=`echo ${dlist[$pnum]}`
-dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-dname=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-if [[ "$edname" = "$dname" ]]; then estring=`echo ${string}` ; enum=$pnum;  var2=1; fi
-let "num++"
-let "var2--"
-done
-lists_updated=0
-fi
-}
-
-
-
-# Определение функции подключения EFI раздела системного диска до загрузки меню
-LAST_CHANCE(){
-
-			if [ $loc = "ru" ]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
-        printf '\n\nЖелаете подключить EFI системного раздела и выйти, или продолжить с меню? \n'
-        printf '\nНажмите литеру Y для подключения, или что угодно для перехода в меню\n' 
-			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
-	                 	
-			fi
-
-
-
-}
-
 
 # Функция отключения EFI разделов
 
 UNMOUNTS(){
 
+#		if [ $loc = "ru" ]; then
+#	printf '\n\n  Oтключаем EFI разделы ...  '
+#				else
+#	printf '\n\n  Unmounting EFI partitions ....  '
+#			fi
+            
 
 		GETARR
 var1=$pos
@@ -229,12 +196,15 @@ let "num=num+1"
 done
 
 
-
+#printf '\r                                      '
+#if [[ ${noefi} = 0 ]]; then printf "\r\033[2A"
 printf '\r                                                          '
 printf "\r\033[2A"
 printf '\r                                                          '
 printf '\n\n'
-
+#else 
+#printf 'n\n'
+#fi
 nogetlist=1
 if [[ ${noefi} = 0 ]]; then order=2; fi
 }
@@ -272,7 +242,7 @@ mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | s
 			else
         printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	                 fi
-                    	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
     printf '\n\n     '
 	let "corr=9-dlenth"
@@ -326,11 +296,8 @@ fi
 # Конец блока обработки если один  раздел EFI #################################################
 ###########################################################################################
 
-#LAST_CHANCE
-
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
-
 
 var0=$pos
 num=0
@@ -425,18 +392,16 @@ cat  -v ~/.MountEFItemp.txt
 	printf '.%.0s' {1..68}
 	if [ $loc = "ru" ]; then
 
-	printf '\n      E  -   найти и подключить EFI системного диска \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
+	printf '\n      U  -   отключить ВСЕ подключенные разделы  EFI \n' 
 			else
-	printf '\n      E  -   find and mount this system drive EFI \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
+	printf '\n      U  -   unmount ALL mounted  EFI partitions \n' 
 	fi
 
 	
 	if [ $loc = "ru" ]; then
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '      Q  -   close terminal and exit from the program\n' 
+	printf '       Q  -  close terminal and exit from the program\n' 
 	fi
 
 	
@@ -481,13 +446,11 @@ printf "\r\033[1A"
 	printf '\n\n     '
 	printf '.%.0s' {1..68}
 	if [ $loc = "ru" ]; then
-	printf '\n      E  -   найти и подключить EFI системного диска \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
+	printf '\n      U  -   отключить ВСЕ подключенные разделы  EFI \n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '\n      E  -   find and mount this system drive EFI \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
-	printf '      Q   -  close terminal and exit from the program\n' 
+	printf '\n      U  -   unmount ALL mounted  EFI partitions \n' 
+	printf '       Q  -  close terminal and exit from the program\n' 
 	fi
 	
 	printf '\n\n'
@@ -496,9 +459,9 @@ printf "\r\033[1A"
 	
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, Q ):  '
+printf '  Введите число от 0 до '$schs' (или  U, Q ):  '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  '
+printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -523,9 +486,9 @@ fi
 printf "\r\n\033[1A"
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, Q ):  '
+printf '  Введите число от 0 до '$schs' (или  U, Q ):  '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  '
+printf '  Enter a number from 0 to '$schs' (or  U, Q):  '
 	fi
 
 
@@ -535,10 +498,9 @@ else
 read choice
 fi
 
-if [[ ! $choice =~ ^[0-9uUqQeE]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQ]$ ]]; then unset choice; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
-if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice
 
 done
