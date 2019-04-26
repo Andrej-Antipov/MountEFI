@@ -1,4 +1,69 @@
 #!/bin/bash
+
+cd $(dirname $0)
+
+# Определение функций кастомизации интерфейса #############################################
+############################################################################################
+# Colors for Apple Terminal
+#
+
+
+function list_colors {
+    cat colors.csv
+}
+
+function grep_apple_color {
+    grep "$*" colors.csv
+}
+
+function get_apple_color {
+    egrep "(^|,)$*(,|\t)" colors.csv | cut -f 6
+}
+
+function set_foreground_color {
+    color=$(get_apple_color $*)
+    if [ "$color" != "" ] ; then
+        osascript -e "tell application \"Terminal\" to set normal text color of window 1 to ${color}"
+        echo "Normal test color set to: $*: $color"
+    fi
+}    
+
+function set_background_color {
+    color=$(get_apple_color $*)
+    if [ "$color" != "" ] ; then
+        osascript -e "tell application \"Terminal\" to set background color of window 1 to ${color}"
+        echo "Background color set to: $*: $color"
+    fi
+}    
+
+function set_theme {
+    set_foreground_color $1
+    set_background_color $2
+}    
+
+function set_font {
+    osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\""
+    osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2"
+}
+#################################################################################################
+
+SET_THEMES(){
+
+clear
+if [[ -f ${HOME}/.custom_set ]]; then 
+rm ${HOME}/.custom_set
+else
+touch ${HOME}/.custom_set
+fi
+touch ${HOME}/.restart_flag
+clear 
+}
+
+
+#################################################################################################
+
+CUSTOM_SET(){
+
 clear
 
 osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
@@ -6,6 +71,14 @@ osascript -e "tell application \"Terminal\" to set background color of window 1 
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to {65535, 65535, 65535}"
 
 clear
+
+}
+
+
+if [[ -f ${HOME}/.custom_set ]]; then 
+CUSTOM_SET
+fi
+
 # функция отладки ###############################################
 demo=0
 deb=0
@@ -779,7 +852,8 @@ fi
 
 CYRILLIC_TRANSLIT
 
-if [[ ! $choice =~ ^[0-9uUqQeEcCoO]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQeEcCoOtT]$ ]]; then unset choice; fi
+if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; fi
 if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; fi
 if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
