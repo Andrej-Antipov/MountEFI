@@ -760,19 +760,20 @@ printf '\n\n'
 # Определение функции обновления информации  экрана при подключении и отключении разделов
 UPDATELIST(){
 
+    clear && printf '\e[3J'
 
-	if [[ $order = 0 ]]; then
+    if [[ ! $order = 3 ]] && [[ ! $order = 4 ]]; then
+	     if [[ $order = 0 ]]; then
 cat  ~/.MountEFItemp.txt | sed "s/$chs) ...  /$chs)   +  /" >> ~/.MountEFItemp2.txt
 	else
 cat  ~/.MountEFItemp.txt | sed "s/$chs)   +  /$chs) ...  /" >> ~/.MountEFItemp2.txt
-	fi
+	     fi
 
 rm ~/.MountEFItemp.txt
 mv  ~/.MountEFItemp2.txt ~/.MountEFItemp.txt
-cat  -v ~/.MountEFItemp.txt
+#cat  -v ~/.MountEFItemp.txt
 #printf "\033[0;0H"
-clear
-
+fi
 		if [[ $loc = "ru" ]]; then
         	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
@@ -790,9 +791,10 @@ clear
 cat  -v ~/.MountEFItemp.txt
 printf "\r\033[1A"
 	
-	printf '\n\n     '
+	printf '\n\n\n     '
 	printf '.%.0s' {1..68}
-	if [[ $loc = "ru" ]]; then
+if [[ ! $order = 3 ]]; then
+	     if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
@@ -800,8 +802,20 @@ printf "\r\033[1A"
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
 	printf '      Q   -  close terminal and exit from the program\n' 
-	fi
-	
+	     fi
+	else
+        if [[ $loc = "ru" ]]; then
+	printf '\n      C  -   найти и подключить EFI с загрузчиком Clover \n'
+	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
+	printf '      T  -   сменить тему терминала на следующем запуске программы\n' 
+			else
+	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
+	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
+	printf '      T   -  change the terminal theme to next program boot\n' 
+	     fi
+fi
+
+
 	printf '\n\n'
 	
 	printf "\r\n\033[1A"
@@ -821,6 +835,11 @@ printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  '
 	fi
 }
 # Конец определения функции UPDATELIST ######################################################
+
+ADVANCED_MENUE(){
+
+    order=3; UPDATELIST; GETKEYS
+}
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
@@ -851,14 +870,20 @@ read   choice
 fi
 
 CYRILLIC_TRANSLIT
-
-if [[ ! $choice =~ ^[0-9uUqQeEcCoOtT]$ ]]; then unset choice; fi
-if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; fi
-if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; fi
-if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; fi
+if [[ ! $order = 3 ]]; then
+if [[ ! $choice =~ ^[0-9uUqQeEiI]$ ]]; then unset choice; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
+if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
+else
+if [[ ! $choice =~ ^[0-9qQcCoOtTiI]$ ]]; then unset choice; fi
+if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
+if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; ˇorder=4; fi
+if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; order=4; fi
+if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
+if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
+fi
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
 
 done
@@ -868,6 +893,8 @@ if [[ $chs = 0 ]]; then nogetlist=0; fi
 
 }
 # Конец определения GETKEYS #######################################
+
+
 
 # Определение функции монтирования разделов EFI ##########################################
 MOUNTS(){
