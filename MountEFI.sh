@@ -93,7 +93,7 @@ printf '............................................................\n'
 #echo "ch = "$ch
 #echo "dlist = "${dlist[@]}
 #echo "nlist = "${nlist[@]}
-#echo "num = "$num
+echo "num = "$num
 #echo "pnum ="$pnum
 #echo "pos = "$pos
 #echo "string = "$string
@@ -112,6 +112,9 @@ printf '............................................................\n'
 echo "xkbs = "$xkbs
 echo "layout name = "$layout_name
 echo "choice = "$choice
+echo " layouts = "$layouts
+echo "keyboard = "$keyboard
+echo "layouts names = "${layouts_names[$num]}
 
 printf '............................................................\n\n'
 sleep 0.5
@@ -459,28 +462,28 @@ stop="после mcheck"; DEBUG
 
 	else
 		was_mounted=1
-stop="после was_mounted=1"; DEBUG
+#stop="после was_mounted=1"; DEBUG
 	fi
-stop="перед vname"; DEBUG
+#stop="перед vname"; DEBUG
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-stop="после VNAME"; DEBUG
+#stop="после VNAME"; DEBUG
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-stop="после проверки наличия bootx64"; DEBUG
+#stop="после проверки наличия bootx64"; DEBUG
 					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
-stop="перед проверкой на кловерность"; DEBUG
+#stop="перед проверкой на кловерность"; DEBUG
                 					if [[ ${check_loader} = "OpenCore" ]]; then
-stop="после проверки на кловерность"; DEBUG
+#stop="после проверки на кловерность"; DEBUG
                        						 open "$vname/EFI"
 							 was_mounted=1
-stop="после открытия папки EFI"; DEBUG
+#stop="после открытия папки EFI"; DEBUG
                  fi   
 	   fi
 	fi
 
-stop="перед  проверкой на отключение раздела"; DEBUG
+#stop="перед  проверкой на отключение раздела"; DEBUG
 		if [[ "$was_mounted" = 0 ]]; then
-stop="после проверки на отключение раздела"; DEBUG
+#stop="после проверки на отключение раздела"; DEBUG
 	diskutil quiet  umount  force /dev/${string}; mounted=0
 		
 		UNMOUNTED_CHECK		
@@ -830,6 +833,7 @@ SET_INPUT(){
 
 layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
 xkbs=1
+stop="перед проверкой раскладки"; DEBUG
 case ${layout_name} in
  "Russian"          ) xkbs=2 ;;
  "RussianWin"       ) xkbs=2 ;;
@@ -838,60 +842,67 @@ case ${layout_name} in
  "Ukrainian-PC"     ) xkbs=2 ;;
  "Byelorussian"     ) xkbs=2 ;;
  esac
+stop="после проверки раскладки"; DEBUG
 if [[ $xkbs = 2 ]]; then 
-    cd $(dirname $0)
-    if [[ -f xkbswitch ]]; then
+cd $(dirname $0)
+    if [[ -f "./xkbswitch" ]]; then 
+declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleEnabledInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
-IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_name[@]}
+IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 keyboard="0"
+stop="после проверки наличия xkbswitch"; DEBUG
 while [ $num != 0 ]; do 
-case ${layouts_names[num]} in
- "ABC"                ) keyboard="US" ;;
+case ${layouts_names[$num]} in
+ "ABC"                ) keyboard=${layouts_names[$num]} ;;
  "US Extended"        ) keyboard="USExtended" ;;
- "USInternational-PC" ) keyboard=${layouts_names[num]} ;;
- "U.S."               ) keyboard=${layouts_names[num]} ;;
- "British"            ) keyboard=${layouts_names[num]} ;;
- "British-PC"         ) keyboard=${layouts_names[num]} ;;
+ "USInternational-PC" ) keyboard=${layouts_names[$num]} ;;
+ "U.S."               ) keyboard="US" ;;
+ "British"            ) keyboard=${layouts_names[$num]} ;;
+ "British-PC"         ) keyboard=${layouts_names[$num]} ;;
 esac
-        if [[ ! $keyboard = "0" ]]; then $num=1; fi
+stop="после поиска английской раскладки"; DEBUG
+        if [[ ! $keyboard = "0" ]]; then num=1; fi
 let "num--"
 done
 
-if [[ ! $keyboard = "0" ]]; then xkbswitch -se $keyboard; fi
-   fi
-
+if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; fi
+   else
+        if [[ $loc = "ru" ]]; then
 printf '\n\n                          ! Смените раскладку на латиницу !'
-printf "\r\n\033[3A"
-
+            else
+printf '\n\n                          ! Change layout to UTF-8 ABC, US or EN !'
+        fi
+#printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
+ printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi   fi
 fi
 }
 
 # Определение функции обработки ввода кирилицы вместо латиницы
 #############################
-CYRILLIC_TRANSLIT(){
+#CYRILLIC_TRANSLIT(){
 
-case ${choice} in
+#case ${choice} in
  
- [е] ) unset choice; choice="t";;
- [Е] ) unset choice; choice="T";;
- [г] ) unset choice; choice="u";;
- [с] ) unset choice; choice="c";;
- [й] ) unset choice; choice="q";;
- [у] ) unset choice; choice="e";;
- [ш] ) unset choice; choice="i";;
- [Ш] ) unset choice; choice="i";;
- [щ] ) unset choice; choice="o";;
- [Щ] ) unset choice; choice="O";;
- [Ў] ) unset choice; choice="O";;
- [ў] ) unset choice; choice="o";;
- [Г] ) unset choice; choice="U";;
- [У] ) unset choice; choice="E";;
- [С] ) unset choice; choice="C";;
- [Й] ) unset choice; choice="Q";;
+# [е] ) unset choice; choice="t";;
+# [Е] ) unset choice; choice="T";;
+# [г] ) unset choice; choice="u";;
+# [с] ) unset choice; choice="c";;
+# [й] ) unset choice; choice="q";;
+# [у] ) unset choice; choice="e";;
+# [ш] ) unset choice; choice="i";;
+# [Ш] ) unset choice; choice="i";;
+# [щ] ) unset choice; choice="o";;
+# [Щ] ) unset choice; choice="O";;
+# [Ў] ) unset choice; choice="O";;
+# [ў] ) unset choice; choice="o";;
+# [Г] ) unset choice; choice="U";;
+# [У] ) unset choice; choice="E";;
+# [С] ) unset choice; choice="C";;
+# [Й] ) unset choice; choice="Q";;
 
-esac
+#esac
 
-}
+#}
 #############################
 ###############################################################
 
@@ -909,7 +920,11 @@ printf "\r\033[2A"
 printf '\r                                                          '
 order=0
 fi
-printf "\r\n\033[1A"
+
+if [[ $choice = " " ]]; then printf '\r\n'
+ else printf "\r\n\033[1A"
+fi
+
 if [[ $order = 3 ]]; then 
     if [[ $loc = "ru" ]]; then
 let "schs=$ch-1"
@@ -932,17 +947,17 @@ printf "\r\n\033[3A\033[46C"
 if [[ $order = 3 ]]; then printf "\033[3C"; fi
 
 if [[ ${ch} -le 8 ]]; then
-#SET_INPUT
-read -n1  choice
+SET_INPUT
+IFS="±"; read -n1  choice ; unset IFS
 #echo $choice
 else
 read choice
 fi
 
-if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[3A"; fi
-#if [[ $xkbs = 2 ]]; then CYRILLIC_TRANSLIT; fi
 
-stop=" после транслитерации "; DEBUG
+if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[46C"; fi
+
+
 
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiI]$ ]]; then unset choice; fi
