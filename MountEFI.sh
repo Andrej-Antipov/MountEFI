@@ -806,13 +806,15 @@ fi
 
 	printf '\n'
 	
+    if [[ $sym = 2 ]]; then printf '\n'; fi
 	printf "\r\n\033[1A"
 	
+
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, Q ):  '
+printf '  Введите число от 0 до '$schs' (или  U, E, Q ):  '; printf '                               '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  '
+printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  ';  printf '                              '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -872,37 +874,36 @@ printf '\n\n                          ! Смените раскладку на �
             else
 printf '\n\n                          ! Change layout to UTF-8 ABC, US or EN !'
         fi
-#printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
  printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi   fi
 fi
 }
 
 # Определение функции обработки ввода кирилицы вместо латиницы
 #############################
-#CYRILLIC_TRANSLIT(){
+CYRILLIC_TRANSLIT(){
 
-#case ${choice} in
+case ${choice} in
  
-# [е] ) unset choice; choice="t";;
-# [Е] ) unset choice; choice="T";;
-# [г] ) unset choice; choice="u";;
-# [с] ) unset choice; choice="c";;
-# [й] ) unset choice; choice="q";;
-# [у] ) unset choice; choice="e";;
-# [ш] ) unset choice; choice="i";;
-# [Ш] ) unset choice; choice="i";;
-# [щ] ) unset choice; choice="o";;
-# [Щ] ) unset choice; choice="O";;
-# [Ў] ) unset choice; choice="O";;
-# [ў] ) unset choice; choice="o";;
-# [Г] ) unset choice; choice="U";;
-# [У] ) unset choice; choice="E";;
-# [С] ) unset choice; choice="C";;
-# [Й] ) unset choice; choice="Q";;
+ [е] ) unset choice; choice="t";;
+ [Е] ) unset choice; choice="T";;
+ [г] ) unset choice; choice="u";;
+ [с] ) unset choice; choice="c";;
+ [й] ) unset choice; choice="q";;
+ [у] ) unset choice; choice="e";;
+ [ш] ) unset choice; choice="i";;
+ [Ш] ) unset choice; choice="i";;
+ [щ] ) unset choice; choice="o";;
+ [Щ] ) unset choice; choice="O";;
+ [Ў] ) unset choice; choice="O";;
+ [ў] ) unset choice; choice="o";;
+ [Г] ) unset choice; choice="U";;
+ [У] ) unset choice; choice="E";;
+ [С] ) unset choice; choice="C";;
+ [Й] ) unset choice; choice="Q";;
 
-#esac
+esac
 
-#}
+}
 #############################
 ###############################################################
 
@@ -921,23 +922,25 @@ printf '\r                                                          '
 order=0
 fi
 
+if [[ $sym = 2 ]]; then printf "\033[1A" ;
+
+fi
 if [[ $choice = " " ]]; then printf '\r\n'
  else printf "\r\n\033[1A"
 fi
-
 if [[ $order = 3 ]]; then 
     if [[ $loc = "ru" ]]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  C, O, T, I, Q ):   '
+printf '  Введите число от 0 до '$schs' (или  C, O, T, I, Q ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  C, O, T, I, Q ):   '
+printf '  Enter a number from 0 to '$schs' (or  C, O, T, I, Q ):   ' ; printf '                             '
     fi
         else
 if [[ $loc = "ru" ]]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):   '
+printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):   ' ; printf '                                '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):   '
+printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):   ' ; printf '                               '
     fi
 fi
 printf '\n'
@@ -948,15 +951,13 @@ if [[ $order = 3 ]]; then printf "\033[3C"; fi
 
 if [[ ${ch} -le 8 ]]; then
 SET_INPUT
-IFS="±"; read -n1  choice ; unset IFS
-#echo $choice
+IFS="±"; read -n 1 choice ; unset IFS ; sym=1 
 else
-read choice
+IFS="±"; read choice; unset IFS ; CYRILLIC_TRANSLIT ; sym=2 ; if  [[ ${choice} = "" ]]; then choice="  "; fi
 fi
 
 
 if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[46C"; fi
-
 
 
 if [[ ! $order = 3 ]]; then
