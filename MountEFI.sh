@@ -49,7 +49,7 @@ function set_font {
 
 SET_THEMES(){
 
-clear
+clear 
 if [[ -f ${HOME}/.custom_set ]]; then 
 rm ${HOME}/.custom_set
 else
@@ -64,13 +64,13 @@ clear
 
 CUSTOM_SET(){
 
-clear
+clear 
 
 osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
 osascript -e "tell application \"Terminal\" to set background color of window 1 to {1028, 12850, 65535}"
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to {65535, 65535, 65535}"
 
-clear
+clear 
 
 }
 
@@ -96,12 +96,12 @@ printf '............................................................\n'
 #echo "num = "$num
 #echo "pnum ="$pnum
 #echo "pos = "$pos
-echo "string = "$string
+#echo "string = "$string
 #echo "ttys001 --------------------------------------------"
-echo "mcheck = "$mcheck
+#echo "mcheck = "$mcheck
 #echo "mounted= "$mounted
-echo "was mounted = "$was_mounted
-echo "vname = "$vname
+#echo "was mounted = "$was_mounted
+#echo "vname = "$vname
 #echo "-----------------------------------------------------"
 #echo
 #echo "ttys000 --------------------------------------------"
@@ -109,6 +109,9 @@ echo "vname = "$vname
 #echo "Time000 = "$Time000
 #echo "-----------------------------------------------------"
 #echo "Time Diff = "$TimeDiff
+echo "xkbs = "$xkbs
+echo "layout name = "$layout_name
+echo "choice = "$choice
 
 printf '............................................................\n\n'
 sleep 0.5
@@ -209,32 +212,6 @@ if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app
 fi
 }
 
-# Определение функции обработки ввода кирилицы вместо латиницы
-#############################
-CYRILLIC_TRANSLIT(){
-
-if [[ ${choice} = [у?] ]]; then unset choice; choice="e"; fi
-#if [[ ${choice} = [г?] ]]; then unset choice; choice="u"; fi
-#if [[ ${choice} = [й?] ]]; then unset choice; choice="q"; fi
-#if [[ ${choice} = [с?] ]]; then unset choice; choice="c"; fi
-
-#case ${choice} in
-
-# [г?] ) unset choice; choice="u";;
-# [с?] ) unset choice; choice="c";;
- #[й?] ) unset choice; choice="q";;
-# [у?] ) unset choice; choice="e";;
-# [Г?] ) unset choice; choice="U";;
-# [У?] ) unset choice; choice="E";;
- #[С?] ) unset choice; choice="C";;
-# [Й?] ) unset choice; choice="Q";;
-
-#esac
-}
-#############################
-###############################################################
-
-
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
 
@@ -245,6 +222,8 @@ IFS=';'
 dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
+lines=22
+let "lines=lines+pos"
 lists_updated=1
 
 if [[ ! $pos = 0 ]]; then 
@@ -643,6 +622,7 @@ fi
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
 
+printf '\e[8;'${lines}';80t' && printf '\e[3J'
 
 var0=$pos
 num=0
@@ -733,23 +713,22 @@ cat  -v ~/.MountEFItemp.txt
 
 	let "ch++"
 	
-	printf '\n\n     '
+	printf '\n\n\n     '
 	printf '.%.0s' {1..68}
 	if [[ $loc = "ru" ]]; then
-
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
-			else
-	printf '\n      E  -   find and mount this system drive EFI \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
-	fi
-
-	
-	if [[ $loc = "ru" ]]; then
+    printf '      I  -   дополнительное меню                     \n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
-	printf '      Q  -   close terminal and exit from the program\n' 
-	fi
+	printf '\n      E  -   find and mount this system drive EFI \n' 
+	printf '      U  -   unmount ALL mounted  EFI partitions \n'
+    printf '      I  -   extra menu                      \n' 
+	printf '      Q   -  close terminal and exit from the program\n' 
+	     fi
+
+	
+
 
 	
 printf '\n\n' 
@@ -760,7 +739,7 @@ printf '\n\n'
 # Определение функции обновления информации  экрана при подключении и отключении разделов
 UPDATELIST(){
 
-    clear && printf '\e[3J'
+    clear && printf '\e[8;'${lines}';80t' && printf '\e[3J'
 
     if [[ ! $order = 3 ]] && [[ ! $order = 4 ]]; then
 	     if [[ $order = 0 ]]; then
@@ -791,32 +770,38 @@ fi
 cat  -v ~/.MountEFItemp.txt
 printf "\r\033[1A"
 	
-	printf '\n\n\n     '
+	printf '\n\n\n\n     '
 	printf '.%.0s' {1..68}
 if [[ ! $order = 3 ]]; then
 	     if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
+    printf '      I  -   дополнительное меню                     \n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions \n' 
+	printf '      U  -   unmount ALL mounted  EFI partitions \n'
+    printf '      I  -   extra menu                      \n' 
 	printf '      Q   -  close terminal and exit from the program\n' 
 	     fi
 	else
         if [[ $loc = "ru" ]]; then
 	printf '\n      C  -   найти и подключить EFI с загрузчиком Clover \n'
 	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
-	printf '      T  -   сменить тему терминала на следующем запуске программы\n' 
+	printf '      T  -   сменить тему терминала на следующем запуске программы\n'
+    printf '      I  -   главное меню                     \n'
+    printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
 	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
 	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
-	printf '      T   -  change the terminal theme to next program boot\n' 
+	printf '      T   -  change the terminal theme to next program boot\n'
+    printf '      I  -   main menu                      \n'
+    printf '      Q   -  close terminal and exit from the program\n' 
 	     fi
 fi
 
 
-	printf '\n\n'
+	printf '\n'
 	
 	printf "\r\n\033[1A"
 	
@@ -840,9 +825,81 @@ ADVANCED_MENUE(){
 
     order=3; UPDATELIST; GETKEYS
 }
+##################### Детект раскладки  и адаптация ввода для двухбайтовых UTF-8  #############
+SET_INPUT(){
+
+layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
+xkbs=1
+case ${layout_name} in
+ "Russian"          ) xkbs=2 ;;
+ "RussianWin"       ) xkbs=2 ;;
+ "Russian-Phonetic" ) xkbs=2 ;;
+ "Ukrainian"        ) xkbs=2 ;;
+ "Ukrainian-PC"     ) xkbs=2 ;;
+ "Byelorussian"     ) xkbs=2 ;;
+ esac
+if [[ $xkbs = 2 ]]; then 
+    cd $(dirname $0)
+    if [[ -f xkbswitch ]]; then
+layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleEnabledInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
+IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_name[@]}
+keyboard="0"
+while [ $num != 0 ]; do 
+case ${layouts_names[num]} in
+ "ABC"                ) keyboard="US" ;;
+ "US Extended"        ) keyboard="USExtended" ;;
+ "USInternational-PC" ) keyboard=${layouts_names[num]} ;;
+ "U.S."               ) keyboard=${layouts_names[num]} ;;
+ "British"            ) keyboard=${layouts_names[num]} ;;
+ "British-PC"         ) keyboard=${layouts_names[num]} ;;
+esac
+        if [[ ! $keyboard = "0" ]]; then $num=1; fi
+let "num--"
+done
+
+if [[ ! $keyboard = "0" ]]; then xkbswitch -se $keyboard; fi
+   fi
+
+printf '\n\n                          ! Смените раскладку на латиницу !'
+printf "\r\n\033[3A"
+
+fi
+}
+
+# Определение функции обработки ввода кирилицы вместо латиницы
+#############################
+CYRILLIC_TRANSLIT(){
+
+case ${choice} in
+ 
+ [е] ) unset choice; choice="t";;
+ [Е] ) unset choice; choice="T";;
+ [г] ) unset choice; choice="u";;
+ [с] ) unset choice; choice="c";;
+ [й] ) unset choice; choice="q";;
+ [у] ) unset choice; choice="e";;
+ [ш] ) unset choice; choice="i";;
+ [Ш] ) unset choice; choice="i";;
+ [щ] ) unset choice; choice="o";;
+ [Щ] ) unset choice; choice="O";;
+ [Ў] ) unset choice; choice="O";;
+ [ў] ) unset choice; choice="o";;
+ [Г] ) unset choice; choice="U";;
+ [У] ) unset choice; choice="E";;
+ [С] ) unset choice; choice="C";;
+ [Й] ) unset choice; choice="Q";;
+
+esac
+
+}
+#############################
+###############################################################
+
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
+
+#cd $(dirname $0)
 
 unset choice
 while [[ ! ${choice} =~ ^[0-9uUqQ]+$ ]]; do
@@ -853,23 +910,40 @@ printf '\r                                                          '
 order=0
 fi
 printf "\r\n\033[1A"
-	if [[ $loc = "ru" ]]; then
+if [[ $order = 3 ]]; then 
+    if [[ $loc = "ru" ]]; then
 let "schs=$ch-1"
-
-printf '  Введите число от 0 до '$schs' (или  U, E, Q ):   '
+printf '  Введите число от 0 до '$schs' (или  C, O, T, I, Q ):   '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):   '
+printf '  Enter a number from 0 to '$schs' (or  C, O, T, I, Q ):   '
+    fi
+        else
+if [[ $loc = "ru" ]]; then
+let "schs=$ch-1"
+printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):   '
+			else
+printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):   '
+    fi
+fi
+printf '\n'
+printf '                                                                                \n'
+printf '                                                                                '
+printf "\r\n\033[3A\033[46C"
+if [[ $order = 3 ]]; then printf "\033[3C"; fi
 
-	fi
-
-
-if [[ ${ch} -le 8 ]]; then 
-read   -n1 choice
+if [[ ${ch} -le 8 ]]; then
+#SET_INPUT
+read -n1  choice
+#echo $choice
 else
-read   choice
+read choice
 fi
 
-CYRILLIC_TRANSLIT
+if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[3A"; fi
+#if [[ $xkbs = 2 ]]; then CYRILLIC_TRANSLIT; fi
+
+stop=" после транслитерации "; DEBUG
+
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiI]$ ]]; then unset choice; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
@@ -879,7 +953,7 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOtTiI]$ ]]; then unset choice; fi
 if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
-if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; ˇorder=4; fi
+if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
@@ -908,28 +982,10 @@ string=`echo ${dlist[$pnum]}`
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 if [[ ! $mcheck = "Yes" ]]; then
 
-    if [ $flag = 1 ]; then 
-                printf '\n  '; sudo printf ' '
-            sudo diskutil quiet mount  /dev/${string}
-        else 
-            diskutil quiet mount  /dev/${string}
-    fi
-    mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
- if [[ ! $mcheck = "Yes" ]]; then
-clear
-	if [[ $loc = "ru" ]]; then
-printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
-printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
-printf 'Нажмите любую клавишу закрыть терминал  '
-			else
-printf '\n\n  !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
-printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
-printf 'Press any key to close the window  '
-	fi
- sleep 0.5
-read  -n1 demo
-EXIT_PROGRAM
- fi
+    DO_MOUNT
+
+    MOUNTED_CHECK
+
 	order=0; UPDATELIST
 
 else 
