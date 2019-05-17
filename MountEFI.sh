@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# MountEFI версия 1.59 - появился конфиг - скрытый файл .MountEFIconf.plist в папке пользователя
+# MountEFI версия 1.6 - появился конфиг - скрытый файл .MountEFIconf.plist в папке пользователя
 # Параметр для темы теперь передается через конфиг, параметр: Theme формат: string значения: system или built-in
 # Через конфиг можно передать пароль для sudo, параметр: LoginPassword формат: string, значение: пароль пользователя 
 # В меню добавлена клавиша P для вызова интерактивного диалога сохранения/удаления пароля пользоваеля  в конфиге
 # Исправлен баг пропадания строки с Q из основного меню. Строка пропадала после возврата из дополнительного меню и нажатия U
 # при смене темы сделано уведомление на экране чтобы видеть какая тема будет при следующем запуске
 # поправлено форматирование вывода в английском интерфейсе
+# добавлена проверка пароля перед сохранением
+# добавлена функция сохраения пароля для системы с одним разделом EFI
 
 clear  && printf '\e[3J'
 
@@ -289,14 +291,27 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
                     fi
                 printf '\n'
                 read -s mypassword
-                if [[ $mypassword = "" ]]; then mypassword=`echo "ENTER"`; fi
+                if [[ $mypassword = "" ]]; then mypassword="?"; fi
+                if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
                 plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist
+                printf "\r\033[1A"
                 if [[ $loc = "ru" ]]; then
                 printf '\nпароль '$mypassword' сохранён. нажмите любую клавишу для продолжения ...'
                         else
                 printf '\n password '$mypassword' saved. press any key to continue....'
                     fi
                 read -n 1 demo
+                else
+                printf "\r\033[1A"
+                    if [[ $loc = "ru" ]]; then
+                printf '\nНе верный пароль '$mypassword' не сохранён.\n'
+                printf 'нажмите любую клавишу для продолжения ...'
+                        else
+                printf '\nWrong password '$mypassword' not saved. \n'
+                printf 'press any key to continue....'
+                    fi
+                read -n 1 demo
+        fi
     fi
 fi
 }
@@ -387,22 +402,16 @@ EXIT_PROGRAM
 DO_MOUNT(){
 
 		if [[ $flag = 1 ]]; then
-
-            
-
-       	 printf '\n\n  '
-
-            if [[ ! $mypassword = "0" ]]; then
+        printf '\n\n  '
+        if [[ ! $mypassword = "0" ]]; then
                 echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
                     else
-            sudo printf ' '
-
-        	 	sudo diskutil quiet mount  /dev/${string}
-                    
-	printf "\r\033[1A"
-	printf '                                                                  '
-	printf "\r\n\033[2A"
-            fi
+                        sudo printf ' '
+                        sudo diskutil quiet mount  /dev/${string}
+                        printf "\r\033[1A"
+                        printf '                                                                  '
+                        printf "\r\n\033[2A"
+         fi
 
        		 else
 
@@ -411,6 +420,7 @@ DO_MOUNT(){
 		fi
 
 }
+
 
 
 
@@ -702,7 +712,7 @@ fi
 ###################################################################################
 GET_USER_PASSWORD
 GETARR
-
+pos=1
 
 if [[ $pos = 1 ]]; then
     clear 
@@ -749,6 +759,30 @@ if [[ $loc = "ru" ]]; then
 	printf '\n              '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"'\n' 
     printf '\n     '
 	printf '.%.0s' {1..68}
+
+if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
+        if [[ $loc = "ru" ]]; then
+    printf '\n\nДля перехода в меню сохранения пароля нажмите Enter\n'
+    printf 'или просто введите пароль для подключения EFI: '
+         else
+    printf '\n\nTo save your password permanent press Enter\n'
+    printf 'or just enter your password to mount EFI: '
+        fi
+    read -s mypassword
+    if [[ $mypassword = "" ]]; then SET_USER_PASSWORD; GET_USER_PASSWORD; fi
+    if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+    printf '\nOK.'
+        else
+            if [[ ! $mypassword = "0" ]]; then
+                        if [[ $loc = "ru" ]]; then
+                printf '\nНе верный пароль '$mypassword' \n'
+                                        else
+                printf '\nWrong password '$mypassword' \n'
+                        fi
+            mypassword="0"
+            fi
+        fi
+    fi        
 			
 DO_MOUNT
 
