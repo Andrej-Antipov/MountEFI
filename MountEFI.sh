@@ -1,6 +1,32 @@
 #!/bin/bash
 
+# MountEFI версия 1.59 - появился конфиг - скрытый файл .MountEFIconf.plist в папке пользователя
+# Параметр для темы теперь передается через конфиг, параметр: Theme формат: string значения: system или built-in
+# Через конфиг можно передать пароль для sudo, параметр: LoginPassword формат: string, значение: пароль пользователя 
+# В меню добавлена клавиша P для вызова интерактивного диалога сохранения/удаления пароля пользоваеля  в конфиге
+# Исправлен баг пропадания строки с Q из основного меню. Строка пропадала после возврата из дополнительного меню и нажатия U
+# при смене темы сделано уведомление на экране чтобы видеть какая тема будет при следующем запуске
+# поправлено форматирование вывода в английском интерфейсе
+
+clear  && printf '\e[3J'
+
 cd $(dirname $0)
+
+if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then
+        if [[ -f DefaultConf.plist ]]; then
+            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+        else
+#            touch ${HOME}/.MountEFIconf.plist
+            echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
+            echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
+            echo '<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '<key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '<string>system</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '</plist>' >> ${HOME}/.MountEFIconf.plist
+    fi                    
+fi
 
 # Определение функций кастомизации интерфейса #############################################
 ############################################################################################
@@ -49,14 +75,36 @@ function set_font {
 
 SET_THEMES(){
 
-clear 
-if [[ -f ${HOME}/.custom_set ]]; then 
-rm ${HOME}/.custom_set
+HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "Theme"  | tr -d '\n'`
+if [[ ! $HasTheme = "Theme" ]]; then
+plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
 else
-touch ${HOME}/.custom_set
-fi
-touch ${HOME}/.restart_flag
-clear 
+ theme=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+   if [[ $theme = "system" ]]; then 
+            plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
+                printf '\n\n'
+                    if [[ $loc = "ru" ]]; then
+                echo "включена встроенная тема. выполните перезапуск программы" 
+                echo "нажмите любую клавишу для возврата в меню..."
+                        else
+                echo "set up built-in theme. restart required. "
+                echo "press any key return to menu ...."
+                    fi
+                read -n 1 demo
+        else
+            plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+                printf '\n\n'
+                    if [[ $loc = "ru" ]]; then
+                echo "включена системная тема. выполните перезапуск программы" 
+                echo "нажмите любую клавишу для возврата в меню..."
+                        else
+                echo "set up system theme. restart required. "
+                echo "press any key return to menu ...."
+                    fi
+                read -n 1 demo    
+    fi
+fi            
+
 }
 
 
@@ -74,10 +122,18 @@ clear
 
 }
 
-
-if [[ -f ${HOME}/.custom_set ]]; then 
-CUSTOM_SET
+GET_THEME(){
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "Theme"  | tr -d '\n'`
+    if [[ $HasTheme = "Theme" ]]; then
+theme=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    fi
 fi
+}
+
+theme="system"
+GET_THEME
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
 
 # функция отладки ###############################################
 demo=0
@@ -93,7 +149,7 @@ printf '............................................................\n'
 #echo "ch = "$ch
 #echo "dlist = "${dlist[@]}
 #echo "nlist = "${nlist[@]}
-echo "num = "$num
+#echo "num = "$num
 #echo "pnum ="$pnum
 #echo "pos = "$pos
 #echo "string = "$string
@@ -109,12 +165,14 @@ echo "num = "$num
 #echo "Time000 = "$Time000
 #echo "-----------------------------------------------------"
 #echo "Time Diff = "$TimeDiff
-echo "xkbs = "$xkbs
-echo "layout name = "$layout_name
-echo "choice = "$choice
-echo " layouts = "$layouts
-echo "keyboard = "$keyboard
-echo "layouts names = "${layouts_names[$num]}
+#echo "xkbs = "$xkbs
+#echo "layout name = "$layout_name
+#echo "choice = "$choice
+#echo " layouts = "$layouts
+#echo "keyboard = "$keyboard
+#echo "layouts names = "${layouts_names[$num]}
+#echo "mypassword = "$mypassword
+#echo "login = "$login
 
 printf '............................................................\n\n'
 sleep 0.5
@@ -199,6 +257,62 @@ lists_updated=0
 
 # Блок определения функций ########################################################
 
+
+# Установка/удаление пароля для sudo через конфиг
+SET_USER_PASSWORD(){
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+    if [[ $login = "LoginPassword" ]]; then
+                printf '\n\n'
+                if [[ $loc = "ru" ]]; then
+                echo "удалить сохранённый пароль из программы?"
+                        else
+                echo "delete saved password from this programm?"
+                    fi
+                read -p "(y/N) " -n 1 -r -s
+                if [[ $REPLY =~ ^[yY]$ ]]; then
+                plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist
+                if [[ $loc = "ru" ]]; then
+                echo "пароль удалён. нажмите любую клавишу для продолжения ..."
+                        else
+                echo "password removed. press any key to continue...."
+                    fi
+                read -n 1 demo
+                fi
+        else
+                
+                printf '\n\n'
+                    if [[ $loc = "ru" ]]; then
+                echo "введите ваш пароль для постоянного хранения:"
+                        else
+                echo "enter password to save it into this programm:"
+                    fi
+                printf '\n'
+                read -s mypassword
+                if [[ $mypassword = "" ]]; then mypassword=`echo "ENTER"`; fi
+                plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist
+                if [[ $loc = "ru" ]]; then
+                printf '\nпароль '$mypassword' сохранён. нажмите любую клавишу для продолжения ...'
+                        else
+                printf '\n password '$mypassword' saved. press any key to continue....'
+                    fi
+                read -n 1 demo
+    fi
+fi
+}
+
+#Получение пароля для sudo из конфига
+GET_USER_PASSWORD(){
+mypassword="0"
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+    if [[ $login = "LoginPassword" ]]; then
+mypassword=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    fi
+fi
+#stop="после функции GET_USER_PASSWORD"; DEBUG
+}
+
 # Возвращает в переменной TTYcount 0 если наш терминал один
 CHECK_TTY_COUNT(){
 term=`ps`
@@ -225,7 +339,7 @@ IFS=';'
 dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
-lines=22
+lines=25
 let "lines=lines+pos"
 lists_updated=1
 
@@ -274,13 +388,21 @@ DO_MOUNT(){
 
 		if [[ $flag = 1 ]]; then
 
-       	 printf '\n\n  '; sudo printf ' '
+            
+
+       	 printf '\n\n  '
+
+            if [[ ! $mypassword = "0" ]]; then
+                echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
+                    else
+            sudo printf ' '
 
         	 	sudo diskutil quiet mount  /dev/${string}
-
+                    
 	printf "\r\033[1A"
 	printf '                                                                  '
 	printf "\r\n\033[2A"
+            fi
 
        		 else
 
@@ -354,9 +476,17 @@ mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | se
 		printf '\n\n  '; sudo printf ' '
 
 		sleep 1.5
+            
 
+                if [[ ! $mypassword = "0" ]]; then
 
+                echo $mypassword | sudo -S diskutil quiet umount force  /dev/${string} 2>/dev/null
+            
+                    else
+            
         	 	sudo diskutil quiet umount force  /dev/${string}
+
+                    fi
 
 	printf "\r\033[1A"
 	printf '                                                                  '
@@ -381,14 +511,14 @@ noefi=1
 
 while [ $var1 != 0 ] 
 do 
-stop="перед PNUM"; DEBUG
+#stop="перед PNUM"; DEBUG
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
-stop="после mcheck"; DEBUG	
+#stop="после mcheck"; DEBUG	
        	
 	DO_MOUNT	
 
@@ -396,28 +526,28 @@ stop="после mcheck"; DEBUG
 
 	else
 		was_mounted=1
-stop="после was_mounted=1"; DEBUG
+#stop="после was_mounted=1"; DEBUG
 	fi
-stop="перед vname"; DEBUG
+#stop="перед vname"; DEBUG
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-stop="после VNAME"; DEBUG
+#stop="после VNAME"; DEBUG
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-stop="после проверки наличия bootx64"; DEBUG
+#stop="после проверки наличия bootx64"; DEBUG
 					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover revision:"` ; check_loader=`echo ${check_loader:0:16}`
-stop="перед проверкой на кловерность"; DEBUG
+#stop="перед проверкой на кловерность"; DEBUG
                 					if [[ ${check_loader} = "Clover revision:" ]]; then
-stop="после проверки на кловерность"; DEBUG
+#stop="после проверки на кловерность"; DEBUG
                        						 open "$vname/EFI"
 							 was_mounted=1
-stop="после открытия папки EFI"; DEBUG
+#stop="после открытия папки EFI"; DEBUG
                  fi   
 	   fi
 	fi
 
-stop="перед  проверкой на отключение раздела"; DEBUG
+#stop="перед  проверкой на отключение раздела"; DEBUG
 		if [[ "$was_mounted" = 0 ]]; then
-stop="после проверки на отключение раздела"; DEBUG
+#stop="после проверки на отключение раздела"; DEBUG
 	diskutil quiet  umount  force /dev/${string}; mounted=0
 		
 		UNMOUNTED_CHECK		
@@ -447,14 +577,14 @@ noefi=1
 
 while [ $var1 != 0 ] 
 do 
-stop="перед PNUM"; DEBUG
+#stop="перед PNUM"; DEBUG
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
-stop="после mcheck"; DEBUG	
+#stop="после mcheck"; DEBUG	
        	
 	DO_MOUNT	
 
@@ -549,8 +679,10 @@ printf "\r\033[2A"
 printf '\r                                                          '
 printf '\n\n'
 
+
 nogetlist=1
 if [[ ${noefi} = 0 ]]; then order=2; fi
+
 }
 
 # У Эль Капитан другой термин для размера раздела
@@ -568,7 +700,9 @@ fi
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
+GET_USER_PASSWORD
 GETARR
+
 
 if [[ $pos = 1 ]]; then
     clear 
@@ -581,22 +715,40 @@ mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | s
             
                     
                     if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
 	                 fi
                     	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-		dlenth=`echo ${#dstring}`
-    	printf '\n\n     '
-	let "corr=9-dlenth"
-	printf  ${string}"%"$corr"s"
+		
+    	printf '\n     '
+	     let "corr=0"
 
     	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 	
 	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-    	corr=`echo ${#dsize}`
-    	let "corr=corr-5"
-    	let "corr=6-corr"
+    	
+    	
+
+    	
+    		let "scorr=5"
+            let "dcorr=5"
+
+if [[ $loc = "ru" ]]; then
+	printf '  Подключить (открыть) EFI раздел:  \n\n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '\n' 
+		else
+	printf '   Mount (open folder) EFI partition:  \n\n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '\n' 
+        fi
+            
+	printf '\n              '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"'\n' 
+    printf '\n     '
+	printf '.%.0s' {1..68}
 			
 DO_MOUNT
 
@@ -722,12 +874,14 @@ cat  -v ~/.MountEFItemp.txt
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
     printf '      I  -   дополнительное меню                     \n'
+    printf '      P  -   сохранить/удалить пароль пользователя \n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n'
-    printf '      I  -   extra menu                      \n' 
-	printf '      Q   -  close terminal and exit from the program\n' 
+    printf '      I  -   extra menu                      \n'
+    printf '      P  -   save/delete user password\n'  
+	printf '      Q  -   close terminal and exit from the program\n' 
 	     fi
 
 	
@@ -771,8 +925,9 @@ fi
 		fi
 
 cat  -v ~/.MountEFItemp.txt
-printf "\r\033[1A"
-	
+#printf "\r\033[1A"
+	if [[ ! $order = 1 ]] || [[ ! $order = 0 ]]; then printf "\r\033[1A"; fi
+    
 	printf '\n\n\n\n     '
 	printf '.%.0s' {1..68}
 if [[ ! $order = 3 ]]; then
@@ -780,12 +935,14 @@ if [[ ! $order = 3 ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
     printf '      I  -   дополнительное меню                     \n'
-	printf '      Q  -   закрыть окно и выход из программы\n' 
+    printf '      P  -   сохранить/удалить пароль пользователя \n'
+	printf '      Q  -   закрыть окно и выход из программы\n\n' 
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n'
-    printf '      I  -   extra menu                      \n' 
-	printf '      Q   -  close terminal and exit from the program\n' 
+    printf '      I  -   extra menu                      \n'
+    printf '      P  -   save/delete user password\n' 
+	printf '      Q  -   close terminal and exit from the program\n\n' 
 	     fi
 	else
         if [[ $loc = "ru" ]]; then
@@ -793,13 +950,13 @@ if [[ ! $order = 3 ]]; then
 	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
 	printf '      T  -   сменить тему терминала на следующем запуске программы\n'
     printf '      I  -   главное меню                     \n'
-    printf '      Q  -   закрыть окно и выход из программы\n' 
+    printf '      Q  -   закрыть окно и выход из программы\n\n' 
 			else
 	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
 	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
-	printf '      T   -  change the terminal theme to next program boot\n'
+	printf '      T  -   change the terminal theme to next program boot\n'
     printf '      I  -   main menu                      \n'
-    printf '      Q   -  close terminal and exit from the program\n' 
+    printf '      Q  -   close terminal and exit from the program\n\n' 
 	     fi
 fi
 
@@ -823,6 +980,7 @@ printf '  Enter a number from 0 to '$schs' (or  U, E, Q ):  ';  printf '        
 	printf '\n\n  Unmounting EFI partitions ....  '
 			fi
 	fi
+
 }
 # Конец определения функции UPDATELIST ######################################################
 
@@ -835,7 +993,7 @@ SET_INPUT(){
 
 layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
 xkbs=1
-stop="перед проверкой раскладки"; DEBUG
+#stop="перед проверкой раскладки"; DEBUG
 case ${layout_name} in
  "Russian"          ) xkbs=2 ;;
  "RussianWin"       ) xkbs=2 ;;
@@ -844,7 +1002,7 @@ case ${layout_name} in
  "Ukrainian-PC"     ) xkbs=2 ;;
  "Byelorussian"     ) xkbs=2 ;;
  esac
-stop="после проверки раскладки"; DEBUG
+#stop="после проверки раскладки"; DEBUG
 if [[ $xkbs = 2 ]]; then 
 cd $(dirname $0)
     if [[ -f "./xkbswitch" ]]; then 
@@ -852,7 +1010,7 @@ declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleEnabledInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
 IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 keyboard="0"
-stop="после проверки наличия xkbswitch"; DEBUG
+#stop="после проверки наличия xkbswitch"; DEBUG
 while [ $num != 0 ]; do 
 case ${layouts_names[$num]} in
  "ABC"                ) keyboard=${layouts_names[$num]} ;;
@@ -862,7 +1020,7 @@ case ${layouts_names[$num]} in
  "British"            ) keyboard=${layouts_names[$num]} ;;
  "British-PC"         ) keyboard=${layouts_names[$num]} ;;
 esac
-stop="после поиска английской раскладки"; DEBUG
+#stop="после поиска английской раскладки"; DEBUG
         if [[ ! $keyboard = "0" ]]; then num=1; fi
 let "num--"
 done
@@ -900,6 +1058,8 @@ case ${choice} in
  [У] ) unset choice; choice="E";;
  [С] ) unset choice; choice="C";;
  [Й] ) unset choice; choice="Q";;
+ [з] ) unset choice; choice="p";;
+ [З] ) unset choice; choice="P";;
 
 esac
 
@@ -929,25 +1089,25 @@ if [[ $choice = " " ]]; then printf '\r\n'
  else printf "\r\n\033[1A"
 fi
 if [[ $order = 3 ]]; then 
+    let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
-let "schs=$ch-1"
 printf '  Введите число от 0 до '$schs' (или  C, O, T, I, Q ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  C, O, T, I, Q ):   ' ; printf '                             '
+printf '  Enter a number from 0 to '$schs' (or  C, O, T, I, Q ):   ' ; printf '                           '
     fi
         else
-if [[ $loc = "ru" ]]; then
-let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):   ' ; printf '                                '
+            let "schs=$ch-1"
+            if [[ $loc = "ru" ]]; then
+printf '  Введите число от 0 до '$schs' (или  U, E, I, P, Q ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):   ' ; printf '                               '
+printf '  Enter a number from 0 to '$schs' (or  U, E, I, P, Q ):   ' ; printf '                           '
     fi
 fi
 printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
-printf "\r\n\033[3A\033[46C"
-if [[ $order = 3 ]]; then printf "\033[3C"; fi
+printf "\r\n\033[3A\033[49C"
+if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 
 if [[ ${ch} -le 8 ]]; then
 SET_INPUT
@@ -957,15 +1117,16 @@ IFS="±"; read choice; unset IFS ; CYRILLIC_TRANSLIT ; sym=2 ; if  [[ ${choice} 
 fi
 
 
-if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[46C"; fi
+if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
 
 
 if [[ ! $order = 3 ]]; then
-if [[ ! $choice =~ ^[0-9uUqQeEiI]$ ]]; then unset choice; fi
-if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; fi
+if [[ ! $choice =~ ^[0-9uUqQeEiIpP]$ ]]; then unset choice; fi
+if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
+if [[ ${choice} = [pP] ]]; then SET_USER_PASSWORD; choice="0"; order=4; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOtTiI]$ ]]; then unset choice; fi
 if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
