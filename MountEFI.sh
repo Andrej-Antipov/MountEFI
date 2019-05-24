@@ -1,144 +1,7 @@
 #!/bin/bash
 
-# MountEFI версия 1.6 - появился конфиг - скрытый файл .MountEFIconf.plist в папке пользователя
-# Параметр для темы теперь передается через конфиг, параметр: Theme формат: string значения: system или built-in
-# Через конфиг можно передать пароль для sudo, параметр: LoginPassword формат: string, значение: пароль пользователя 
-# В меню добавлена клавиша P для вызова интерактивного диалога сохранения/удаления пароля пользоваеля  в конфиге
-# Исправлен баг пропадания строки с Q из основного меню. Строка пропадала после возврата из дополнительного меню и нажатия U
-# при смене темы сделано уведомление на экране чтобы видеть какая тема будет при следующем запуске
-# поправлено форматирование вывода в английском интерфейсе
-# добавлена проверка пароля перед сохранением
-# добавлена функция сохраения пароля для системы с одним разделом EFI
-
-clear  && printf '\e[3J'
-
-cd $(dirname $0)
-
-if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then
-        if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
-        else
-#            touch ${HOME}/.MountEFIconf.plist
-            echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
-            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
-            echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
-            echo '<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '<key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '<string>system</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '</plist>' >> ${HOME}/.MountEFIconf.plist
-    fi                    
-fi
-
-# Определение функций кастомизации интерфейса #############################################
-############################################################################################
-# Colors for Apple Terminal
-#
-
-
-function list_colors {
-    cat colors.csv
-}
-
-function grep_apple_color {
-    grep "$*" colors.csv
-}
-
-function get_apple_color {
-    egrep "(^|,)$*(,|\t)" colors.csv | cut -f 6
-}
-
-function set_foreground_color {
-    color=$(get_apple_color $*)
-    if [ "$color" != "" ] ; then
-        osascript -e "tell application \"Terminal\" to set normal text color of window 1 to ${color}"
-        echo "Normal test color set to: $*: $color"
-    fi
-}    
-
-function set_background_color {
-    color=$(get_apple_color $*)
-    if [ "$color" != "" ] ; then
-        osascript -e "tell application \"Terminal\" to set background color of window 1 to ${color}"
-        echo "Background color set to: $*: $color"
-    fi
-}    
-
-function set_theme {
-    set_foreground_color $1
-    set_background_color $2
-}    
-
-function set_font {
-    osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\""
-    osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2"
-}
-#################################################################################################
-
-SET_THEMES(){
-
-HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "Theme"  | tr -d '\n'`
-if [[ ! $HasTheme = "Theme" ]]; then
-plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
-else
- theme=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-   if [[ $theme = "system" ]]; then 
-            plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
-                printf '\n\n'
-                    if [[ $loc = "ru" ]]; then
-                echo "включена встроенная тема. выполните перезапуск программы" 
-                echo "нажмите любую клавишу для возврата в меню..."
-                        else
-                echo "set up built-in theme. restart required. "
-                echo "press any key return to menu ...."
-                    fi
-                read -n 1 demo
-        else
-            plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
-                printf '\n\n'
-                    if [[ $loc = "ru" ]]; then
-                echo "включена системная тема. выполните перезапуск программы" 
-                echo "нажмите любую клавишу для возврата в меню..."
-                        else
-                echo "set up system theme. restart required. "
-                echo "press any key return to menu ...."
-                    fi
-                read -n 1 demo    
-    fi
-fi            
-
-}
-
-
-#################################################################################################
-
-CUSTOM_SET(){
-
-clear 
-
-osascript -e "tell application \"Terminal\" to set the font size of window 1 to 12"
-osascript -e "tell application \"Terminal\" to set background color of window 1 to {1028, 12850, 65535}"
-osascript -e "tell application \"Terminal\" to set normal text color of window 1 to {65535, 65535, 65535}"
-
-clear 
-
-}
-
-GET_THEME(){
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "Theme"  | tr -d '\n'`
-    if [[ $HasTheme = "Theme" ]]; then
-theme=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-    fi
-fi
-}
-
-theme="system"
-GET_THEME
-if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
-
 # функция отладки ###############################################
-demo=0
+demo1="0"
 deb=0
 
 DEBUG(){
@@ -151,7 +14,7 @@ printf '............................................................\n'
 #echo "ch = "$ch
 #echo "dlist = "${dlist[@]}
 #echo "nlist = "${nlist[@]}
-#echo "num = "$num
+echo "num = "$num
 #echo "pnum ="$pnum
 #echo "pos = "$pos
 #echo "string = "$string
@@ -169,18 +32,368 @@ printf '............................................................\n'
 #echo "Time Diff = "$TimeDiff
 #echo "xkbs = "$xkbs
 #echo "layout name = "$layout_name
-#echo "choice = "$choice
+echo "var2 = "$var2
 #echo " layouts = "$layouts
 #echo "keyboard = "$keyboard
 #echo "layouts names = "${layouts_names[$num]}
 #echo "mypassword = "$mypassword
 #echo "login = "$login
+echo "var3 = "$var3
+echo "current = "$current
+echo "pcount = "$pcount
+echo "plist = "${plist[@]}
+echo "plist[num] = "${plist[$num]}
+echo "demo = "$demo
+echo "pik = "$pik
 
 printf '............................................................\n\n'
 sleep 0.5
-read  -n1 demo
+read  -n1 demo1
 fi
 }
+#########################################################################################################################################
+
+# MountEFI версия 1.61
+# Добавились новые параметры в конфиг и новые средства работы с ними в программе
+# Параметр Locale тип string значения auto,ru,en. Выбор автодетекта локали или принудитеьное указание желаемого
+# Параметр Menue тип string значение auto, always. При указании always меню будет показано и для системы с одним разделом EFI
+# Параметры для темы: Presets типа Dictonary содержит пресеты встроенных тем. 
+# Параметр CurrentPreset содержит текущее имя пресета по умоланию из списка Presets. 
+# Параметры BackgroundColor и TextColor из пресетов - это названия цветов из файла colors.cvs, которые преобразуются программой в коды для AppleScript 
+# Параметры пресетов применяютя если параметр Theme установлен в built-in как и ранее, но для встроенных больше не нужен перезапуск программмы для смены тем. 
+# Появилось меню с перебором пресетов если их несколько. Вход в меню по кнопке T как и ранее. 
+# Добавлены аргументы для скрипта если запустить его в командной строке. -d сбрасывает  конфиг по умолчанию. -r удаляет сохранённый пароль в конфиге.
+# аргумент -m аналогичен параметру конфига Menue - always
+# в следующей версии появится отдельный скрипт для настройки конфига. Пока из программы меняются только параметры LoginPassword,Theme,CurrentPreset
+# При первом запуске создается новый конфиг, прежнее значения параметра Theme, и если он есть, параметра LoginPassword - переносятся в новый конфиг
+# Прежняя голубая встроенная тема сохранена как пресет Ocean. По умолчанию теперь пресет BlueSky - другой менее яркий цвет фона
+# Настройки по умолчанию можно редактировать в файле DefaultConf.plist в папке со скриптом (в папке Resources апплета). 
+# Если этого файла DefaultConf.plist нет то скрипт заполнит конфиг из своих внутренних данных. (функции FILL_CONFIG ) 
+ 
+
+clear  && printf '\e[3J'
+
+cd $(dirname $0)
+
+if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then rm ${HOME}/.MountEFIconf.plist; fi
+fi
+
+if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then 
+login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+    if [[ $login = "LoginPassword" ]]; then
+       plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist
+    fi 
+  fi
+fi
+
+FILL_CONFIG(){
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
+            echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
+            echo '<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>DodgerBlue4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>MidnightBlue</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>Yellow</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>GreenField</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>DarkGreen</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>PaleGoldenrod</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>Ocean</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>blue1</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>Tolerance</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>ivory4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>red4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>system</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '</plist>' >> ${HOME}/.MountEFIconf.plist
+
+
+}
+
+########################## Инициализация нового конфига ##################################################################################
+
+deleted=0
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+      if [[ ! $strng = "CurrentPreset" ]]; then
+        mypassword="0"
+        login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+                if [[ $login = "LoginPassword" ]]; then
+        mypassword=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                fi
+        theme=`cat ${HOME}/.MountEFIconf.plist |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        rm ${HOME}/.MountEFIconf.plist
+        deleted=1
+    fi
+fi
+         
+
+if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then
+        if [[ -f DefaultConf.plist ]]; then
+            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+        else
+             FILL_CONFIG
+        fi
+fi
+
+if [[ $deleted = 1 ]]; then
+    if [[ ! $mypassword = 0 ]]; then 
+    plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist
+    fi
+    plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
+fi
+#########################################################################################################################################
+
+menue=0
+HasMenue=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Menue" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ $HasMenue = "always" ]]; then menue=1; fi
+if [ "$1" = "-m" ] || [ "$1" = "-M" ]  || [ "$1" = "-menue" ]  || [ "$1" = "-MENUE" ]; then menue=1; fi 
+
+# Определение функций кастомизации интерфейса #############################################
+############################################################################################
+# Colors for Apple Terminal
+#
+
+function grep_apple_color {
+    grep "$*" colors.csv
+}
+
+function get_apple_color {
+    egrep "(^|,)$*(,|\t)" colors.csv | cut -f 6
+}
+
+function set_foreground_color {
+    color=$(get_apple_color $*)
+    if [ "$color" != "" ] ; then
+        osascript -e "tell application \"Terminal\" to set normal text color of window 1 to ${color}"
+#        echo "Normal test color set to: $*: $color"
+    fi
+}    
+
+function set_background_color {
+    color=$(get_apple_color $*)
+    if [ "$color" != "" ] ; then
+        osascript -e "tell application \"Terminal\" to set background color of window 1 to ${color}"
+#        echo "Background color set to: $*: $color"
+    fi
+}    
+  
+
+function set_font {
+    osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\""
+    osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2"
+}
+##################################################################################################################################################
+
+GET_PRESETS_COUNTS(){
+pcount=0
+#pcount=`cat ${HOME}/.MountEFIconf.plist | grep -A 1  -e "<key>PresetsCounts</key>" | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+pstring=`cat ${HOME}/.MountEFIconf.plist | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | tr ' \n' ';'`
+IFS=';'; slist=($pstring); unset IFS;
+pcount=${#slist[@]}
+unset slist
+unset pstring
+}
+
+GET_PRESETS_NAMES(){
+pstring=`cat ${HOME}/.MountEFIconf.plist | grep  -B 2 -e "<key>BackgroundColor</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/BackgroundColor/;/g' | tr -d '\n'`
+IFS=';'; plist=($pstring); unset IFS
+unset pstring
+}
+
+SET_THEMES(){
+
+HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "Theme"  | tr -d '\n'`
+if [[ ! $HasTheme = "Theme" ]]; then
+plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+else
+ theme=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+   if [[ $theme = "system" ]]; then 
+                GET_PRESETS_COUNTS
+                CUSTOM_SET; order=3; UPDATELIST; printf "\r\033[1A"
+ #               if [[ ! $pcount = 1 ]]; then
+                plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
+                GET_PRESETS_NAMES
+                current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+#stop="после получения списка plist"; DEBUG 
+                var3=$pcount
+                num=0
+                while [[ ! $var3 = 0 ]]; do 
+                    if [[ "$current" = "${plist[$num]}" ]]; then 
+                            let "var3=0"
+                               else
+                            let "num++"
+#stop="после инкремента num"; DEBUG 
+                            let "var3--"
+                     fi
+
+                done
+#stop="после вычисления номера num текущего в списке plist"; DEBUG  
+                var2=1 
+                let "pik=pcount-1"            
+                while [[  $var2 = 1  ]]; do
+                current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                    printf "\r\033[1A"
+                    printf '                                                          \n'
+                    if [[ $loc = "ru" ]]; then
+                printf 'Встроенных тем: '$pcount'                                           \n'
+                printf 'Текущий выбор - тема: '"${plist[$num]}"'                             \n'
+                printf 'N - выбрать следующую тему и S для применения :  '
+                        else
+                printf 'There is '$pcount' themes.                                             \n'
+                printf ' Current preset choose: '"${plist[$num]}"'                            \n'
+                printf 'N for next theme and S to confirm :  '
+                    fi
+                demo="~"; unset demo
+                if [[ ! $pcount = 1 ]]; then 
+                read -sn1 demo
+                else
+                    printf '\r'
+                    if [[ $loc = "ru" ]]; then
+                printf 'Нажмите любую клавишу для продолжения ...             '
+                        else
+                printf 'Press any key to continue ....                        '
+                    fi
+                    read -sn1 
+                    demo="s"
+                fi
+                if [[ $demo = [nN] ]]; then 
+                    if [[ $num = $pik ]]; then let "num=0"; else let "num++"; fi
+                    plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist
+                    unset demo
+                    CUSTOM_SET; order=3; UPDATELIST; printf '\n'
+                fi
+                   printf "\r\033[2A"
+               
+                
+if [[ $demo = [sS] ]]; then let "var2=0"; fi
+
+                
+                done
+  #           fi
+ #               CUSTOM_SET
+               
+        else
+            plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+                printf '\n\n'
+                    if [[ $loc = "ru" ]]; then
+                echo "включена системная тема. выполните перезапуск программы" 
+                echo "нажмите любую клавишу для возврата в меню..."
+                        else
+                echo "set up system theme. restart required. "
+                echo "press any key return to menu ...."
+                    fi
+                read -n 1 demo 
+    fi
+fi            
+
+}
+
+
+#################################################################################################
+
+CUSTOM_SET(){
+
+clear 
+
+
+current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_background=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_foreground=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontname=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontsize=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+
+set_background_color $current_background
+set_foreground_color $current_foreground
+set_font "$current_fontname" $current_fontsize
+
+}
+
+GET_THEME(){
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
+    if [[ $HasTheme = "Theme" ]]; then
+theme=`cat ${HOME}/.MountEFIconf.plist |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    fi
+fi
+}
+
+#######################################################################################################################################################################
+#GET_PRESETS_NAMES(){
+
+#GET_PRESETS_COUNTS
+#let "scount=2+(pcount-1)*11"
+#pstring=`cat ${HOME}/.MountEFIconf.plist | grep -A $scount -e "<key>Presets</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/Presets/;/g' | sed 's/BackgroundColor/;/g' | sed 's/FontName/;/g' | sed 's/FontSize/;/g' | sed 's/TextColor/;/g' | tr -d '\n'`
+#IFS=';'; slist=($pstring); unset IFS
+#var2=${#slist[@]}
+#num=0
+#while [ $var2 != 0 ]; do
+#strng=`echo ${slist[$num]}`
+#if [[ ! "$strng" = "" ]]; then plist+=( "$strng" ); fi
+#let "var2--"
+#let "num++"
+#done
+#}
+#######################################################################################################################################################################
+
+
+
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #избавляемся от второго окна терминала по оценке времени с моментв запуска
@@ -205,9 +418,18 @@ fi
 term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
 ##############################################################################################################################
 
-parm="$1"
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+    locale=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ $locale = "auto" ]]; then
+            loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+        else
+            loc=`echo ${locale}`
+        fi
+else
+    loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+fi   
 
-loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+parm="$1"
 
 
 if [ "$parm" = "-help" ] || [ "$parm" = "-h" ]  || [ "$parm" = "-H" ]  || [ "$parm" = "-HELP" ]
@@ -224,7 +446,7 @@ then
     printf ' Обнаружив один раздел EFI программа сразу подключает его. Если разделов два или более,\n'
     printf ' когда в систему установлены несколько дисков с разметкой GUID, программа выведет запрос\n'
     printf ' чтобы пользователь мог выбрать какой раздел он хочет подключить.\n'
-    printf ' Программа не требует аргументов командной строки. Аргумент -h [ -help, -HELP, -H ]\n'
+    printf ' Программа может иметь один аргумент командной строки. Аргумент -h [ -help, -HELP, -H ]\n'
     printf ' выводит эту справочную инфрмацию. Программа поставляется как есть. Она может свободно копи-\n'
     printf ' роваться, передаваться другим лицам и изменяться без ограничений. Вы используете её без каких\n'
     printf ' либо гарантий, на своё усмотрение и под свою ответственность.\n'
@@ -241,7 +463,7 @@ then
     printf ' Having found one EFI partition, the program immediately connects it. If there are two or more partitions,\n'
     printf ' when multiple disks with GUIDs are installed in the system, the program will prompt\n'
     printf ' so that the user can choose which partition he wants to mount\n'
-    printf ' The program does not require command line arguments. Argument -h [-help, -HELP, -H]\n'
+    printf ' The program can has one command line arguments. Argument -h [-help, -HELP, -H]\n'
     printf ' prints this help information. The program is delivered as is.It can be freely copied,\n'
     printf ' transferred to other persons and changed without restrictions. You use it without any\n'
     printf ' either warranties from the developer, at your discretion and under your responsibility.\n'
@@ -708,14 +930,20 @@ if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]
         flag=0
 fi
 
-# Блок обработки ситуации если найден всего один раздел EFI ########################
-###################################################################################
-GET_USER_PASSWORD
+
+
 GETARR
 
+# Блок обработки ситуации если найден всего один раздел EFI ########################
+###################################################################################
 
-if [[ $pos = 1 ]]; then
-    clear 
+
+if [[ $pos = 1 ]]; then 
+#    clear
+if [[ ! ${menue} = 1 ]]; then
+
+GET_USER_PASSWORD
+
 unset string
 string=`echo ${dlist[0]}`
 
@@ -724,7 +952,15 @@ mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | s
 
             
                     
-                    if [[ $loc = "ru" ]]; then
+                  
+
+if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
+
+theme="system"
+GET_THEME
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
+
+    if [[ $loc = "ru" ]]; then
         printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
 			else
         printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
@@ -759,8 +995,6 @@ if [[ $loc = "ru" ]]; then
 	printf '\n              '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"'\n' 
     printf '\n     '
 	printf '.%.0s' {1..68}
-
-if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
         if [[ $loc = "ru" ]]; then
     printf '\n\nДля перехода в меню сохранения пароля нажмите Enter\n'
     printf 'или просто введите пароль для подключения EFI: '
@@ -801,12 +1035,14 @@ clear
 		fi
 
 EXIT_PROGRAM
-			
-fi
+
+fi			
 # Конец блока обработки если один  раздел EFI #################################################
 ###########################################################################################
-
-
+fi
+theme="system"
+GET_THEME
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
 
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
@@ -1213,7 +1449,7 @@ nogetlist=1
 
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
-
+GET_USER_PASSWORD
 
 chs=0
 # переменная nogetlist является флагом - будет ли экран обновлён GETLIST или UPDATELIST
