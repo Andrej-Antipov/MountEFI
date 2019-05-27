@@ -8,6 +8,8 @@
 	<string>auto</string>
 	<key>Menue</key>
 	<string>auto</string>
+	<key>OpenFinder</key>
+	<true/>
 	<key>Presets</key>
 	<dict>
 		<key>BlueSky</key>

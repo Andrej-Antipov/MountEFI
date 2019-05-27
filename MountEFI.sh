@@ -53,23 +53,9 @@ fi
 }
 #########################################################################################################################################
 
-# MountEFI версия 1.61
-# Добавились новые параметры в конфиг и новые средства работы с ними в программе
-# Параметр Locale тип string значения auto,ru,en. Выбор автодетекта локали или принудитеьное указание желаемого
-# Параметр Menue тип string значение auto, always. При указании always меню будет показано и для системы с одним разделом EFI
-# Параметры для темы: Presets типа Dictonary содержит пресеты встроенных тем. 
-# Параметр CurrentPreset содержит текущее имя пресета по умоланию из списка Presets. 
-# Параметры BackgroundColor и TextColor из пресетов - это названия цветов из файла colors.cvs, которые преобразуются программой в коды для AppleScript 
-# Параметры пресетов применяютя если параметр Theme установлен в built-in как и ранее, но для встроенных больше не нужен перезапуск программмы для смены тем. 
-# Появилось меню с перебором пресетов если их несколько. Вход в меню по кнопке T как и ранее. 
-# Добавлены аргументы для скрипта если запустить его в командной строке. -d сбрасывает  конфиг по умолчанию. -r удаляет сохранённый пароль в конфиге.
-# аргумент -m аналогичен параметру конфига Menue - always
-# в следующей версии появится отдельный скрипт для настройки конфига. Пока из программы меняются только параметры LoginPassword,Theme,CurrentPreset
-# При первом запуске создается новый конфиг, прежнее значения параметра Theme, и если он есть, параметра LoginPassword - переносятся в новый конфиг
-# Прежняя голубая встроенная тема сохранена как пресет Ocean. По умолчанию теперь пресет BlueSky - другой менее яркий цвет фона
-# Настройки по умолчанию можно редактировать в файле DefaultConf.plist в папке со скриптом (в папке Resources апплета). 
-# Если этого файла DefaultConf.plist нет то скрипт заполнит конфиг из своих внутренних данных. (функции FILL_CONFIG ) 
- 
+
+# MountEFI версия 1.62 master
+# Добавлен параметр конфига OpenFinder, тип boolean. Если false - не открывать EFI после монтирования в Finder. Если уже был примонтирован - открывать. 
 
 clear  && printf '\e[3J'
 
@@ -100,6 +86,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
@@ -199,12 +187,18 @@ if [[ $deleted = 1 ]]; then
     plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
 fi
 #########################################################################################################################################
-
+################################# обработка параметра Menue или аргумента -m  ############################################################
 menue=0
 HasMenue=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Menue" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 if [[ $HasMenue = "always" ]]; then menue=1; fi
 if [ "$1" = "-m" ] || [ "$1" = "-M" ]  || [ "$1" = "-menue" ]  || [ "$1" = "-MENUE" ]; then menue=1; fi 
+###########################################################################################################################################
 
+################################## параметр OpenFinder ####################################################################################
+OpenFinder=1
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then OpenFinder=0; fi
+###########################################################################################################################################
 # Определение функций кастомизации интерфейса #############################################
 ############################################################################################
 # Colors for Apple Terminal
@@ -770,7 +764,7 @@ vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev 
 #stop="перед проверкой на кловерность"; DEBUG
                 					if [[ ${check_loader} = "Clover revision:" ]]; then
 #stop="после проверки на кловерность"; DEBUG
-                       						 open "$vname/EFI"
+                       						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
 #stop="после открытия папки EFI"; DEBUG
                  fi   
@@ -836,7 +830,7 @@ vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev 
 #stop="перед проверкой на кловерность"; DEBUG
                 					if [[ ${check_loader} = "OpenCore" ]]; then
 #stop="после проверки на кловерность"; DEBUG
-                       						 open "$vname/EFI"
+                       						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
 #stop="после открытия папки EFI"; DEBUG
                  fi   
@@ -936,7 +930,7 @@ GETARR
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
-
+pos=1
 
 if [[ $pos = 1 ]]; then 
 #    clear
@@ -947,14 +941,11 @@ GET_USER_PASSWORD
 unset string
 string=`echo ${dlist[0]}`
 
+wasmounted=0
 mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-	if [[ ! $mcheck = "Yes" ]]; then
+if [[ ! $mcheck = "Yes" ]]; then
 
-            
-                    
-                  
-
-if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
+    if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
 
 theme="system"
 GET_THEME
@@ -1021,18 +1012,28 @@ if [[ $loc = "ru" ]]; then
 DO_MOUNT
 
 MOUNTED_CHECK
+else
+wasmounted=1
 	fi
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 clear
 		if [[ $loc = "ru" ]]; then
 			printf '\nРаздел: '${string}' ''подключен.\n\n'
-   		 open "$vname"
+  # 		 open "$vname"
 			printf 'Выходим.. \n\n\n\n''\e[3J'
 			else
 			printf '\nPartition: '${string}' ''mounted.\n\n'
-   		 open "$vname"
+ #  		 open "$vname"
 			printf 'Exit the program. \n\n\n\n''\e[3J'
 		fi
+#if [[ ! $OpenFinder = 0 ]]; then open "$vname"; fi
+
+if [[ $OpenFinder = 0 ]] ; then 
+        if [[ $wasmounted = 1 ]]; then open "$vname"; fi
+    else 
+        open "$vname"
+fi
+
 
 EXIT_PROGRAM
 
@@ -1427,6 +1428,7 @@ string=`echo ${dlist[$pnum]}`
 	
 
 mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+wasmounted=0
 if [[ ! $mcheck = "Yes" ]]; then
 
     DO_MOUNT
@@ -1436,11 +1438,19 @@ if [[ ! $mcheck = "Yes" ]]; then
 	order=0; UPDATELIST
 
 else 
+    wasmounted=1
 	printf "\r\033[1A"
 fi
-    vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 
-open "$vname"
+vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+if [[ $OpenFinder = 0 ]] ; then 
+        if [[ $wasmounted = 1 ]]; then open "$vname"; fi
+    else 
+        open "$vname"
+fi
+
+
+
 
 nogetlist=1
 
