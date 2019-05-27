@@ -2,6 +2,70 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CurrentPreset</key>
+	<string>BlueSky</string>
+	<key>Locale</key>
+	<string>auto</string>
+	<key>Menue</key>
+	<string>auto</string>
+	<key>Presets</key>
+	<dict>
+		<key>BlueSky</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>DodgerBlue4</string>
+			<key>FontName</key>
+			<string>SF Mono Regular</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>White</string>
+		</dict>
+		<key>DarkBlueSky</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>MidnightBlue</string>
+			<key>FontName</key>
+			<string>SF Mono</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>Yellow</string>
+		</dict>
+		<key>GreenField</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>DarkGreen</string>
+			<key>FontName</key>
+			<string>SF Mono</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>PaleGoldenrod</string>
+		</dict>
+		<key>Ocean</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>blue1</string>
+			<key>FontName</key>
+			<string>SF Mono Regular</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>White</string>
+		</dict>
+		<key>Tolerance</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>ivory4</string>
+			<key>FontName</key>
+			<string>SF Mono</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>red4</string>
+		</dict>
+	</dict>
 	<key>Theme</key>
 	<string>system</string>
 </dict>
