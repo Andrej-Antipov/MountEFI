@@ -56,6 +56,7 @@ fi
 
 # MountEFI версия 1.62 master
 # Добавлен параметр конфига OpenFinder, тип boolean. Если false - не открывать EFI после монтирования в Finder. Если уже был примонтирован - открывать. 
+# Сделано меню нстройки отделным скриптом и в него перенесены параметры настройки пароля и тем
 
 clear  && printf '\e[3J'
 
@@ -297,6 +298,7 @@ else
                 demo="~"; unset demo
                 if [[ ! $pcount = 1 ]]; then 
                 read -sn1 demo
+                if [[ ! $demo =~ ^[sSnN]$ ]]; then unset demo; fi
                 else
                     printf '\r'
                     if [[ $loc = "ru" ]]; then
@@ -344,7 +346,7 @@ fi
 
 CUSTOM_SET(){
 
-clear 
+#clear 
 
 
 current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -411,17 +413,18 @@ let "TimeDiff=Time000-Time001"
 fi
 term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
 ##############################################################################################################################
-
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-    locale=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ $locale = "auto" ]]; then
-            loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
-        else
-            loc=`echo ${locale}`
+GET_LOCALE(){
+if [[ -f ${HOME}/.MountEFIconf.plist ]] ; then
+        locale=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+            else
+                loc=`echo ${locale}`
         fi
-else
-    loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
-fi   
+    else   
+        loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+fi  
+}
+GET_LOCALE
 
 parm="$1"
 
@@ -1145,14 +1148,16 @@ cat  -v ~/.MountEFItemp.txt
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
     printf '      I  -   дополнительное меню                     \n'
-    printf '      P  -   сохранить/удалить пароль пользователя \n'
+    #printf '      P  -   сохранить/удалить пароль пользователя \n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
+    printf '                                                    \n'
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n'
     printf '      I  -   extra menu                      \n'
-    printf '      P  -   save/delete user password\n'  
-	printf '      Q  -   close terminal and exit from the program\n' 
+    #printf '      P  -   save/delete user password\n'  
+	printf '      Q  -   close terminal and exit from the program\n'
+    printf '                                                    \n' 
 	     fi
 
 	
@@ -1206,26 +1211,28 @@ if [[ ! $order = 3 ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
     printf '      I  -   дополнительное меню                     \n'
-    printf '      P  -   сохранить/удалить пароль пользователя \n'
-	printf '      Q  -   закрыть окно и выход из программы\n\n' 
+    #printf '      P  -   сохранить/удалить пароль пользователя \n'
+	printf '      Q  -   закрыть окно и выход из программы\n\n'
+    printf '                                                    \n' 
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n'
     printf '      I  -   extra menu                      \n'
-    printf '      P  -   save/delete user password\n' 
-	printf '      Q  -   close terminal and exit from the program\n\n' 
+    #printf '      P  -   save/delete user password\n' 
+	printf '      Q  -   close terminal and exit from the program\n\n'
+    printf '                                                    \n' 
 	     fi
 	else
         if [[ $loc = "ru" ]]; then
 	printf '\n      C  -   найти и подключить EFI с загрузчиком Clover \n'
 	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
-	printf '      T  -   сменить тему терминала на следующем запуске программы\n'
+	printf '      S  -   вызвать экран настройки MountEFI\n'
     printf '      I  -   главное меню                     \n'
     printf '      Q  -   закрыть окно и выход из программы\n\n' 
 			else
 	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
 	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
-	printf '      T  -   change the terminal theme to next program boot\n'
+	printf '      S  -   call MountEFI setup screen\n'
     printf '      I  -   main menu                      \n'
     printf '      Q  -   close terminal and exit from the program\n\n' 
 	     fi
@@ -1338,6 +1345,12 @@ esac
 #############################
 ###############################################################
 
+REFRESH_SETUP(){
+GET_LOCALE
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
+GET_USER_PASSWORD
+}
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
@@ -1362,16 +1375,16 @@ fi
 if [[ $order = 3 ]]; then 
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  C, O, T, I, Q ):   ' ; printf '                             '
+printf '  Введите число от 0 до '$schs' (или  C, O, S, I, Q ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  C, O, T, I, Q ):   ' ; printf '                           '
+printf '  Enter a number from 0 to '$schs' (or  C, O, S, I, Q ):   ' ; printf '                           '
     fi
         else
             let "schs=$ch-1"
             if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  U, E, I, P, Q ):   ' ; printf '                             '
+printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):      ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, I, P, Q ):   ' ; printf '                           '
+printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):      ' ; printf '                           '
     fi
 fi
 printf '\n'
@@ -1392,15 +1405,16 @@ if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
 
 
 if [[ ! $order = 3 ]]; then
-if [[ ! $choice =~ ^[0-9uUqQeEiIpP]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQeEiI]$ ]]; then unset choice; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
-if [[ ${choice} = [pP] ]]; then SET_USER_PASSWORD; choice="0"; order=4; fi
+#if [[ ${choice} = [pP] ]]; then SET_USER_PASSWORD; choice="0"; order=4; fi
 else
-if [[ ! $choice =~ ^[0-9qQcCoOtTiI]$ ]]; then unset choice; fi
-if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
+if [[ ! $choice =~ ^[0-9qQcCoOsSiI]$ ]]; then unset choice; fi
+#if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
+if [[ ${choice} = [sS] ]]; then cd $(dirname $0); ./setup -r; REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
