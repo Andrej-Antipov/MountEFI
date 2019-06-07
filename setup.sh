@@ -134,8 +134,6 @@ if [[ $strng = "false" ]]; then ShowKeys=0
 fi
 }
 
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; fi
 
 GET_PRESETS_COUNTS(){
 pcount=0
@@ -294,6 +292,127 @@ set_foreground_color $current_foreground
 set_font "$current_fontname" $current_fontsize
 
 }
+
+FILL_CONFIG(){
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
+            echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
+            echo '<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>DodgerBlue4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>MidnightBlue</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>Yellow</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>GreenField</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>DarkGreen</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>PaleGoldenrod</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>Ocean</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>blue1</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <key>Tolerance</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>ivory4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>red4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>system</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '</plist>' >> ${HOME}/.MountEFIconf.plist
+
+
+}
+
+########################## Инициализация нового конфига ##################################################################################
+
+deleted=0
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+      if [[ ! $strng = "CurrentPreset" ]]; then
+        mypassword="0"
+        login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+                if [[ $login = "LoginPassword" ]]; then
+        mypassword=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                fi
+        theme=`cat ${HOME}/.MountEFIconf.plist |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        rm ${HOME}/.MountEFIconf.plist
+        deleted=1
+    fi
+fi
+         
+
+if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then
+        if [[ -f DefaultConf.plist ]]; then
+            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+        else
+             FILL_CONFIG
+        fi
+fi
+
+if [[ $deleted = 1 ]]; then
+    if [[ ! $mypassword = 0 ]]; then 
+    plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist
+    fi
+    plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
+fi
+
+
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; fi
+
+#########################################################################################################################################
 
 # Определение функций кастомизации интерфейса #############################################
 ############################################################################################
@@ -488,6 +607,7 @@ done
 
 SET_SCREEN(){
             if [[ $loc = "ru" ]]; then
+printf ' 0) Установить все настройки по умолчанию                                      \n'
 printf ' 1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(автовыбор, английский, русский) \n'
 printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(автовыбор, всегда)             \n'
 printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)            \n'
@@ -498,6 +618,7 @@ printf ' 7) Показывать подсказки по клавишам = "'$S
 #printf ' 8) Редактировать встроенные пресеты                                     \n'
 
             else
+printf ' 0) Setup all parameters to defaults                                            \n'
 printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, russian, english) \n'
 printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)\n'
 printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)\n'
@@ -683,6 +804,26 @@ printf '\e[3J' && printf "\033[0;0H"
 UPDATE_SCREEN
 SET_INPUT
 GET_INPUT
+
+# УСТАНОВКИ ПА УМОЛЧАНИЮ   #####################################################
+if [[ $inputs = 0 ]]; then
+                        if [[ $loc = "ru" ]]; then
+                echo "Установить все значения по умолчанию?                    "
+                        else
+                echo "Set all default values?                                  "
+                        fi
+                read -p "(y/N) " -n 1 -r -s
+                if [[ $REPLY =~ ^[yY]$ ]]; then
+
+rm -f ${HOME}/.MountEFIconf.plist
+ if [[ -f DefaultConf.plist ]]; then
+            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+        else
+             FILL_CONFIG
+        fi
+    fi
+fi
+
 # ВЫБОР ЛОКАЛИ ##################################################################
 if [[ $inputs = 1 ]]; then 
     if [[ $locale = "ru" ]]; then locale="en"
