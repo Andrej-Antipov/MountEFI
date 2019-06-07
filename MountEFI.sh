@@ -57,6 +57,7 @@ fi
 # MountEFI версия 1.62 master
 # Добавлен параметр конфига OpenFinder, тип boolean. Если false - не открывать EFI после монтирования в Finder. Если уже был примонтирован - открывать. 
 # Сделано меню нстройки отделным скриптом и в него перенесены параметры настройки пароля и тем
+# Добавлен параметр и его обработка ShowKeys - включать/отключать подсказки по клавишам
 
 clear  && printf '\e[3J'
 
@@ -147,6 +148,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>red4</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>system</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
@@ -187,6 +190,11 @@ if [[ $deleted = 1 ]]; then
     fi
     plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
 fi
+
+
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; fi
+
 #########################################################################################################################################
 ################################# обработка параметра Menue или аргумента -m  ############################################################
 menue=0
@@ -370,25 +378,12 @@ theme=`cat ${HOME}/.MountEFIconf.plist |  grep -A 1 -e  "<key>Theme</key>" | gre
 fi
 }
 
-#######################################################################################################################################################################
-#GET_PRESETS_NAMES(){
+GET_SKEYS(){
+ShowKeys=1
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then ShowKeys=0; fi
 
-#GET_PRESETS_COUNTS
-#let "scount=2+(pcount-1)*11"
-#pstring=`cat ${HOME}/.MountEFIconf.plist | grep -A $scount -e "<key>Presets</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/Presets/;/g' | sed 's/BackgroundColor/;/g' | sed 's/FontName/;/g' | sed 's/FontSize/;/g' | sed 's/TextColor/;/g' | tr -d '\n'`
-#IFS=';'; slist=($pstring); unset IFS
-#var2=${#slist[@]}
-#num=0
-#while [ $var2 != 0 ]; do
-#strng=`echo ${slist[$num]}`
-#if [[ ! "$strng" = "" ]]; then plist+=( "$strng" ); fi
-#let "var2--"
-#let "num++"
-#done
-#}
-#######################################################################################################################################################################
-
-
+}
 
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
@@ -573,7 +568,9 @@ IFS=';'
 dlist=($string)
 unset IFS;
 pos=${#dlist[@]}
-lines=25
+
+GET_SKEYS
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=21; fi
 let "lines=lines+pos"
 lists_updated=1
 
@@ -740,14 +737,14 @@ noefi=1
 
 while [ $var1 != 0 ] 
 do 
-#stop="перед PNUM"; DEBUG
+
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
-#stop="после mcheck"; DEBUG	
+
        	
 	DO_MOUNT	
 
@@ -755,28 +752,28 @@ do
 
 	else
 		was_mounted=1
-#stop="после was_mounted=1"; DEBUG
+
 	fi
-#stop="перед vname"; DEBUG
+
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-#stop="после VNAME"; DEBUG
+
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-#stop="после проверки наличия bootx64"; DEBUG
+
 					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover revision:"` ; check_loader=`echo ${check_loader:0:16}`
-#stop="перед проверкой на кловерность"; DEBUG
+
                 					if [[ ${check_loader} = "Clover revision:" ]]; then
-#stop="после проверки на кловерность"; DEBUG
+
                        						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
-#stop="после открытия папки EFI"; DEBUG
+
                  fi   
 	   fi
 	fi
 
-#stop="перед  проверкой на отключение раздела"; DEBUG
+
 		if [[ "$was_mounted" = 0 ]]; then
-#stop="после проверки на отключение раздела"; DEBUG
+
 	diskutil quiet  umount  force /dev/${string}; mounted=0
 		
 		UNMOUNTED_CHECK		
@@ -806,14 +803,14 @@ noefi=1
 
 while [ $var1 != 0 ] 
 do 
-#stop="перед PNUM"; DEBUG
+
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
-#stop="после mcheck"; DEBUG	
+
        	
 	DO_MOUNT	
 
@@ -821,28 +818,23 @@ do
 
 	else
 		was_mounted=1
-#stop="после was_mounted=1"; DEBUG
+
 	fi
-#stop="перед vname"; DEBUG
+
 vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-#stop="после VNAME"; DEBUG
+
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-#stop="после проверки наличия bootx64"; DEBUG
+
 					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
-#stop="перед проверкой на кловерность"; DEBUG
                 					if [[ ${check_loader} = "OpenCore" ]]; then
-#stop="после проверки на кловерность"; DEBUG
                        						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
-#stop="после открытия папки EFI"; DEBUG
                  fi   
 	   fi
 	fi
 
-#stop="перед  проверкой на отключение раздела"; DEBUG
 		if [[ "$was_mounted" = 0 ]]; then
-#stop="после проверки на отключение раздела"; DEBUG
 	diskutil quiet  umount  force /dev/${string}; mounted=0
 		
 		UNMOUNTED_CHECK		
@@ -1022,14 +1014,11 @@ vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev 
 clear
 		if [[ $loc = "ru" ]]; then
 			printf '\nРаздел: '${string}' ''подключен.\n\n'
-  # 		 open "$vname"
 			printf 'Выходим.. \n\n\n\n''\e[3J'
 			else
 			printf '\nPartition: '${string}' ''mounted.\n\n'
- #  		 open "$vname"
 			printf 'Exit the program. \n\n\n\n''\e[3J'
 		fi
-#if [[ ! $OpenFinder = 0 ]]; then open "$vname"; fi
 
 if [[ $OpenFinder = 0 ]] ; then 
         if [[ $wasmounted = 1 ]]; then open "$vname"; fi
@@ -1144,22 +1133,24 @@ cat  -v ~/.MountEFItemp.txt
 	
 	printf '\n\n\n     '
 	printf '.%.0s' {1..68}
+
+if [[ $ShowKeys = 1 ]]; then
+
 	if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
     printf '      I  -   дополнительное меню                     \n'
-    #printf '      P  -   сохранить/удалить пароль пользователя \n'
 	printf '      Q  -   закрыть окно и выход из программы\n' 
     printf '                                                    \n'
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n'
     printf '      I  -   extra menu                      \n'
-    #printf '      P  -   save/delete user password\n'  
 	printf '      Q  -   close terminal and exit from the program\n'
     printf '                                                    \n' 
 	     fi
-
+else printf '\n'
+fi
 	
 
 
@@ -1206,6 +1197,9 @@ cat  -v ~/.MountEFItemp.txt
     
 	printf '\n\n\n\n     '
 	printf '.%.0s' {1..68}
+
+if [[ $ShowKeys = 1 ]]; then
+
 if [[ ! $order = 3 ]]; then
 	     if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
@@ -1237,7 +1231,8 @@ if [[ ! $order = 3 ]]; then
     printf '      Q  -   close terminal and exit from the program\n\n' 
 	     fi
 fi
-
+else printf '\n\n'
+fi
 
 	printf '\n'
 	
@@ -1414,7 +1409,7 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiI]$ ]]; then unset choice; fi
 #if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); ./setup -r; REFRESH_SETUP; choice="0"; order=4; fi
+if [[ ${choice} = [sS] ]]; then cd $(dirname $0); ./setup.sh -r; REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi

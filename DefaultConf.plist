@@ -68,6 +68,8 @@
 			<string>red4</string>
 		</dict>
 	</dict>
+	<key>ShowKeys</key>
+	<true/>
 	<key>Theme</key>
 	<string>system</string>
 </dict>
