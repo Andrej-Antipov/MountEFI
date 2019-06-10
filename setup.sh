@@ -298,8 +298,12 @@ CUSTOM_SET(){
 
 GET_CURRENT_SET
 
-set_background_color $current_background
-set_foreground_color $current_foreground
+if [[ ${current_background:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
+		else set_background_color $current_background
+fi
+if [[ ${current_foreground:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
+		else  set_foreground_color $current_foreground
+fi
 set_font "$current_fontname" $current_fontsize
 
 }
@@ -332,57 +336,57 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>DodgerBlue4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{3341, 25186, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>MidnightBlue</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{8481, 10537, 33667}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>Yellow</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{65278, 64507, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>GreenField</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>DarkGreen</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{0, 29812, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>PaleGoldenrod</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{61937, 60395, 47288}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>Ocean</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>blue1</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{1028, 12850, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>Tolerance</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>ivory4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{40092, 40092, 38293}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>red4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{40606, 4626, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
