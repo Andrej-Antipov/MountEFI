@@ -2,16 +2,26 @@
 
 # функция отладки ###############################################
 demo1="0"
-deb=1
+deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n'
 printf '............................................................\n'
 
-#echo "pik = "$pik
-#echo "locale = "$locale
-echo "passl = "$passl
+echo "am_check = "$am_check
+echo "inputs = "$inputs
+echo "alist = "${alist[@]}
+echo "slist = "${slist[@]}
+echo "apos = "$apos
+echo "strng1 = "$strng1
+echo "strng2 = "$strng2
+echo "uuid = "$uuid
+echo "vari = "$vari
+echo "pois = "$pois
+echo "poi = "$poi
+echo "alist(poi) = "${alist[$poi]}
+
 
 printf '............................................................\n\n'
 sleep 0.5
@@ -46,8 +56,9 @@ fi
 
 
 
-# MountEFI версия скрипта настройек 1.1 master
-
+# MountEFI версия скрипта настроек 1.2 master
+# Добавлены опции автомонтирования 
+# Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 
 clear && printf "\033[0;0H"
 
@@ -299,6 +310,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
             echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
             echo '<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+	echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -412,7 +432,18 @@ fi
 strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; fi
 
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "AutoMount" ]]; then 
+			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+fi
+
+
 #########################################################################################################################################
+
 
 # Определение функций кастомизации интерфейса #############################################
 ############################################################################################
@@ -543,7 +574,7 @@ SET_INPUT(){
 
 layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
 xkbs=1
-#stop="перед проверкой раскладки"; DEBUG
+
 case ${layout_name} in
  "Russian"          ) xkbs=2 ;;
  "RussianWin"       ) xkbs=2 ;;
@@ -552,7 +583,7 @@ case ${layout_name} in
  "Ukrainian-PC"     ) xkbs=2 ;;
  "Byelorussian"     ) xkbs=2 ;;
  esac
-#stop="после проверки раскладки"; DEBUG
+
 if [[ $xkbs = 2 ]]; then 
 cd $(dirname $0)
     if [[ -f "./xkbswitch" ]]; then 
@@ -560,7 +591,7 @@ declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleEnabledInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
 IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 keyboard="0"
-#stop="после проверки наличия xkbswitch"; DEBUG
+
 while [ $num != 0 ]; do 
 case ${layouts_names[$num]} in
  "ABC"                ) keyboard=${layouts_names[$num]} ;;
@@ -570,7 +601,7 @@ case ${layouts_names[$num]} in
  "British"            ) keyboard=${layouts_names[$num]} ;;
  "British-PC"         ) keyboard=${layouts_names[$num]} ;;
 esac
-#stop="после поиска английской раскладки"; DEBUG
+
         if [[ ! $keyboard = "0" ]]; then num=1; fi
 let "num--"
 done
@@ -578,22 +609,343 @@ done
 if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; fi
    else
         if [[ $loc = "ru" ]]; then
-printf '\n\n                          ! Смените раскладку на латиницу !'
+printf '\n                          ! Смените раскладку на латиницу !\n'
             else
-printf '\n\n                          ! Change layout to UTF-8 ABC, US or EN !'
+printf '\n                          ! Change layout to UTF-8 ABC, US or EN !\n'
         fi
- printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi   fi
+# printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi  
+	 fi
 fi
+}
+
+GET_AUTOMOUNT(){
+autom_enabled=0
+strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng = "true" ]]; then autom_enabled=1
+            if [[ $loc = "ru" ]]; then
+        am_set="Да"; am_corr=9
+            else
+        am_set="Yes"; am_corr=14
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        am_set="Нет"; am_corr=8
+            else
+        am_set="No"; am_corr=15
+            fi
+fi
+}
+
+GETAUTO_OPEN(){
+autom_open=0
+strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng = "true" ]]; then autom_open=1
+            if [[ $loc = "ru" ]]; then
+        amo_set="Да"; amo_corr=8
+            else
+        amo_set="Yes"; amo_corr=10
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        amo_set="Нет"; amo_corr=7
+            else
+        amo_set="No"; amo_corr=11
+            fi
+fi
+}
+
+GETAUTO_EXIT(){
+autom_exit=0
+strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng = "true" ]]; then autom_exit=1
+            if [[ $loc = "ru" ]]; then
+        ame_set="Да"; ame_corr=9
+            else
+        ame_set="Yes"; ame_corr=12
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        ame_set="Нет"; ame_corr=8
+            else
+        ame_set="No"; ame_corr=13
+            fi
+fi
+}
+
+
+GETEFI(){
+
+strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
+lines=25; let "lines=lines+pos"
+rm -f   ~/.SetupMountEFItemp.txt
+
+}
+
+
+
+GET_AUTOMOUNTED(){
+strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+stop="в автомаунтид"; DEBUG
+alist=($strng1); apos=${#alist[@]}
+}
+
+
+SHOW_AUTOEFI(){
+let "lines=lines+pos -4"
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+ if [[ $loc = "ru" ]]; then
+  printf '\nВыберите раздел и опции автомонтирования:                                      '
+			else
+        printf '\nSelect a partition and automount options:                                     '
+	                 fi
+var0=$pos; num1=0 ; ch=0
+
+macos=`sw_vers -productVersion`
+macos=`echo ${macos//[^0-9]/}`
+macos=${macos:0:4}
+if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
+        vmacos="Disk Size:"
+    else
+        vmacos="Total Size:"
+fi
+
+if [[ $loc = "ru" ]]; then
+	#printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
+
+	printf '\n\n      0)  поиск разделов .....  '
+		else
+	#printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
+
+	printf '\n\n      0)  updating partitions list .....  '
+        fi
+
+spin='-\|/'
+i=0
+
+GET_AUTOMOUNTED
+
+while [ $var0 != 0 ] 
+do 
+	let "ch++"
+
+    let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+	
+	strng=`echo ${slist[$num1]}`
+	 dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
+		dlnth=`echo ${#dstrng}`
+		let "corr=9-dlnth"
+
+        let "i++"
+	    i=$(( (i+1) %4 ))
+	    printf "\b$1${spin:$i:1}"
+
+		drv=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+		dcorr=`echo ${#drv}`
+		if [[ ${dcorr} -gt 30 ]]; then dcorr=30; drv=`echo ${drv:0:29}`; fi
+		let "dcorr=30-dcorr"
+
+	dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+
+    		scorr=`echo ${#dsze}`
+    		let "scorr=scorr-5"
+    		let "scorr=6-scorr"
+
+             let "i++"
+	         i=$(( (i+1) %4 ))
+	         printf "\b$1${spin:$i:1}"
+
+	automounted=0
+	if [[ ! $apos = 0 ]]; then
+	 let var4=$apos
+	poi=0
+	uuid=`diskutil info  $strng | grep  "Volume UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+            while [ $var4 != 0 ]
+		do
+		 if [[ ${alist[$poi]} = $uuid ]]; then automounted=1; var4=1; fi
+	let "var4--"
+            let "poi++"
+	done
+	fi
+
+#          вывод подготовленного формата строки в файл "буфер экрана"
+	if [[ $automounted = 0 ]]; then
+			printf '\n      '$ch') ....   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
+		else
+			printf '\n      '$ch') auto   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
+		fi
+
+            let "i++"
+	         i=$(( (i+1) %4 ))
+	         printf "\b$1${spin:$i:1}"    
+
+	let "num1++"
+	let "var0--"
+done 
+
+printf "\n\r\n\033[3A"
+
+
+
+
+
+		if [[ $loc = "ru" ]]; then
+	#printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '                                                                                       \n'
+	printf '      0)  повторить поиск разделов\n' 
+	
+		else
+	#printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '                                                                                       \n'
+	printf '      0)  update EFI partitions list             \n' 
+        fi
+
+
+cat  -v ~/.SetupMountEFItemp.txt
+rm ~/.SetupMountEFItemp.txt
+
+printf '\n\n     '
+	printf '.%.0s' {1..68}
+printf '\n'
+
+}
+
+
+
+SET_AUTOMOUNT(){
+GETEFI
+var5=0
+while [ $var5 != 1 ] 
+do
+clear
+printf '\e[3J' && printf "\033[0;0H" 
+SHOW_AUTOEFI
+GETAUTO_OPEN
+GETAUTO_EXIT
+ if [[ $loc = "ru" ]]; then
+printf '\n'
+printf '      a) Открывать папку EFI после подключения = "'$amo_set'"'"%"$amo_corr"s"'(Да, Нет) \n'
+printf '      b) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n\n'
+printf '      c) Отменить выбранные и вернуться в меню                                  \n'
+printf '      d) Вернуться в меню. Настройки остаются                                   \n\n\n'
+else
+printf '      a) Open the EFI folder after mounting = "'$amo_set'"'"%"$amo_corr"s"'(Yes, No)\n'
+printf '      b) Close the program after mounting = "'$ame_set'"'"%"$ame_corr"s"'(Yes, No)  \n\n'
+printf '      c) Cancel selected and return to menu                                     \n'
+printf '      d) Return to the menu saving settings                                     \n\n\n'
+fi
+
+var6=0
+while [ $var6 != 1 ] 
+do
+unset inputs
+while [[ ! ${inputs} =~ ^[0-9aAbBcCdD]+$ ]]; do 
+
+                if [[ $loc = "ru" ]]; then
+printf '  Введите число от 0 до '$ch' (или A, B, C, D ):   ' ; printf '                             '
+			else
+printf '  Enter a number from 0 to '$ch' (or A, B, C, D ):   ' ; printf '                           '
+                fi
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[4A"
+printf "\r\033[48C"
+IFS="±"; read -n 1 inputs ; unset IFS 
+if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
+printf "\r"
+done
+if [[  ${inputs}  -le $ch ]]; then var6=1; fi
+done
+if [[  ${inputs}  = [cC] ]]; then
+			plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -replace AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+			var5=1
+fi
+
+if [[  ${inputs}  = [dD] ]]; then
+			GET_AUTOMOUNTED
+			if [[ $apos = 0 ]]; then 
+				plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+			fi
+	var5=1
+fi
+
+if [[  ${inputs}  = [aA] ]]; then
+	if [[ $autom_open = 0 ]]; then 	
+				plutil -replace AutoMount.Open -bool YES ${HOME}/.MountEFIconf.plist	
+					else
+				plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
+	fi
+fi
+
+if [[  ${inputs}  = [bB] ]]; then
+	if [[ $autom_open = 0 ]]; then 	
+				plutil -replace AutoMount.ExitAfterMount -bool YES ${HOME}/.MountEFIconf.plist	
+					else
+				plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
+	fi
+fi
+
+if [[ ! ${inputs} =~ ^[0aAbBcCdD]+$ ]]; then
+
+GET_AUTOMOUNTED
+	
+	am_check=0
+	let "pois=inputs-1"
+	uuid=`diskutil info  ${slist[$pois]} | grep  "Volume UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+if [[ ! $apos = 0 ]]; then
+#stop="после проверки на apos"; DEBUG
+	 let vari=$apos
+	poi=0
+#stop="перед циклом"; DEBUG
+            while [ $vari != 0 ]
+		do
+		 if [[ ${alist[$poi]} = $uuid ]]; then 
+#stop="после проверки на uuid"; DEBUG
+							strng2=`echo ${strng1[@]}  |  sed 's/'$uuid'//'`
+							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist							
+ 							vari=1
+							am_check=1
+#stop="после удаления найденного uuid"; DEBUG
+		fi
+
+	let "vari--"
+            let "poi++"
+	done
+fi
+#stop="после выхода из цикла"; DEBUG
+if [[ $am_check = 0 ]]; then 
+#stop="перед добавлением uuid"; DEBUG
+			strng1+=" "
+			strng1+=$uuid
+			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist
+#stop="после добавления uuid"; DEBUG
+fi
+	else
+		if [[ $inputs = 0 ]]; then GETEFI
+#stop="inputs точно 0"; DEBUG
+	fi				
+fi
+done
+clear
+
 }
 
 GET_INPUT(){
 unset inputs
-while [[ ! ${inputs} =~ ^[0-7qQ]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-8qQ]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до 7 (или Q - выход ):   ' ; printf '                             '
+printf '  Введите число от 0 до 8 (или Q - выход ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to 7 (or Q - exit ):   ' ; printf '                           '
+printf '  Enter a number from 0 to 8 (or Q - exit ):   ' ; printf '                           '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
@@ -614,7 +966,8 @@ printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pa
 printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)                       \n'
 printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(системная, встроенная)         \n'
 printf ' 6) Пресет "'$itheme_set'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"'\n'
-printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)                        \n'
+printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)                       \n'
+printf ' 8) Подключить EFI при запуске  = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)                       \n'
 #printf ' 8) Редактировать встроенные пресеты                                     \n'
 
             else
@@ -625,7 +978,8 @@ printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, no
 printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No) \n'
 printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in) \n'
 printf ' 6) Theme preset "'$itheme_set'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name) \n'
-printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n'
+printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)               \n'
+printf ' 8) Mount EFI on startup. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)               \n'
 #printf ' 8) Edit built-in themes presets                                                \n'
 
             fi
@@ -652,6 +1006,7 @@ UPDATE_SCREEN(){
         GET_OPENFINDER
         GET_THEME
         GET_SHOWKEYS
+        GET_AUTOMOUNT
         SET_SCREEN
     
 
@@ -661,22 +1016,13 @@ UPDATE_SCREEN(){
         printf '\n\n'
 }
 
-SHOW_EFIs(){
-printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
-
-
-                        if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
-			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
-	                 fi
-
+SHOW_DISKs(){
 var0=$pos; num1=0 ; ch=0
 
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]; then
+if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
         vmacos="Disk Size:"
     else
         vmacos="Total Size:"
@@ -695,6 +1041,8 @@ if [[ $loc = "ru" ]]; then
 spin='-\|/'
 i=0
 
+
+
 while [ $var0 != 0 ] 
 do 
 	let "ch++"
@@ -702,10 +1050,9 @@ do
     let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
-
+	
 	strng=`echo ${slist[$num1]}`
-
-    dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
+	 dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
 		dlnth=`echo ${#dstrng}`
 		let "corr=9-dlnth"
 
@@ -767,6 +1114,19 @@ cat  -v ~/.SetupMountEFItemp.txt
 printf '\n\n\n     '
 	printf '.%.0s' {1..68}
 printf '\n\n     '
+}
+
+SHOW_EFIs(){
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+
+
+                        if [[ $loc = "ru" ]]; then
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
+			else
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
+	                 fi
+
+SHOW_DISKs
 
 }
 
@@ -787,6 +1147,29 @@ SETUP_THEMES(){
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
 lines=25; let "lines=lines+pos"
+
+var0=$pos
+		num=0
+		dnum=0
+	while [ $var0 != 0 ] 
+		do
+		strng=`echo ${slist[$num]}`
+		dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
+		dlen=`echo ${#dstrng}`
+
+		checkvirt=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+		
+		if [[ "$checkvirt" = "Disk Image" ]]; then
+		unset slist[$num]
+		let "pos--"
+		else 
+		nslist+=( $num )
+		fi
+		let "var0--"
+		let "num++"
+	done
+
+
 rm -f   ~/.SetupMountEFItemp.txt
 clear
 SHOW_EFIs
@@ -795,6 +1178,9 @@ read -n1
 rm -f   ~/.SetupMountEFItemp.txt 
 
 }
+###############################################################################
+################### MAIN ######################################################
+###############################################################################
 
 theme="system"
 var4=0
@@ -897,9 +1283,24 @@ if [[ $inputs = 7 ]]; then
 fi  
 ###############################################################################
 
-#if [[ $inputs = 8 ]]; then SETUP_THEMES; clear SET_SCREEN; fi
+# Подключение разделов при запуске программы  ################################
+if [[ $inputs = 8 ]]; then 
+   if [[ $autom_enabled = 1 ]]; then 
+  plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+ else 
+  plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+  SET_AUTOMOUNT
+  fi
+fi  
+###############################################################################
+
+#if [[ $inputs = 9 ]]; then SETUP_THEMES; clear ; SET_SCREEN; fi
            
 if [[ $inputs = [qQ] ]]; then var4=1; printf '\n'; fi
 
 done
 if [[ $par = "-r" ]]; then exit 1; else EXIT_PROG; fi
+
+####################### END MAIN #################################################
+###################################################################################
+###################################################################################
