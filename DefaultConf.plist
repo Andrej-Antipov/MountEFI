@@ -2,6 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AutoMount</key>
+	<dict>
+		<key>Enabled</key>
+		<false/>
+		<key>ExitAfterMount</key>
+		<false/>
+		<key>Open</key>
+		<false/>
+		<key>PartUUIDs</key>
+		<string> </string>
+	</dict>
 	<key>CurrentPreset</key>
 	<string>BlueSky</string>
 	<key>Locale</key>
@@ -15,57 +26,57 @@
 		<key>BlueSky</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>DodgerBlue4</string>
+			<string>{3341, 25186, 40092}</string>
 			<key>FontName</key>
 			<string>SF Mono Regular</string>
 			<key>FontSize</key>
 			<string>12</string>
 			<key>TextColor</key>
-			<string>White</string>
+			<string>{65535, 65535, 65535}</string>
 		</dict>
 		<key>DarkBlueSky</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>MidnightBlue</string>
+			<string>{8481, 10537, 33667}</string>
 			<key>FontName</key>
 			<string>SF Mono</string>
 			<key>FontSize</key>
 			<string>12</string>
 			<key>TextColor</key>
-			<string>Yellow</string>
+			<string>{65278, 64507, 0}</string>
 		</dict>
 		<key>GreenField</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>DarkGreen</string>
+			<string>{0, 29812, 0}</string>
 			<key>FontName</key>
 			<string>SF Mono</string>
 			<key>FontSize</key>
 			<string>12</string>
 			<key>TextColor</key>
-			<string>PaleGoldenrod</string>
+			<string>{61937, 60395, 47288}</string>
 		</dict>
 		<key>Ocean</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>blue1</string>
+			<string>{1028, 12850, 65535}</string>
 			<key>FontName</key>
 			<string>SF Mono Regular</string>
 			<key>FontSize</key>
 			<string>12</string>
 			<key>TextColor</key>
-			<string>White</string>
+			<string>{65535, 65535, 65535}</string>
 		</dict>
 		<key>Tolerance</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>ivory4</string>
+			<string>{40092, 40092, 38293}</string>
 			<key>FontName</key>
 			<string>SF Mono</string>
 			<key>FontSize</key>
 			<string>12</string>
 			<key>TextColor</key>
-			<string>red4</string>
+			<string>{40606, 4626, 0}</string>
 		</dict>
 	</dict>
 	<key>ShowKeys</key>
