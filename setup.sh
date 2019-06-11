@@ -7,10 +7,10 @@ deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n'
-printf '............................................................\n'
+#printf '\n\n Останов '"$stop"'  :\n\n'
+#printf '............................................................\n'
 
-echo "lines = "$lines
+#echo "lines = "$lines
 #echo "inputs = "$inputs
 #echo "alist = "${alist[@]}
 #echo "slist = "${slist[@]}
@@ -24,7 +24,7 @@ echo "lines = "$lines
 #echo "alist(poi) = "${alist[$poi]}
 
 
-printf '............................................................\n\n'
+#printf '............................................................\n\n'
 sleep 0.5
 read  -n1 demo1
 fi
@@ -727,7 +727,6 @@ else
 lines=21 
 fi
 let "lines=lines+pos"
-rm -f   ~/.SetupMountEFItemp.txt
 
 }
 
@@ -740,6 +739,8 @@ alist=($strng1); apos=${#alist[@]}
 
 
 SHOW_AUTOEFI(){
+
+rm -f ~/.SetupMountEFItemp.txt
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
  if [[ $loc = "ru" ]]; then
   printf '\nВыберите раздел и опции автомонтирования:                                      '
@@ -758,13 +759,9 @@ if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]
 fi
 
 if [[ $loc = "ru" ]]; then
-	#printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
-
-	printf '\n\n      0)  поиск разделов .....  '
+    printf '\n\n\n      0)  поиск разделов .....    '
 		else
-	#printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
-
-	printf '\n\n      0)  updating partitions list .....  '
+	printf '\n\n\n      0)  updating partitions list .....      '
         fi
 
 spin='-\|/'
@@ -836,34 +833,10 @@ do
 	let "var0--"
 done 
 
-printf "\n\r\n\033[3A"
+
+printf "\r\033[4A"
 
 
-
-
-
-		if [[ $loc = "ru" ]]; then
-	#printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
-	printf '     '
-	printf '.%.0s' {1..68} 
-	printf '                                                                                       \n'
-	printf '      0)  повторить поиск разделов\n' 
-	
-		else
-	#printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
-	printf '     '
-	printf '.%.0s' {1..68} 
-	printf '                                                                                       \n'
-	printf '      0)  update EFI partitions list             \n' 
-        fi
-
-
-cat  -v ~/.SetupMountEFItemp.txt
-rm ~/.SetupMountEFItemp.txt
-
-printf '\n\n     '
-	printf '.%.0s' {1..68}
-printf '\n'
 
 }
 
@@ -873,40 +846,67 @@ GETAUTO_OPEN
 GETAUTO_EXIT
  if [[ $loc = "ru" ]]; then
 printf '\n'
-printf '      a) Открывать папку EFI после подключения = "'$amo_set'"'"%"$amo_corr"s"'(Да, Нет) \n'
-printf '      b) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n\n'
-printf '      c) Отменить выбранные и вернуться в меню                                  \n'
-printf '      d) Вернуться в меню. Настройки остаются                                   \n\n\n'
+printf '      O) Открывать папку EFI после подключения = "'$amo_set'"'"%"$amo_corr"s"'(Да, Нет) \n'
+printf '      C) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n\n'
+printf '      D) Отменить выбранные и вернуться в меню                                  \n'
+printf '      E) Вернуться в меню. Настройки остаются                                   \n\n\n'
 else
-printf '      a) Open the EFI folder after mounting = "'$amo_set'"'"%"$amo_corr"s"'(Yes, No)\n'
-printf '      b) Close the program after mounting = "'$ame_set'"'"%"$ame_corr"s"'(Yes, No)  \n\n'
-printf '      c) Cancel selected and return to menu                                     \n'
-printf '      d) Return to the menu saving settings                                     \n\n\n'
+printf '      O) Open the EFI folder after mounting = "'$amo_set'"'"%"$amo_corr"s"'(Yes, No)\n'
+printf '      C) Close the program after mounting = "'$ame_set'"'"%"$ame_corr"s"'(Yes, No)  \n\n'
+printf '      D) Cancel selected and return to menu                                     \n'
+printf '      E) Return to the menu saving settings                                     \n\n\n'
 fi
+}
+
+UPDATE_AUTOEFI(){
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+ if [[ $loc = "ru" ]]; then
+  printf '\nВыберите раздел и опции автомонтирования:                                      '
+			else
+        printf '\nSelect a partition and automount options:                                     '
+	                 fi
+if [[ $loc = "ru" ]]; then
+	
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '                                                                                       \n'
+	printf '      0)  повторить поиск разделов\n' 	
+		else
+	printf '     '
+	printf '.%.0s' {1..68} 
+	printf '                                                                                       \n'
+	printf '      0)  update EFI partitions list             \n' 
+        fi
+
+cat  -v ~/.SetupMountEFItemp.txt
+DEBUG
+printf '\n\n     '
+	printf '.%.0s' {1..68}
+printf '\n'
 
 }
 
-
 SET_AUTOMOUNT(){
+clear
 REM_ABSENT
 GETEFI
+SHOW_AUTOEFI
+UPDATE_KEYS_INFO
 var5=0
  
 while [ $var5 != 1 ] 
 do
 clear && printf '\e[3J' && printf "\033[0;0H" 
-SHOW_AUTOEFI
+UPDATE_AUTOEFI
+printf '\n'
 UPDATE_KEYS_INFO
-var6=0
-while [ $var6 != 1 ] 
-do
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9aAbBcCdD]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9oOeEdDcC]+$ ]]; do 
 
                 if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$ch' (или A, B, C, D ):   ' ; printf '                             '
+printf '  Введите число от 0 до '$ch' (или O, C, D, E ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$ch' (or A, B, C, D ):   ' ; printf '                           '
+printf '  Enter a number from 0 to '$ch' (or O, C, D, E ):   ' ; printf '                           '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
@@ -915,9 +915,8 @@ IFS="±"; read -n 1 inputs ; unset IFS
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
 printf "\r"
 done
-if [[  ${inputs}  -le $ch ]]; then var6=1; fi
-done
-if [[  ${inputs}  = [cC] ]]; then
+
+if [[  ${inputs}  = [dD] ]]; then
 			plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
@@ -925,7 +924,7 @@ if [[  ${inputs}  = [cC] ]]; then
 			var5=1
 fi
 
-if [[  ${inputs}  = [dD] ]]; then
+if [[  ${inputs}  = [eE] ]]; then
 			GET_AUTOMOUNTED
 			if [[ $apos = 0 ]]; then 
 				plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
@@ -933,7 +932,7 @@ if [[  ${inputs}  = [dD] ]]; then
 	var5=1
 fi
 
-if [[  ${inputs}  = [aA] ]]; then
+if [[  ${inputs}  = [oO] ]]; then
 	if [[ $autom_open = 0 ]]; then 	
 				plutil -replace AutoMount.Open -bool YES ${HOME}/.MountEFIconf.plist	
 					else
@@ -941,7 +940,7 @@ if [[  ${inputs}  = [aA] ]]; then
 	fi
 fi
 
-if [[  ${inputs}  = [bB] ]]; then
+if [[  ${inputs}  = [cC] ]]; then
 	if [[ $autom_exit = 0 ]]; then 	
 				plutil -replace AutoMount.ExitAfterMount -bool YES ${HOME}/.MountEFIconf.plist	
 					else
@@ -949,7 +948,7 @@ if [[  ${inputs}  = [bB] ]]; then
 	fi
 fi
 
-if [[ ! ${inputs} =~ ^[0aAbBcCdD]+$ ]]; then
+if [[ ! ${inputs} =~ ^[0oOeEdDcC]+$ ]]; then
 
 GET_AUTOMOUNTED
 	
@@ -966,6 +965,10 @@ if [[ ! $apos = 0 ]]; then
 							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist							
  							vari=1
 							am_check=1
+                            cat  ~/.SetupMountEFItemp.txt | sed "s/$inputs) auto  /$inputs) ....  /" >> ~/.SetupMountEFItemp2.txt
+                            rm ~/.SetupMountEFItemp.txt
+                            awk 'NR>1{printf "\n"} {printf $0}' ~/.SetupMountEFItemp2.txt > ~/.SetupMountEFItemp.txt
+                            rm  ~/.SetupMountEFItemp2.txt
 		fi
 
 	let "vari--"
@@ -976,9 +979,13 @@ if [[ $am_check = 0 ]]; then
 			strng1+=" "
 			strng1+=$uuid
 			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist
+            cat  ~/.SetupMountEFItemp.txt | sed "s/$inputs) ....  /$inputs) auto  /" >> ~/.SetupMountEFItemp2.txt
+            rm ~/.SetupMountEFItemp.txt
+            awk 'NR>1{printf "\n"} {printf $0}' ~/.SetupMountEFItemp2.txt > ~/.SetupMountEFItemp.txt
+            rm  ~/.SetupMountEFItemp2.txt
 fi
 	else
-		if [[ $inputs = 0 ]]; then GETEFI
+		if [[ $inputs = 0 ]]; then GETEFI; SHOW_AUTOEFI
 	fi				
 fi
 done
@@ -1165,7 +1172,6 @@ printf '\n\n     '
 }
 
 SHOW_EFIs(){
-stop=" lines в SHOW_EFIs"; DEBUG
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
 
 
