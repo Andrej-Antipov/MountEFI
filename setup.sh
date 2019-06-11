@@ -56,9 +56,10 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2 master
+# MountEFI версия скрипта настроек 1.2.1 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
+# Добавлена очистка отсутствующих томов из автомонтирования
 
 clear && printf "\033[0;0H"
 
@@ -622,6 +623,27 @@ printf '\n                          ! Change layout to UTF-8 ABC, US or EN !\n'
 fi
 }
 
+REM_ABSENT(){
+strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+alist=($strng1); apos=${#alist[@]}
+if [[ ! $apos = 0 ]]
+	then
+		var8=$apos
+		posb=0
+		while [[ ! $var8 = 0 ]]
+					do
+						if ! diskutil quiet info  ${alist[$posb]}  >&- 2>&- ; then  
+						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
+						plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
+						strng1=$strng2
+						fi
+					let "posb++"
+					let "var8--"
+					done
+alist=($strng1); apos=${#alist[@]}
+fi
+}
+
 GET_AUTOMOUNT(){
 autom_enabled=0
 strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
@@ -822,12 +844,13 @@ printf '\n'
 
 
 SET_AUTOMOUNT(){
+REM_ABSENT
 GETEFI
 var5=0
+ 
 while [ $var5 != 1 ] 
 do
-clear
-printf '\e[3J' && printf "\033[0;0H" 
+clear && printf '\e[3J' && printf "\033[0;0H" 
 SHOW_AUTOEFI
 GETAUTO_OPEN
 GETAUTO_EXIT
@@ -904,36 +927,28 @@ GET_AUTOMOUNTED
 	let "pois=inputs-1"
 	uuid=`diskutil info  ${slist[$pois]} | grep  "Volume UUID:" | sed 's|.*:||' | tr -d '\n\t '`
 if [[ ! $apos = 0 ]]; then
-#stop="после проверки на apos"; DEBUG
 	 let vari=$apos
 	poi=0
-#stop="перед циклом"; DEBUG
             while [ $vari != 0 ]
 		do
 		 if [[ ${alist[$poi]} = $uuid ]]; then 
-#stop="после проверки на uuid"; DEBUG
 							strng2=`echo ${strng1[@]}  |  sed 's/'$uuid'//'`
 							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist							
  							vari=1
 							am_check=1
-#stop="после удаления найденного uuid"; DEBUG
 		fi
 
 	let "vari--"
             let "poi++"
 	done
 fi
-#stop="после выхода из цикла"; DEBUG
 if [[ $am_check = 0 ]]; then 
-#stop="перед добавлением uuid"; DEBUG
 			strng1+=" "
 			strng1+=$uuid
 			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist
-#stop="после добавления uuid"; DEBUG
 fi
 	else
 		if [[ $inputs = 0 ]]; then GETEFI
-#stop="inputs точно 0"; DEBUG
 	fi				
 fi
 done

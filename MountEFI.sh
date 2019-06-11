@@ -56,12 +56,13 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.62.7 master
+# MountEFI версия 1.62.8 master
 # Добавлен параметр конфига OpenFinder, тип boolean. Если false - не открывать EFI после монтирования в Finder. Если уже был примонтирован - открывать. 
 # Сделано меню настройки отдельным скриптом и в него перенесены параметры настройки пароля и тем
 # Добавлен параметр и его обработка ShowKeys - включать/отключать подсказки по клавишам
 # Добавлены параметры для передачи цвета в кодах для эппл скрипт через конфиг
 # Добавлены опции в конфиг для автомонтирования EFI при старте программы
+# Проверка до автомонтирования есть ли такой диск и удаление его из списка если нет
 
 clear  && printf '\e[3J'
 
@@ -218,13 +219,39 @@ if [[ ! $strng = "AutoMount" ]]; then
 fi
 #########################################################################################################################################
 #Функция автомонтирования EFI по Volume UUID при запуске #################################################################################
+
+REM_ABSENT(){
+strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+alist=($strng1); apos=${#alist[@]}
+if [[ ! $apos = 0 ]]
+	then
+		var8=$apos
+		posb=0
+		while [[ ! $var8 = 0 ]]
+					do
+						if ! diskutil quiet info  ${alist[$posb]}  >&- 2>&- ; then  
+						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
+						plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
+						strng1=$strng2
+						fi
+					let "posb++"
+					let "var8--"
+					done
+alist=($strng1); apos=${#alist[@]}
+fi
+if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; am_enabled=0; fi
+}
+
 am_enabled=0
 strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
 if [[ $strng3 = "true" ]]; then am_enabled=1
 
+REM_ABSENT
 
-strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-alist=($strng3); apos=${#alist[@]}
+fi
+
+if [[ ! $am_enabled = 0 ]]; then 
+
 if [[ ! $apos = 0 ]]; then
 
 macos=`sw_vers -productVersion`
@@ -252,19 +279,18 @@ var9=$apos
 posa=0
 while [[ ! $var9 = 0 ]]
 do
-	
-if [[ $flag = 1 ]]; then
+	if [[ $flag = 1 ]]; then
       
         if [[ ! $mypassword = "0" ]]; then
-               echo $mypassword | sudo -S diskutil quiet mount  ${alist[$posa]} 2>/dev/null
+               echo $mypassword | sudo -S diskutil quiet mount  ${alist[$posa]} >&- 2>&-
 	    
                     else
                        sudo printf ' '
-                        sudo diskutil quiet mount  ${alist[$posa]} 
+                        sudo diskutil quiet mount  ${alist[$posa]} >&- 2>&-
 		               
          fi
 		else
-			diskutil quiet mount  ${alist[$posa]}
+			diskutil quiet mount  ${alist[$posa]} >&- 2>&-
 fi
 
 if  [[ $autom_open = 1 ]]; then 
