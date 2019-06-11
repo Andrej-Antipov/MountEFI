@@ -692,7 +692,7 @@ unset IFS;
 pos=${#dlist[@]}
 
 GET_SKEYS
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=21; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 let "lines=lines+pos"
 lists_updated=1
 
