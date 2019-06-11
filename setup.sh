@@ -690,7 +690,6 @@ rm -f   ~/.SetupMountEFItemp.txt
 
 GET_AUTOMOUNTED(){
 strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-stop="в автомаунтид"; DEBUG
 alist=($strng1); apos=${#alist[@]}
 }
 
@@ -890,7 +889,7 @@ if [[  ${inputs}  = [aA] ]]; then
 fi
 
 if [[  ${inputs}  = [bB] ]]; then
-	if [[ $autom_open = 0 ]]; then 	
+	if [[ $autom_exit = 0 ]]; then 	
 				plutil -replace AutoMount.ExitAfterMount -bool YES ${HOME}/.MountEFIconf.plist	
 					else
 				plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
