@@ -6,24 +6,24 @@ deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n'
-printf '............................................................\n'
+#printf '\n\n Останов '"$stop"'  :\n\n'
+#printf '............................................................\n'
 #term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
 #echo "choice = "$choice
 #echo "chs = "$chs
-echo "autom_open = "$autom_open
-echo "alist = "${alist[@]}
-echo "alist(posa) = "${alist[$posa]} 
-echo "am_enabled= "$am_enabled
-echo "apos ="$apos
-echo "posa = "$posa
-echo "strng3 = "$strng3
-echo "strng1 = "$strng1
+#echo "autom_open = "$autom_open
+#echo "alist = "${alist[@]}
+#echo "alist(posa) = "${alist[$posa]} 
+#echo "am_enabled= "$am_enabled
+#echo "apos ="$apos
+#echo "posa = "$posa
+#echo "strng3 = "$strng3
+#echo "strng1 = "$strng1
 #echo "ttys001 --------------------------------------------"
 #echo "mcheck = "$mcheck
 #echo "mounted= "$mounted
 #echo "was mounted = "$was_mounted
-echo "vname = "$vname
+#echo "vname = "$vname
 #echo "-----------------------------------------------------"
 #echo
 #echo "ttys000 --------------------------------------------"
@@ -37,18 +37,18 @@ echo "vname = "$vname
 #echo " layouts = "$layouts
 #echo "keyboard = "$keyboard
 #echo "layouts names = "${layouts_names[$num]}
-echo "mypassword = "$mypassword
+#echo "mypassword = "$mypassword
 #echo "login = "$login
-echo "var9 = "$var9
+#echo "var9 = "$var9
 #echo "current = "$current
 #echo "pcount = "$pcount
 #echo "plist = "${plist[@]}
 #echo "plist[num] = "${plist[$num]}
 #echo "demo = "$demo
 #echo "pik = "$pik
-echo "flag = "$flag
+#echo "flag = "$flag
 
-printf '............................................................\n\n'
+#printf '............................................................\n\n'
 sleep 0.5
 read  -n1 demo1
 fi
@@ -56,13 +56,15 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.62.8 master
+# MountEFI версия 1.62.9 master
 # Добавлен параметр конфига OpenFinder, тип boolean. Если false - не открывать EFI после монтирования в Finder. Если уже был примонтирован - открывать. 
 # Сделано меню настройки отдельным скриптом и в него перенесены параметры настройки пароля и тем
 # Добавлен параметр и его обработка ShowKeys - включать/отключать подсказки по клавишам
 # Добавлены параметры для передачи цвета в кодах для эппл скрипт через конфиг
 # Добавлены опции в конфиг для автомонтирования EFI при старте программы
 # Проверка до автомонтирования есть ли такой диск и удаление его из списка если нет
+# Исправлены ошибки в форматировании вывода 
+
 
 clear  && printf '\e[3J'
 
@@ -1022,7 +1024,9 @@ printf '\n\n'
 
 
 nogetlist=1
-if [[ ${noefi} = 0 ]]; then order=2; fi
+if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
+
+#printf "\r\033[2A"
 
 }
 
@@ -1230,8 +1234,8 @@ do
 	let "num++"
 	let "var0--"
 done
-
-printf "\n\r\n\033[5A"
+printf "\r\033[3A"
+#printf "\n\r\n\033[5A"
 
 		if [[ $loc = "ru" ]]; then
 	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
@@ -1283,6 +1287,7 @@ printf '\n\n'
 # Определение функции обновления информации  экрана при подключении и отключении разделов
 UPDATELIST(){
 
+
     clear && printf '\e[8;'${lines}';80t' && printf '\e[3J'
 
     if [[ ! $order = 3 ]] && [[ ! $order = 4 ]]; then
@@ -1293,9 +1298,9 @@ cat  ~/.MountEFItemp.txt | sed "s/$chs)   +  /$chs) ...  /" >> ~/.MountEFItemp2.
 	     fi
 
 rm ~/.MountEFItemp.txt
-mv  ~/.MountEFItemp2.txt ~/.MountEFItemp.txt
-#cat  -v ~/.MountEFItemp.txt
-#printf "\033[0;0H"
+awk 'NR>1{printf "\n"} {printf $0}' ~/.MountEFItemp2.txt > ~/.MountEFItemp.txt
+rm  ~/.MountEFItemp2.txt
+
 fi
 		if [[ $loc = "ru" ]]; then
         	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
@@ -1305,14 +1310,14 @@ fi
 	printf '\n\n      0)  повторить поиск разделов\n' 
 			else
         	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
 	printf '     '
-	printf '.%.0s' {1..68}
-	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
+	printf '.%.0s' {1..68} 
 	printf '\n\n      0)  update EFI partitions list             \n' 
-		fi
+        fi
 
 cat  -v ~/.MountEFItemp.txt
-#printf "\r\033[1A"
+
 	if [[ ! $order = 1 ]] || [[ ! $order = 0 ]]; then printf "\r\033[1A"; fi
     
 	printf '\n\n\n\n     '
@@ -1325,14 +1330,12 @@ if [[ ! $order = 3 ]]; then
 	printf '\n      E  -   найти и подключить EFI системного диска \n'
 	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
     printf '      I  -   дополнительное меню                     \n'
-    #printf '      P  -   сохранить/удалить пароль пользователя \n'
 	printf '      Q  -   закрыть окно и выход из программы\n\n'
     printf '                                                    \n' 
 			else
 	printf '\n      E  -   find and mount this system drive EFI \n' 
 	printf '      U  -   unmount ALL mounted  EFI partitions \n'
     printf '      I  -   extra menu                      \n'
-    #printf '      P  -   save/delete user password\n' 
 	printf '      Q  -   close terminal and exit from the program\n\n'
     printf '                                                    \n' 
 	     fi
