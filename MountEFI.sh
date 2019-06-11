@@ -11,18 +11,19 @@ printf '............................................................\n'
 #term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
 #echo "choice = "$choice
 #echo "chs = "$chs
-#echo "ch = "$ch
-#echo "dlist = "${dlist[@]}
-#echo "nlist = "${nlist[@]}
-echo "num = "$num
-#echo "pnum ="$pnum
-#echo "pos = "$pos
-#echo "string = "$string
+echo "autom_open = "$autom_open
+echo "alist = "${alist[@]}
+echo "alist(posa) = "${alist[$posa]} 
+echo "am_enabled= "$am_enabled
+echo "apos ="$apos
+echo "posa = "$posa
+echo "strng3 = "$strng3
+echo "strng1 = "$strng1
 #echo "ttys001 --------------------------------------------"
 #echo "mcheck = "$mcheck
 #echo "mounted= "$mounted
 #echo "was mounted = "$was_mounted
-#echo "vname = "$vname
+echo "vname = "$vname
 #echo "-----------------------------------------------------"
 #echo
 #echo "ttys000 --------------------------------------------"
@@ -32,19 +33,20 @@ echo "num = "$num
 #echo "Time Diff = "$TimeDiff
 #echo "xkbs = "$xkbs
 #echo "layout name = "$layout_name
-echo "var2 = "$var2
+#echo "var2 = "$var2
 #echo " layouts = "$layouts
 #echo "keyboard = "$keyboard
 #echo "layouts names = "${layouts_names[$num]}
-#echo "mypassword = "$mypassword
+echo "mypassword = "$mypassword
 #echo "login = "$login
-echo "var3 = "$var3
-echo "current = "$current
-echo "pcount = "$pcount
-echo "plist = "${plist[@]}
-echo "plist[num] = "${plist[$num]}
-echo "demo = "$demo
-echo "pik = "$pik
+echo "var9 = "$var9
+#echo "current = "$current
+#echo "pcount = "$pcount
+#echo "plist = "${plist[@]}
+#echo "plist[num] = "${plist[$num]}
+#echo "demo = "$demo
+#echo "pik = "$pik
+echo "flag = "$flag
 
 printf '............................................................\n\n'
 sleep 0.5
@@ -54,10 +56,12 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.62 master
+# MountEFI версия 1.62.7 master
 # Добавлен параметр конфига OpenFinder, тип boolean. Если false - не открывать EFI после монтирования в Finder. Если уже был примонтирован - открывать. 
-# Сделано меню нстройки отделным скриптом и в него перенесены параметры настройки пароля и тем
+# Сделано меню настройки отдельным скриптом и в него перенесены параметры настройки пароля и тем
 # Добавлен параметр и его обработка ShowKeys - включать/отключать подсказки по клавишам
+# Добавлены параметры для передачи цвета в кодах для эппл скрипт через конфиг
+# Добавлены опции в конфиг для автомонтирования EFI при старте программы
 
 clear  && printf '\e[3J'
 
@@ -82,6 +86,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
             echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
             echo '<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+	echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+	echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -95,57 +108,57 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>DodgerBlue4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{3341, 25186, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>MidnightBlue</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{8481, 10537, 33667}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>Yellow</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{65278, 64507, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>GreenField</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>DarkGreen</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{0, 29812, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>PaleGoldenrod</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{61937, 60395, 47288}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>Ocean</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>blue1</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{1028, 12850, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>White</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>Tolerance</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>ivory4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{40092, 40092, 38293}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>red4</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{40606, 4626, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
@@ -195,8 +208,77 @@ fi
 strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; fi
 
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "AutoMount" ]]; then 
+			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+fi
 #########################################################################################################################################
-################################# обработка параметра Menue или аргумента -m  ############################################################
+#Функция автомонтирования EFI по Volume UUID при запуске #################################################################################
+am_enabled=0
+strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng3 = "true" ]]; then am_enabled=1
+
+
+strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+alist=($strng3); apos=${#alist[@]}
+if [[ ! $apos = 0 ]]; then
+
+macos=`sw_vers -productVersion`
+macos=`echo ${macos//[^0-9]/}`
+macos=${macos:0:4}
+if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+
+
+mypassword="0"
+login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+    if [[ $login = "LoginPassword" ]]; then
+mypassword=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    fi
+
+
+autom_open=0
+strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng3 = "true" ]]; then autom_open=1; fi
+
+autom_exit=0
+strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng3 = "true" ]]; then autom_exit=1; fi
+
+var9=$apos
+posa=0
+while [[ ! $var9 = 0 ]]
+do
+	
+if [[ $flag = 1 ]]; then
+      
+        if [[ ! $mypassword = "0" ]]; then
+               echo $mypassword | sudo -S diskutil quiet mount  ${alist[$posa]} 2>/dev/null
+	    
+                    else
+                       sudo printf ' '
+                        sudo diskutil quiet mount  ${alist[$posa]} 
+		               
+         fi
+		else
+			diskutil quiet mount  ${alist[$posa]}
+fi
+
+if  [[ $autom_open = 1 ]]; then 
+				vname=`diskutil info ${alist[$posa]} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+				open "$vname"
+fi
+
+let "posa++"
+let "var9--"
+done
+	fi
+
+fi
+ ################################# обработка параметра Menue или аргумента -m  ############################################################
 menue=0
 HasMenue=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Menue" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 if [[ $HasMenue = "always" ]]; then menue=1; fi
@@ -352,10 +434,7 @@ fi
 
 #################################################################################################
 
-CUSTOM_SET(){
-
-#clear 
-
+GET_CURRENT_SET(){
 
 current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_background=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -363,8 +442,19 @@ current_foreground=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$curre
 current_fontname=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_fontsize=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 
-set_background_color $current_background
-set_foreground_color $current_foreground
+}
+
+
+CUSTOM_SET(){
+
+GET_CURRENT_SET
+
+if [[ ${current_background:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
+		else set_background_color $current_background
+fi
+if [[ ${current_foreground:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
+		else  set_foreground_color $current_foreground
+fi
 set_font "$current_fontname" $current_fontsize
 
 }
@@ -429,7 +519,7 @@ then
     printf '\e[8;25;96t'
     clear && printf '\e[3J'
 	if [ $loc = "ru" ]; then
-    printf '\n\n************     Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *************\n'
+    printf '\n\n************     Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *************\n'
 
     printf '\n\n Эта программа предназначена для быстрого обнаружения и подключения разделов EFI / ESP\n'
     printf ' Программа различает версию операционной системы, и если потребуется запрашивает пароль\n'
@@ -446,7 +536,7 @@ then
     
 			else
 
-    printf '\n\n************     This program mounts EFI partitions on Mac OS (X.11 - X.14)    *************\n'
+    printf '\n\n************     This program mounts EFI partitions on Mac OS (X.11 - X.15)    *************\n'
 
     printf '\n\n This program is designed to quickly detect and mount EFI / ESP partitions\n'
     printf ' The program checks the version of the operating system, and if necessary, requests a password\n'
@@ -557,6 +647,10 @@ if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app
     sleep 1.2; osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 }
+
+####### Выход по опции авто-монтирования #####################################
+if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then EXIT_PROGRAM; fi
+##############################################################################
 
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
@@ -911,9 +1005,9 @@ if [[ ${noefi} = 0 ]]; then order=2; fi
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]; then
+if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]; then
         vmacos="Disk Size:"
-        if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+        if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
     else
         vmacos="Total Size:"
         flag=0
@@ -947,9 +1041,9 @@ GET_THEME
 if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
 
     if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *******\n\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n\n'
 	                 fi
                     	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		
@@ -1178,13 +1272,13 @@ mv  ~/.MountEFItemp2.txt ~/.MountEFItemp.txt
 #printf "\033[0;0H"
 fi
 		if [[ $loc = "ru" ]]; then
-        	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
+        	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *******\n'
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
 	printf '.%.0s' {1..68} 
 	printf '\n\n      0)  повторить поиск разделов\n' 
 			else
-        	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+        	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
 	printf '     '
 	printf '.%.0s' {1..68}
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
@@ -1409,7 +1503,7 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiI]$ ]]; then unset choice; fi
 #if [[ ${choice} = [tT] ]]; then  SET_THEMES; choice="0"; order=4; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); ./setup.sh -r; REFRESH_SETUP; choice="0"; order=4; fi
+if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
@@ -1481,9 +1575,9 @@ if [[ ! $nogetlist = 1 ]]; then
         clear && printf '\e[3J'
 
 	if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *******\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
 	fi
 fi
         unset nlist
