@@ -9,16 +9,16 @@ if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n'
 printf '............................................................\n'
 
-echo "am_check = "$am_check
-echo "inputs = "$inputs
+#echo "am_check = "$am_check
+#echo "inputs = "$inputs
 echo "alist = "${alist[@]}
 echo "slist = "${slist[@]}
 echo "apos = "$apos
-echo "strng1 = "$strng1
-echo "strng2 = "$strng2
+echo "strng = "$strng
+#echo "strng2 = "$strng2
 echo "uuid = "$uuid
-echo "vari = "$vari
-echo "pois = "$pois
+#echo "vari = "$vari
+#echo "pois = "$pois
 echo "poi = "$poi
 echo "alist(poi) = "${alist[$poi]}
 
@@ -56,10 +56,11 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2.1 master
+# MountEFI версия скрипта настроек 1.2.2 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
+# Исключены mbr носители из автомонтирования ввиду ненужности. Они всегда монтируются системой автоматически. 
 
 clear && printf "\033[0;0H"
 
@@ -717,7 +718,7 @@ alist=($strng1); apos=${#alist[@]}
 
 
 SHOW_AUTOEFI(){
-let "lines=lines+pos -4"
+let "lines=lines+pos-4"
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
  if [[ $loc = "ru" ]]; then
   printf '\nВыберите раздел и опции автомонтирования:                                      '
@@ -783,10 +784,13 @@ do
 	         printf "\b$1${spin:$i:1}"
 
 	automounted=0
+    uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+        if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
 	 let var4=$apos
 	poi=0
-	uuid=`diskutil info  $strng | grep  "Volume UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+#	uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+#    if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
             while [ $var4 != 0 ]
 		do
 		 if [[ ${alist[$poi]} = $uuid ]]; then automounted=1; var4=1; fi
@@ -796,12 +800,15 @@ do
 	fi
 
 #          вывод подготовленного формата строки в файл "буфер экрана"
+    if [[ $unuv = 1 ]]; then
+            printf '\n      '$ch')   x    '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
+                else
 	if [[ $automounted = 0 ]]; then
 			printf '\n      '$ch') ....   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
 		else
 			printf '\n      '$ch') auto   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
 		fi
-
+    fi
             let "i++"
 	         i=$(( (i+1) %4 ))
 	         printf "\b$1${spin:$i:1}"    
@@ -925,7 +932,7 @@ GET_AUTOMOUNTED
 	
 	am_check=0
 	let "pois=inputs-1"
-	uuid=`diskutil info  ${slist[$pois]} | grep  "Volume UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+	uuid=`diskutil info  ${slist[$pois]} | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
 if [[ ! $apos = 0 ]]; then
 	 let vari=$apos
 	poi=0
