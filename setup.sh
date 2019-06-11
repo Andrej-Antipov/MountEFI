@@ -4,23 +4,24 @@
 demo1="0"
 deb=0
 
+
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n'
 printf '............................................................\n'
 
-#echo "am_check = "$am_check
+echo "lines = "$lines
 #echo "inputs = "$inputs
-echo "alist = "${alist[@]}
-echo "slist = "${slist[@]}
-echo "apos = "$apos
-echo "strng = "$strng
+#echo "alist = "${alist[@]}
+#echo "slist = "${slist[@]}
+#echo "apos = "$apos
+#echo "strng = "$strng
 #echo "strng2 = "$strng2
-echo "uuid = "$uuid
+#echo "uuid = "$uuid
 #echo "vari = "$vari
 #echo "pois = "$pois
-echo "poi = "$poi
-echo "alist(poi) = "${alist[$poi]}
+#echo "poi = "$poi
+#echo "alist(poi) = "${alist[$poi]}
 
 
 printf '............................................................\n\n'
@@ -29,7 +30,6 @@ read  -n1 demo1
 fi
 }
 #########################################################################################################################################
-
 par="$1"
 
 MyTTY1=`tty | tr -d " dev/\n"`
@@ -62,7 +62,10 @@ fi
 # Добавлена очистка отсутствующих томов из автомонтирования
 # Исключены mbr носители из автомонтирования ввиду ненужности. Они всегда монтируются системой автоматически. 
 
-clear && printf "\033[0;0H"
+
+#clear && printf "\033[0;0H"
+
+
 
 cd $(dirname $0)
 
@@ -450,6 +453,20 @@ fi
 
 #########################################################################################################################################
 
+strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
+if [[ $par = "-r" ]]; then
+ShowKeys=1
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then ShowKeys=0; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=21; fi
+else
+lines=21 
+fi
+let "lines=lines+pos"
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+clear
+
 
 # Определение функций кастомизации интерфейса #############################################
 ############################################################################################
@@ -563,8 +580,6 @@ if [[ $mypassword = 0 ]]
                mypassword_set="not saved"; pass_corr=24
                     fi
     else 
-        #mypassword_set="пароль: "
-        #mypassword_set+=`echo ${mypassword}`
         mypassword_set=`echo ${mypassword}`
         passl=`echo ${#mypassword}`
         if [[ $loc = "ru" ]]; then
@@ -619,7 +634,6 @@ printf '\n                          ! Смените раскладку на л�
             else
 printf '\n                          ! Change layout to UTF-8 ABC, US or EN !\n'
         fi
-# printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi  
 	 fi
 fi
 }
@@ -704,7 +718,15 @@ GETEFI(){
 
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
-lines=25; let "lines=lines+pos"
+if [[ $par = "-r" ]]; then
+ShowKeys=1
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then ShowKeys=0; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=21; fi
+else
+lines=21 
+fi
+let "lines=lines+pos"
 rm -f   ~/.SetupMountEFItemp.txt
 
 }
@@ -718,7 +740,6 @@ alist=($strng1); apos=${#alist[@]}
 
 
 SHOW_AUTOEFI(){
-let "lines=lines+pos-4"
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
  if [[ $loc = "ru" ]]; then
   printf '\nВыберите раздел и опции автомонтирования:                                      '
@@ -789,8 +810,6 @@ do
 	if [[ ! $apos = 0 ]]; then
 	 let var4=$apos
 	poi=0
-#	uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
-#    if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
             while [ $var4 != 0 ]
 		do
 		 if [[ ${alist[$poi]} = $uuid ]]; then automounted=1; var4=1; fi
@@ -848,17 +867,8 @@ printf '\n'
 
 }
 
+UPDATE_KEYS_INFO(){
 
-
-SET_AUTOMOUNT(){
-REM_ABSENT
-GETEFI
-var5=0
- 
-while [ $var5 != 1 ] 
-do
-clear && printf '\e[3J' && printf "\033[0;0H" 
-SHOW_AUTOEFI
 GETAUTO_OPEN
 GETAUTO_EXIT
  if [[ $loc = "ru" ]]; then
@@ -874,6 +884,19 @@ printf '      c) Cancel selected and return to menu                             
 printf '      d) Return to the menu saving settings                                     \n\n\n'
 fi
 
+}
+
+
+SET_AUTOMOUNT(){
+REM_ABSENT
+GETEFI
+var5=0
+ 
+while [ $var5 != 1 ] 
+do
+clear && printf '\e[3J' && printf "\033[0;0H" 
+SHOW_AUTOEFI
+UPDATE_KEYS_INFO
 var6=0
 while [ $var6 != 1 ] 
 do
@@ -1142,6 +1165,7 @@ printf '\n\n     '
 }
 
 SHOW_EFIs(){
+stop=" lines в SHOW_EFIs"; DEBUG
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
 
 
@@ -1171,7 +1195,8 @@ SETUP_THEMES(){
 
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
-lines=25; let "lines=lines+pos"
+lines=21; let "lines=lines+pos"
+
 
 var0=$pos
 		num=0

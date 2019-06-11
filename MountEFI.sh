@@ -545,7 +545,7 @@ then
     printf '\e[8;25;96t'
     clear && printf '\e[3J'
 	if [ $loc = "ru" ]; then
-    printf '\n\n************     Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *************\n'
+    printf '\n\n************     Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *************\n'
 
     printf '\n\n Эта программа предназначена для быстрого обнаружения и подключения разделов EFI / ESP\n'
     printf ' Программа различает версию операционной системы, и если потребуется запрашивает пароль\n'
@@ -562,7 +562,7 @@ then
     
 			else
 
-    printf '\n\n************     This program mounts EFI partitions on Mac OS (X.11 - X.15)    *************\n'
+    printf '\n\n************     This program mounts EFI partitions on Mac OS (X.11 - X.14)    *************\n'
 
     printf '\n\n This program is designed to quickly detect and mount EFI / ESP partitions\n'
     printf ' The program checks the version of the operating system, and if necessary, requests a password\n'
@@ -1067,9 +1067,9 @@ GET_THEME
 if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
 
     if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *******\n\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
 	                 fi
                     	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		
@@ -1298,13 +1298,13 @@ mv  ~/.MountEFItemp2.txt ~/.MountEFItemp.txt
 #printf "\033[0;0H"
 fi
 		if [[ $loc = "ru" ]]; then
-        	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *******\n'
+        	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
 	printf '.%.0s' {1..68} 
 	printf '\n\n      0)  повторить поиск разделов\n' 
 			else
-        	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
+        	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	printf '     '
 	printf '.%.0s' {1..68}
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'  
@@ -1601,9 +1601,9 @@ if [[ ! $nogetlist = 1 ]]; then
         clear && printf '\e[3J'
 
 	if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *******\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	fi
 fi
         unset nlist
