@@ -459,9 +459,9 @@ if [[ $par = "-r" ]]; then
 ShowKeys=1
 strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0; fi
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=21; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 else
-lines=21 
+lines=23 
 fi
 let "lines=lines+pos"
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
@@ -722,9 +722,9 @@ if [[ $par = "-r" ]]; then
 ShowKeys=1
 strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0; fi
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=21; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 else
-lines=21 
+lines=22 
 fi
 let "lines=lines+pos"
 
@@ -955,12 +955,14 @@ GET_AUTOMOUNTED
 	am_check=0
 	let "pois=inputs-1"
 	uuid=`diskutil info  ${slist[$pois]} | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+    if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 if [[ ! $apos = 0 ]]; then
 	 let vari=$apos
 	poi=0
             while [ $vari != 0 ]
 		do
 		 if [[ ${alist[$poi]} = $uuid ]]; then 
+            if [[ $unuv = 0 ]]; then 
 							strng2=`echo ${strng1[@]}  |  sed 's/'$uuid'//'`
 							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist							
  							vari=1
@@ -969,6 +971,7 @@ if [[ ! $apos = 0 ]]; then
                             rm ~/.SetupMountEFItemp.txt
                             awk 'NR>1{printf "\n"} {printf $0}' ~/.SetupMountEFItemp2.txt > ~/.SetupMountEFItemp.txt
                             rm  ~/.SetupMountEFItemp2.txt
+            fi                
 		fi
 
 	let "vari--"
@@ -976,6 +979,7 @@ if [[ ! $apos = 0 ]]; then
 	done
 fi
 if [[ $am_check = 0 ]]; then 
+        if [[ $unuv = 0 ]]; then 
 			strng1+=" "
 			strng1+=$uuid
 			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist
@@ -983,6 +987,7 @@ if [[ $am_check = 0 ]]; then
             rm ~/.SetupMountEFItemp.txt
             awk 'NR>1{printf "\n"} {printf $0}' ~/.SetupMountEFItemp2.txt > ~/.SetupMountEFItemp.txt
             rm  ~/.SetupMountEFItemp2.txt
+        fi
 fi
 	else
 		if [[ $inputs = 0 ]]; then GETEFI; SHOW_AUTOEFI
@@ -1201,7 +1206,7 @@ SETUP_THEMES(){
 
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
-lines=21; let "lines=lines+pos"
+lines=22; let "lines=lines+pos"
 
 
 var0=$pos
