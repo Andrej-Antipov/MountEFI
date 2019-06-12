@@ -711,9 +711,11 @@ if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then
         auto_timeout=0
         strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
         if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
-    if [[ ! $auto_timeout = 0 ]]; then 
+    if [[ $auto_timeout = 0 ]]; then EXIT_PROGRAM
+                else
               COUNTDOWN $auto_timeout
-            if [[ $demo = "±" ]]; then  EXIT_PROGRAM; fi
+            if [[ $demo = "±" ]]; then  EXIT_PROGRAM
+        fi
     fi
 fi
 ######################################################################################################################
