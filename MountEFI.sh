@@ -56,11 +56,14 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.63.0 master
+# MountEFI версия 1.63.1 master
 # Добавлена очистка истории от записей запусков MountEFI
+# Добавлен таймаут прерывания выхода для автомонтирования
+# Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
 
 
 clear  && printf '\e[3J'
+printf "\033[?25l"
 
 cd $(dirname $0)
 
@@ -84,14 +87,16 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
             echo '<dict>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-	echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>5</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -213,6 +218,11 @@ if [[ ! $strng = "AutoMount" ]]; then
 			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
 fi
+
+strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
+if [[ ! $strng = "Timeout2Exit" ]]; then
+            plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+fi
 #########################################################################################################################################
 #Функция автомонтирования EFI по Volume UUID при запуске #################################################################################
 
@@ -300,6 +310,8 @@ done
 	fi
 
 fi
+################################################ конец функции автомонтирования ########################################################## 
+
  ################################# обработка параметра Menue или аргумента -m  ############################################################
 menue=0
 HasMenue=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Menue" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -671,9 +683,40 @@ if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app
 fi
 }
 
-####### Выход по опции авто-монтирования #####################################
-if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then EXIT_PROGRAM; fi
-##############################################################################
+COUNTDOWN(){ 
+        printf '\n\n\n'
+        local t=$1 remaining=$1;
+        SECONDS=0; demo="±"
+        while sleep .01; do
+                if [[ $loc = "ru" ]]; then
+            printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
+                    else
+            printf '\rPress any key to brake countdown. Exit timeout: '"$remaining"' '
+                fi
+            read -t 1 -n1 demo
+                if [[ ! $demo = "±" ]]; then  break; fi
+            if (( (remaining=t-SECONDS) <=0 )); then
+                if [[ $loc = "ru" ]]; then
+            printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
+                    else
+            printf '\rPress any key to brake countdown. Exit timeout: '"$remaining"' '
+                fi
+                break;
+            fi;
+        done
+}
+
+####### Выход по опции авто-монтирования c проверкой таймаута    ####################################################
+if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then 
+        auto_timeout=0
+        strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
+    if [[ ! auto_timeout = 0 ]]; then
+        COUNTDOWN $auto_timeout
+            if [[ $demo = "±" ]]; then  EXIT_PROGRAM; fi
+    fi
+fi
+######################################################################################################################
 
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
@@ -1508,11 +1551,12 @@ if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 
 if [[ ${ch} -le 8 ]]; then
 SET_INPUT
+printf "\033[?25h"
 IFS="±"; read -n 1 choice ; unset IFS ; sym=1 
 else
 IFS="±"; read choice; unset IFS ; CYRILLIC_TRANSLIT ; sym=2 ; if  [[ ${choice} = "" ]]; then choice="  "; fi
 fi
-
+printf "\033[?25l"
 
 if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
 
