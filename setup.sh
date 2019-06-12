@@ -57,13 +57,14 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2.4 master
+# MountEFI версия скрипта настроек 1.2.5 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
 # Исключены mbr носители из автомонтирования ввиду ненужности. Они всегда монтируются системой автоматически. 
 # Очистка от записей MountEFI истории bash перед выходом
 # Установка таймаута закрытия программы после автомонтировая
+# Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
 
 
 #clear && printf "\033[0;0H"
@@ -933,10 +934,12 @@ printf '  Enter a number from 0 to '$ch' (or O, C, D, E ):   ' ; printf '       
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 printf "\r\033[48C"
+printf "\033[?25h"
 IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
 printf "\r"
 done
+printf "\033[?25l"
 
 if [[  ${inputs}  = [dD] ]]; then
 			plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
@@ -1047,6 +1050,7 @@ clear
 }
 
 GET_INPUT(){
+
 unset inputs
 while [[ ! ${inputs} =~ ^[0-8qQ]+$ ]]; do
 
@@ -1058,10 +1062,12 @@ printf '  Enter a number from 0 to 8 (or Q - exit ):   ' ; printf '             
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 printf "\r\033[45C"
+printf "\033[?25h"
 IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
 printf "\r"
 done
+printf "\033[?25l"
 
 }
 
@@ -1296,6 +1302,7 @@ var4=0
 while [ $var4 != 1 ] 
 do
 printf '\e[3J' && printf "\033[0;0H" 
+printf "\033[?25l"
 UPDATE_SCREEN
 SET_INPUT
 GET_INPUT
