@@ -1408,6 +1408,7 @@ if [[ $inputs = 8 ]]; then
  else 
   plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
   SET_AUTOMOUNT
+    rm -f ~/.SetupMountEFItemp.txt
   fi
 fi  
 ###############################################################################
