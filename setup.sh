@@ -990,7 +990,9 @@ if [[  ${inputs}  = [tT] ]]; then
 			           else
                     printf '\n  Enter the timeout in seconds   ' 
                     fi
+                    printf "\033[?25h"
                     read get_num
+                    printf "\033[?25l"
                     printf "\r\033[1A"
                     if [[ ${get_num} -gt 999 ]]; then unset get_num; fi 2>&-
                     done
