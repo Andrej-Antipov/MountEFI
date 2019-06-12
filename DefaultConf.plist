@@ -12,6 +12,8 @@
 		<false/>
 		<key>PartUUIDs</key>
 		<string> </string>
+		<key>Timeout2Exit</key>
+		<integer>5</integer>
 	</dict>
 	<key>CurrentPreset</key>
 	<string>BlueSky</string>

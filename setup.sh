@@ -44,6 +44,7 @@ let "TTYc=AllTTYc-MyTTYc"
 
 # Выход из программы с проверкой - выгружать терминал из трея или нет
 EXIT_PROG(){
+cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
 CHECK_TTY_C	
 if [[ ${TTYc} = 0  ]]; then  sleep 0.5; osascript -e 'quit app "terminal.app"' & exit
 	else
@@ -56,11 +57,13 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2.2 master
+# MountEFI версия скрипта настроек 1.2.4 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
 # Исключены mbr носители из автомонтирования ввиду ненужности. Они всегда монтируются системой автоматически. 
+# Очистка от записей MountEFI истории bash перед выходом
+# Установка таймаута закрытия программы после автомонтировая
 
 
 #clear && printf "\033[0;0H"
@@ -320,14 +323,16 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
             echo '<dict>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-	echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-	echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>5</integer>' >> ${HOME}/.MountEFIconf.plist
+	        echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -450,7 +455,10 @@ if [[ ! $strng = "AutoMount" ]]; then
 			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
 fi
 
-
+strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
+if [[ ! $strng = "Timeout2Exit" ]]; then
+            plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+fi
 #########################################################################################################################################
 
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
@@ -713,6 +721,17 @@ if [[ $strng = "true" ]]; then autom_exit=1
 fi
 }
 
+GETAUTO_TIMEOUT(){
+auto_timeout=0
+strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
+ncorr=${#auto_timeout}
+        if [[ $loc = "ru" ]]; then
+         let "tmo_corr=5-ncorr" 
+            else
+         let "tmo_corr=11-ncorr"
+            fi
+}
 
 GETEFI(){
 
@@ -844,15 +863,18 @@ UPDATE_KEYS_INFO(){
 
 GETAUTO_OPEN
 GETAUTO_EXIT
+GETAUTO_TIMEOUT
  if [[ $loc = "ru" ]]; then
-printf '\n'
+#printf '\n'
 printf '      O) Открывать папку EFI после подключения = "'$amo_set'"'"%"$amo_corr"s"'(Да, Нет) \n'
-printf '      C) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n\n'
+printf '      C) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n'
+printf '      T) Задержка в секундах для отмены закрытия программы:'"%"$tmo_corr"s"'{'$auto_timeout' сек}        \n\n'
 printf '      D) Отменить выбранные и вернуться в меню                                  \n'
 printf '      E) Вернуться в меню. Настройки остаются                                   \n\n\n'
 else
 printf '      O) Open the EFI folder after mounting = "'$amo_set'"'"%"$amo_corr"s"'(Yes, No)\n'
-printf '      C) Close the program after mounting = "'$ame_set'"'"%"$ame_corr"s"'(Yes, No)  \n\n'
+printf '      C) Close the program after mounting = "'$ame_set'"'"%"$ame_corr"s"'(Yes, No)  \n'
+printf '      T) Timeout in seconds to stop closing programm:'"%"$tmo_corr"s"'{'$auto_timeout' sec}         \n\n'
 printf '      D) Cancel selected and return to menu                                     \n'
 printf '      E) Return to the menu saving settings                                     \n\n\n'
 fi
@@ -901,7 +923,7 @@ UPDATE_AUTOEFI
 printf '\n'
 UPDATE_KEYS_INFO
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9oOeEdDcC]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9oOeEdDcCtT]+$ ]]; do 
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до '$ch' (или O, C, D, E ):   ' ; printf '                             '
@@ -921,6 +943,7 @@ if [[  ${inputs}  = [dD] ]]; then
 			plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -replace AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+            plutil -replace AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
 			var5=1
 fi
 
@@ -948,7 +971,32 @@ if [[  ${inputs}  = [cC] ]]; then
 	fi
 fi
 
-if [[ ! ${inputs} =~ ^[0oOeEdDcC]+$ ]]; then
+if [[  ${inputs}  = [tT] ]]; then
+        var7=0
+        while [[ ! $var7 = 1 ]] 
+            do
+                    unset get_num
+                    while [[ ! ${get_num} =~ ^[0-9]+$ ]]
+                    do
+                    printf "\r\033[1A"
+                    printf '\n                                                      '
+                    printf '\n                                                      '
+                    printf "\r\033[2A"
+                    if [[ $loc = "ru" ]]; then
+                    printf '\n  Введите время задержки выхода в секундах:  ' 
+			           else
+                    printf '\n  Enter the timeout in seconds   ' 
+                    fi
+                    read get_num
+                    printf "\r\033[1A"
+                    if [[ ${get_num} -gt 999 ]]; then unset get_num; fi 2>&-
+                    done
+            plutil -replace AutoMount.Timeout2Exit -integer ${get_num} ${HOME}/.MountEFIconf.plist    
+            var7=1
+            done
+fi
+
+if [[ ! ${inputs} =~ ^[0oOeEdDcCtT]+$ ]]; then
 
 GET_AUTOMOUNTED
 	
