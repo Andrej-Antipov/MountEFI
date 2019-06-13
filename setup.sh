@@ -7,8 +7,8 @@ deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-#printf '\n\n Останов '"$stop"'  :\n\n'
-#printf '............................................................\n'
+printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt
+printf '............................................................\n' >> ~/temp.txt
 
 #echo "lines = "$lines
 #echo "inputs = "$inputs
@@ -22,11 +22,19 @@ if [[ ! $deb = 0 ]]; then
 #echo "pois = "$pois
 #echo "poi = "$poi
 #echo "alist(poi) = "${alist[$poi]}
+echo "ddcorr = "$ddcorr >> ~/temp.txt
+echo "corr = "$corr >> ~/temp.txt
+echo "scorr = "$scorr >> ~/temp.txt
+printf 'string = *'$string'*\n' >> ~/temp.txt
+printf 'ddrive = *'"$ddrive"'*\n' >> ~/temp.txt
+printf 'len ddrive = '${#ddrive}'\n' >> ~/temp.txt
+echo "strng = "$strng >> ~/temp.txt
+echo "adrive = ""$adrive" >> ~/temp.txt
 
 
-#printf '............................................................\n\n'
+printf '............................................................\n\n' >> ~/temp.txt
 sleep 0.5
-read  -n1 demo1
+read  -s -n1 
 fi
 }
 #########################################################################################################################################
@@ -57,7 +65,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2.5 master
+# MountEFI версия скрипта настроек 1.2.6 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
@@ -65,7 +73,7 @@ fi
 # Очистка от записей MountEFI истории bash перед выходом
 # Установка таймаута закрытия программы после автомонтировая
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
-
+# Возможность сохранять в конфиге псевдоним для вывода вместо имени физического диска 
 
 #clear && printf "\033[0;0H"
 
@@ -751,7 +759,6 @@ let "lines=lines+pos"
 }
 
 
-
 GET_AUTOMOUNTED(){
 strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 alist=($strng1); apos=${#alist[@]}
@@ -871,13 +878,13 @@ printf '      O) Открывать папку EFI после подключен
 printf '      C) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n'
 printf '      T) Задержка в секундах для отмены закрытия программы:'"%"$tmo_corr"s"'{'$auto_timeout' сек}        \n\n'
 printf '      D) Отменить выбранные и вернуться в меню                                  \n'
-printf '      E) Вернуться в меню. Настройки остаются                                   \n\n\n'
+printf '      Q) Вернуться в меню. Настройки остаются                                   \n\n\n'
 else
 printf '      O) Open the EFI folder after mounting = "'$amo_set'"'"%"$amo_corr"s"'(Yes, No)\n'
 printf '      C) Close the program after mounting = "'$ame_set'"'"%"$ame_corr"s"'(Yes, No)  \n'
 printf '      T) Timeout in seconds to stop closing programm:'"%"$tmo_corr"s"'{'$auto_timeout' sec}         \n\n'
 printf '      D) Cancel selected and return to menu                                     \n'
-printf '      E) Return to the menu saving settings                                     \n\n\n'
+printf '      Q) Return to the menu saving settings                                     \n\n\n'
 fi
 }
 
@@ -901,7 +908,7 @@ if [[ $loc = "ru" ]]; then
 	printf '      0)  update EFI partitions list             \n' 
         fi
 
-cat  -v ~/.SetupMountEFItemp.txt
+cat   ~/.SetupMountEFItemp.txt
 DEBUG
 printf '\n\n     '
 	printf '.%.0s' {1..68}
@@ -924,7 +931,7 @@ UPDATE_AUTOEFI
 printf '\n'
 UPDATE_KEYS_INFO
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9oOeEdDcCtT]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9oOqQdDcCtT]+$ ]]; do 
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до '$ch' (или O, C, D, E ):   ' ; printf '                             '
@@ -950,12 +957,12 @@ if [[  ${inputs}  = [dD] ]]; then
 			var5=1
 fi
 
-if [[  ${inputs}  = [eE] ]]; then
+if [[  ${inputs}  = [qQ] ]]; then
 			GET_AUTOMOUNTED
 			if [[ $apos = 0 ]]; then 
 				plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
 			fi
-	var5=1
+	var5=1; unset inputs
 fi
 
 if [[  ${inputs}  = [oO] ]]; then
@@ -1054,12 +1061,12 @@ clear
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-8qQ]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQ]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до 8 (или Q - выход ):   ' ; printf '                             '
+printf '  Введите число от 0 до 9 (или Q - выход ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to 8 (or Q - exit ):   ' ; printf '                           '
+printf '  Enter a number from 0 to 9 (or Q - exit ):   ' ; printf '                           '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
@@ -1084,6 +1091,7 @@ printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(с�
 printf ' 6) Пресет "'$itheme_set'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"'\n'
 printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)                       \n'
 printf ' 8) Подключить EFI при запуске  = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)                       \n'
+printf ' 9) Создать или править псевдонимы физических носителей                       \n'
 #printf ' 8) Редактировать встроенные пресеты                                     \n'
 
             else
@@ -1096,6 +1104,7 @@ printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in) \n'
 printf ' 6) Theme preset "'$itheme_set'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name) \n'
 printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)               \n'
 printf ' 8) Mount EFI on startup. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)               \n'
+printf ' 9) Create or edit aliases physical device/media                              \n'
 #printf ' 8) Edit built-in themes presets                                                \n'
 
             fi
@@ -1224,7 +1233,7 @@ printf "\n\r\n\033[5A"
         fi
 
 
-cat  -v ~/.SetupMountEFItemp.txt
+cat   ~/.SetupMountEFItemp.txt
 
 
 printf '\n\n\n     '
@@ -1294,6 +1303,303 @@ SHOW_COLOR_TUNING
 read -n1
 rm -f   ~/.SetupMountEFItemp.txt 
 
+}
+
+####################################### псевдонимы #############################################################################
+GET_FULL_EFI(){
+
+strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
+if [[ $par = "-r" ]]; then
+ShowKeys=1
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then ShowKeys=0; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
+else
+lines=22 
+fi
+let "lines=lines+pos"
+
+if [[ ! $pos = 0 ]]; then 
+		var0=$pos
+		num=0
+		dnum=0
+	while [ $var0 != 0 ] 
+		do
+		strng=`echo ${slist[$num]}`
+		dstring=`echo $strng | rev | cut -f2-3 -d"s" | rev`
+		dlenth=`echo ${#dstring}`
+
+		checkvirt=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+		
+		if [[ "$checkvirt" = "Disk Image" ]]; then
+		unset slist[$num]
+		let "pos--"
+		else 
+		nslist+=( $num )
+		fi
+		let "var0--"
+		let "num++"
+	done
+fi
+}
+
+################################ получение имени диска для переименования ##########################################################
+GET_RENAMEHD(){
+adrive="±"
+unset strng
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+IFS=';'; rlist=($strng); unset IFS
+rcount=${#rlist[@]}
+if [[ ! $rcount = 0 ]]; then
+        var=$rcount; posr=0
+            while [[ ! $var = 0 ]]
+         do
+            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d":"`
+            if [[ "$rdrive" = "$drive" ]]; then adrive=`echo "${rlist[posr]}" | rev | cut -f1 -d":" | rev`; renamed=1; break; fi
+            let "var--"
+            let "posr++"
+         done
+fi
+}
+######################################################################################################################################
+
+SHOW_FULL_EFI(){
+rm -f ~/.SetupMountEFIAtemp.txt
+rm -f ~/.SetupMountEFItemp.txt
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+                if [[ $loc = "ru" ]]; then
+        printf '                             Настройкa псевдонимов                           '
+			else
+        printf '                                 Aliases setup                               '
+	                 fi
+var0=$pos; num=0 ; ch=0
+
+macos=`sw_vers -productVersion`
+macos=`echo ${macos//[^0-9]/}`
+macos=${macos:0:4}
+if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
+        vmacos="Disk Size:"
+    else
+        vmacos="Total Size:"
+fi
+
+if [[ $loc = "ru" ]]; then
+    printf '\n\n\n    0)  поиск разделов .....    '
+		else
+	printf '\n\n\n    0)  updating partitions list .....      '
+        fi
+
+spin='-\|/'
+i=0
+printf "$1${spin:$i:1}"
+
+while [ $var0 != 0 ] 
+do 
+	let "ch++"
+
+	let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+
+	pnum=${nslist[num]}
+	string=`echo ${slist[$pnum]}`
+	
+		
+				
+		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+		dlenth=`echo ${#dstring}`
+		let "corr=9-dlenth"
+
+		drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+        GET_RENAMEHD
+		dcorr=${#drive}
+		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
+		
+	
+
+	let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+
+        
+#          вывод подготовленного формата строки в файл "буфер экрана"
+
+    dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+
+    		scorr=`echo ${#dsize}`
+    		let "scorr=scorr-5"
+    		let "scorr=6-scorr"
+
+    mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+
+        if [[ $adrive = "±" ]]; then 
+            ddcorr=${#drive}
+            ddrive="$drive"
+		 else
+            ddcorr=${#adrive}
+            ddrive="${adrive}"
+            fi
+            
+            if [[ ${ddcorr} -gt 30 ]]; then ddcorr=0; ddrive="${ddrive:0:30}"; else let "ddcorr=30-ddcorr"; fi
+		    
+            
+
+	                 if [[ ! $mcheck = "Yes" ]]; then
+			printf '\n      '$ch') ...   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     '  >> ~/.SetupMountEFItemp.txt
+		else
+			printf '\n      '$ch')   +   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     '  >> ~/.SetupMountEFItemp.txt
+		fi
+	
+
+
+                    if [[ ! $adrive = "±" ]]; then 
+                    acorr=${#adrive}
+		          if [[ ${acorr} -gt 30 ]]; then acorr=0; adrive="${adrive:0:30}"; else let "acorr=30-acorr"; fi
+		      printf '\n   '$ch') '"$drive""%"$dcorr"s""$adrive""%"$acorr"s""%"$corr"s"'  '${string:0:5}  >> ~/.SetupMountEFIAtemp.txt
+                    else
+              printf '\n   '$ch') '"$drive""%"$dcorr"s"'                              '"%"$corr"s"'  '${string:0:5}  >> ~/.SetupMountEFIAtemp.txt
+                   fi
+
+    let "num++"
+	let "var0--"
+done
+printf "\r\033[4A"
+
+
+}
+
+UPDATE_FULL_EFI(){
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+                if [[ $loc = "ru" ]]; then
+        printf '                             Настройка псевдонимов                              '
+			else
+        printf '                                 Aliases setup                                 '
+	                 fi
+
+if [[ $vid = 0 ]]; then
+
+            if [[ $loc = "ru" ]]; then
+	printf '\n   '
+	printf '.%.0s' {1..74} 
+	printf '                                                                               \n'
+	printf '   0)  повторить поиск разделов     |<----------- 30 ----------->|*           \n' 	
+		else
+	printf '\n   '
+	printf '.%.0s' {1..74} 
+	printf '                                                                                \n'
+	printf '   0)  update EFI partitions list   |<----------- 30 ----------->|*            \n' 
+        fi
+
+cat   ~/.SetupMountEFIAtemp.txt
+
+printf '\n\n   '
+	printf '.%.0s' {1..74}
+printf '\n'
+                    else
+
+            if [[ $loc = "ru" ]]; then
+	printf '\n     '
+	printf '.%.0s' {1..68}
+    printf ' ' 
+    printf '                                                                               \n'
+	printf '      0)  повторить поиск разделов                                     \n' 
+		else
+	printf '\n     '
+	printf '.%.0s' {1..68} 
+    printf '                                                                                \n'
+	printf '      0)  update EFI partitions list                                           \n' 
+        fi
+
+
+cat   ~/.SetupMountEFItemp.txt
+
+    printf '\n\n     '
+	printf '.%.0s' {1..68}
+    printf '    '
+    printf '\n'
+
+fi
+                    if [[ $loc = "ru" ]]; then
+        if [[ $vid = 0 ]]; then
+        printf '            * Псевдоним не должен быть длиннее 30 символов                  \n\n'
+                            else
+        printf '                                                                            \n\n'
+        fi
+        printf '               С)    Сменить режим предпросмотра                               \n'
+        printf '               V)    Посмотреть всю базу псевдонимов                           \n'
+        printf '               D)    Удалить всю базу псевдонимов!                             \n'
+        printf '               Q)    Вернуться в главное меню                                  \n\n' 
+
+                    else
+        if [[ $vid = 0 ]]; then
+        printf '            *  Aliases should not be longer than 30 characters                  \n\n'
+                    else
+        printf '            *                                                                   \n\n'
+        fi
+        printf '               С)    Change the preview mode                                   \n'
+        printf '               V)    View the entire alias database                            \n'
+        printf '               D)    Delete the entire alias database!                         \n'
+        printf '               Q)    Quit to the main menu                                     \n\n' 
+
+                    fi
+
+
+
+
+}
+
+
+
+SET_ALIASES(){
+clear
+GET_FULL_EFI
+SHOW_FULL_EFI
+vid=0
+UPDATE_FULL_EFI
+var8=0
+while [ $var8 != 1 ] 
+do
+
+unset inputs
+while [[ ! ${inputs} =~ ^[0-9vVcCdDqQ]+$ ]]; do 
+
+                if [[ $loc = "ru" ]]; then
+printf '  Выберите носитель от 1 до '$ch' (или 0, C, V, D, Q ):  '
+			else
+printf '  Select media from 1 to '$ch' (or 0, C, V, D, Q ):      '
+                fi
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[4A"
+if [[ $loc = "ru" ]]; then
+printf "\r\033[52C"
+else
+printf "\r\033[48C"
+fi
+printf "\033[?25h"
+IFS="±"; read -n 1 inputs ; unset IFS 
+if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
+printf "\r"
+done
+printf "\033[?25l"
+
+if [[ $inputs = [cC] ]]; then 
+    if [[ $vid = 0 ]]; then vid=1; else vid=0; fi
+fi
+
+if [[ $inputs = [qQ] ]]; then var8=1; unset inputs;  fi
+
+if [[ $inputs = 0 ]]; then GET_FULL_EFI; clear && printf '\e[3J' && printf "\033[0;0H"; SHOW_FULL_EFI
+fi
+
+UPDATE_FULL_EFI
+
+done
+
+unset slist
+rm -f ~/.SetupMountEFIAtemp.txt
+rm -f ~/.SetupMountEFItemp.txt
+clear
 }
 ###############################################################################
 ################### MAIN ######################################################
@@ -1412,6 +1718,16 @@ if [[ $inputs = 8 ]]; then
   fi
 fi  
 ###############################################################################
+
+# создание псевдонимов имён дисков  ################################
+if [[ $inputs = 9 ]]; then 
+  SET_ALIASES
+    rm -f ~/.SetupMountEFItemp.txt
+fi
+###############################################################################
+
+
+
 
 #if [[ $inputs = 9 ]]; then SETUP_THEMES; clear ; SET_SCREEN; fi
            
