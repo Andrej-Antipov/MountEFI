@@ -1278,9 +1278,8 @@ do
 
 		drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
         GET_RENAMEHD
-		dcorr=`echo ${#drive}`
-		if [[ ${dcorr} -gt 30 ]]; then dcorr=30; drive=`echo ${drive:0:29}`; fi
-		let "dcorr=30-dcorr"
+		dcorr=${#drive}
+		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 
 	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 
@@ -1298,12 +1297,19 @@ do
 
 
 #          вывод подготовленного формата строки в файл "буфер экрана"
-	if [[ ! $mcheck = "Yes" ]]; then
-			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"  >> ~/.MountEFItemp.txt
-		else
-			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize" >> ~/.MountEFItemp.txt
-		fi
+#	if [[ ! $mcheck = "Yes" ]]; then
+#			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"  >> ~/.MountEFItemp.txt
+#		else
+#			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize" >> ~/.MountEFItemp.txt
+#		fi
     
+
+	                 if [[ ! $mcheck = "Yes" ]]; then
+			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     '  >> ~/.MountEFItemp.txt
+		else
+			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     '  >> ~/.MountEFItemp.txt
+		fi
+
 
 
 	let "num++"
