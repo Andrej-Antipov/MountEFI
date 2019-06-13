@@ -81,6 +81,8 @@
 			<string>{40606, 4626, 0}</string>
 		</dict>
 	</dict>
+	<key>RenamedHD</key>
+	<string></string>
 	<key>ShowKeys</key>
 	<true/>
 	<key>Theme</key>
