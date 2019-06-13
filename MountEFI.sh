@@ -39,7 +39,7 @@ if [[ ! $deb = 0 ]]; then
 #echo "layouts names = "${layouts_names[$num]}
 #echo "mypassword = "$mypassword
 #echo "login = "$login
-#echo "var9 = "$var9
+echo "var = "$var
 #echo "current = "$current
 #echo "pcount = "$pcount
 #echo "plist = "${plist[@]}
@@ -56,10 +56,11 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.63.1 master
+# MountEFI версия 1.63.2 master
 # Добавлена очистка истории от записей запусков MountEFI
 # Добавлен таймаут прерывания выхода для автомонтирования
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
+# Переименование физических носителей значением из  нового парамтра RenamedHD
 
 
 clear  && printf '\e[3J'
@@ -163,6 +164,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>{40606, 4626, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>RenamedHD</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
@@ -222,6 +225,11 @@ fi
 strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
 if [[ ! $strng = "Timeout2Exit" ]]; then
             plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+fi
+
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "RenamedHD" ]]; then
+            plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
 fi
 #########################################################################################################################################
 #Функция автомонтирования EFI по Volume UUID при запуске #################################################################################
@@ -691,7 +699,7 @@ COUNTDOWN(){
                 if [[ $loc = "ru" ]]; then
             printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
                     else
-            printf '\rPress any key to brake countdown. Exit timeout: '"$remaining"' '
+            printf '\rPress any key to brake the countdown. Exit timeout: '"$remaining"' '
                 fi
             read -t 1 -n1 demo
                 if [[ ! $demo = "±" ]]; then  break; fi
@@ -699,7 +707,7 @@ COUNTDOWN(){
                 if [[ $loc = "ru" ]]; then
             printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
                     else
-            printf '\rPress any key to brake countdown. Exit timeout: '"$remaining"' '
+            printf '\rPress any key to brake the countdown. Exit timeout: '"$remaining"' '
                 fi
                 break;
             fi;
@@ -1197,9 +1205,31 @@ fi
 # Конец блока обработки если один  раздел EFI #################################################
 ###########################################################################################
 fi
+
+################### применение темы ##########################################################
 theme="system"
 GET_THEME
 if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
+############################################################################################
+
+################################ получение имени диска для переименования #####################
+GET_RENAMEHD(){
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "RenamedHD" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+IFS=';'; rlist=($strng); unset IFS
+rcount=${#rlist[@]}
+if [[ ! $rcount = 0 ]]; then
+        var=$rcount; posr=0
+            while [[ ! $var = 0 ]]
+         do
+            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d":"`
+            if [[ "$rdrive" = "$drive" ]]; then drive=`echo "${rlist[posr]}" | rev | cut -f1 -d":" | rev`; break; fi
+            let "var--"
+            let "posr++"
+         done
+fi
+}
+##############################################################################################
+
 
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
@@ -1247,6 +1277,7 @@ do
 		let "corr=9-dlenth"
 
 		drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+        GET_RENAMEHD
 		dcorr=`echo ${#drive}`
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=30; drive=`echo ${drive:0:29}`; fi
 		let "dcorr=30-dcorr"
@@ -1263,12 +1294,16 @@ do
     		let "scorr=6-scorr"
 
 	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+
+
+
 #          вывод подготовленного формата строки в файл "буфер экрана"
 	if [[ ! $mcheck = "Yes" ]]; then
 			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"  >> ~/.MountEFItemp.txt
 		else
 			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize" >> ~/.MountEFItemp.txt
 		fi
+    
 
 
 	let "num++"
@@ -1290,7 +1325,7 @@ printf "\r\033[3A"
         fi
 
 	
-cat  -v ~/.MountEFItemp.txt
+cat  ~/.MountEFItemp.txt
 #rm ~/.MountEFItemp.txt
 
 	let "ch++"
@@ -1356,7 +1391,7 @@ fi
 	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
-cat  -v ~/.MountEFItemp.txt
+cat  ~/.MountEFItemp.txt
 
 	if [[ ! $order = 1 ]] || [[ ! $order = 0 ]]; then printf "\r\033[1A"; fi
     
