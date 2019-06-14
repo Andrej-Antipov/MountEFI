@@ -408,6 +408,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>{40606, 4626, 0}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>RenamedHD</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
@@ -467,6 +469,11 @@ fi
 strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
 if [[ ! $strng = "Timeout2Exit" ]]; then
             plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+fi
+
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "RenamedHD" ]]; then
+            plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
 fi
 #########################################################################################################################################
 
@@ -812,12 +819,7 @@ do
 	    i=$(( (i+1) %4 ))
 	    printf "\b$1${spin:$i:1}"
 
-		drv=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-		dcorr=`echo ${#drv}`
-		if [[ ${dcorr} -gt 30 ]]; then dcorr=30; drv=`echo ${drv:0:29}`; fi
-		let "dcorr=30-dcorr"
-
-	dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+	     dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 
     		scorr=`echo ${#dsze}`
     		let "scorr=scorr-5"
@@ -827,7 +829,7 @@ do
 	         i=$(( (i+1) %4 ))
 	         printf "\b$1${spin:$i:1}"
 
-	automounted=0
+			automounted=0
     uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
         if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
@@ -841,14 +843,32 @@ do
 	done
 	fi
 
+            drive=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+            string1=$strng
+            GET_RENAMEHD
+            strng=$string1
+            if [[ ! ${adrive} = "±" ]]; then drive="${adrive}"
+            dcorr=${#drive}
+		    if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drv="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
+            fi
+
+
+
+	                 if [[ ! $mcheck = "Yes" ]]; then
+			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.MountEFItemp.txt
+		else
+			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.MountEFItemp.txt
+		fi
+
+
 #          вывод подготовленного формата строки в файл "буфер экрана"
     if [[ $unuv = 1 ]]; then
-            printf '\n      '$ch')   x    '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
+            printf '\n      '$ch')   x    '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.SetupMountEFItemp.txt
                 else
 	if [[ $automounted = 0 ]]; then
-			printf '\n      '$ch') ....   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
+			printf '\n      '$ch') ....   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.SetupMountEFItemp.txt
 		else
-			printf '\n      '$ch') auto   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
+			printf '\n      '$ch') auto   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.SetupMountEFItemp.txt
 		fi
     fi
             let "i++"
