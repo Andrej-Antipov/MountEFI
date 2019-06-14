@@ -755,7 +755,6 @@ else
 lines=22 
 fi
 let "lines=lines+pos"
-
 }
 
 
@@ -962,7 +961,7 @@ if [[  ${inputs}  = [qQ] ]]; then
 			if [[ $apos = 0 ]]; then 
 				plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
 			fi
-	var5=1; unset inputs
+	var5=1
 fi
 
 if [[  ${inputs}  = [oO] ]]; then
@@ -1007,8 +1006,7 @@ if [[  ${inputs}  = [tT] ]]; then
             var7=1
             done
 fi
-
-if [[ ! ${inputs} =~ ^[0oOeEdDcCtT]+$ ]]; then
+if [[ ! ${inputs} =~ ^[0oOdDcCtTqQ]+$ ]]; then
 
 GET_AUTOMOUNTED
 	
@@ -1055,7 +1053,7 @@ fi
 fi
 done
 clear
-
+unset inputs
 }
 
 GET_INPUT(){
@@ -1355,8 +1353,8 @@ if [[ ! $rcount = 0 ]]; then
         var=$rcount; posr=0
             while [[ ! $var = 0 ]]
          do
-            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d":"`
-            if [[ "$rdrive" = "$drive" ]]; then adrive=`echo "${rlist[posr]}" | rev | cut -f1 -d":" | rev`; renamed=1; break; fi
+            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`
+            if [[ "$rdrive" = "$drive" ]]; then adrive=`echo "${rlist[posr]}" | rev | cut -f1 -d"=" | rev`; renamed=1; break; fi
             let "var--"
             let "posr++"
          done
@@ -1528,7 +1526,8 @@ fi
         fi
         printf '               С)    Сменить режим предпросмотра                               \n'
         printf '               V)    Посмотреть всю базу псевдонимов                           \n'
-        printf '               D)    Удалить всю базу псевдонимов!                             \n'
+        printf '               D)    Удалить псевдоним                                         \n'
+        printf '               R)    Удалить всю базу псевдонимов!                             \n'
         printf '               Q)    Вернуться в главное меню                                  \n\n' 
 
                     else
@@ -1539,7 +1538,8 @@ fi
         fi
         printf '               С)    Change the preview mode                                   \n'
         printf '               V)    View the entire alias database                            \n'
-        printf '               D)    Delete the entire alias database!                         \n'
+        printf '               D)    Delete an alias                                           \n'
+        printf '               R)    Delete the entire alias database!                         \n'
         printf '               Q)    Quit to the main menu                                     \n\n' 
 
                     fi
@@ -1547,6 +1547,104 @@ fi
 
 
 
+}
+
+
+GET_DRIVE(){ # inputs ->   nslist string slist dstring    drive ->
+
+                        let "num=inputs-1"  
+ 
+                        pnum=${nslist[num]}
+
+	                    string=`echo ${slist[$pnum]}`
+	                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+		                drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+}
+
+
+DEL_RENAMEHD(){ # inputs slist ->
+adrive="±"
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+IFS=';'; rlist=($strng); unset IFS
+rcount=${#rlist[@]}
+if [[ ! $rcount = 0 ]]; then
+         var=$rcount; posr=0; tlist=()
+            while [[ ! $var = 0 ]]
+         do
+            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`
+            if [[ ! "$rdrive" = "$drive" ]]; then tlist+=("${rlist[$posr]}"); fi
+            let "var--"
+            let "posr++"
+         done
+       rcount=${#tlist[@]} 
+       var=$rcount; posr=0; unset strng
+            while [[ ! $var = 0 ]]
+         do
+        strng+="${tlist[$posr]}"";"
+        let "var--"
+        let "posr++"
+        done
+        stop="перед засылкой масива в конфиг"; DEBUG
+        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist
+        else
+         plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist 
+fi  
+}
+
+ADD_RENAMEHD(){ # drive demo -> 
+adrive="±"
+strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+IFS=';'; rlist=($strng); unset IFS
+rcount=${#rlist[@]}
+
+if [[ ! $rcount = 0 ]]; then
+        var=$rcount; posr=0; tlist=()
+            while [[ ! $var = 0 ]]
+         do
+            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`
+            if [[ ! "$rdrive" = "$drive" ]]; then tlist+=("${rlist[$posr]}"); fi
+            let "var--"
+            let "posr++"
+         done
+
+fi
+        new_item="$drive""=""$demo"
+        tlist+=("$new_item")
+       rcount=${#tlist[@]} 
+       var=$rcount; posr=0; unset strng
+            while [[ ! $var = 0 ]]
+         do
+        strng+="${tlist[$posr]}"";"
+        let "var--"
+        let "posr++"
+        done
+ 
+
+        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist
+}
+
+EDIT_RENAMEHD(){ # adrive ->  |   demo ->
+printf '\r  '"$drive"
+if [[ ! $adrive = "±" ]]; then 
+printf ':   псевдоним = '"$adrive"
+fi
+if [[ $adrive = "±" ]]; then 
+printf '\n\n  Введите псевдоним:  '
+else
+printf '\n\n  Введите новый псевдоним:  '
+fi
+printf "\033[?25h"
+read demo
+printf "\033[?25l"
+        if [[ ! $demo = "" ]]; then 
+            if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
+#Фильтр недопустимых символов ввода
+demo=`echo "$demo" | tr -cd "[:print:]\n"`
+demo=`echo "$demo" | tr -d "{}]><[&^$"`
+
+         ADD_RENAMEHD
+
+fi
 }
 
 
@@ -1562,23 +1660,23 @@ while [ $var8 != 1 ]
 do
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9vVcCdDqQ]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9rReEvVcCdDqQ]+$ ]]; do 
 
                 if [[ $loc = "ru" ]]; then
-printf '  Выберите носитель от 1 до '$ch' (или 0, C, V, D, Q ):  '
+printf '  Выберите носитель от 1 до '$ch' (или 0, C, V, D, R, Q ):  '
 			else
-printf '  Select media from 1 to '$ch' (or 0, C, V, D, Q ):      '
+printf '  Select media from 1 to '$ch' (or 0, C, V, D, R, Q ):      '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 if [[ $loc = "ru" ]]; then
-printf "\r\033[52C"
+printf "\r\033[55C"
 else
-printf "\r\033[48C"
+printf "\r\033[51C"
 fi
 printf "\033[?25h"
 IFS="±"; read -n 1 inputs ; unset IFS 
-if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
+if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; fi
 printf "\r"
 done
 printf "\033[?25l"
@@ -1589,8 +1687,148 @@ fi
 
 if [[ $inputs = [qQ] ]]; then var8=1; unset inputs;  fi
 
-if [[ $inputs = 0 ]]; then GET_FULL_EFI; clear && printf '\e[3J' && printf "\033[0;0H"; SHOW_FULL_EFI
+
+if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
+                        if [[ $loc = "ru" ]]; then
+                
+                printf '\n\n\033[33;5m Внимание !\033[0m'; printf '                                                          \n'
+                printf ' Это удалит всю базу псевдонимов, не только видимые на экране \n'
+                printf ' Отдельный псевдоним можно удалить выбрав диск с его номером \n'
+                printf ' Подтвердите удаление всей базы (y/N) ? '
+			else
+                printf  '\n\n\033[33;5m Attention !\033[0m'; printf '                                                        \n'
+                printf ' This action will remove the entire alias database. \n'
+                printf ' Not just if the ones on the screen. \n'
+                printf ' One alias can be deleted by selecting the disk with its number   \n'
+                printf ' Confirm the deletion of the entire database (y/N)? '
+                
+                fi
+                printf "\033[?25h"
+                read  -n 1 -r
+                printf "\033[?25l"
+                if [[  $REPLY =~ ^[yY]$ ]]; then
+                plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist
+                inputs=0
+                fi
+                printf "\r\033[4A"
+                if [[ $loc = "ru" ]]; then
+                printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+                printf "\r\033[5A"
+                else
+                printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+                printf "\r\033[6A"
+                fi
 fi
+
+if [[ ${inputs} = [dD] ]]; then
+                            printf "\r\033[2A"; printf '\n\n'"%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Удаление пседонима. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  Delete an alias. (or just "Enter" to cancel):\n\n'
+                        fi
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите диск  ( 1 - '$ch' ): ' 
+                            else
+                        printf '   Choose media number  ( 1 - '$ch' ): '
+                        fi
+                        printf "\033[?25h" 
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        GET_DRIVE
+                        DEL_RENAMEHD
+                        fi
+                        SHOW_FULL_EFI
+                        unset inputs
+fi
+
+if [[ ${inputs} = [1-9] ]] && [[ ${inputs} -le $ch ]]; then
+                        printf "\r\033[2A"; printf '\n\n'"%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Добавление псевдонима. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  Editing an alias. (or just "Enter" to cancel):\n\n'
+                        fi
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do 
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите диск  ( 1 - '$ch' ): ' 
+                            else
+                        printf '   Choose media number  ( 1 - '$ch' ): '
+                        fi
+                        printf "\033[?25h" 
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        GET_DRIVE
+                        GET_RENAMEHD
+                        EDIT_RENAMEHD
+                        fi
+                        SHOW_FULL_EFI
+                        unset inputs
+fi
+
+
+if [[ ${inputs} = [vV] ]]; then  
+                        clear  && printf '\e[3J' && printf "\033[0;0H"
+                        if [[ $loc = "ru" ]]; then
+                        printf '                                База псевдонимов                            \n'
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+                        printf '\n                Носитель               |              Псевдоним           \n'
+                        printf '   '
+	                    printf '.%.0s' {1..74}
+                        printf '\n'
+			               else
+                        printf '                                Aliases database                            \n'
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+                        printf '\n                  Media                |              Alias               \n'
+                        printf '   '
+	                    printf '.%.0s' {1..74}
+                        printf '\n'
+	                         fi
+
+                        strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        IFS=';'; rlist=($strng); unset IFS
+                        rcount=${#rlist[@]}
+                        if [[ ! $rcount = 0 ]]; then
+                        var11=$rcount; posr=0
+                        while [[ ! $var11 = 0 ]]
+                        do
+                        echo
+                        hdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`                       
+                        sdrive=`echo "${rlist[$posr]}" | cut -f2 -d"="`
+                        printf '\r\033[7C'"$hdrive"
+                        printf '\r\033[44C'"$sdrive"
+                        let "var11--"
+                        let "posr++"
+                        done
+                        fi
+read -n 1
+clear
+fi 
+                        
+                        
+if [[ $inputs = 0 ]]; then GET_FULL_EFI; clear && printf '\e[3J' && printf "\033[0;0H"; SHOW_FULL_EFI
+fi                
 
 UPDATE_FULL_EFI
 
@@ -1615,7 +1853,7 @@ UPDATE_SCREEN
 SET_INPUT
 GET_INPUT
 
-# УСТАНОВКИ ПА УМОЛЧАНИЮ   #####################################################
+# УСТАНОВКИ ПО УМОЛЧАНИЮ   #####################################################
 if [[ $inputs = 0 ]]; then
                         if [[ $loc = "ru" ]]; then
                 echo "Установить все значения по умолчанию?                    "
