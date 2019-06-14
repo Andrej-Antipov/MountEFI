@@ -1660,7 +1660,7 @@ printf "\033[?25l"
             if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
 #Фильтр недопустимых символов ввода
 demo=`echo "$demo" | tr -cd "[:print:]\n"`
-demo=`echo "$demo" | tr -d "{}]><[&^$"`
+demo=`echo "$demo" | tr -d "=;{}]><[&^$"`
 
          ADD_RENAMEHD
 
