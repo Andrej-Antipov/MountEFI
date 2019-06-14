@@ -847,10 +847,10 @@ do
             string1=$strng
             GET_RENAMEHD
             strng=$string1
-            if [[ ! ${adrive} = "±" ]]; then drive="${adrive}"
+            if [[ ! ${adrive} = "±" ]]; then drive="${adrive}"; fi
             dcorr=${#drive}
 		    if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drv="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
-            fi
+            
 
 
 
