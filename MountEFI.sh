@@ -243,7 +243,9 @@ if [[ ! $apos = 0 ]]
 		posb=0
 		while [[ ! $var8 = 0 ]]
 					do
-						if ! diskutil quiet info  ${alist[$posb]}  >&- 2>&- ; then  
+#						if ! diskutil quiet info  ${alist[$posb]}  >&- 2>&- ; then 
+                       check_uuid=`ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[$posb]}`
+                       if [[ $check_uuid = "" ]]; then 
 						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
 						plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
 						strng1=$strng2
@@ -731,13 +733,30 @@ fi
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
 
-GETARR(){
+GET_EFI_S(){
+
+ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 
 string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+
 IFS=';' 
 dlist=($string)
+ilist=($disk_images)
 unset IFS;
 pos=${#dlist[@]}
+posi=${#ilist[@]}
+
+drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
+sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
+
+}
+
+GETARR(){
+
+GET_EFI_S
+
+stop="после GET EFIs"; DEBUG
 
 GET_SKEYS
 if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
@@ -747,26 +766,35 @@ lists_updated=1
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
 		num=0
-		dnum=0
-	while [ $var0 != 0 ] 
+		dnum=0; 
+	while [[ ! $var0 = 0 ]] 
 		do
 		string=`echo ${dlist[$num]}`
 		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 
-		checkvirt=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 		
-		if [[ "$checkvirt" = "Disk Image" ]]; then
-		unset dlist[$num]
-		let "pos--"
-		else 
-		nlist+=( $num )
-		fi
+		var10=$posi; numi=0; out=0
+        while [[ ! $var10 = 0 ]] 
+		do
+
+		if [[ ${dstring} = ${ilist[numi]} ]]; then
+        unset dlist[$num]; let "pos--"; out=1
+        fi 
+        if [[ $out = 1 ]]; then break; fi
+        let "var10--"; let "numi++"
+        done
+  
+		if [[ $var10 = 0 ]]; then nlist+=( $num ); fi
+		
 		let "var0--"
 		let "num++"
 	done
 
+
 fi
+
+
 
 	if [[ $pos = 0 ]]; then
 clear
@@ -834,7 +862,8 @@ fi
 
 MOUNTED_CHECK(){
 
-	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then
 
 	clear
@@ -857,7 +886,8 @@ MOUNTED_CHECK(){
 
 UNMOUNTED_CHECK(){
 
-mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ $mcheck = "Yes" ]]; then
 		
 		sleep 1.5
@@ -865,7 +895,8 @@ mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | se
 		diskutil quiet umount force  /dev/${string}
 
 
-mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 
 	if [[ $mcheck = "Yes" ]]; then
 
@@ -1043,7 +1074,8 @@ do
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
-	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 
 if [[ $mcheck = "Yes" ]]; then
@@ -1221,8 +1253,8 @@ if [[ ! $rcount = 0 ]]; then
         var=$rcount; posr=0
             while [[ ! $var = 0 ]]
          do
-            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d":"`
-            if [[ "$rdrive" = "$drive" ]]; then drive=`echo "${rlist[posr]}" | rev | cut -f1 -d":" | rev`; break; fi
+            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`
+            if [[ "$rdrive" = "$drive" ]]; then drive=`echo "${rlist[posr]}" | rev | cut -f1 -d"=" | rev`; break; fi
             let "var--"
             let "posr++"
          done
@@ -1263,26 +1295,32 @@ while [ $var0 != 0 ]
 do 
 	let "ch++"
 
-	let "i++"
+     let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
-
+	
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	
 		
-				
-		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+        dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
 
-		drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+		
+        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
         GET_RENAMEHD
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 
-	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+    let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
 
+	#dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+    dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+    if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
+    if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
@@ -1292,16 +1330,11 @@ do
     		let "scorr=scorr-5"
     		let "scorr=6-scorr"
 
-	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+       
 
+	#mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
-
-#          вывод подготовленного формата строки в файл "буфер экрана"
-#	if [[ ! $mcheck = "Yes" ]]; then
-#			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"  >> ~/.MountEFItemp.txt
-#		else
-#			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize" >> ~/.MountEFItemp.txt
-#		fi
     
 
 	                 if [[ ! $mcheck = "Yes" ]]; then
@@ -1311,10 +1344,15 @@ do
 		fi
 
 
-
+    let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+  
 	let "num++"
 	let "var0--"
 done
+
+
 printf "\r\033[3A"
 #printf "\n\r\n\033[5A"
 

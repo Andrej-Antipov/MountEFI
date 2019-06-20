@@ -12,22 +12,22 @@ printf '............................................................\n' >> ~/tem
 
 #echo "lines = "$lines
 #echo "inputs = "$inputs
-#echo "alist = "${alist[@]}
-#echo "slist = "${slist[@]}
+echo "slist = "${slist[@]}
+echo "nslist = "${nslist[@]}
 #echo "apos = "$apos
 #echo "strng = "$strng
 #echo "strng2 = "$strng2
 #echo "uuid = "$uuid
 #echo "vari = "$vari
-#echo "pois = "$pois
-#echo "poi = "$poi
+echo "num1 = "$num1
+echo "pnum = "$pnum
 #echo "alist(poi) = "${alist[$poi]}
-echo "ddcorr = "$ddcorr >> ~/temp.txt
-echo "corr = "$corr >> ~/temp.txt
-echo "scorr = "$scorr >> ~/temp.txt
-printf 'string = *'$string'*\n' >> ~/temp.txt
-printf 'ddrive = *'"$ddrive"'*\n' >> ~/temp.txt
-printf 'len ddrive = '${#ddrive}'\n' >> ~/temp.txt
+#echo "ddcorr = "$ddcorr >> ~/temp.txt
+#echo "corr = "$corr >> ~/temp.txt
+#echo "scorr = "$scorr >> ~/temp.txt
+printf 'strng = *'$strng'*\n' 
+printf 'drive = *'"$drive"'*\n' 
+#printf 'len ddrive = '${#ddrive}'\n' >> ~/temp.txt
 echo "strng = "$strng >> ~/temp.txt
 echo "adrive = ""$adrive" >> ~/temp.txt
 
@@ -73,7 +73,8 @@ fi
 # Очистка от записей MountEFI истории bash перед выходом
 # Установка таймаута закрытия программы после автомонтировая
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
-# Возможность сохранять в конфиге псевдоним для вывода вместо имени физического диска 
+# Возможность сохранять в конфиге псевдоним для вывода вместо имени физического диска
+# Ускорено сканирование дисков
 
 #clear && printf "\033[0;0H"
 
@@ -477,8 +478,35 @@ if [[ ! $strng = "RenamedHD" ]]; then
 fi
 #########################################################################################################################################
 
+GET_UUID_S(){
+ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+uuids_iomedia=`echo "$ioreg_iomedia" | sed '/Statistics =/d'  | egrep -A12 -B12 "UUID ="`
+
+}
+
+
+GET_EFI_S(){
+
+ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
+disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+
+IFS=';' 
+slist=($strng)
+ilist=($disk_images)
+unset IFS;
+pos=${#slist[@]}
+posi=${#ilist[@]}
+
+drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
+sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
+
+
+}
+
+GET_EFI_S
+
 if [[ $par = "-r" ]]; then
 ShowKeys=1
 strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
@@ -751,17 +779,19 @@ ncorr=${#auto_timeout}
 
 GETEFI(){
 
-strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
-if [[ $par = "-r" ]]; then
-ShowKeys=1
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then ShowKeys=0; fi
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
-else
-lines=22 
-fi
-let "lines=lines+pos"
+GET_FULL_EFI
+
+#GET_EFI_S
+
+#if [[ $par = "-r" ]]; then
+#ShowKeys=1
+#strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+#if [[ $strng = "false" ]]; then ShowKeys=0; fi
+#if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
+#else
+#lines=22 
+#fi
+#let "lines=lines+pos"
 }
 
 
@@ -810,8 +840,12 @@ do
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
 	
-	strng=`echo ${slist[$num1]}`
+    pnum=${nslist[num1]}
+	strng=`echo ${slist[$pnum]}`
+
+    
 	 dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
+
 		dlnth=`echo ${#dstrng}`
 		let "corr=9-dlnth"
 
@@ -819,8 +853,12 @@ do
 	    i=$(( (i+1) %4 ))
 	    printf "\b$1${spin:$i:1}"
 
-	     dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
-
+	     #dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+         
+         dsze=`echo "$sizes_iomedia" | grep -A10 -B10 ${strng} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+         if [[ $dsze = 209715200 ]]; then dsze="209,7"; else dsze=`echo "$dsze / 1000000"`; dsze=${dsze:0:4}; fi
+         if [[ $dsze -gt 999 ]]; then let "dsze=dsze/1000"; dsze=${dsze:0:4}" Gb"; else dsze+=" Mb"; fi
+            
     		scorr=`echo ${#dsze}`
     		let "scorr=scorr-5"
     		let "scorr=6-scorr"
@@ -830,7 +868,9 @@ do
 	         printf "\b$1${spin:$i:1}"
 
 			automounted=0
-    uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+            GET_UUID_S
+    #uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+    uuid=`echo "$uuids_iomedia" | grep -A12 -B12 $strng | grep UUID | cut -f2 -d "=" | tr -d " \n"`
         if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
 	 let var4=$apos
@@ -843,7 +883,8 @@ do
 	done
 	fi
 
-            drive=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+
             string1=$strng
             GET_RENAMEHD
             strng=$string1
@@ -928,7 +969,7 @@ if [[ $loc = "ru" ]]; then
         fi
 
 cat   ~/.SetupMountEFItemp.txt
-DEBUG
+
 printf '\n\n     '
 	printf '.%.0s' {1..68}
 printf '\n'
@@ -1324,10 +1365,12 @@ rm -f   ~/.SetupMountEFItemp.txt
 }
 
 ####################################### псевдонимы #############################################################################
+
+
 GET_FULL_EFI(){
 
-strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
+GET_EFI_S
+
 if [[ $par = "-r" ]]; then
 ShowKeys=1
 strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
@@ -1341,21 +1384,27 @@ let "lines=lines+pos"
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
 		num=0
-		dnum=0
-	while [ $var0 != 0 ] 
+		dnum=0; 
+	while [[ ! $var0 = 0 ]] 
 		do
 		strng=`echo ${slist[$num]}`
 		dstring=`echo $strng | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 
-		checkvirt=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 		
-		if [[ "$checkvirt" = "Disk Image" ]]; then
-		unset slist[$num]
-		let "pos--"
-		else 
-		nslist+=( $num )
-		fi
+		var10=$posi; numi=0; out=0
+        while [[ ! $var10 = 0 ]] 
+		do
+
+		if [[ ${dstring} = ${ilist[numi]} ]]; then
+        unset slist[$num]; let "pos--"; out=1
+        fi 
+        if [[ $out = 1 ]]; then break; fi
+        let "var10--"; let "numi++"
+        done
+  
+		if [[ $var10 = 0 ]]; then nslist+=( $num ); fi
+		
 		let "var0--"
 		let "num++"
 	done
@@ -1429,7 +1478,7 @@ do
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
 
-		drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+		drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
         GET_RENAMEHD
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
@@ -1443,13 +1492,15 @@ do
         
 #          вывод подготовленного формата строки в файл "буфер экрана"
 
-    dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+    dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+    if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
+    if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
 
     		scorr=`echo ${#dsize}`
     		let "scorr=scorr-5"
     		let "scorr=6-scorr"
 
-    mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
         if [[ $adrive = "±" ]]; then 
             ddcorr=${#drive}
@@ -1578,7 +1629,7 @@ GET_DRIVE(){ # inputs ->   nslist string slist dstring    drive ->
 
 	                    string=`echo ${slist[$pnum]}`
 	                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-		                drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+                        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
 }
 
 
@@ -1604,7 +1655,7 @@ if [[ ! $rcount = 0 ]]; then
         let "var--"
         let "posr++"
         done
-        stop="перед засылкой масива в конфиг"; DEBUG
+        
         plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist
         else
          plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist 
