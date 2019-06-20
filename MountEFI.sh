@@ -56,12 +56,12 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.63.2 master
+# MountEFI версия 1.63.5 master
 # Добавлена очистка истории от записей запусков MountEFI
 # Добавлен таймаут прерывания выхода для автомонтирования
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
-# Переименование физических носителей значением из  нового парамтра RenamedHD
-
+# Поддержка псевдонимов из  нового парамтра RenamedHD
+# Ускорено сканирование EFI разделов и другие операции поиска и монтирования
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
@@ -310,7 +310,9 @@ do
 fi
 
 if  [[ $autom_open = 1 ]]; then 
-				vname=`diskutil info ${alist[$posa]} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#				vname=`diskutil info ${alist[$posa]} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+                string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
+                vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 				open "$vname"
 fi
 
@@ -372,7 +374,7 @@ function set_font {
 
 GET_PRESETS_COUNTS(){
 pcount=0
-#pcount=`cat ${HOME}/.MountEFIconf.plist | grep -A 1  -e "<key>PresetsCounts</key>" | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+
 pstring=`cat ${HOME}/.MountEFIconf.plist | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | tr ' \n' ';'`
 IFS=';'; slist=($pstring); unset IFS;
 pcount=${#slist[@]}
@@ -396,11 +398,11 @@ else
    if [[ $theme = "system" ]]; then 
                 GET_PRESETS_COUNTS
                 CUSTOM_SET; order=3; UPDATELIST; printf "\r\033[1A"
- #               if [[ ! $pcount = 1 ]]; then
+
                 plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
                 GET_PRESETS_NAMES
                 current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-#stop="после получения списка plist"; DEBUG 
+
                 var3=$pcount
                 num=0
                 while [[ ! $var3 = 0 ]]; do 
@@ -408,12 +410,12 @@ else
                             let "var3=0"
                                else
                             let "num++"
-#stop="после инкремента num"; DEBUG 
+
                             let "var3--"
                      fi
 
                 done
-#stop="после вычисления номера num текущего в списке plist"; DEBUG  
+
                 var2=1 
                 let "pik=pcount-1"            
                 while [[  $var2 = 1  ]]; do
@@ -456,8 +458,7 @@ if [[ $demo = [sS] ]]; then let "var2=0"; fi
 
                 
                 done
-  #           fi
- #               CUSTOM_SET
+ 
                
         else
             plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
@@ -756,7 +757,7 @@ GETARR(){
 
 GET_EFI_S
 
-stop="после GET EFIs"; DEBUG
+
 
 GET_SKEYS
 if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
@@ -842,8 +843,13 @@ DO_MOUNT(){
 GET_SYSTEM_EFI(){
 
 if [[ ${lists_updated} = 1 ]]; then
-sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
-edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+#sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6-`
+#edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+#ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t' |  egrep -A 22 "<class IOMedia,"`
+edname=`echo "$drives_iomedia" | grep -B 10 ${sysdrive} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+
 var2=$pos
 num=0
 while [ $var2 != 0 ] 
@@ -851,7 +857,8 @@ do
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-dname=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#dname=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
 if [[ "$edname" = "$dname" ]]; then estring=`echo ${string}` ; enum=$pnum;  var2=1; fi
 let "num++"
 let "var2--"
@@ -941,7 +948,8 @@ do
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
-	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
@@ -956,7 +964,8 @@ do
 
 	fi
 
-vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
@@ -1007,7 +1016,9 @@ do
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
-	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#	mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+
 	if [[ ! $mcheck = "Yes" ]]; then 
 
 	was_mounted=0
@@ -1022,7 +1033,8 @@ do
 
 	fi
 
-vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
@@ -1141,7 +1153,8 @@ unset string
 string=`echo ${dlist[0]}`
 
 wasmounted=0
-mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#mcheck=`diskutil info /dev/${string} | grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 if [[ ! $mcheck = "Yes" ]]; then
 
     if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
@@ -1160,9 +1173,15 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
     	printf '\n     '
 	     let "corr=0"
 
-    	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+ #   	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
+
+        dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+        if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
+        if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
 	
-	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+
+        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
     	
     	
 
@@ -1214,7 +1233,9 @@ MOUNTED_CHECK
 else
 wasmounted=1
 	fi
-vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
 clear
 		if [[ $loc = "ru" ]]; then
 			printf '\nРаздел: '${string}' ''подключен.\n\n'
@@ -1679,7 +1700,9 @@ pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 	
 
-mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#mcheck=`diskutil info /dev/${string}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+
 wasmounted=0
 if [[ ! $mcheck = "Yes" ]]; then
 
@@ -1694,7 +1717,9 @@ else
 	printf "\r\033[1A"
 fi
 
-vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+#vname=`diskutil info /dev/${string} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
 if [[ $OpenFinder = 0 ]] ; then 
         if [[ $wasmounted = 1 ]]; then open "$vname"; fi
     else 
