@@ -603,12 +603,14 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
                 printf "\r\033[1A"
                     if [[ $loc = "ru" ]]; then
                 printf '\nНе верный пароль '$mypassword' не сохранён.\n'
-                printf 'нажмите любую клавишу для продолжения ...'
+                #printf 'нажмите любую клавишу для продолжения ...'
                         else
                 printf '\nWrong password '$mypassword' not saved. \n'
-                printf 'press any key to continue....'
+                #printf 'press any key to continue....'
                     fi
                 read -n 1 demo
+                 
+                
         fi
     fi
 fi
