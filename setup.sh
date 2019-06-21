@@ -64,7 +64,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.3.1 master
+# MountEFI версия скрипта настроек 1.3.2 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
@@ -79,6 +79,7 @@ fi
 # Авто переключение раскладки на латиницу после ввода псевдонима (если есть утилита в папке)
 # Исправлен вывод размера разделов
 # Фикс автопереключения раскладки на Мохаве
+# Добавлен детект подключения / отключения медиа
 
 
 #clear && printf "\033[0;0H"
@@ -483,6 +484,16 @@ if [[ ! $strng = "RenamedHD" ]]; then
 fi
 #########################################################################################################################################
 
+################################## функция автодетекта подключения ##############################################################################################
+CHECK_HOTPLUG(){
+ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
+        if [[ ! $old_uuid_count = $uuid_count ]]; then inputs=0; old_uuid_count=$uuid_count
+            
+        fi
+}
+###################################################################################################################################################################
+
+
 GET_UUID_S(){
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 uuids_iomedia=`echo "$ioreg_iomedia" | sed '/Statistics =/d'  | egrep -A12 -B12 "UUID ="`
@@ -507,6 +518,7 @@ posi=${#ilist[@]}
 drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
 sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
 
+CHECK_HOTPLUG
 
 }
 
@@ -1015,7 +1027,12 @@ printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 printf "\r\033[48C"
 printf "\033[?25h"
-IFS="±"; read -n 1 inputs ; unset IFS 
+inputs="±"
+while [[ $inputs = "±" ]]
+do
+IFS="±"; read -n 1 -t 1 inputs ; unset IFS  ; CHECK_HOTPLUG
+done
+#IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
 printf "\r"
 done
@@ -1781,7 +1798,12 @@ else
 printf "\r\033[51C"
 fi
 printf "\033[?25h"
-IFS="±"; read -n 1 inputs ; unset IFS 
+inputs="±"
+while [[ $inputs = "±" ]]
+do
+IFS="±"; read -n 1 -t 1 inputs ; unset IFS ; sym=1 ; CHECK_HOTPLUG
+done
+#IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; fi
 printf "\r"
 done

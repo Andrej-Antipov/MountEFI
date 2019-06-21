@@ -1636,14 +1636,7 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 }
 
-################################## функция автодетекта подключения ##############################################################################################
-CHECK_HOTPLUG(){
-ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
-        if [[ ! $old_uuid_count = $uuid_count ]]; then choice=0; old_uuid_count=$uuid_count
-            
-        fi
-}
-###################################################################################################################################################################
+
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
