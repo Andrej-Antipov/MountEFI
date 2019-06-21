@@ -64,7 +64,7 @@ fi
 # Ускорено сканирование EFI разделов и другие операции поиска и монтирования
 # Фиксы удвоения данных и испраление ошибки поиска системного раздела
 # Исправление вывода размера разделов
-# Фикс автопереключения раскладки 
+# Фикс автопереключения раскладки в Мохаве
 
 
 clear  && printf '\e[3J'
@@ -848,7 +848,7 @@ GET_SYSTEM_EFI(){
 
 if [[ ${lists_updated} = 1 ]]; then
 #sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
-sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s1.*//1'`
+sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1'`
 #edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
 #ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t' |  egrep -A 22 "<class IOMedia,"`
