@@ -56,13 +56,14 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.63.7 master
+# MountEFI версия 1.63.8 master
 # Добавлена очистка истории от записей запусков MountEFI
 # Добавлен таймаут прерывания выхода для автомонтирования
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
 # Поддержка псевдонимов из  нового парамтра RenamedHD
 # Ускорено сканирование EFI разделов и другие операции поиска и монтирования
 # Фиксы удвоения данных и испраление ошибки поиска системного раздела
+# Исправление вывода размера разделов
 
 
 clear  && printf '\e[3J'
@@ -1178,8 +1179,13 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
  #   	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 
         dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
-        if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
-        if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
+        if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
+        else
+            if [[  $dsize -le 999999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000000" | bc)" Gb"
+                    else
+                         dsize=$(echo "scale=1; $dsize/1000000000000" | bc)" Gb"
+            fi
+        fi
 	
 #	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 
@@ -1340,8 +1346,14 @@ do
 
 	#dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
-    if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
-    if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
+    if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
+        else
+            if [[  $dsize -le 999999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000000" | bc)" Gb"
+                    else
+                         dsize=$(echo "scale=1; $dsize/1000000000000" | bc)" Gb"
+            fi
+    fi
+    #if [[ $dsize -gt 999 ]]; then dsize=$(echo "scale=1; $dsize/1000" | bc); dsize+=" Gb"; else dsize+=" Mb"; fi
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"

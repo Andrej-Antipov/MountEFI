@@ -7,32 +7,31 @@ deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt
-printf '............................................................\n' >> ~/temp.txt
-
+printf '\n\n Останов '"$stop"'  :\n\n' 
+printf '............................................................\n' 
 #echo "lines = "$lines
 #echo "inputs = "$inputs
-echo "slist = "${slist[@]}
-echo "nslist = "${nslist[@]}
+#echo "slist = "${slist[@]}
+#echo "nslist = "${nslist[@]}
 #echo "apos = "$apos
 #echo "strng = "$strng
 #echo "strng2 = "$strng2
 #echo "uuid = "$uuid
 #echo "vari = "$vari
-echo "num1 = "$num1
-echo "pnum = "$pnum
+#echo "num1 = "$num1
+#echo "pnum = "$pnum
 #echo "alist(poi) = "${alist[$poi]}
 #echo "ddcorr = "$ddcorr >> ~/temp.txt
 #echo "corr = "$corr >> ~/temp.txt
 #echo "scorr = "$scorr >> ~/temp.txt
-printf 'strng = *'$strng'*\n' 
-printf 'drive = *'"$drive"'*\n' 
+#printf 'strng = *'$strng'*\n' 
+#printf 'drive = *'"$drive"'*\n' 
 #printf 'len ddrive = '${#ddrive}'\n' >> ~/temp.txt
-echo "strng = "$strng >> ~/temp.txt
-echo "adrive = ""$adrive" >> ~/temp.txt
+#echo "strng = "$strng >> ~/temp.txt
+#echo "adrive = ""$adrive" >> ~/temp.txt
 
 
-printf '............................................................\n\n' >> ~/temp.txt
+printf '............................................................\n\n' 
 sleep 0.5
 read  -s -n1 
 fi
@@ -65,7 +64,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2.8 master
+# MountEFI версия скрипта настроек 1.3.0 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
@@ -77,6 +76,8 @@ fi
 # Ускорено сканирование дисков
 # Фиксы удвоения данных и испраление ошибки поиска системного раздела
 # Добавление английского и обозначения размера поля ввода  в редактирование псевдонимов
+# Авто переключение раскладки на латиницу после ввода псевдонима (если есть утилита в папке)
+# Исправлен вывод размера разделов
 
 #clear && printf "\033[0;0H"
 
@@ -683,13 +684,14 @@ esac
 let "num--"
 done
 
-if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; fi
+if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; change_layout=1; fi
    else
-        if [[ $loc = "ru" ]]; then
-printf '\n                          ! Смените раскладку на латиницу !\n'
-            else
-printf '\n                          ! Change layout to UTF-8 ABC, US or EN !\n'
-        fi
+        change_layout=0
+#        if [[ $loc = "ru" ]]; then
+#printf '\n                          ! Смените раскладку на латиницу !\n'
+ #           else
+#printf '\n                          ! Change layout to UTF-8 ABC, US or EN !\n'
+        #fi
 	 fi
 fi
 }
@@ -860,9 +862,14 @@ do
 	     #dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
          
          dsze=`echo "$sizes_iomedia" | grep -A10 -B10 ${strng} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
-         if [[ $dsze = 209715200 ]]; then dsze="209,7"; else dsze=`echo "$dsze / 1000000"`; dsze=${dsze:0:4}; fi
-         if [[ $dsze -gt 999 ]]; then let "dsze=dsze/1000"; dsze=${dsze:0:4}" Gb"; else dsze+=" Mb"; fi
-            
+          if [[  $dsze -le 999999999 ]]; then dsze=$(echo "scale=1; $dsze/1000000" | bc)" Mb"
+        else
+            if [[  $dsze -le 999999999999 ]]; then dsze=$(echo "scale=1; $dsze/1000000000" | bc)" Gb"
+                    else
+                         dsze=$(echo "scale=1; $dsze/1000000000000" | bc)" Gb"
+            fi
+        fi
+
     		scorr=`echo ${#dsze}`
     		let "scorr=scorr-5"
     		let "scorr=6-scorr"
@@ -1497,8 +1504,13 @@ do
 #          вывод подготовленного формата строки в файл "буфер экрана"
 
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
-    if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
-    if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
+    if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
+        else
+            if [[  $dsize -le 999999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000000" | bc)" Gb"
+                    else
+                         dsize=$(echo "scale=1; $dsize/1000000000000" | bc)" Gb"
+            fi
+    fi
 
     		scorr=`echo ${#dsize}`
     		let "scorr=scorr-5"
@@ -1753,6 +1765,7 @@ do
 unset inputs
 while [[ ! ${inputs} =~ ^[0-9rReEvVcCdDqQ]+$ ]]; do 
 
+SET_INPUT
                 if [[ $loc = "ru" ]]; then
 printf '  Выберите носитель от 1 до '$ch' (или 0, C, V, D, R, Q ):  '
 			else
@@ -1933,7 +1946,7 @@ clear
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
-
+SET_INPUT
 theme="system"
 var4=0
 while [ $var4 != 1 ] 
@@ -1941,7 +1954,6 @@ do
 printf '\e[3J' && printf "\033[0;0H" 
 printf "\033[?25l"
 UPDATE_SCREEN
-SET_INPUT
 GET_INPUT
 
 # УСТАНОВКИ ПО УМОЛЧАНИЮ   #####################################################
