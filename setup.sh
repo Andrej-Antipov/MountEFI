@@ -78,7 +78,8 @@ fi
 # Добавление английского и обозначения размера поля ввода  в редактирование псевдонимов
 # Авто переключение раскладки на латиницу после ввода псевдонима (если есть утилита в папке)
 # Исправлен вывод размера разделов
-# Фикс автопереключения раскладки 
+# Фикс автопереключения раскладки на Мохаве
+
 
 #clear && printf "\033[0;0H"
 
@@ -882,7 +883,7 @@ do
 			automounted=0
             GET_UUID_S
     #uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
-    uuid=`echo "$uuids_iomedia" | grep -A12 -B12 $strng | grep UUID | cut -f2 -d "=" | tr -d " \n"`
+    uuid=`echo "$uuids_iomedia" | grep -A12 -B12 $strng | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
         if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
 	 let var4=$apos
