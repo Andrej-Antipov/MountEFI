@@ -65,7 +65,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.2.6 master
+# MountEFI версия скрипта настроек 1.2.8 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
@@ -75,6 +75,8 @@ fi
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
 # Возможность сохранять в конфиге псевдоним для вывода вместо имени физического диска
 # Ускорено сканирование дисков
+# Фиксы удвоения данных и испраление ошибки поиска системного раздела
+# Добавление английского и обозначения размера поля ввода  в редактирование псевдонимов
 
 #clear && printf "\033[0;0H"
 
@@ -857,7 +859,7 @@ do
 
 	     #dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
          
-         dsze=`echo "$sizes_iomedia" | grep -A10 -B10 ${strng} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+         dsze=`echo "$sizes_iomedia" | grep -A10 -B10 ${strng} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
          if [[ $dsze = 209715200 ]]; then dsze="209,7"; else dsze=`echo "$dsze / 1000000"`; dsze=${dsze:0:4}; fi
          if [[ $dsze -gt 999 ]]; then let "dsze=dsze/1000"; dsze=${dsze:0:4}" Gb"; else dsze+=" Mb"; fi
             
@@ -885,7 +887,7 @@ do
 	done
 	fi
 
-            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 
             string1=$strng
             GET_RENAMEHD
@@ -1480,7 +1482,7 @@ do
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
 
-		drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+		drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         GET_RENAMEHD
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
@@ -1494,7 +1496,7 @@ do
         
 #          вывод подготовленного формата строки в файл "буфер экрана"
 
-    dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+    dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
     if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
 
@@ -1631,7 +1633,7 @@ GET_DRIVE(){ # inputs ->   nslist string slist dstring    drive ->
 
 	                    string=`echo ${slist[$pnum]}`
 	                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-                        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+                        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 }
 
 
@@ -1698,13 +1700,29 @@ fi
 
 EDIT_RENAMEHD(){ # adrive ->  |   demo ->
 printf '\r  '"$drive"
-if [[ ! $adrive = "±" ]]; then 
+if [[ ! $adrive = "±" ]]; then
+if [[ $loc = "ru" ]]; then 
 printf ':   псевдоним = '"$adrive"
-fi
-if [[ $adrive = "±" ]]; then 
-printf '\n\n  Введите псевдоним:  '
 else
-printf '\n\n  Введите новый псевдоним:  '
+printf ':   alias = '"$adrive"
+fi
+fi
+if [[ $loc = "ru" ]]; then
+if [[ $adrive = "±" ]]; then
+printf '\n                     |------------------------------|' 
+printf '\n  Введите псевдоним:  '
+else
+printf '\n                           |------------------------------|'
+printf '\n  Введите новый псевдоним:  '
+fi
+else
+if [[ $adrive = "±" ]]; then
+printf '\n                     |------------------------------|' 
+printf '\n  Enter alias:        '
+else
+printf '\n                           |------------------------------|'
+printf '\n  Enter new alias:          '
+fi
 fi
 printf "\033[?25h"
 read demo
@@ -2045,6 +2063,7 @@ fi
 if [[ $inputs = [qQ] ]]; then var4=1; printf '\n'; fi
 
 done
+
 if [[ $par = "-r" ]]; then exit 1; else EXIT_PROG; fi
 
 ####################### END MAIN #################################################

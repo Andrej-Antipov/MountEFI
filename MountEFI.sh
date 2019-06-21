@@ -56,12 +56,14 @@ fi
 #########################################################################################################################################
 
 
-# MountEFI версия 1.63.5 master
+# MountEFI версия 1.63.7 master
 # Добавлена очистка истории от записей запусков MountEFI
 # Добавлен таймаут прерывания выхода для автомонтирования
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
 # Поддержка псевдонимов из  нового парамтра RenamedHD
 # Ускорено сканирование EFI разделов и другие операции поиска и монтирования
+# Фиксы удвоения данных и испраление ошибки поиска системного раздела
+
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
@@ -311,7 +313,7 @@ fi
 
 if  [[ $autom_open = 1 ]]; then 
 #				vname=`diskutil info ${alist[$posa]} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-                string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
+                string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
                 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 				open "$vname"
 fi
@@ -844,11 +846,11 @@ GET_SYSTEM_EFI(){
 
 if [[ ${lists_updated} = 1 ]]; then
 #sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
-sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6-`
+sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s1.*//1'`
 #edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
 #ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t' |  egrep -A 22 "<class IOMedia,"`
-edname=`echo "$drives_iomedia" | grep -B 10 ${sysdrive} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+edname=`echo "$drives_iomedia" | grep -B 10 ${sysdrive} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 
 var2=$pos
 num=0
@@ -858,7 +860,7 @@ pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 #dname=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 if [[ "$edname" = "$dname" ]]; then estring=`echo ${string}` ; enum=$pnum;  var2=1; fi
 let "num++"
 let "var2--"
@@ -1175,19 +1177,16 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
 
  #   	dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
 
-        dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+        dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
         if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
         if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
 	
 #	drive=`diskutil info /dev/${dstring} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
 
-        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
     	
-    	
-
-    	
-    		let "scorr=5"
-            let "dcorr=5"
+    	   let "scorr=5"
+           let "dcorr=5"
 
 if [[ $loc = "ru" ]]; then
 	printf '  Подключить (открыть) EFI раздел:  \n\n' 
@@ -1287,6 +1286,7 @@ fi
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
 
+
 printf '\e[8;'${lines}';80t' && printf '\e[3J'
 
 var0=$pos
@@ -1329,7 +1329,7 @@ do
 		let "corr=9-dlenth"
 
 		
-        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//'`
+        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         GET_RENAMEHD
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
@@ -1339,7 +1339,7 @@ do
 	printf "\b$1${spin:$i:1}"
 
 	#dsize=`diskutil info /dev/${string} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
-    dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
+    dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[ $dsize = 209715200 ]]; then dsize="209,7"; else dsize=`echo "$dsize / 1000000"`; dsize=${dsize:0:4}; fi
     if [[ $dsize -gt 999 ]]; then let "dsize=dsize/1000"; dsize=${dsize:0:4}" Gb"; else dsize+=" Mb"; fi
 	let "i++"
@@ -1420,6 +1420,7 @@ fi
 
 	
 printf '\n\n' 
+
 
 }
 # Конец определения GETLIST ###########################################################
