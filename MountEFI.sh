@@ -65,6 +65,7 @@ fi
 # Фиксы удвоения данных и испраление ошибки поиска системного раздела
 # Исправление вывода размера разделов
 # Фикс автопереключения раскладки в Мохаве
+# Добавлен детект подключения / отключения медиа
 
 
 clear  && printf '\e[3J'
@@ -735,6 +736,15 @@ if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then
 fi
 ######################################################################################################################
 
+################################## функция автодетекта подключения ##############################################################################################
+CHECK_HOTPLUG(){
+ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
+        if [[ ! $old_uuid_count = $uuid_count ]]; then choice=0; old_uuid_count=$uuid_count
+            
+        fi
+}
+###################################################################################################################################################################
+
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
 
@@ -754,6 +764,8 @@ posi=${#ilist[@]}
 
 drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
 sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
+
+CHECK_HOTPLUG
 
 }
 
@@ -1624,6 +1636,15 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 }
 
+################################## функция автодетекта подключения ##############################################################################################
+CHECK_HOTPLUG(){
+ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
+        if [[ ! $old_uuid_count = $uuid_count ]]; then choice=0; old_uuid_count=$uuid_count
+            
+        fi
+}
+###################################################################################################################################################################
+
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
 
@@ -1668,10 +1689,20 @@ if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 if [[ ${ch} -le 8 ]]; then
 SET_INPUT
 printf "\033[?25h"
-IFS="±"; read -n 1 choice ; unset IFS ; sym=1 
+choice="±"
+while [[ $choice = "±" ]]
+do
+IFS="±"; read -n 1 -t 1 choice ; unset IFS ; sym=1 ; CHECK_HOTPLUG
+done
 else
-IFS="±"; read choice; unset IFS ; CYRILLIC_TRANSLIT ; sym=2 ; if  [[ ${choice} = "" ]]; then choice="  "; fi
+choice="±"
+while [[ $choice = "±" ]]
+do
+IFS="±"; read -t 1 choice; unset IFS ; CYRILLIC_TRANSLIT ; sym=2 ; if  [[ ${choice} = "" ]]; then choice="  "; fi
+CHECK_HOTPLUG
+done
 fi
+
 printf "\033[?25l"
 
 if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
