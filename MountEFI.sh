@@ -64,6 +64,7 @@ fi
 # Ускорено сканирование EFI разделов и другие операции поиска и монтирования
 # Фиксы удвоения данных и испраление ошибки поиска системного раздела
 # Исправление вывода размера разделов
+# Фикс автопереключения раскладки 
 
 
 clear  && printf '\e[3J'
@@ -1556,7 +1557,7 @@ if [[ $xkbs = 2 ]]; then
 cd $(dirname $0)
     if [[ -f "./xkbswitch" ]]; then 
 declare -a layouts_names
-layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleEnabledInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
+layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
 IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 keyboard="0"
 #stop="после проверки наличия xkbswitch"; DEBUG

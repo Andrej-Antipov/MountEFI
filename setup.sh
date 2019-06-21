@@ -64,7 +64,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.3.0 master
+# MountEFI версия скрипта настроек 1.3.1 master
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
@@ -78,6 +78,7 @@ fi
 # Добавление английского и обозначения размера поля ввода  в редактирование псевдонимов
 # Авто переключение раскладки на латиницу после ввода псевдонима (если есть утилита в папке)
 # Исправлен вывод размера разделов
+# Фикс автопереключения раскладки 
 
 #clear && printf "\033[0;0H"
 
@@ -666,7 +667,7 @@ if [[ $xkbs = 2 ]]; then
 cd $(dirname $0)
     if [[ -f "./xkbswitch" ]]; then 
 declare -a layouts_names
-layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleEnabledInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
+layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
 IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 keyboard="0"
 
