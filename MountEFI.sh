@@ -784,6 +784,7 @@ if [[ ! $pos = 0 ]]; then
 		var0=$pos
 		num=0
 		dnum=0; 
+        unset nlist
 	while [[ ! $var0 = 0 ]] 
 		do
 		string=`echo ${dlist[$num]}`
@@ -861,10 +862,10 @@ GET_SYSTEM_EFI(){
 if [[ ${lists_updated} = 1 ]]; then
 #sysdrive=`diskutil info / | grep "Part of Whole:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
 sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1'`
-#edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
 #ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t' |  egrep -A 22 "<class IOMedia,"`
-edname=`echo "$drives_iomedia" | grep -B 10 ${sysdrive} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+#edname=`echo "$drives_iomedia" | grep -B 10 ${sysdrive} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 
 var2=$pos
 num=0

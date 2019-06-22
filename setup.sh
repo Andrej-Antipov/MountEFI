@@ -1412,9 +1412,7 @@ fi
 let "lines=lines+pos"
 
 if [[ ! $pos = 0 ]]; then 
-		var0=$pos
-		num=0
-		dnum=0; 
+		var0=$pos; num=0; dnum=0; unset nslist
 	while [[ ! $var0 = 0 ]] 
 		do
 		strng=`echo ${slist[$num]}`
