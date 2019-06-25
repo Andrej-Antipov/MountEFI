@@ -1,5 +1,33 @@
 #!/bin/bash
 
+################################################################################## MountEFI SETUP ##########################################################################################################
+s_prog_vers="1.3"
+s_edit_vers="005"
+
+############################################################################################################################################################################################################
+
+#########################################################
+
+SHOW_VERSION(){
+clear && printf "\e[3J" 
+printf "\033[?25l"
+var12=${lines}; while [[ ! $var12 = 0 ]]; do
+printf '\e[40m %.0s\e[0m' {1..80}
+let "var12--"; done
+printf "\033[H"
+
+printf "\033[10;21f"
+printf '\e[40m\e[1;33m________________________________________\e[0m''\n\033[20C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
+printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n'   
+read -n 1 
+clear && printf "\e[3J"
+} 
+
 # функция отладки ###############################################
 demo1="0"
 deb=0
@@ -7,9 +35,10 @@ deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' 
-printf '............................................................\n' 
-#echo "lines = "$lines
+printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt
+printf '............................................................\n' >> ~/temp.txt
+echo "inputs1 = "$inputs1 >> ~/temp.txt
+echo "inputs = "$inputs >> ~/temp.txt
 #echo "inputs = "$inputs
 #echo "slist = "${slist[@]}
 #echo "nslist = "${nslist[@]}
@@ -31,9 +60,9 @@ printf '............................................................\n'
 #echo "adrive = ""$adrive" >> ~/temp.txt
 
 
-printf '............................................................\n\n' 
+printf '............................................................\n\n' >> ~/temp.txt
 sleep 0.5
-read  -s -n1 
+#read  -s -n1 
 fi
 }
 #########################################################################################################################################
@@ -64,7 +93,8 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.3.2 master
+# MountEFI версия скрипта настроек 1.3. 005 master
+# ---------------------------------------------------------------------------------------------------------------------
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
 # Добавлена очистка отсутствующих томов из автомонтирования
@@ -80,7 +110,12 @@ fi
 # Исправлен вывод размера разделов
 # Фикс автопереключения раскладки на Мохаве
 # Добавлен детект подключения / отключения медиа
-
+# 001 - Добавлен контроль версий
+# 002 - Буферы экрана через переменные screen_buffers в функциях 8 и 9
+# 003 - Кэширование конфига в темах, 8 и 9-й функциях
+# 004 - Переключение на ввод по два байта если разделов больше 9 (для 8 и 9 функций)
+# 005 - Детект горяего подключения/отключения медиа для двух байтового ввода. Детект партиций в 9-й функции.
+#------------------------------------------------------------------------------------------------------------------------
 
 #clear && printf "\033[0;0H"
 
@@ -89,10 +124,11 @@ fi
 cd $(dirname $0)
 
 
+
 SET_LOCALE(){
 
-if [[ -f ${HOME}/.MountEFIconf.plist ]] ; then
-        locale=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ $cache = 1 ]] ; then
+        locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
         if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
             else
                 loc=`echo ${locale}`
@@ -114,7 +150,7 @@ if [[ $locale = "auto" ]]; then loc_set="auto"; loc_corr=26; fi
 
 GET_MENUE(){
 menue=0
-HasMenue=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Menue" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+HasMenue=`echo "$MountEFIconf" | grep -A 1 "Menue" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 if [[ $HasMenue = "always" ]]
     then 
     menue=1
@@ -135,7 +171,7 @@ fi
 
 GET_OPENFINDER(){
 OpenFinder=1
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then OpenFinder=0
             if [[ $loc = "ru" ]]; then
         OpenFinder_set="Нет"; of_corr=7
@@ -153,7 +189,7 @@ fi
 
 GET_SHOWKEYS(){
 ShowKeys=1
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0
             if [[ $loc = "ru" ]]; then
         ShowKeys_set="Нет"; sk_corr=3
@@ -172,8 +208,7 @@ fi
 
 GET_PRESETS_COUNTS(){
 pcount=0
-#pcount=`cat ${HOME}/.MountEFIconf.plist | grep -A 1  -e "<key>PresetsCounts</key>" | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-pstring=`cat ${HOME}/.MountEFIconf.plist | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | tr ' \n' ';'`
+pstring=`echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | tr ' \n' ';'`
 IFS=';'; slist=($pstring); unset IFS;
 pcount=${#slist[@]}
 unset slist
@@ -181,16 +216,16 @@ unset pstring
 }
 
 GET_PRESETS_NAMES(){
-pstring=`cat ${HOME}/.MountEFIconf.plist | grep  -B 2 -e "<key>BackgroundColor</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/BackgroundColor/;/g' | tr -d '\n'`
+pstring=`echo "$MountEFIconf" | grep  -B 2 -e "<key>BackgroundColor</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/BackgroundColor/;/g' | tr -d '\n'`
 IFS=';'; plist=($pstring); unset IFS
 unset pstring
 }
 
 GET_THEME(){
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
+if [[ $cache = 1 ]]; then
+HasTheme=`echo "$MountEFIconf" | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
     if [[ $HasTheme = "Theme" ]]; then
-theme=`cat ${HOME}/.MountEFIconf.plist |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
     fi
 fi
 if [[ $theme = "system" ]]; then 
@@ -207,7 +242,7 @@ if [[ $theme = "system" ]]; then
                 fi
 fi
         
-itheme_set=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+itheme_set=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
         
 GET_PRESETS_COUNTS
 
@@ -224,18 +259,17 @@ fi
 
 SET_THEMES(){
 
-HasTheme=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "Theme"  | tr -d '\n'`
+HasTheme=`echo "$MountEFIconf" | grep -Eo "Theme"  | tr -d '\n'`
 if [[ ! $HasTheme = "Theme" ]]; then
-plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 else
- theme=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+ theme=`echo "$MountEFIconf" | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
    if [[ $theme = "system" ]]; then 
                 GET_PRESETS_COUNTS
                 CUSTOM_SET
- #               if [[ ! $pcount = 1 ]]; then
-                plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
+                plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 GET_PRESETS_NAMES
-                current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
  
                 var3=$pcount
                 num=0
@@ -251,7 +285,7 @@ else
                 var2=1 
                 let "pik=pcount-1"            
                 while [[  $var2 = 1  ]]; do
-                current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
                     printf "\r\033[1A"
                     printf '                                                          \n'
                     if [[ $loc = "ru" ]]; then
@@ -279,7 +313,7 @@ else
                 fi
                 if [[ $demo = [nN] ]]; then 
                     if [[ $num = $pik ]]; then let "num=0"; else let "num++"; fi
-                    plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist
+                    plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
                     unset demo
                     CUSTOM_SET
                 fi
@@ -292,7 +326,7 @@ if [[ $demo = [sS] ]]; then let "var2=0"; fi
                 done
  
         else
-            plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+            plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
                 printf '\n\n'
                     if [[ $loc = "ru" ]]; then
                 echo "включена системная тема. выполните перезапуск программы" 
@@ -309,11 +343,11 @@ fi
 
 GET_CURRENT_SET(){
 
-current=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_background=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_foreground=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_fontname=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_fontsize=`cat ${HOME}/.MountEFIconf.plist | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_background=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_foreground=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontname=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontsize=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 
 }
 
@@ -426,26 +460,37 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
 
 
 }
+####################################### кэш конфига #####################################################################################
+
+UPDATE_CACHE(){
+if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
+MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
+cache=1
+else
+unset MountEFIconf; cache=0
+fi
+}
+##########################################################################################################################################
+
+UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
 
 deleted=0
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ $cache = 1 ]]; then
+strng=`echo "$MountEFIconf" | grep  "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
       if [[ ! $strng = "CurrentPreset" ]]; then
         mypassword="0"
-        login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+        login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
                 if [[ $login = "LoginPassword" ]]; then
-        mypassword=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
                 fi
-        theme=`cat ${HOME}/.MountEFIconf.plist |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        rm ${HOME}/.MountEFIconf.plist
-        deleted=1
+        theme=`echo "$MountEFIconf" |  grep -A 1   "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        rm ${HOME}/.MountEFIconf.plist; unset MountEFIconf; cache=0; deleted=1
     fi
 fi
-         
 
-if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then
+if [[ ! $cache = 1 ]]; then
         if [[ -f DefaultConf.plist ]]; then
             cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
         else
@@ -460,37 +505,97 @@ if [[ $deleted = 1 ]]; then
     plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
 fi
 
+if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
+strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
 
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; fi
-
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+strng=`echo "$MountEFIconf" | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "AutoMount" ]]; then 
 			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+            cache=0
 fi
 
-strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
+strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
 if [[ ! $strng = "Timeout2Exit" ]]; then
             plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+            cache=0
 fi
 
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+strng=`echo "$MountEFIconf" | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "RenamedHD" ]]; then
             plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
+            cache=0
 fi
-#########################################################################################################################################
+if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
+
+#############################################################################################################################################
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG(){
+hotplug=0
 ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
-        if [[ ! $old_uuid_count = $uuid_count ]]; then inputs=0; old_uuid_count=$uuid_count
+        if [[ ! $old_uuid_count = $uuid_count ]]; then inputs=0; hotplug=1; old_uuid_count=$uuid_count
             
         fi
 }
+
+CHECK_HOTPLUG_PARTS(){
+#ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
+pstring=`df | cut -f1 -d " " | grep "/dev"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_PARTS_SCREEN; old_puid_count=$puid_count
+            
+        fi
+}
+
+##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
+UPDATE_SCREEN_BUFFER(){
+
+var0=$pos; num=0; ch1=0
+unset string
+while [ $var0 != 0 ] 
+do 
+pnum=${nslist[num]}
+string=`echo ${slist[$pnum]}`
+	let "ch1++"
+mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+if [[ $mcheck = "Yes" ]]; then
+            check=$( echo "${screen_buffer1}" | grep "$ch1)   +" )
+            if [[ "${check}" = "" ]]; then
+        screen_buffer1=$( echo  "$screen_buffer1" | sed "s/$ch1) ...  /$ch1)   +  /" )
+     fi
+
+    else
+            check=$( echo "${screen_buffer1}" | grep "$ch1) ..." )
+           if [[ 
+
+! "${check}" = "" ]]; then 
+        screen_buffer1=$( echo  "$screen_buffer1" | sed "s/$ch1)   +  /$ch1) ...  /" )
+    fi
+fi
+let "num++"
+let "var0--"
+done
+}
+############################ конец определения функции UPDATE PARTS ############################################
+
+###################################### обновление на экране списка подключенных ###########################################
+UPDATE_PARTS_SCREEN(){
+printf "\033[H"
+printf "\r\033[5f"
+echo  "$screen_buffer1"
+printf "\033[10B"
+
+    if [[ $loc = "ru" ]]; then
+    printf "\r\033[55C"
+        else
+    printf "\r\033[51C"
+    fi                      
+}
+################################### конец функции обновления списка подключенных  на экране ##################################
 ###################################################################################################################################################################
 
 
@@ -520,13 +625,18 @@ sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed 
 
 CHECK_HOTPLUG
 
+pstring=`df | cut -f1 -d " " | grep "/dev"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count
+            
+        fi
+
 }
 
 GET_EFI_S
 
 if [[ $par = "-r" ]]; then
 ShowKeys=1
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0; fi
 if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 else
@@ -577,8 +687,8 @@ function set_font {
 
 # Установка/удаление пароля для sudo через конфиг
 SET_USER_PASSWORD(){
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+if [[ $cache = 1 ]]; then
+login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
     if [[ $login = "LoginPassword" ]]; then
                 printf '\n\n'
                 if [[ $loc = "ru" ]]; then
@@ -588,7 +698,7 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
                     fi
                 read -p "(y/N) " -n 1 -r -s
                 if [[ $REPLY =~ ^[yY]$ ]]; then
-                plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist
+                plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 if [[ $loc = "ru" ]]; then
                 echo "пароль удалён. нажмите любую клавишу для продолжения ..."
                         else
@@ -608,7 +718,7 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
                 read -s mypassword
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
                 if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist
+                plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 printf "\r\033[1A"
                 if [[ $loc = "ru" ]]; then
                 printf '\nпароль '$mypassword' сохранён. нажмите любую клавишу для продолжения ...'
@@ -620,10 +730,8 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
                 printf "\r\033[1A"
                     if [[ $loc = "ru" ]]; then
                 printf '\nНе верный пароль '$mypassword' не сохранён.\n'
-                #printf 'нажмите любую клавишу для продолжения ...'
                         else
-                printf '\nWrong password '$mypassword' not saved. \n'
-                #printf 'press any key to continue....'
+                printf '\nWrong password '$mypassword' not saved. \n'               
                     fi
                 read -n 1 demo
                  
@@ -636,12 +744,12 @@ fi
 #Получение пароля для sudo из конфига
 GET_USER_PASSWORD(){
 mypassword="0"
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
+
+login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
     if [[ $login = "LoginPassword" ]]; then
-mypassword=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
     fi
-fi
+
 
 if [[ $mypassword = 0 ]]
          then 
@@ -711,7 +819,7 @@ fi
 }
 
 REM_ABSENT(){
-strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 alist=($strng1); apos=${#alist[@]}
 if [[ ! $apos = 0 ]]
 	then
@@ -719,21 +827,24 @@ if [[ ! $apos = 0 ]]
 		posb=0
 		while [[ ! $var8 = 0 ]]
 					do
-						if ! diskutil quiet info  ${alist[$posb]}  >&- 2>&- ; then  
+                       check_uuid=`ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[$posb]}`
+                       if [[ $check_uuid = "" ]]; then 
 						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
 						plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
 						strng1=$strng2
+                        cache=0
 						fi
 					let "posb++"
 					let "var8--"
 					done
 alist=($strng1); apos=${#alist[@]}
 fi
+if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; am_enabled=0; cache=0; fi
 }
 
 GET_AUTOMOUNT(){
 autom_enabled=0
-strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
 if [[ $strng = "true" ]]; then autom_enabled=1
             if [[ $loc = "ru" ]]; then
         am_set="Да"; am_corr=9
@@ -751,7 +862,7 @@ fi
 
 GETAUTO_OPEN(){
 autom_open=0
-strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
 if [[ $strng = "true" ]]; then autom_open=1
             if [[ $loc = "ru" ]]; then
         amo_set="Да"; amo_corr=8
@@ -769,7 +880,7 @@ fi
 
 GETAUTO_EXIT(){
 autom_exit=0
-strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
 if [[ $strng = "true" ]]; then autom_exit=1
             if [[ $loc = "ru" ]]; then
         ame_set="Да"; ame_corr=9
@@ -787,7 +898,7 @@ fi
 
 GETAUTO_TIMEOUT(){
 auto_timeout=0
-strng=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
 ncorr=${#auto_timeout}
         if [[ $loc = "ru" ]]; then
@@ -797,40 +908,22 @@ ncorr=${#auto_timeout}
             fi
 }
 
-GETEFI(){
-
-GET_FULL_EFI
-
-#GET_EFI_S
-
-#if [[ $par = "-r" ]]; then
-#ShowKeys=1
-#strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
-#if [[ $strng = "false" ]]; then ShowKeys=0; fi
-#if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
-#else
-#lines=22 
-#fi
-#let "lines=lines+pos"
-}
-
-
 GET_AUTOMOUNTED(){
-strng1=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 alist=($strng1); apos=${#alist[@]}
 }
 
 
 SHOW_AUTOEFI(){
 
-rm -f ~/.SetupMountEFItemp.txt
+
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
  if [[ $loc = "ru" ]]; then
   printf '\nВыберите раздел и опции автомонтирования:                                      '
 			else
         printf '\nSelect a partition and automount options:                                     '
 	                 fi
-var0=$pos; num1=0 ; ch=0
+var0=$pos; num1=0 ; ch=0; unset screen_buffer3
 
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
@@ -873,7 +966,6 @@ do
 	    i=$(( (i+1) %4 ))
 	    printf "\b$1${spin:$i:1}"
 
-	     #dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
          
          dsze=`echo "$sizes_iomedia" | grep -A10 -B10 ${strng} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
           if [[  $dsze -le 999999999 ]]; then dsze=$(echo "scale=1; $dsze/1000000" | bc)" Mb"
@@ -894,7 +986,7 @@ do
 
 			automounted=0
             GET_UUID_S
-    #uuid=`diskutil info  $strng | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+ 
     uuid=`echo "$uuids_iomedia" | grep -A12 -B12 $strng | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
         if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
@@ -919,24 +1011,16 @@ do
             
 
 
-
-	                 if [[ ! $mcheck = "Yes" ]]; then
-			printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.MountEFItemp.txt
-		else
-			printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.MountEFItemp.txt
-		fi
-
-
-#          вывод подготовленного формата строки в файл "буфер экрана"
-    if [[ $unuv = 1 ]]; then
-            printf '\n      '$ch')   x    '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.SetupMountEFItemp.txt
+     if [[ $unuv = 1 ]]; then
+            screen_buffer3+=$( printf '\n      '$ch')   x    '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' )  
                 else
 	if [[ $automounted = 0 ]]; then
-			printf '\n      '$ch') ....   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.SetupMountEFItemp.txt
+			screen_buffer3+=$( printf '\n      '$ch') ....   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' ) 
 		else
-			printf '\n      '$ch') auto   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     '  >> ~/.SetupMountEFItemp.txt
+			screen_buffer3+=$( printf '\n      '$ch') auto   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' )
 		fi
     fi
+            
             let "i++"
 	         i=$(( (i+1) %4 ))
 	         printf "\b$1${spin:$i:1}"    
@@ -958,7 +1042,7 @@ GETAUTO_OPEN
 GETAUTO_EXIT
 GETAUTO_TIMEOUT
  if [[ $loc = "ru" ]]; then
-#printf '\n'
+
 printf '      O) Открывать папку EFI после подключения = "'$amo_set'"'"%"$amo_corr"s"'(Да, Нет) \n'
 printf '      C) Закрыть программу после подключения  = "'$ame_set'"'"%"$ame_corr"s"'(Да, Нет) \n'
 printf '      T) Задержка в секундах для отмены закрытия программы:'"%"$tmo_corr"s"'{'$auto_timeout' сек}        \n\n'
@@ -993,9 +1077,10 @@ if [[ $loc = "ru" ]]; then
 	printf '      0)  update EFI partitions list             \n' 
         fi
 
-cat   ~/.SetupMountEFItemp.txt
 
-printf '\n\n     '
+echo "$screen_buffer3"
+
+printf '\n     '
 	printf '.%.0s' {1..68}
 printf '\n'
 
@@ -1004,7 +1089,8 @@ printf '\n'
 SET_AUTOMOUNT(){
 clear
 REM_ABSENT
-GETEFI
+if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
+GET_FULL_EFI
 SHOW_AUTOEFI
 UPDATE_KEYS_INFO
 var5=0
@@ -1027,11 +1113,15 @@ printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 printf "\r\033[48C"
 printf "\033[?25h"
-inputs="±"
-while [[ $inputs = "±" ]]
-do
-IFS="±"; read -n 1 -t 1 inputs ; unset IFS  ; CHECK_HOTPLUG
-done
+if [[ ${ch} -le 9 ]]; then
+    inputs="±"
+    while [[ $inputs = "±" ]]
+    do
+    IFS="±"; read -n 1 -t 1 inputs ; unset IFS  ; CHECK_HOTPLUG
+    done
+else
+    calls=1; READ_TWO_SYMBOLS    
+fi
 #IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
 printf "\r"
@@ -1045,29 +1135,31 @@ if [[  ${inputs}  = [dD] ]]; then
 			plutil -replace AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
             plutil -replace AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
 			var5=1
+            UPDATE_CACHE
 fi
 
 if [[  ${inputs}  = [qQ] ]]; then
 			GET_AUTOMOUNTED
 			if [[ $apos = 0 ]]; then 
 				plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+                UPDATE_CACHE
 			fi
 	var5=1
 fi
 
 if [[  ${inputs}  = [oO] ]]; then
 	if [[ $autom_open = 0 ]]; then 	
-				plutil -replace AutoMount.Open -bool YES ${HOME}/.MountEFIconf.plist	
+				plutil -replace AutoMount.Open -bool YES ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 					else
-				plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
+				plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 	fi
 fi
 
 if [[  ${inputs}  = [cC] ]]; then
 	if [[ $autom_exit = 0 ]]; then 	
-				plutil -replace AutoMount.ExitAfterMount -bool YES ${HOME}/.MountEFIconf.plist	
+				plutil -replace AutoMount.ExitAfterMount -bool YES ${HOME}/.MountEFIconf.plist; UPDATE_CACHE	
 					else
-				plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
+				plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 	fi
 fi
 
@@ -1093,7 +1185,8 @@ if [[  ${inputs}  = [tT] ]]; then
                     printf "\r\033[1A"
                     if [[ ${get_num} -gt 999 ]]; then unset get_num; fi 2>&-
                     done
-            plutil -replace AutoMount.Timeout2Exit -integer ${get_num} ${HOME}/.MountEFIconf.plist    
+            plutil -replace AutoMount.Timeout2Exit -integer ${get_num} ${HOME}/.MountEFIconf.plist 
+            UPDATE_CACHE   
             var7=1
             done
 fi
@@ -1113,13 +1206,11 @@ if [[ ! $apos = 0 ]]; then
 		 if [[ ${alist[$poi]} = $uuid ]]; then 
             if [[ $unuv = 0 ]]; then 
 							strng2=`echo ${strng1[@]}  |  sed 's/'$uuid'//'`
-							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist							
+							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist	; UPDATE_CACHE						
  							vari=1
 							am_check=1
-                            cat  ~/.SetupMountEFItemp.txt | sed "s/$inputs) auto  /$inputs) ....  /" >> ~/.SetupMountEFItemp2.txt
-                            rm ~/.SetupMountEFItemp.txt
-                            awk 'NR>1{printf "\n"} {printf $0}' ~/.SetupMountEFItemp2.txt > ~/.SetupMountEFItemp.txt
-                            rm  ~/.SetupMountEFItemp2.txt
+                            screen_buffer3=$( echo "$screen_buffer3" | sed "s/$inputs) auto  /$inputs) ....  /" )
+                            
             fi                
 		fi
 
@@ -1131,15 +1222,13 @@ if [[ $am_check = 0 ]]; then
         if [[ $unuv = 0 ]]; then 
 			strng1+=" "
 			strng1+=$uuid
-			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist
-            cat  ~/.SetupMountEFItemp.txt | sed "s/$inputs) ....  /$inputs) auto  /" >> ~/.SetupMountEFItemp2.txt
-            rm ~/.SetupMountEFItemp.txt
-            awk 'NR>1{printf "\n"} {printf $0}' ~/.SetupMountEFItemp2.txt > ~/.SetupMountEFItemp.txt
-            rm  ~/.SetupMountEFItemp2.txt
+			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+            screen_buffer3=$( echo "$screen_buffer3" | sed "s/$inputs) ....  /$inputs) auto  /" )
+            
         fi
 fi
 	else
-		if [[ $inputs = 0 ]]; then GETEFI; SHOW_AUTOEFI
+		if [[ $inputs = 0 ]]; then GET_FULL_EFI; SHOW_AUTOEFI
 	fi				
 fi
 done
@@ -1150,7 +1239,7 @@ unset inputs
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQ]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvV]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до 9 (или Q - выход ):   ' ; printf '                             '
@@ -1403,7 +1492,7 @@ GET_EFI_S
 
 if [[ $par = "-r" ]]; then
 ShowKeys=1
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+strng=`echo "$MountEFIconf" | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0; fi
 if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 else
@@ -1443,7 +1532,7 @@ fi
 GET_RENAMEHD(){
 adrive="±"
 unset strng
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng=`echo "$MountEFIconf"| grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 IFS=';'; rlist=($strng); unset IFS
 rcount=${#rlist[@]}
 if [[ ! $rcount = 0 ]]; then
@@ -1460,15 +1549,14 @@ fi
 ######################################################################################################################################
 
 SHOW_FULL_EFI(){
-rm -f ~/.SetupMountEFIAtemp.txt
-rm -f ~/.SetupMountEFItemp.txt
+
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
                 if [[ $loc = "ru" ]]; then
         printf '                             Настройкa псевдонимов                           '
 			else
         printf '                                 Aliases setup                               '
 	                 fi
-var0=$pos; num=0 ; ch=0
+var0=$pos; num=0 ; ch=0; unset screen_buffer1; unset screen_buffer2
 
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
@@ -1518,8 +1606,6 @@ do
 	printf "\b$1${spin:$i:1}"
 
         
-#          вывод подготовленного формата строки в файл "буфер экрана"
-
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
         else
@@ -1545,22 +1631,21 @@ do
             
             if [[ ${ddcorr} -gt 30 ]]; then ddcorr=0; ddrive="${ddrive:0:30}"; else let "ddcorr=30-ddcorr"; fi
 		    
-            
 
-	                 if [[ ! $mcheck = "Yes" ]]; then
-			printf '\n      '$ch') ...   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     '  >> ~/.SetupMountEFItemp.txt
+                       if [[ ! $mcheck = "Yes" ]]; then
+             screen_buffer1+=$( printf '\n      '$ch') ...   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')  
 		else
-			printf '\n      '$ch')   +   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     '  >> ~/.SetupMountEFItemp.txt
+			 screen_buffer1+=$( printf '\n      '$ch')   +   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ') 
 		fi
-	
 
 
                     if [[ ! $adrive = "±" ]]; then 
                     acorr=${#adrive}
 		          if [[ ${acorr} -gt 30 ]]; then acorr=0; adrive="${adrive:0:30}"; else let "acorr=30-acorr"; fi
-		      printf '\n   '$ch') '"$drive""%"$dcorr"s""$adrive""%"$acorr"s""%"$corr"s"'  '${string:0:5}  >> ~/.SetupMountEFIAtemp.txt
+
+		      screen_buffer2+=$( printf '\n   '$ch') '"$drive""%"$dcorr"s""$adrive""%"$acorr"s""%"$corr"s"'  '${string:0:5} ) 
                     else
-              printf '\n   '$ch') '"$drive""%"$dcorr"s"'                              '"%"$corr"s"'  '${string:0:5}  >> ~/.SetupMountEFIAtemp.txt
+              screen_buffer2+=$( printf '\n   '$ch') '"$drive""%"$dcorr"s"'                              '"%"$corr"s"'  '${string:0:5} ) 
                    fi
 
     let "num++"
@@ -1593,9 +1678,10 @@ if [[ $vid = 0 ]]; then
 	printf '   0)  update EFI partitions list   |<----------- 30 ----------->|*            \n' 
         fi
 
-cat   ~/.SetupMountEFIAtemp.txt
 
-printf '\n\n   '
+echo "$screen_buffer2"
+
+printf '\n   '
 	printf '.%.0s' {1..74}
 printf '\n'
                     else
@@ -1614,9 +1700,10 @@ printf '\n'
         fi
 
 
-cat   ~/.SetupMountEFItemp.txt
 
-    printf '\n\n     '
+echo "$screen_buffer1"
+
+    printf '\n     '
 	printf '.%.0s' {1..68}
     printf '    '
     printf '\n'
@@ -1668,7 +1755,7 @@ GET_DRIVE(){ # inputs ->   nslist string slist dstring    drive ->
 
 DEL_RENAMEHD(){ # inputs slist ->
 adrive="±"
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng=`echo "$MountEFIconf" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 IFS=';'; rlist=($strng); unset IFS
 rcount=${#rlist[@]}
 if [[ ! $rcount = 0 ]]; then
@@ -1689,15 +1776,15 @@ if [[ ! $rcount = 0 ]]; then
         let "posr++"
         done
         
-        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist
+        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
         else
-         plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist 
+         plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 fi  
 }
 
 ADD_RENAMEHD(){ # drive demo -> 
 adrive="±"
-strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng=`echo "$MountEFIconf" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 IFS=';'; rlist=($strng); unset IFS
 rcount=${#rlist[@]}
 
@@ -1724,7 +1811,7 @@ fi
         done
  
 
-        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist
+        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 }
 
 EDIT_RENAMEHD(){ # adrive ->  |   demo ->
@@ -1754,7 +1841,7 @@ printf '\n  Enter new alias:          '
 fi
 fi
 printf "\033[?25h"
-read demo
+read -r demo  
 printf "\033[?25l"
         if [[ ! $demo = "" ]]; then 
             if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
@@ -1767,7 +1854,77 @@ demo=`echo "$demo" | tr -d "=;{}]><[&^$"`
 fi
 }
 
+########################### определение функции ввода по 2 байта #########################
+READ_TWO_SYMBOLS(){
 
+inputs1="±"; inputs="±";
+while [[ $inputs1 = "±" ]]
+do
+printf '\n'
+printf '                                                                                \n'
+printf '                                                                                '
+if [[ $loc = "ru" ]]; then
+printf "\r\n\033[3A\033[55C"
+else
+printf "\r\n\033[3A\033[51C"
+fi
+IFS="±"; read   -n 1 -t 1  inputs1 ; unset IFS 
+if [[ $inputs1 = "" ]]; then printf "\033[1A"; inputs1="±"; fi
+if [[ $inputs1 = [0-9] ]]; then inputs=${inputs1}; break
+            else
+        if [[ ! $calls = 1 ]]; then
+            if [[ $inputs1 = [rReEvVcCdDqQ] ]]; then inputs=${inputs1}; break; fi
+                    else
+             if [[ $inputs1 = [oOqQdDcCtT] ]]; then inputs=${inputs1}; break; fi
+        fi
+ 
+fi
+ inputs1="±"
+
+
+CHECK_HOTPLUG
+if [[ $hotplug = 1 ]]; then break; fi
+if [[ $calls = 0 ]]; then CHECK_HOTPLUG_PARTS; fi
+done
+if [[ ! $hotplug = 1 ]]; then 
+    if [[ $inputs1 = [0-9] ]]; then
+inputs1="±"
+while [[ $inputs1 = "±" ]]
+do
+printf '\n'
+printf '                                                                                \n'
+printf '                                                                                '
+if [[ $loc = "ru" ]]; then
+printf "\r\n\033[3A\033[55C"
+else
+printf "\r\n\033[3A\033[51C"
+fi
+CHECK_HOTPLUG
+if [[ $hotplug = 1 ]]; then break; fi
+if [[ $calls = 0 ]]; then CHECK_HOTPLUG_PARTS; fi
+IFS="±"; read  -n 1 -t 1  inputs1 ; unset IFS 
+if [[ ! $inputs1 = [0-9] ]]; then 
+        if [[ $inputs1 = "" ]]; then printf "\033[1A"; break
+            else inputs1="±"; fi
+    else
+        if [[ $inputs = 0 ]]; then unset inputs; fi
+        inputs+=${inputs1}
+        
+fi
+done
+    fi
+fi
+printf "\033[?25l"
+if [[ $inputs = [0-9] ]]; then
+let "chan=ch+1"
+if [[ ${inputs} -ge ${chan} ]]; then inputs="0"; fi
+fi
+ 
+  }
+########################################################################################
+
+
+############################ функция псевдонимов ####################################################
 
 SET_ALIASES(){
 clear
@@ -1796,16 +1953,22 @@ else
 printf "\r\033[51C"
 fi
 printf "\033[?25h"
-inputs="±"
-while [[ $inputs = "±" ]]
-do
-IFS="±"; read -n 1 -t 1 inputs ; unset IFS ; sym=1 ; CHECK_HOTPLUG
-done
-#IFS="±"; read -n 1 inputs ; unset IFS 
-if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; fi
-printf "\r"
-done
-printf "\033[?25l"
+
+    inputs="±"
+  if [[ ${ch} -le 9 ]]; then
+    while [[ $inputs = "±" ]]
+    do
+    IFS="±"; read -n 1 -t 1 inputs ; unset IFS ; sym=1 ; CHECK_HOTPLUG ; CHECK_HOTPLUG_PARTS
+    done
+  else
+    calls=0; READ_TWO_SYMBOLS
+  fi  
+    #IFS="±"; read -n 1 inputs ; unset IFS 
+    if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; fi
+    printf "\r"
+    done
+ 
+    printf "\033[?25l"
 
 if [[ $inputs = [cC] ]]; then 
     if [[ $vid = 0 ]]; then vid=1; else vid=0; fi
@@ -1833,7 +1996,7 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 read  -n 1 -r
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
-                plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist
+                plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 inputs=0
                 fi
                 printf "\r\033[4A"
@@ -1932,7 +2095,7 @@ if [[ ${inputs} = [vV] ]]; then
                         printf '\n'
 	                         fi
 
-                        strng=`cat ${HOME}/.MountEFIconf.plist | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        strng=`echo "$MountEFIconf" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
                         IFS=';'; rlist=($strng); unset IFS
                         rcount=${#rlist[@]}
                         if [[ ! $rcount = 0 ]]; then
@@ -1961,10 +2124,12 @@ UPDATE_FULL_EFI
 done
 
 unset slist
-rm -f ~/.SetupMountEFIAtemp.txt
-rm -f ~/.SetupMountEFItemp.txt
+
 clear
 }
+############################## конец определения функции псевдонимов ##################################
+
+
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
@@ -1990,9 +2155,9 @@ if [[ $inputs = 0 ]]; then
 
 rm -f ${HOME}/.MountEFIconf.plist
  if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
         else
-             FILL_CONFIG
+             FILL_CONFIG; UPDATE_CACHE
         fi
     fi
 fi
@@ -2008,6 +2173,7 @@ if [[ $inputs = 1 ]]; then
         fi
     fi
   plutil -replace Locale -string $locale ${HOME}/.MountEFIconf.plist
+  UPDATE_CACHE
 fi
 #############################################################################
 
@@ -2018,6 +2184,7 @@ if [[ $inputs = 2 ]]; then
             menue="auto"
         fi
   plutil -replace Menue -string $menue ${HOME}/.MountEFIconf.plist
+  UPATE_CACHE
 fi
 ##############################################################################
 
@@ -2028,9 +2195,11 @@ if [[ $inputs = 3 ]]; then SET_USER_PASSWORD; fi
 # Открывать папку в Finder ###################################################
 if [[ $inputs = 4 ]]; then 
    if [[ $OpenFinder = 1 ]]; then 
-  plutil -replace OpenFinder -bool NO ${HOME}/.MountEFIconf.plist
+  plutil -replace OpenFinder -bool NO ${HOME}/.MountEFIconf.plist 
+    UPDATE_CACHE
  else 
-  plutil -replace OpenFinder -bool YES ${HOME}/.MountEFIconf.plist
+  plutil -replace OpenFinder -bool YES ${HOME}/.MountEFIconf.plist 
+    UPDATE_CACHE
   fi
 fi  
 ###############################################################################
@@ -2039,6 +2208,7 @@ fi
 if [[ $inputs = 5 ]]; then 
     if [[ $theme = "built-in" ]]; then 
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+        UPDATE_CACHE
                 printf '\n\n'
                     if [[ $loc = "ru" ]]; then
                 echo "включена системная тема. выполните перезапуск программы" 
@@ -2050,13 +2220,14 @@ if [[ $inputs = 5 ]]; then
                 read -n 1 demo
         else
           plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
+          UPDATE_CACHE
     fi
 fi 
 
 #################################################################################
  if [[ $inputs = 6 ]]; then 
-    if [[ $theme = "built-in" ]]; then plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist; fi
-SET_THEMES
+    if [[ $theme = "built-in" ]]; then plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; fi
+  SET_THEMES
 fi
       
 
@@ -2064,8 +2235,10 @@ fi
 if [[ $inputs = 7 ]]; then 
    if [[ $ShowKeys = 1 ]]; then 
   plutil -replace ShowKeys -bool NO ${HOME}/.MountEFIconf.plist
+  UPDATE_CACHE
  else 
   plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist
+  UPDATE_CACHE
   fi
 fi  
 ###############################################################################
@@ -2074,8 +2247,10 @@ fi
 if [[ $inputs = 8 ]]; then 
    if [[ $autom_enabled = 1 ]]; then 
   plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+    UPDATE_CACHE
  else 
   plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+    UPDATE_CACHE
   SET_AUTOMOUNT
     rm -f ~/.SetupMountEFItemp.txt
   fi
@@ -2085,7 +2260,6 @@ fi
 # создание псевдонимов имён дисков  ################################
 if [[ $inputs = 9 ]]; then 
   SET_ALIASES
-    rm -f ~/.SetupMountEFItemp.txt
 fi
 ###############################################################################
 
@@ -2093,8 +2267,10 @@ fi
 
 
 #if [[ $inputs = 9 ]]; then SETUP_THEMES; clear ; SET_SCREEN; fi
+
+if [[ $inputs = [vV] ]]; then SHOW_VERSION; UPDATE_CACHE; fi
            
-if [[ $inputs = [qQ] ]]; then var4=1; printf '\n'; fi
+if [[ $inputs = [qQ] ]]; then var4=1; printf '\n'; UPDATE_CACHE; fi
 
 done
 
