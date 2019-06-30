@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.3"
-s_edit_vers="014"
+s_edit_vers="016"
 
 ############################################################################################################################################################################################################
 
@@ -96,7 +96,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.3. 013 master
+# MountEFI версия скрипта настроек 1.3. 016 master
 # ---------------------------------------------------------------------------------------------------------------------
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
@@ -127,6 +127,8 @@ fi
 # 012 - Xранение бэкапа конфига в iCloud
 # 013 - Фикс отображения меню. Увеличено количество строк при обновлении экрана
 # 014 - Резервные копии конфигов с разных компов каждый в своей отдельной папке в iCloud
+# 015 - Поделиться настройками через iCloud
+# 016 - Фикс в отображении меню если нет пароля на русском языке. Расшарить бэкап настроек через iCloud
 #------------------------------------------------------------------------------------------------------------------------
 
 #clear && printf "\033[0;0H"
@@ -217,12 +219,27 @@ if [[ $strng = "false" ]]; then ShowKeys=0
 fi
 }
 
+
+
 GET_BACKUPS_FROM_ICLOUD(){
 hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
 if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+            if [[ $get_shared = 1 ]]; then
+                if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
+                    cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip  ${HOME}
+                        get_shared=0
+                fi
+            else
+                    
        if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
-        cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIconfBackups.zip  ${HOME}
-        fi
+            cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip  ${HOME}
+       else
+                if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
+                    cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip  ${HOME}
+                fi
+            fi
+      
+      fi 
 fi  
 
 }
@@ -812,7 +829,7 @@ mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed
 if [[ $mypassword = 0 ]]
          then 
                     if [[ $loc = "ru" ]]; then
-               mypassword_set="нет пароля"; pass_corr=9
+               mypassword_set="нет пароля"; pass_corr=20
                     else
                mypassword_set="not saved"; pass_corr=24
                     fi
@@ -1148,7 +1165,7 @@ printf '\n'
 SHOW_BACKUPS(){
 
 Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
-if [[ $Now -lt 6 ]]; then lncorr=0; else let "lncorr=Now-5"; fi
+if [[ $Now -lt 5 ]]; then lncorr=0; else let "lncorr=Now-4"; fi
 let "lines2=lines+lncorr"
 clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H" 
                     if [[ $loc = "ru" ]]; then
@@ -1201,6 +1218,7 @@ printf '\n                  R)  Восстановить настройки из
 printf '\n                  D)  Удалить сохранение из архива              '
 printf '\n                  С)  Удалить все сохранения                    '
 printf '\n                  M)  Максимальное количество резервных копий   <'$Maximum'>'
+printf '\n                  P)  Поделиться настройками через iCloud       '
 printf '\n                  Q)  Выйти в главное меню                      '
                     else
 printf '\n\n                  S)  Save current settings to archive          '
@@ -1208,7 +1226,8 @@ printf '\n                  R)  Restore settings from archive             '
 printf '\n                  D)  Delete backup from archive                '
 printf '\n                  С)  Delete ALL backups                        '
 printf '\n                  M)  Maximum number of backups                 <'$Maximum'>'
-printf '\n                  Q)  Exit to the main menu                      '
+printf '\n                  P)  Share settings via iCloud                 '
+printf '\n                  Q)  Exit to the main menu                     '
                    fi
 }
 
@@ -1306,14 +1325,32 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
 fi
 }
 
-CHECK_BACKUP_IN_ICLOUD(){
+CHECK_ICLOUD_BACKUPS(){
 cloud_archive=0
+shared_archive=0
 hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
         if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
-                 if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
-                        cloud_archive=1
-                 fi
+            if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then cloud_archive=1; fi
+            if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then shared_archive=1; fi
         fi
+}
+
+PUT_SHARE_IN_ICLOUD(){
+if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+        if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared ]]; then
+                mkdir ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared ; fi
+                        if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
+                                cloud_archv=$(md5 -qq /Users/andrej/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip)
+                                local_archv=$(md5 -qq ${HOME}/.MountEFIconfBackups.zip)
+                                        if [[ ! $cloud_archv = $local_archv ]]; then
+                                rm -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
+                                cp ${HOME}/.MountEFIconfBackups.zip ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
+                                         fi
+                         else
+                                cp ${HOME}/.MountEFIconfBackups.zip ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
+                                        
+                        fi
+fi
 }
 
 
@@ -1329,14 +1366,14 @@ SHOW_BACKUPS
 
 printf '\n\n'
 unset inputs
-while [[ ! ${inputs} =~ ^[sSdDcCmMqQrR]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[sSdDcCmMqQrRpP]+$ ]]; do 
 
 printf "\r"
 
                 if [[ $loc = "ru" ]]; then
-printf '  Выберите опцию S, R, D, C, M или Q :   ' ; printf '                             '
+printf '  Выберите опцию S, R, D, C, M, P или Q :   ' ; printf '                             '
 			else
-printf '  Enter a letter S, R, D, C, M or Q :   ' ; printf '                           '
+printf '  Enter a letter S, R, D, C, M, P or Q :   ' ; printf '                           '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
@@ -1514,6 +1551,26 @@ if [[  ${inputs}  = [mM] ]]; then
             inputs=0
 fi
 
+
+if [[ $inputs = [pP] ]]; then printf "\r\033"
+                        if [[ $loc = "ru" ]]; then
+                
+                printf ' Подтвердите публикацию настроек (y/N) ? '
+			else
+                printf ' Confirm the publication of settings (y/N)? '
+                
+                fi
+                printf "\033[?25h"
+                read  -n 1 -r
+                printf "\033[?25l"
+                if [[  $REPLY =~ ^[yY]$ ]]; then
+                PUT_SHARE_IN_ICLOUD
+                fi
+                printf "\r\033"
+                printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+                printf "\r\033[4A"
+fi
+                
 
 if [[  ${inputs}  = [qQ] ]]; then var5=1; fi
  
@@ -1787,7 +1844,7 @@ printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, 
 
             fi
                     Lit="C"
-             if [[ $cloud_archive = 1 ]]; then
+             if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
                     Lit="D"
                if [[ $loc = "ru" ]]; then
 printf ' D) Загрузить бэкапы настроек из iCloud                                         \n'
@@ -1820,7 +1877,7 @@ UPDATE_SCREEN(){
         GET_AUTOMOUNT
         GET_LOADERS
         GET_AUTOBACKUP
-        CHECK_BACKUP_IN_ICLOUD
+        CHECK_ICLOUD_BACKUPS
         SET_SCREEN
 
     
@@ -2677,10 +2734,6 @@ if [[ $inputs = [aA] ]]; then
 fi  
 ###############################################################################
 
-if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
-
-##############################################################################
-
 if [[ $inputs = [cC] ]]; then 
 if [[ $Autobackup = 1 ]]; then 
   plutil -replace Backups.Auto -bool NO ${HOME}/.MountEFIconf.plist 
@@ -2722,17 +2775,25 @@ fi
 ########################################################################################################################
 
 if [[ $inputs = [dD] ]]; then
-         if [[ $cloud_archive = 1 ]]; then
+                    CHECK_ICLOUD_BACKUPS
+         if [[ $cloud_archive = 1 ]] && [[ $shared_archive = 1 ]]; then
+                        inputs="§"
                         if [[ $loc = "ru" ]]; then
                 echo "Заместить локальный бэкап архивами из iCloud                       "
+                echo "1) - Загрузить архив с этой машины. 2) -  Публичный архив          "
                         else
                 echo "Replace the local backup with archives from iCloud?                "
+                echo "1) - Download the archive from this machine. 2) - Public           "
                         fi
-                read -p "(y/N) " -n 1 -r -s
-                if [[ $REPLY =~ ^[yY]$ ]]; then
+                printf "\033[?25h" 
+                read -p "(1/2/N) " -n 1 -r
+                printf "\033[?25l"  
+                if [[ $REPLY = 1 ]] || [[ $REPLY = 2 ]]; then 
+                if [[ $REPLY = 2 ]]; then get_shared=1; fi
                 mv  ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups2.zip
                 GET_BACKUPS_FROM_ICLOUD
                 if [[ -f ${HOME}/.MountEFIconfBackups.zip ]]; then rm -f ${HOME}/.MountEFIconfBackups2.zip
+                inputs="B"
                         else
                             mv  ${HOME}/.MountEFIconfBackups2.zip ${HOME}/.MountEFIconfBackups.zip
                 printf "\r\033[1A"
@@ -2749,9 +2810,51 @@ if [[ $inputs = [dD] ]]; then
                 fi
             fi
        fi
-fi      
+ fi
+                
 
-######################################################################################################################## 
+
+if [[ $inputs = [dD] ]]; then
+                CHECK_ICLOUD_BACKUPS
+         if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
+                        if [[ $loc = "ru" ]]; then
+                echo "Заместить локальный бэкап архивами из iCloud                       "
+                        else
+                echo "Replace the local backup with archives from iCloud?                "
+                        fi
+                read -p "(y/N) " -n 1 -r -s
+                if [[ $REPLY =~ ^[yY]$ ]]; then
+                mv  ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups2.zip
+                GET_BACKUPS_FROM_ICLOUD
+                if [[ -f ${HOME}/.MountEFIconfBackups.zip ]]; then rm -f ${HOME}/.MountEFIconfBackups2.zip
+                inputs="B"
+                        else
+                            mv  ${HOME}/.MountEFIconfBackups2.zip ${HOME}/.MountEFIconfBackups.zip
+                printf "\r\033[1A"
+                             if [[ $loc = "ru" ]]; then
+                echo "Замещение не удалось. Локальный архив сохранён                     "
+                printf '                    '
+                        else
+                echo "Replacement failed. Local archive saved                            "
+                printf '                    '
+                        fi
+                read  -n 1 -s
+                clear
+
+                fi
+            fi
+       fi
+ fi
+
+
+
+
+########################################################################################################################
+
+if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
+
+##############################################################################
+
 done
 
 if [[ $par = "-r" ]]; then exit 1; else EXIT_PROG; fi

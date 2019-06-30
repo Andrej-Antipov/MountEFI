@@ -2,10 +2,10 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.63"
-edit_vers="025"
+edit_vers="026"
 ##################################################################################################################################################################################################################
 
-# MountEFI версия 1.63.024 master
+# MountEFI версия 1.63.026 master
 #------------------------------------------------------------------------------------
 # Добавлена очистка истории bash от записей запусков MountEFI перед выходом 
 # Добавлен таймаут прерывания выхода для автомонтирования
@@ -40,6 +40,7 @@ edit_vers="025"
 # 023 - Начальная поддержка бэкапов конфига
 # 024 - Загрузка архива конфига из iCloud
 # 025 - Раздельные папки для бэкапов в iCloud
+# 026 - Поддержка загрузки публичнго бэкапа через iCloud
 #--------------------------------------------------------------------------------------------
 
 SHOW_VERSION(){
@@ -148,12 +149,17 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
   fi
 fi
 
+
 GET_BACKUPS_FROM_ICLOUD(){
 hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
 if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
        if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
-        cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIconfBackups.zip  ${HOME}
-        fi
+            cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip  ${HOME}
+       else
+                if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
+                    cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip  ${HOME}
+            fi
+       fi 
 fi  
 
 }
