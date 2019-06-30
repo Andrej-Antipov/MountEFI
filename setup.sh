@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.3"
-s_edit_vers="005"
+s_edit_vers="014"
 
 ############################################################################################################################################################################################################
 
@@ -37,13 +37,16 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt
 printf '............................................................\n' >> ~/temp.txt
-echo "inputs1 = "$inputs1 >> ~/temp.txt
-echo "inputs = "$inputs >> ~/temp.txt
+#echo "inputs1 = "$inputs1 >> ~/temp.txt
+#echo "inputs = "$inputs >> ~/temp.txt
 #echo "inputs = "$inputs
 #echo "slist = "${slist[@]}
 #echo "nslist = "${nslist[@]}
-#echo "apos = "$apos
-#echo "strng = "$strng
+#echo "matched = "$matched >> ~/temp.txt
+#echo "fln = "$fln >> ~/temp.txt
+#echo "Now = "$Now >> ~/temp.txt
+#echo "fon = "$fon >> ~/temp.txt
+#echo "Now = "$Now >> ~/temp.txt
 #echo "strng2 = "$strng2
 #echo "uuid = "$uuid
 #echo "vari = "$vari
@@ -62,7 +65,7 @@ echo "inputs = "$inputs >> ~/temp.txt
 
 printf '............................................................\n\n' >> ~/temp.txt
 sleep 0.5
-#read  -s -n1 
+read  -s -n1 
 fi
 }
 #########################################################################################################################################
@@ -88,12 +91,12 @@ if [[ ${TTYc} = 0  ]]; then  sleep 0.5; osascript -e 'quit app "terminal.app"' &
 fi
 }
 
-#########################################################
+##########################################################################################################################################
 
 
 
 
-# MountEFI версия скрипта настроек 1.3. 005 master
+# MountEFI версия скрипта настроек 1.3. 013 master
 # ---------------------------------------------------------------------------------------------------------------------
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
@@ -111,10 +114,19 @@ fi
 # Фикс автопереключения раскладки на Мохаве
 # Добавлен детект подключения / отключения медиа
 # 001 - Добавлен контроль версий
-# 002 - Буферы экрана через переменные screen_buffers в функциях 8 и 9
+# 002 - Буферы экрана в переменных screen_buffers в функциях 8 и 9
 # 003 - Кэширование конфига в темах, 8 и 9-й функциях
 # 004 - Переключение на ввод по два байта если разделов больше 9 (для 8 и 9 функций)
-# 005 - Детект горяего подключения/отключения медиа для двух байтового ввода. Детект партиций в 9-й функции.
+# 005 - Детект горячего подключения/отключения медиа для двух байтового ввода. Детект партиций в 9-й функции.
+# 006 - Опция в настройках при подключении разделов проверять на них наличие загрузчиков
+# 007 - Исправлено выравнивание на экране если разделов больше 9
+# 008 - Фикс ошибки если системный раздел содержит в имени EFI. Фикс ошибки выбора больше 9-го раздела в 9-й функции
+# 009 - Фикс получения из IOreg имени диска для старых компьютеров. 
+# 010 - Фикс установки Enabled при выходе из 8-й функции
+# 011 - начальная версия работы с бэкапами конфига
+# 012 - Xранение бэкапа конфига в iCloud
+# 013 - Фикс отображения меню. Увеличено количество строк при обновлении экрана
+# 014 - Резервные копии конфигов с разных компов каждый в своей отдельной папке в iCloud
 #------------------------------------------------------------------------------------------------------------------------
 
 #clear && printf "\033[0;0H"
@@ -137,9 +149,9 @@ if [[ $cache = 1 ]] ; then
         loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
 fi
             if [[ $loc = "ru" ]]; then
-if [[ $locale = "ru" ]]; then loc_set="русский"; loc_corr=6; fi
-if [[ $locale = "en" ]]; then loc_set="английский"; loc_corr=3; fi
-if [[ $locale = "auto" ]]; then loc_set="автовыбор"; loc_corr=4; fi
+if [[ $locale = "ru" ]]; then loc_set="русский"; loc_corr=17; fi
+if [[ $locale = "en" ]]; then loc_set="английский"; loc_corr=14; fi
+if [[ $locale = "auto" ]]; then loc_set="автовыбор"; loc_corr=15; fi
             else
 if [[ $locale = "ru" ]]; then loc_set="russian"; loc_corr=23; fi
 if [[ $locale = "en" ]]; then loc_set="english"; loc_corr=23; fi
@@ -155,13 +167,13 @@ if [[ $HasMenue = "always" ]]
     then 
     menue=1
         if [[ $loc = "ru" ]]; then
-    menue_set="всегда"; menue_corr=17
+    menue_set="всегда"; menue_corr=28
         else
     menue_set="always"; menue_corr=30
         fi
     else
             if [[ $loc = "ru" ]]; then
-        menue_set="автовыбор"; menue_corr=14 
+        menue_set="автовыбор"; menue_corr=25 
             else
         menue_set="auto"; menue_corr=32
             fi
@@ -174,13 +186,13 @@ OpenFinder=1
 strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then OpenFinder=0
             if [[ $loc = "ru" ]]; then
-        OpenFinder_set="Нет"; of_corr=7
+        OpenFinder_set="Нет"; of_corr=18
             else
         OpenFinder_set="No"; of_corr=19
             fi
     else
             if [[ $loc = "ru" ]]; then
-        OpenFinder_set="Да"; of_corr=8
+        OpenFinder_set="Да"; of_corr=19
             else
         OpenFinder_set="Yes"; of_corr=18
             fi
@@ -192,18 +204,29 @@ ShowKeys=1
 strng=`echo "$MountEFIconf" | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0
             if [[ $loc = "ru" ]]; then
-        ShowKeys_set="Нет"; sk_corr=3
+        ShowKeys_set="Нет"; sk_corr=14
             else
         ShowKeys_set="No"; sk_corr=22
             fi
     else
             if [[ $loc = "ru" ]]; then
-        ShowKeys_set="Да"; sk_corr=4
+        ShowKeys_set="Да"; sk_corr=15
             else
         ShowKeys_set="Yes"; sk_corr=21
             fi
 fi
 }
+
+GET_BACKUPS_FROM_ICLOUD(){
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+       if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
+        cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIconfBackups.zip  ${HOME}
+        fi
+fi  
+
+}
+
 
 
 GET_PRESETS_COUNTS(){
@@ -230,13 +253,13 @@ theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | 
 fi
 if [[ $theme = "system" ]]; then 
                 if [[ $loc = "ru" ]]; then
-            theme_set="системная"; theme_corr=14
+            theme_set="системная"; theme_corr=25
                 else
             theme_set="system"; theme_corr=30
                 fi
     else
                 if [[ $loc = "ru" ]]; then
-            theme_set="встроенная"; theme_corr=13
+            theme_set="встроенная"; theme_corr=24
                 else
             theme_set="built-in"; theme_corr=28
                 fi
@@ -248,8 +271,8 @@ GET_PRESETS_COUNTS
 
 tlenth=`echo ${#itheme_set}`
 if [[ $loc = "ru" ]]; then
-let "btheme_corr=18-tlenth"
-btspc_corr=19
+let "btheme_corr=29-tlenth"
+btspc_corr=8
 else
 let "btheme_corr=23-tlenth"
 fi
@@ -366,6 +389,12 @@ set_font "$current_fontname" $current_fontsize
 
 }
 
+GET_BACKUPS(){
+Maximum=`echo "$MountEFIconf" | grep Backups -A 5 | grep -A 1 -e "Maximum</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+}
+
+
+
 FILL_CONFIG(){
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
@@ -383,6 +412,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <integer>5</integer>' >> ${HOME}/.MountEFIconf.plist
 	        echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>Backups</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -509,6 +547,9 @@ if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
 
+strng=`echo "$MountEFIconf"| grep -e "<key>CheckLoaders</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "CheckLoaders" ]]; then plutil -replace CheckLoaders -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
+
 strng=`echo "$MountEFIconf" | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "AutoMount" ]]; then 
 			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
@@ -530,10 +571,26 @@ if [[ ! $strng = "RenamedHD" ]]; then
             plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
             cache=0
 fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>Backups</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "Backups" ]]; then 
+             plutil -insert Backups -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+             plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
+             cache=0
+fi
+
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
-
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
+if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
+            if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
+            mkdir ${HOME}/.MountEFIconfBackups
+            mkdir ${HOME}/.MountEFIconfBackups/1
+            cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1
+            zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
+            rm -R ${HOME}/.MountEFIconfBackups
+fi
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG(){
 hotplug=0
@@ -612,6 +669,7 @@ ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 
 strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
 
 IFS=';' 
 slist=($strng)
@@ -638,7 +696,7 @@ if [[ $par = "-r" ]]; then
 ShowKeys=1
 strng=`echo "$MountEFIconf" | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0; fi
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=23; fi
 else
 lines=23 
 fi
@@ -762,7 +820,7 @@ if [[ $mypassword = 0 ]]
         mypassword_set=`echo ${mypassword}`
         passl=`echo ${#mypassword}`
         if [[ $loc = "ru" ]]; then
-        let "pass_corr=19-passl"
+        let "pass_corr=30-passl"
         else
         let "pass_corr=33-passl"
         fi
@@ -847,13 +905,13 @@ autom_enabled=0
 strng=`echo "$MountEFIconf" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
 if [[ $strng = "true" ]]; then autom_enabled=1
             if [[ $loc = "ru" ]]; then
-        am_set="Да"; am_corr=9
+        am_set="Да"; am_corr=20
             else
         am_set="Yes"; am_corr=14
             fi
     else
             if [[ $loc = "ru" ]]; then
-        am_set="Нет"; am_corr=8
+        am_set="Нет"; am_corr=19
             else
         am_set="No"; am_corr=15
             fi
@@ -1000,7 +1058,8 @@ do
 	done
 	fi
 
-            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+             if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
 
             string1=$strng
             GET_RENAMEHD
@@ -1009,15 +1068,15 @@ do
             dcorr=${#drive}
 		    if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drv="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
             
-
+            if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi
 
      if [[ $unuv = 1 ]]; then
-            screen_buffer3+=$( printf '\n      '$ch')   x    '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' )  
+            screen_buffer3+=$( printf '\n    '"%"$ncorr"s"$ch')   x    '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' )  
                 else
 	if [[ $automounted = 0 ]]; then
-			screen_buffer3+=$( printf '\n      '$ch') ....   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' ) 
+			screen_buffer3+=$( printf '\n    '"%"$ncorr"s"$ch') ....   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' ) 
 		else
-			screen_buffer3+=$( printf '\n      '$ch') auto   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' )
+			screen_buffer3+=$( printf '\n    '"%"$ncorr"s"$ch') auto   '"$drive""%"$dcorr"s"'    '${strng}"%"$corr"s""%"$scorr"s"' '"$dsze"'     ' )
 		fi
     fi
             
@@ -1086,6 +1145,386 @@ printf '\n'
 
 }
 
+SHOW_BACKUPS(){
+
+Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+if [[ $Now -lt 6 ]]; then lncorr=0; else let "lncorr=Now-5"; fi
+let "lines2=lines+lncorr"
+clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+                    if [[ $loc = "ru" ]]; then
+        printf '                      Настройка бэкапов и восстановление                        '
+			else
+        printf '                         Backup and restore settings                            '
+	                 fi
+        printf '\n   '
+	    printf '.%.0s' {1..74}
+                                    if [[ $loc = "ru" ]]; then
+                        printf '\n                                Имеются бэкапы:                            '
+                        printf '\n     '
+	                    printf '.%.0s' {1..34}
+                        
+                        printf '   '
+	                    printf '.%.0s' {1..34}
+                        printf '\n'
+			               else
+                        printf '\n                                Backups database                            '
+                        printf '\n     '
+	                    printf '.%.0s' {1..34}
+                        
+                        printf '   '
+	                    printf '.%.0s' {1..34}
+                        printf '\n'
+	                         fi
+                        printf '\n'
+GET_BACKUPS
+if [[ ! $Now = 0 ]]; then
+var6=$Maximum; chn=1
+if [[ $Now -lt $Maximum ]]; then var6=$Now; fi
+while [[ ! $var6 = 0 ]] 
+do
+if [[ -d ${HOME}/.MountEFIconfBackups/$chn ]]; then
+        backtime=$(stat -f %m $F ${HOME}/.MountEFIconfBackups/$chn/.MountEFIconf.plist)
+            printf '               '$chn')    '
+                date -r "$backtime" 
+fi
+let "chn++"; let "var6--"
+done
+let "chn--"
+fi
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+
+                if [[ $loc = "ru" ]]; then
+
+printf '\n\n                  S)  Сохранить текущие настройки в архив       '
+printf '\n                  R)  Восстановить настройки из архива          '
+printf '\n                  D)  Удалить сохранение из архива              '
+printf '\n                  С)  Удалить все сохранения                    '
+printf '\n                  M)  Максимальное количество резервных копий   <'$Maximum'>'
+printf '\n                  Q)  Выйти в главное меню                      '
+                    else
+printf '\n\n                  S)  Save current settings to archive          '
+printf '\n                  R)  Restore settings from archive             '
+printf '\n                  D)  Delete backup from archive                '
+printf '\n                  С)  Delete ALL backups                        '
+printf '\n                  M)  Maximum number of backups                 <'$Maximum'>'
+printf '\n                  Q)  Exit to the main menu                      '
+                   fi
+}
+
+#####################################################################################################################
+ADD_BACKUP(){
+Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+GET_BACKUPS
+if [[ $Now = 0 ]]; then Now=1; mkdir ${HOME}/.MountEFIconfBackups/$Now
+    else
+        if [[ "$Now" -lt "$Maximum" ]]; then
+                let "Now++"
+                else rm -f ${HOME}/.MountEFIconfBackups/$Now/.MountEFIconf.plist
+                fi
+             if [[ ! -d  ${HOME}/.MountEFIconfBackups/$Now ]]; then mkdir ${HOME}/.MountEFIconfBackups/$Now
+                    if [[ -f ${HOME}/.MountEFIconfBackups/$Now/.MountEFIconf.plist ]]; then rm ${HOME}/.MountEFIconfBackups/$Now/.MountEFIconf.plist; fi
+             fi
+                let "fol=Now-1"
+                for (( fon=$Now; fon>1; fon-- ))
+             do
+
+                mv ${HOME}/.MountEFIconfBackups/$fol/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/$fon/.MountEFIconf.plist
+                let "fol--"
+             done
+fi
+        cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1/.MountEFIconf.plist
+        
+}
+
+DELETE_BACKUP(){
+        Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+        if [[ ! $inputs = $Now ]]; then
+        let "fll=inputs+1"
+        rm -f ${HOME}/.MountEFIconfBackups/$inputs/.MountEFIconf.plist
+        for (( fln=$inputs; fln<=$Now; fln++ ))
+        do
+        mv ${HOME}/.MountEFIconfBackups/$fll/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/$fln/.MountEFIconf.plist
+        let "fll++"
+        done
+        fi
+        rm -R -f ${HOME}/.MountEFIconfBackups/$Now
+           
+}
+
+RESTORE_BACKUP(){
+rm ${HOME}/.MountEFIconf.plist
+cp ${HOME}/.MountEFIconfBackups/$inputs/.MountEFIconf.plist ${HOME}
+}
+
+CHECK_BUNZIP(){
+if [[ ! -d ${HOME}/.MountEFIconfBackups ]]; then 
+unzip  -o -qq ${HOME}/.MountEFIconfBackups.zip -d ~/.temp
+mv ~/.temp/*/*/.MountEFIconfBackups ~/.MountEFIconfBackups
+rm -r ~/.temp
+fi
+}
+
+UPDATE_ZIP(){
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then
+rm  ${HOME}/.MountEFIconfBackups.zip
+zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
+fi
+}
+
+MATCHING_BACKUPS(){
+CHECK_BUNZIP
+Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+matched=0
+if [[ ! $Now = 0 ]]; then
+currnt=$(md5 -qq ${HOME}/.MountEFIconf.plist)
+for (( fln=1; fln<=$Now; fln++ ))
+do
+archv=$(md5 -qq ${HOME}/.MountEFIconfBackups/$fln/.MountEFIconf.plist)
+if [[ $archv = $currnt ]]; then matched=1; break; fi
+done
+fi
+}
+
+PUT_BACKUPS_IN_ICLOUD(){
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+        if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups ]]; then 
+                        mkdir ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups; fi
+        if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid ]]; then
+                        mkdir ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid; fi
+        if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
+                cloud_archv=$(md5 -qq /Users/andrej/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip)
+                local_archv=$(md5 -qq ${HOME}/.MountEFIconfBackups.zip)
+                    if [[ ! $cloud_archv = $local_archv ]]; then
+                        rm -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip
+                        cp ${HOME}/.MountEFIconfBackups.zip ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/
+                    fi
+         else
+                        cp ${HOME}/.MountEFIconfBackups.zip ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/
+         fi
+fi
+}
+
+CHECK_BACKUP_IN_ICLOUD(){
+cloud_archive=0
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+        if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+                 if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
+                        cloud_archive=1
+                 fi
+        fi
+}
+
+
+SET_BACKUPS(){
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
+unzip  -o -qq ${HOME}/.MountEFIconfBackups.zip -d ~/.temp
+mv ~/.temp/*/*/.MountEFIconfBackups ~/.MountEFIconfBackups
+rm -r ~/.temp
+
+var5=0
+while [[ $var5 = 0 ]]; do 
+SHOW_BACKUPS
+
+printf '\n\n'
+unset inputs
+while [[ ! ${inputs} =~ ^[sSdDcCmMqQrR]+$ ]]; do 
+
+printf "\r"
+
+                if [[ $loc = "ru" ]]; then
+printf '  Выберите опцию S, R, D, C, M или Q :   ' ; printf '                             '
+			else
+printf '  Enter a letter S, R, D, C, M or Q :   ' ; printf '                           '
+                fi
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[4A"
+printf "\r\033[40C"
+printf "\033[?25h"
+
+read -n 1 inputs 
+if [[ $inputs = "" ]]; then printf "\033[1A"; fi
+done
+
+if [[ $inputs = [sS] ]]; then printf "\r\033"
+
+                MATCHING_BACKUPS
+                if [[ $matched = 1 ]]; then
+                       if [[ $loc = "ru" ]]; then
+                
+                printf ' Текущие настройки совпадают с архивом номер < \e[1;5m'$fln'\e[0m >'
+			else
+                printf ' Match current settings with the archive number < \e[1;5m'$fln'\e[0m >'
+                fi 
+                printf "\033[?25l"
+                read  -n 1 
+
+                        else
+
+                        if [[ $loc = "ru" ]]; then
+                
+                printf ' Подтвердите сохранение конфигурации (y/N) ? '
+			else
+                printf ' Confirm saving the current settings (y/N)? '
+                
+                fi
+                printf "\033[?25h"
+                read  -n 1 -r
+                printf "\033[?25l"
+                if [[  $REPLY =~ ^[yY]$ ]]; then
+                CHECK_BUNZIP
+                ADD_BACKUP
+                UPDATE_ZIP
+                fi
+                fi
+                inputs=0
+                printf "\r\033"
+                printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+                printf "\r\033[4A"
+                
+fi
+
+if [[ ${inputs} = [dD] ]]; then
+                            printf "\r\033"; printf '\n\n'"%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Удаление бэкапа. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  Delete backup. (or just "Enter" to cancel):\n\n'
+                        fi
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите номер бэкапа ( 1 - '$chn' ): ' 
+                            else
+                        printf '   Choose backup number  ( 1 - '$chn' ): '
+                        fi
+                        printf "\033[?25h" 
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs = 0 ]]; then inputs="t"; fi &> /dev/null
+                        if [[ $inputs -gt $chn ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        CHECK_BUNZIP
+                        DELETE_BACKUP
+                        UPDATE_ZIP
+                        fi
+                        inputs=0
+fi
+
+if [[ ${inputs} = [rR] ]]; then
+                            printf "\r\033"; printf '\n\n'"%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Восстановление конфигурации из бэкапа. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  Restoring configuration from backup. (or just "Enter" to cancel):\n\n'
+                        fi
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите номер бэкапа ( 1 - '$chn' ): ' 
+                            else
+                        printf '   Choose backup number  ( 1 - '$chn' ): '
+                        fi
+                        printf "\033[?25h" 
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs = 0 ]]; then inputs="t"; fi &> /dev/null
+                        if [[ $inputs -gt $chn ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        CHECK_BUNZIP
+                        RESTORE_BACKUP
+                        fi
+                        inputs=0
+fi
+
+if [[ $inputs = [cC] ]]; then printf "\r\033"
+                        if [[ $loc = "ru" ]]; then
+                
+                printf ' Подтвердите удаление ВСЕХ бэкапов (y/N) ? '
+			else
+                printf ' Confirm deletion of ALL backups (y/N)? '
+                
+                fi
+                printf "\033[?25h"
+                read  -n 1 -r
+                printf "\033[?25l"
+                if [[  $REPLY =~ ^[yY]$ ]]; then
+                CHECK_BUNZIP
+                rm -R -f ${HOME}/.MountEFIconfBackups/*
+                UPDATE_ZIP
+                inputs=0
+                fi
+                printf "\r\033"
+                printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+                printf "\r\033[4A"
+                
+fi
+
+if [[  ${inputs}  = [mM] ]]; then
+        var7=0
+        while [[ ! $var7 = 1 ]] 
+            do
+                    unset get_num
+                    while [[ ! ${get_num} =~ ^[0-9]+$ ]]
+                    do
+                    printf "\r\033"
+                    printf '\n                                                      '
+                    printf '\n                                                      '
+                    printf "\r\033[1A"
+                    if [[ $loc = "ru" ]]; then
+                    printf '\n  Максимальное количество бэкапов конфига:  ' 
+			           else
+                    printf '\n  Maximum number of config backups:   ' 
+                    fi
+                    printf "\033[?25h"
+                    read get_num
+                    printf "\033[?25l"
+                    printf "\r\033[1A"
+                    if [[ ${get_num} = 0 ]]; then unset get_num 2>&-
+                    if [[ ${get_num} -gt 99 ]]; then unset get_num; fi 2>&-
+                    fi
+                    printf "\033[2A"
+                    done
+            plutil -replace Backups.Maximum -integer ${get_num} ${HOME}/.MountEFIconf.plist 
+            UPDATE_CACHE
+            CHECK_BUNZIP
+            Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+            if [[ $Now -gt get_num ]]; then
+                for (( i=$Now; i>get_num; i-- ))
+                do
+                rm -R -f ${HOME}/.MountEFIconfBackups/$i
+                done
+            fi
+            UPDATE_ZIP 
+            var7=1
+            done
+            inputs=0
+fi
+
+
+if [[  ${inputs}  = [qQ] ]]; then var5=1; fi
+ 
+
+done
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
+clear
+unset inputs
+}
+
+############################################################################################################################
 SET_AUTOMOUNT(){
 clear
 REM_ABSENT
@@ -1140,11 +1579,13 @@ fi
 
 if [[  ${inputs}  = [qQ] ]]; then
 			GET_AUTOMOUNTED
-			if [[ $apos = 0 ]]; then 
-				plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+			if [[ $apos = 1 ]]; then 
+				plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+                    else
+                plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+            fi
                 UPDATE_CACHE
-			fi
-	var5=1
+	  var5=1
 fi
 
 if [[  ${inputs}  = [oO] ]]; then
@@ -1196,7 +1637,8 @@ GET_AUTOMOUNTED
 	
 	am_check=0
 	let "pois=inputs-1"
-	uuid=`diskutil info  ${slist[$pois]} | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+	#uuid=`diskutil info  ${slist[$pois]} | grep  "Disk / Partition UUID:" | sed 's|.*:||' | tr -d '\n\t '`
+    uuid=`echo "$uuids_iomedia" | grep -A12 -B12 ${slist[$pois]} | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
     if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 if [[ ! $apos = 0 ]]; then
 	 let vari=$apos
@@ -1239,12 +1681,12 @@ unset inputs
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvV]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdD]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до 9 (или Q - выход ):   ' ; printf '                             '
+printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to 9 (or Q - exit ):   ' ; printf '                           '
+printf '  Enter a letter from 0 to '$Lit' (or Q - exit ):   ' ; printf '                           '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
@@ -1258,35 +1700,101 @@ printf "\033[?25l"
 
 }
 
+GET_LOADERS(){
+CheckLoaders=1
+strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then CheckLoaders=0
+            if [[ $loc = "ru" ]]; then
+        ld_set="Нет"; ld_corr=15
+            else
+        ld_set="No"; ld_corr=10
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        ld_set="Да"; ld_corr=16
+            else
+        ld_set="Yes"; ld_corr=9
+            fi
+fi
+}
+
+GET_AUTOMOUNT(){
+autom_enabled=0
+strng=`echo "$MountEFIconf" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng = "true" ]]; then autom_enabled=1
+            if [[ $loc = "ru" ]]; then
+        am_set="Да"; am_corr=20
+            else
+        am_set="Yes"; am_corr=14
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        am_set="Нет"; am_corr=19
+            else
+        am_set="No"; am_corr=15
+            fi
+fi
+}
+
+GET_AUTOBACKUP(){
+Autobackup=0
+strng=`echo "$MountEFIconf" | grep Backups -A 3 | grep -A 1 -e "Auto</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng = "true" ]]; then Autobackup=1
+  if [[ $loc = "ru" ]]; then
+        bd_set="Да"; bd_corr=17
+            else
+        bd_set="Yes"; bd_corr=11
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        bd_set="Нет"; bd_corr=16
+            else
+        bd_set="No"; bd_corr=12
+            fi
+fi  
+
+}
+
 SET_SCREEN(){
             if [[ $loc = "ru" ]]; then
 printf ' 0) Установить все настройки по умолчанию                                      \n'
-printf ' 1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(автовыбор, английский, русский) \n'
-printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(автовыбор, всегда)             \n'
-printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)            \n'
-printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)                       \n'
-printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(системная, встроенная)         \n'
-printf ' 6) Пресет "'$itheme_set'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"'\n'
-printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)                       \n'
-printf ' 8) Подключить EFI при запуске  = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)                       \n'
+printf ' 1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(авто, англ, русский) \n'
+printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(авто, всегда)        \n'
+printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n'
+printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n'
+printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(система, встроенная) \n'
+printf ' 6) Пресет "'$itheme_set'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"' \n'
+printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n'
+printf ' 8) Подключить EFI при запуске  = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n'
 printf ' 9) Создать или править псевдонимы физических носителей                       \n'
-#printf ' 8) Редактировать встроенные пресеты                                     \n'
-
+printf ' A) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n'
+printf ' B) Резервное сохранение и восстановление настроек                              \n'
+printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n'
             else
 printf ' 0) Setup all parameters to defaults                                            \n'
-printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, russian, english) \n'
-printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)\n'
-printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)\n'
-printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No) \n'
-printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in) \n'
-printf ' 6) Theme preset "'$itheme_set'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name) \n'
-printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)               \n'
-printf ' 8) Mount EFI on startup. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)               \n'
+printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n'
+printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)           \n'
+printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)    \n'
+printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n'
+printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in)       \n'
+printf ' 6) Theme preset "'$itheme_set'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name)            \n'
+printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n'
+printf ' 8) Mount EFI on startup. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n'
 printf ' 9) Create or edit aliases physical device/media                              \n'
-#printf ' 8) Edit built-in themes presets                                                \n'
+printf ' A) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n'
+printf ' B) Backup and restore configuration settings                                   \n'
+printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n'
 
             fi
-
+                    Lit="C"
+             if [[ $cloud_archive = 1 ]]; then
+                    Lit="D"
+               if [[ $loc = "ru" ]]; then
+printf ' D) Загрузить бэкапы настроек из iCloud                                         \n'
+                else
+printf ' D) Upload settings backups from iCloud                                         \n'
+            fi
+      fi
 }
 
 UPDATE_SCREEN(){
@@ -1310,7 +1818,11 @@ UPDATE_SCREEN(){
         GET_THEME
         GET_SHOWKEYS
         GET_AUTOMOUNT
+        GET_LOADERS
+        GET_AUTOBACKUP
+        CHECK_BACKUP_IN_ICLOUD
         SET_SCREEN
+
     
 
 
@@ -1319,105 +1831,7 @@ UPDATE_SCREEN(){
         printf '\n\n'
 }
 
-SHOW_DISKs(){
-var0=$pos; num1=0 ; ch=0
 
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
-        vmacos="Disk Size:"
-    else
-        vmacos="Total Size:"
-fi
-
-if [[ $loc = "ru" ]]; then
-	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
-
-	printf '\n\n      0)  поиск разделов .....  '
-		else
-	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
-
-	printf '\n\n      0)  updating partitions list .....  '
-        fi
-
-spin='-\|/'
-i=0
-
-
-
-while [ $var0 != 0 ] 
-do 
-	let "ch++"
-
-    let "i++"
-	i=$(( (i+1) %4 ))
-	printf "\b$1${spin:$i:1}"
-	
-	strng=`echo ${slist[$num1]}`
-	 dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
-		dlnth=`echo ${#dstrng}`
-		let "corr=9-dlnth"
-
-        let "i++"
-	    i=$(( (i+1) %4 ))
-	    printf "\b$1${spin:$i:1}"
-
-		drv=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-		dcorr=`echo ${#drv}`
-		if [[ ${dcorr} -gt 30 ]]; then dcorr=30; drv=`echo ${drv:0:29}`; fi
-		let "dcorr=30-dcorr"
-
-	dsze=`diskutil info /dev/${strng} | grep "$vmacos" | sed -e 's/.*Size:\(.*\)Bytes.*/\1/' | cut -f1 -d"(" | rev | sed 's/[ \t]*$//' | rev`
-
-    		scorr=`echo ${#dsze}`
-    		let "scorr=scorr-5"
-    		let "scorr=6-scorr"
-
-             let "i++"
-	         i=$(( (i+1) %4 ))
-	         printf "\b$1${spin:$i:1}"
-
-	mcheck=`diskutil info /dev/${strng}| grep "Mounted:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-#          вывод подготовленного формата строки в файл "буфер экрана"
-	if [[ ! $mcheck = "Yes" ]]; then
-			printf '\n      '$ch') ...   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
-		else
-			printf '\n      '$ch')   +   '"$drv""%"$dcorr"s"${strng}"%"$corr"s"'  '"%"$scorr"s""$dsze"  >> ~/.SetupMountEFItemp.txt
-		fi
-
-            let "i++"
-	         i=$(( (i+1) %4 ))
-	         printf "\b$1${spin:$i:1}"    
-
-	let "num1++"
-	let "var0--"
-done 
-
-printf "\n\r\n\033[5A"
-
-
-
-		if [[ $loc = "ru" ]]; then
-	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
-	printf '     '
-	printf '.%.0s' {1..68} 
-	printf '\n\n      0)  повторить поиск разделов\n' 
-		else
-	printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
-	printf '     '
-	printf '.%.0s' {1..68} 
-	printf '\n\n      0)  update EFI partitions list             \n' 
-        fi
-
-
-cat   ~/.SetupMountEFItemp.txt
-
-
-printf '\n\n\n     '
-	printf '.%.0s' {1..68}
-printf '\n\n     '
-}
 
 SHOW_EFIs(){
 printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H" 
@@ -1445,43 +1859,7 @@ fi
 
 }
 
-SETUP_THEMES(){
 
-strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-IFS=';' ; slist=($strng); unset IFS; pos=${#slist[@]}
-lines=22; let "lines=lines+pos"
-
-
-var0=$pos
-		num=0
-		dnum=0
-	while [ $var0 != 0 ] 
-		do
-		strng=`echo ${slist[$num]}`
-		dstrng=`echo $strng | rev | cut -f2-3 -d"s" | rev`
-		dlen=`echo ${#dstrng}`
-
-		checkvirt=`diskutil info /dev/${dstrng} | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
-		
-		if [[ "$checkvirt" = "Disk Image" ]]; then
-		unset slist[$num]
-		let "pos--"
-		else 
-		nslist+=( $num )
-		fi
-		let "var0--"
-		let "num++"
-	done
-
-
-rm -f   ~/.SetupMountEFItemp.txt
-clear
-SHOW_EFIs
-SHOW_COLOR_TUNING
-read -n1
-rm -f   ~/.SetupMountEFItemp.txt 
-
-}
 
 ####################################### псевдонимы #############################################################################
 
@@ -1494,9 +1872,9 @@ if [[ $par = "-r" ]]; then
 ShowKeys=1
 strng=`echo "$MountEFIconf" | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then ShowKeys=0; fi
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=23; fi
 else
-lines=22 
+lines=23 
 fi
 let "lines=lines+pos"
 
@@ -1505,6 +1883,8 @@ if [[ ! $pos = 0 ]]; then
 	while [[ ! $var0 = 0 ]] 
 		do
 		strng=`echo ${slist[$num]}`
+    if [[ $strng = $syspart ]]; then unset slist[$num]; let "pos--"
+            else
 		dstring=`echo $strng | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 
@@ -1521,7 +1901,7 @@ if [[ ! $pos = 0 ]]; then
         done
   
 		if [[ $var10 = 0 ]]; then nslist+=( $num ); fi
-		
+	fi	
 		let "var0--"
 		let "num++"
 	done
@@ -1594,7 +1974,8 @@ do
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
 
-		drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+		drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+        if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
         GET_RENAMEHD
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
@@ -1630,12 +2011,15 @@ do
             fi
             
             if [[ ${ddcorr} -gt 30 ]]; then ddcorr=0; ddrive="${ddrive:0:30}"; else let "ddcorr=30-ddcorr"; fi
+
+            
+                if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi
 		    
 
                        if [[ ! $mcheck = "Yes" ]]; then
-             screen_buffer1+=$( printf '\n      '$ch') ...   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')  
+             screen_buffer1+=$( printf '\n    '"%"$ncorr"s"$ch') ...   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')  
 		else
-			 screen_buffer1+=$( printf '\n      '$ch')   +   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ') 
+			 screen_buffer1+=$( printf '\n    '"%"$ncorr"s"$ch')   +   '"$ddrive""%"$ddcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ') 
 		fi
 
 
@@ -1643,9 +2027,9 @@ do
                     acorr=${#adrive}
 		          if [[ ${acorr} -gt 30 ]]; then acorr=0; adrive="${adrive:0:30}"; else let "acorr=30-acorr"; fi
 
-		      screen_buffer2+=$( printf '\n   '$ch') '"$drive""%"$dcorr"s""$adrive""%"$acorr"s""%"$corr"s"'  '${string:0:5} ) 
+		      screen_buffer2+=$( printf '\n '"%"$ncorr"s"$ch') '"$drive""%"$dcorr"s""$adrive""%"$acorr"s""%"$corr"s"'  '${string:0:5} ) 
                     else
-              screen_buffer2+=$( printf '\n   '$ch') '"$drive""%"$dcorr"s"'                              '"%"$corr"s"'  '${string:0:5} ) 
+              screen_buffer2+=$( printf '\n '"%"$ncorr"s"$ch') '"$drive""%"$dcorr"s"'                              '"%"$corr"s"'  '${string:0:5} ) 
                    fi
 
     let "num++"
@@ -1749,7 +2133,8 @@ GET_DRIVE(){ # inputs ->   nslist string slist dstring    drive ->
 
 	                    string=`echo ${slist[$pnum]}`
 	                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-                        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+                        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+                        if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
 }
 
 
@@ -1974,7 +2359,7 @@ if [[ $inputs = [cC] ]]; then
     if [[ $vid = 0 ]]; then vid=1; else vid=0; fi
 fi
 
-if [[ $inputs = [qQ] ]]; then var8=1; unset inputs;  fi
+if [[ $inputs = [qQ] ]]; then var8=1; fi
 
 
 if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
@@ -2041,40 +2426,6 @@ if [[ ${inputs} = [dD] ]]; then
                         unset inputs
 fi
 
-if [[ ${inputs} = [1-9] ]] && [[ ${inputs} -le $ch ]]; then
-                        printf "\r\033[2A"; printf '\n\n'"%"80"s"
-                            if [[ $loc = "ru" ]]; then
-                        printf '\r  Добавление псевдонима. (или просто "Enter" для отмены):\n\n'
-                            else
-                        printf '\r  Editing an alias. (or just "Enter" to cancel):\n\n'
-                        fi
-                        while [[ ! ${inputs} =~ ^[0-9] ]]; do 
-                        printf "%"80"s"
-                        printf "\033[1A"
-                        if [[ $loc = "ru" ]]; then
-                        printf '   Выберите диск  ( 1 - '$ch' ): ' 
-                            else
-                        printf '   Choose media number  ( 1 - '$ch' ): '
-                        fi
-                        printf "\033[?25h" 
-                        read  inputs
-                        printf "\033[?25l" 
-                        printf '\r';  printf "%"80"s"
-                        if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
-                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
-                        printf "\033[1A"
-                        printf "\r"
-                        done
-                        if [[ ! ${inputs} = "p" ]]; then
-                        GET_DRIVE
-                        GET_RENAMEHD
-                        EDIT_RENAMEHD
-                        fi
-                        SHOW_FULL_EFI
-                        unset inputs
-fi
-
-
 if [[ ${inputs} = [vV] ]]; then  
                         clear  && printf '\e[3J' && printf "\033[0;0H"
                         if [[ $loc = "ru" ]]; then
@@ -2114,16 +2465,54 @@ if [[ ${inputs} = [vV] ]]; then
 read -n 1
 clear
 fi 
+
+if [[ ! ${inputs} =~ ^[0vVdDrRqQcC]+$ ]]; then
+                 if  [[ ${inputs} -le $ch ]]; then
+                        printf "\r\033[2A"; printf '\n\n'"%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Добавление псевдонима. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  Editing an alias. (or just "Enter" to cancel):\n\n'
+                        fi
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do 
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите диск  ( 1 - '$ch' ): ' 
+                            else
+                        printf '   Choose media number  ( 1 - '$ch' ): '
+                        fi
+                        printf "\033[?25h" 
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        GET_DRIVE
+                        GET_RENAMEHD
+                        EDIT_RENAMEHD
+                        fi
+                        SHOW_FULL_EFI
+                        unset inputs
+                fi
+
+else
+
                         
                         
 if [[ $inputs = 0 ]]; then GET_FULL_EFI; clear && printf '\e[3J' && printf "\033[0;0H"; SHOW_FULL_EFI
 fi                
-
+fi
 UPDATE_FULL_EFI
 
 done
 
 unset slist
+unset inputs
 
 clear
 }
@@ -2152,14 +2541,28 @@ if [[ $inputs = 0 ]]; then
                         fi
                 read -p "(y/N) " -n 1 -r -s
                 if [[ $REPLY =~ ^[yY]$ ]]; then
-
+                MATCHING_BACKUPS
+                if [[ $Now = 0 ]]; then CHECK_BUNZIP; ADD_BACKUP; UPDATE_ZIP
+                    else
+                        if [[ $matched = 0 ]]; then
+                             GET_BACKUPS
+                                if [[ $Maximum = 1 ]]; then 
+                                        plutil -replace Backups.Maximum -integer 2 ${HOME}/.MountEFIconf.plist
+                                        UPDATE_CACHE
+                                 fi
+                            CHECK_BUNZIP; ADD_BACKUP; UPDATE_ZIP
+                        fi
+                    
+                   fi
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 rm -f ${HOME}/.MountEFIconf.plist
  if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
         else
-             FILL_CONFIG; UPDATE_CACHE
+             FILL_CONFIG
         fi
     fi
+    UPDATE_CACHE
 fi
 
 # ВЫБОР ЛОКАЛИ ##################################################################
@@ -2184,7 +2587,7 @@ if [[ $inputs = 2 ]]; then
             menue="auto"
         fi
   plutil -replace Menue -string $menue ${HOME}/.MountEFIconf.plist
-  UPATE_CACHE
+  UPDATE_CACHE
 fi
 ##############################################################################
 
@@ -2252,7 +2655,6 @@ if [[ $inputs = 8 ]]; then
   plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
     UPDATE_CACHE
   SET_AUTOMOUNT
-    rm -f ~/.SetupMountEFItemp.txt
   fi
 fi  
 ###############################################################################
@@ -2263,15 +2665,93 @@ if [[ $inputs = 9 ]]; then
 fi
 ###############################################################################
 
+# Искать загрузчики при подключении разделов  ################################
+if [[ $inputs = [aA] ]]; then 
+   if [[ $CheckLoaders = 1 ]]; then 
+  plutil -replace CheckLoaders -bool NO ${HOME}/.MountEFIconf.plist
+  UPDATE_CACHE
+ else 
+  plutil -replace CheckLoaders -bool YES ${HOME}/.MountEFIconf.plist
+  UPDATE_CACHE
+  fi
+fi  
+###############################################################################
 
+if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
 
+##############################################################################
 
-#if [[ $inputs = 9 ]]; then SETUP_THEMES; clear ; SET_SCREEN; fi
+if [[ $inputs = [cC] ]]; then 
+if [[ $Autobackup = 1 ]]; then 
+  plutil -replace Backups.Auto -bool NO ${HOME}/.MountEFIconf.plist 
+ else 
+  plutil -replace Backups.Auto -bool YES ${HOME}/.MountEFIconf.plist
+  fi
+ UPDATE_CACHE
+fi
 
-if [[ $inputs = [vV] ]]; then SHOW_VERSION; UPDATE_CACHE; fi
+##############################################################################
+
+if [[ $inputs = [vV] ]]; then SHOW_VERSION;  fi
+
+########################################################################################################################
            
-if [[ $inputs = [qQ] ]]; then var4=1; printf '\n'; UPDATE_CACHE; fi
+if [[ $inputs = [qQ] ]]; then 
+    var4=1; printf '\n' 
+            strng=`echo "$MountEFIconf" | grep Backups -A 3 | grep -A 1 -e "Auto</key>" | grep true | tr -d "<>/"'\n\t'`
+     if [[ $strng = "true" ]]; then 
+                     MATCHING_BACKUPS
+                if [[ $Now = 0 ]]; then CHECK_BUNZIP; ADD_BACKUP; UPDATE_ZIP
+                    else
+                        if [[ $matched = 0 ]]; then
+                             GET_BACKUPS
+                                if [[ $Maximum = 1 ]]; then 
+                                        plutil -replace Backups.Maximum -integer 2 ${HOME}/.MountEFIconf.plist
+                                        UPDATE_CACHE
+                                fi
+                            CHECK_BUNZIP; ADD_BACKUP; UPDATE_ZIP
+                        fi
+                    
+                  fi
 
+          if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
+       
+        PUT_BACKUPS_IN_ICLOUD
+    fi
+fi
+########################################################################################################################
+
+if [[ $inputs = [dD] ]]; then
+         if [[ $cloud_archive = 1 ]]; then
+                        if [[ $loc = "ru" ]]; then
+                echo "Заместить локальный бэкап архивами из iCloud                       "
+                        else
+                echo "Replace the local backup with archives from iCloud?                "
+                        fi
+                read -p "(y/N) " -n 1 -r -s
+                if [[ $REPLY =~ ^[yY]$ ]]; then
+                mv  ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups2.zip
+                GET_BACKUPS_FROM_ICLOUD
+                if [[ -f ${HOME}/.MountEFIconfBackups.zip ]]; then rm -f ${HOME}/.MountEFIconfBackups2.zip
+                        else
+                            mv  ${HOME}/.MountEFIconfBackups2.zip ${HOME}/.MountEFIconfBackups.zip
+                printf "\r\033[1A"
+                             if [[ $loc = "ru" ]]; then
+                echo "Замещение не удалось. Локальный архив сохранён                     "
+                printf '                    '
+                        else
+                echo "Replacement failed. Local archive saved                            "
+                printf '                    '
+                        fi
+                read  -n 1 -s
+                clear
+
+                fi
+            fi
+       fi
+fi      
+
+######################################################################################################################## 
 done
 
 if [[ $par = "-r" ]]; then exit 1; else EXIT_PROG; fi

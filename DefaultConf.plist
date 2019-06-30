@@ -15,6 +15,15 @@
 		<key>Timeout2Exit</key>
 		<integer>5</integer>
 	</dict>
+	<key>Backups</key>
+	<dict>
+		<key>Auto</key>
+		<false/>
+		<key>Maximum</key>
+		<integer>10</integer>
+	</dict>
+	<key>CheckLoaders</key>
+	<false/>
 	<key>CurrentPreset</key>
 	<string>BlueSky</string>
 	<key>Locale</key>

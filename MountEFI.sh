@@ -2,11 +2,11 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.63"
-edit_vers="011"
+edit_vers="025"
 ##################################################################################################################################################################################################################
 
-# MountEFI версия 1.63.011 master
-#------------------------------------------------------------------------------
+# MountEFI версия 1.63.024 master
+#------------------------------------------------------------------------------------
 # Добавлена очистка истории bash от записей запусков MountEFI перед выходом 
 # Добавлен таймаут прерывания выхода для автомонтирования
 # Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
@@ -20,14 +20,27 @@ edit_vers="011"
 # 002 - Фикс экрана в DO_MOUNT
 # 003 - Фикс экрана в unmounted check и getlist
 # 004 - Буфер экрана в GETLIST / UPDATELIST через переменную screen_buffer
-# 005 - Кэширование конфига в переменную для блока проверки и инициаизации конфига
+# 005 - Кэширование конфига в переменную для блока проверки и инициализации конфига
 # 006 - Кэширование конфига для автозапуска и темизации
 # 007 - Кэширование конфига для получения псевдонимов и других
 # 008 - Фикс обновление кэша после вызова скрипта настроек
 # 009 - Функция для реализации ввода по 2 байта через read -n
 # 010 - 4 функции обновления информации по хотплагу
 # 011 - Детект хотплага для двух-байтового ввода
-#------------------------------------------------------------------------------
+# 012 - Очистка истории sh на старте и временных файлов MountEFi больше не используюмых
+# 014 - Функция проверки загручиков на подключенных разделах
+# 015 - фикс форматирования на экране если разделов больше 10. Фикс строки ввода 2 байт
+# 016 - Исправлена ошибка если в имени системного раздела EFI. Ещё фикс строки ввода 2 байта
+# 017 - Исправлен ввод по 2 байта в цикле GETKEYS.
+# 018 - Дополнительные фиксы для режима без подсказок
+# 019 - Фиксы в GETKEYS для 1 байтового ввода после измнений связанных с детектом хотплага
+# 020 - Отображение подсказок со спиннером для функций поиска загрузчиков
+# 021 - Фикс переменной с одним именем в разных функциях - UPDATE_SCREEN_BUFFER и MOUNTS
+# 022 - Фикс имени диска для компьютеров со старыми дисками
+# 023 - Начальная поддержка бэкапов конфига
+# 024 - Загрузка архива конфига из iCloud
+# 025 - Раздельные папки для бэкапов в iCloud
+#--------------------------------------------------------------------------------------------
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
@@ -51,7 +64,7 @@ clear && printf "\e[3J"
 
 
 
-# функция отладки ###############################################
+# функция отладки ##################################################################################################
 demo1="0"
 deb=0
 
@@ -60,13 +73,17 @@ if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
 #term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
-echo "ch1 = "$ch1 >> ~/temp.txt
-echo "check = "$check >> ~/temp.txt
-echo "mcheck = "$mcheck >> ~/temp.txt
-echo "string = "$string >> ~/temp.txt
-echo >> ~/temp.txt
-echo "${screen_buffer}" >> ~/temp.txt
-echo >> ~/temp.txt
+#echo "ch = "$ch >> ~/temp.txt
+#echo "check = "$check >> ~/temp.txt
+#echo "mcheck = "$mcheck >> ~/temp.txt
+#echo "string = "$string >> ~/temp.txt
+#echo >> ~/temp.txt
+#echo "${screen_buffer}" >> ~/temp.txt
+#echo >> ~/temp.txt
+#echo "ldlist(pointer) ="${ldlist[$pointer]} >> ~/temp.txt
+#echo "ldnlist(pointer) ="${ldnlist[$pointer]} >> ~/temp.txt
+#echo "line = "$line >> ~/temp.txt
+#echo "posl = "$posl >> ~/temp.txt
 #echo "chs = "$chs
 #echo "autom_open = "$autom_open
 #echo "alist = "${alist[@]}
@@ -79,7 +96,7 @@ echo >> ~/temp.txt
 #echo "mcheck = "$mcheck
 #echo "mounted= "$mounted
 #echo "was mounted = "$was_mounted
-#echo "vname = "$vname
+#echo "vname = "$vname >> ~/temp.txt
 #echo "-----------------------------------------------------"
 #echo
 #echo "ttys000 --------------------------------------------"
@@ -98,19 +115,18 @@ echo >> ~/temp.txt
 #echo "var = "$var
 #echo "current = "$current
 #echo "pcount = "$pcount
-#echo "plist = "${plist[@]}
-#echo "plist[num] = "${plist[$num]}
+#echo "ldlist = "${ldlist[@]} >> ~/temp.txt
+#echo "ldnlist[@] = "${ldnlist[@]} >> ~/temp.txt
 #echo "demo = "$demo
 #echo "pik = "$pik
 #echo "flag = "$flag
 
 printf '............................................................\n\n' >> ~/temp.txt
 sleep 0.5
-read -n 1
+#read -n 1 -s
 fi
 }
 #########################################################################################################################################
-
 
 
 
@@ -132,6 +148,16 @@ login=`cat ${HOME}/.MountEFIconf.plist | grep -Eo "LoginPassword"  | tr -d '\n'`
   fi
 fi
 
+GET_BACKUPS_FROM_ICLOUD(){
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+       if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
+        cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIconfBackups.zip  ${HOME}
+        fi
+fi  
+
+}
+
 FILL_CONFIG(){
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
@@ -147,8 +173,17 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>5</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
             echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>Backups</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -276,6 +311,9 @@ if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
 
+strng=`echo "$MountEFIconf"| grep -e "<key>CheckLoaders</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "CheckLoaders" ]]; then plutil -replace CheckLoaders -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
+
 strng=`echo "$MountEFIconf" | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "AutoMount" ]]; then 
 			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
@@ -297,9 +335,28 @@ if [[ ! $strng = "RenamedHD" ]]; then
             plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
             cache=0
 fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>Backups</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "Backups" ]]; then 
+             plutil -insert Backups -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+             plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
+             cache=0
+fi
+
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
+
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
+if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
+            if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
+            mkdir ${HOME}/.MountEFIconfBackups
+            mkdir ${HOME}/.MountEFIconfBackups/1
+            cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1
+            zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
+            rm -R ${HOME}/.MountEFIconfBackups
+fi
+
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
 REM_ABSENT(){
@@ -607,16 +664,21 @@ AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`
 let "TTYcount=AllTTYcount-MyTTYcount"
 }
 
-# Выход из программы с проверкой - выгружать терминал из трея или нет
+################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
+################################## очистка на выходе #############################################################
 cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
+rm -f   ~/.MountEFItemp.txt; rm -f ~/.MountEFItemp2.txt; rm -f ~/.SetupMountEFItemp.txt; rm -f ~/.SetupMountEFItemp2.txt
+rm -f ~/.SetupMountEFIAtemp.txt
+#####################################################################################################################
 CHECK_TTY_COUNT	
 if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app"' & exit
 	else
-    sleep 1.2; osascript -e 'tell application "Terminal" to close first window' & exit
+    sleep 1; osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 }
-
+##########################################################################################################################
+########################## обратный отсчёт для автомонтирования ##########################################################
 COUNTDOWN(){ 
         printf '\n\n\n'
         local t=$1 remaining=$1;
@@ -639,7 +701,7 @@ COUNTDOWN(){
             fi;
         done
 }
-
+#############################################################################################################################
 ####### Выход по опции авто-монтирования c проверкой таймаута    ####################################################
 if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then 
         auto_timeout=0
@@ -653,6 +715,10 @@ if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then
     fi
 fi
 ######################################################################################################################
+
+############################################ очистка истории bash при запуске ##################################################
+cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
+################################################################################################################################
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG_PARTS(){
@@ -672,7 +738,12 @@ ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/
 }
 ###################################################################################################################################################################
 
-
+GET_LOADERS(){
+CheckLoaders=1
+strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then CheckLoaders=0
+fi
+}
 
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
@@ -683,6 +754,7 @@ ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 
 string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
 
 IFS=';' 
 dlist=($string)
@@ -723,6 +795,8 @@ if [[ ! $pos = 0 ]]; then
 	while [[ ! $var0 = 0 ]] 
 		do
 		string=`echo ${dlist[$num]}`
+if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
+            else
 		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 
@@ -739,7 +813,7 @@ if [[ ! $pos = 0 ]]; then
         done
   
 		if [[ $var10 = 0 ]]; then nlist+=( $num ); fi
-		
+	fi	
 		let "var0--"
 		let "num++"
 	done
@@ -791,7 +865,7 @@ DO_MOUNT(){
 GET_SYSTEM_EFI(){
 
 if [[ ${lists_updated} = 1 ]]; then
-sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1'`
+sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1' | tr -d "\n"`
 edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
 drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 
@@ -802,8 +876,13 @@ do
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
-if [[ "$edname" = "$dname" ]]; then estring=`echo ${string}` ; enum=$pnum;  var2=1; fi
+dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+
+if [[ "$edname" = "$dname" ]]; then  enum=$pnum;  var2=1
+        else
+checkit=$( echo "$dname" | grep -w "$edname")
+        if [[ ! $checkit = "" ]]; then  enum=$pnum;  var2=1; fi
+fi
 let "num++"
 let "var2--"
 done
@@ -837,7 +916,7 @@ MOUNTED_CHECK(){
 UNMOUNTED_CHECK(){
 
  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-	if [[ $mcheck = "Yes" ]]; then
+	if [[  $mcheck = "Yes" ]]; then
 		
 		sleep 1.5
 
@@ -845,7 +924,7 @@ UNMOUNTED_CHECK(){
 
  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 
-	if [[ $mcheck = "Yes" ]]; then
+	if [[  $mcheck = "Yes" ]]; then
 
 		sleep 1.5
             
@@ -863,11 +942,45 @@ UNMOUNTED_CHECK(){
 	     fi
 fi
 }
+##################################################################################################
+SPIN_OC(){
+printf '\r\n'
+printf "\033[57C"
+spin='-\|/'
+i=0
+while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
+trap "kill $!" EXIT
+FIND_OPENCORE 
+kill $!
+wait $! 2>/dev/null
+trap " " EXIT
+}
+
+#####################################################################################################
+SPIN_FCLOVER(){
+printf '\r\n'
+printf "\033[57C"
+spin='-\|/'
+i=0
+while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
+trap "kill $!" EXIT 
+FIND_CLOVER
+kill $!
+wait $! 2>/dev/null
+trap " " EXIT
+}
+#####################################################################################################
 
 # Определение функции розыска Clover в виде проверки бинарика EFI/BOOT/bootx64.efi 
 ##############################################################################
 FIND_CLOVER(){
 
+printf '\r\n\n'
+if [[ $loc = "ru" ]]; then
+printf '  Подождите. Ищем загрузочные разделы с Clover ...  '
+else
+printf '  Wait. Looking for boot partitions with Clover loader...  '
+fi
 
 was_mounted=0
 var1=$pos
@@ -875,13 +988,11 @@ num=0
 spin='-\|/'
 i=0
 noefi=1
-
 while [ $var1 != 0 ] 
 do 
 
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
-
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then 
 
@@ -935,6 +1046,12 @@ nogetlist=1
 
 FIND_OPENCORE(){
 
+printf '\r\n\n'
+if [[ $loc = "ru" ]]; then
+printf '  Подождите. Ищем загрузочные разделы с OpenCore ...  '
+else
+printf '  Wait. Looking for boot partitions with OpenCore loader...  '
+fi
 
 was_mounted=0
 var1=$pos
@@ -994,9 +1111,6 @@ nogetlist=1
 
 
 }
-
-
-
 
 # Функция отключения EFI разделов
 
@@ -1112,8 +1226,9 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
             fi
         fi	
 
-        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
-    	
+        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+    	if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
+
     	   let "scorr=5"
            let "dcorr=5"
 
@@ -1210,6 +1325,71 @@ fi
 }
 ##############################################################################################
 
+##################### проверка на загрузчик после монтирования ##################################################################################
+FIND_LOADERS(){
+
+GET_LOADERS
+if [[ ! $CheckLoaders = 0 ]]; then 
+
+    unset loader
+    if [[ $mcheck = "Yes" ]]; then 
+#    was_mounted=0
+#        DO_MOUNT	
+#        MOUNTED_CHECK
+#    else
+#		was_mounted=1
+#    fi
+
+vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
+        if [[ -d "$vname"/EFI/BOOT ]]; then
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover revision:"` ; check_loader=`echo ${check_loader:0:16}`
+                        if [[ ${check_loader} = "Clover revision:" ]]; then loader="C"
+                        else
+                             check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
+                					if [[ ${check_loader} = "OpenCore" ]]; then loader="O"; fi   
+	         fi
+        fi
+
+#if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+
+    fi
+fi
+
+}
+#######################################################################################################################################################
+
+########################### вывод знаков загрузчиков #########################################
+SHOW_LOADERS(){
+
+if [[ $CheckLoaders = 1 ]]; then
+printf "\033[H"
+        posl=${#ldlist[@]}
+            if [[ ! $posl = 0 ]]; then
+
+            var99=$posl; pointer=0
+                while [ $var99 != 0 ] 
+                    do 
+                         let "line=ldnlist[pointer]+8" 
+  
+                        printf "\r\033[$line;f\033[9C"; printf '\e[5m'${ldlist[$pointer]}'\e[0m' 
+                        let "pointer++"
+                        let "var99--"
+                    done
+    fi
+                        
+printf "\033[H"; let "correct=lines-7"; printf "\r\033[$correct;f\033[51C"
+fi
+
+}
+#################################################################################################
+spinny(){
+ let "i++"
+	i=$(( (i+1) %4 ))
+	printf "\b$1${spin:$i:1}"
+}
+
 
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
@@ -1217,6 +1397,7 @@ GETLIST(){
 
 printf '\e[8;'${lines}';80t' && printf '\e[3J'
 
+unset ldlist; unset ldnlist
 var0=$pos
 num=0
 ch=0
@@ -1243,27 +1424,24 @@ while [ $var0 != 0 ]
 do 
 	let "ch++"
 
-     let "i++"
-	i=$(( (i+1) %4 ))
-	printf "\b$1${spin:$i:1}"
+    spinny
 	
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	
-		
+	
         dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
-
+    spinny
 		
-        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "Media"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+        if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
         GET_RENAMEHD
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 
-    let "i++"
-	i=$(( (i+1) %4 ))
-	printf "\b$1${spin:$i:1}"
+    
 
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
@@ -1274,9 +1452,7 @@ do
             fi
     fi
 
-	let "i++"
-	i=$(( (i+1) %4 ))
-	printf "\b$1${spin:$i:1}"
+	
 	
 
     		scorr=`echo ${#dsize}`
@@ -1286,18 +1462,22 @@ do
        
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
-    
+
+         if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi           
         
                      if [[ ! $mcheck = "Yes" ]]; then
-        screen_buffer+=$(printf '\n      '$ch') ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
                             else
-        screen_buffer+=$(printf '\n      '$ch')   +   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
-                      fi
+        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+      
+              fi
+        spinny
 
-    let "i++"
-	i=$(( (i+1) %4 ))
-	printf "\b$1${spin:$i:1}"
-  
+        FIND_LOADERS        
+        if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch); fi
+      
+
+    spinny
 	let "num++"
 	let "var0--"
 done
@@ -1319,6 +1499,7 @@ printf "\r\033[3A"
         fi
 
 echo "${screen_buffer}"
+
 
 	let "ch++"
 	
@@ -1347,6 +1528,8 @@ fi
 
 	
 printf '\n\n' 
+
+SHOW_LOADERS
 
 
 }
@@ -1424,11 +1607,13 @@ fi
 else printf '\n\n'
 fi
 
-	printf '\n'
+if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
+#	printf '\n'
 	
     if [[ $sym = 2 ]]; then printf '\n'; fi
 	printf "\r\n\033[1A"
 	
+
 
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
@@ -1444,12 +1629,17 @@ printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):  ';  printf '     
 			fi
 	fi
 
+if [[ $CheckLoaders = 1 ]]; then
+        if [[ $order = 0 ]] || [[ $order = 4 ]] || [[ $order = 3 ]]; then 
+            unset old_puid_count; CHECK_HOTPLUG_PARTS
+        fi
+fi
 }
 # Конец определения функции UPDATELIST ######################################################
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
-
+unset ldlist; unset ldnlist
 var0=$pos; num=0; ch1=0
 unset string
 while [ $var0 != 0 ] 
@@ -1459,6 +1649,10 @@ string=`echo ${dlist[$pnum]}`
 	let "ch1++"
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
+
+        FIND_LOADERS        
+        if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
+stop="данные в массивы"; DEBUG
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
         screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1) ...  /$ch1)   +  /" )
@@ -1475,6 +1669,9 @@ fi
 let "num++"
 let "var0--"
 done
+
+
+
 }
 ############################ конец определения функции UPDATE PARTS ############################################
 
@@ -1490,7 +1687,9 @@ if [[ $ShowKeys = 1 ]]; then
                 printf "\033[4B"
                 printf "\r\033[49C"
 fi
-                        
+  
+SHOW_LOADERS
+                      
 }
 ################################### конец функции обновления списка подключенных  на экране ##################################
 
@@ -1642,8 +1841,7 @@ done
     fi
 fi
 printf "\033[?25l"
-let "chan=ch-1"
-if [[ ${choice} -ge ${chan} ]]; then choice="0"; fi   
+
   }
 ########################################################################################
 
@@ -1662,12 +1860,15 @@ if [[ $order = 2 ]]; then
 order=0
 fi
 
-#if [[ $sym = 2 ]]; then printf "\033[1A" ;
+#if [[ $sym = 2 ]]; then printf "\r\033[1A" ; printf '                              '; printf "\r\n"; fi
+#if [[ $ShowKeys = 1 ]]; 
 
+
+#if [[ $choice = " " ]]; then printf '\r\n'
+ #else printf "\r\n\033[1A"
 #fi
-if [[ $choice = " " ]]; then printf '\r\n'
- else printf "\r\n\033[1A"
-fi
+
+printf "\r\n\033[1A"
 if [[ $order = 3 ]]; then 
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
@@ -1683,31 +1884,35 @@ printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):  
 printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):      ' ; printf '                           '
     fi
 fi
-printf '\n'
+
+printf '\n\n'
 printf '                                                                                \n'
 printf '                                                                                '
 printf "\r\n\033[3A\033[49C"
+printf "\033[2A"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
-
-if [[ ${ch} -le 10 ]]; then
 SET_INPUT
+if [[ ${ch} -le 10 ]]; then
 printf "\033[?25h"
 choice="±"
+printf '\033[1B'
 while [[ $choice = "±" ]]
 do
-IFS="±"; read -n 1 -t 1 choice ; unset IFS ; sym=1 
+IFS="±"; read -n 1 -t 1 choice ; unset IFS; sym=2
+if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; fi
+#if [[ $choice = [0-9a-zA-Z] ]]; then printf '\033[1A'; fi
 CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
 done
 else
-READ_TWO_SYMBOLS
+READ_TWO_SYMBOLS; sym=2
 
 fi
-
 printf "\033[?25l"
 
-if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
+#if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
 
+if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvV]$ ]]; then unset choice; fi
@@ -1719,14 +1924,15 @@ if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi
-if [[ ${choice} = [oO] ]]; then  FIND_OPENCORE; choice="0"; order=4; fi
-if [[ ${choice} = [cC] ]]; then  FIND_CLOVER; choice="0"; order=4; fi
+if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
+if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 fi
+else
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
-
+fi
 done
 
 chs=$choice
@@ -1739,12 +1945,13 @@ if [[ $chs = 0 ]]; then nogetlist=0; fi
 
 # Определение функции монтирования разделов EFI ##########################################
 MOUNTS(){
-printf '\n'
+#printf '\n'
 let "num=chs-1"
 
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
-	
+strng0=${string}
+stop="string получило значение"; DEBUG
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 wasmounted=0
@@ -1754,15 +1961,17 @@ if [[ ! $mcheck = "Yes" ]]; then
 
     MOUNTED_CHECK
 
+#    FIND_LOADERS
+
 	order=0; UPDATELIST
 
 else 
     wasmounted=1
-	printf "\r\033[1A"
+#	printf "\r\033[1A"
 fi
-
+string=${strng0}
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-
+stop="vname получил значение"; DEBUG
 if [[ $OpenFinder = 0 ]] ; then 
         if [[ $wasmounted = 1 ]]; then open "$vname"; fi
     else 
