@@ -2,10 +2,10 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.63"
-edit_vers="026"
+edit_vers="029"
 ##################################################################################################################################################################################################################
 
-# MountEFI версия 1.63.026 master
+# MountEFI версия 1.63.029 master
 #------------------------------------------------------------------------------------
 # Добавлена очистка истории bash от записей запусков MountEFI перед выходом 
 # Добавлен таймаут прерывания выхода для автомонтирования
@@ -41,13 +41,18 @@ edit_vers="026"
 # 024 - Загрузка архива конфига из iCloud
 # 025 - Раздельные папки для бэкапов в iCloud
 # 026 - Поддержка загрузки публичнго бэкапа через iCloud
+# 027 - Фикс определения Clover
+# 028 - Убрана задержка на выходе 
+# 029 - Изменение в форматироании вывода для отображения загрузчика 
 #--------------------------------------------------------------------------------------------
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
 printf "\033[?25l"
-var=${lines}; while [[ ! $var = 0 ]]; do
-printf '\e[40m %.0s\e[0m' {1..80}
+GET_LOADERS
+var=${lines} 
+while [[ ! $var = 0 ]]; do
+if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88}; else printf '\e[40m %.0s\e[0m' {1..80}; fi
 let "var--"; done
 printf "\033[H"
 
@@ -674,13 +679,13 @@ let "TTYcount=AllTTYcount-MyTTYcount"
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
 cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
-rm -f   ~/.MountEFItemp.txt; rm -f ~/.MountEFItemp2.txt; rm -f ~/.SetupMountEFItemp.txt; rm -f ~/.SetupMountEFItemp2.txt
-rm -f ~/.SetupMountEFIAtemp.txt
+#rm -f   ~/.MountEFItemp.txt; rm -f ~/.MountEFItemp2.txt; rm -f ~/.SetupMountEFItemp.txt; rm -f ~/.SetupMountEFItemp2.txt
+#rm -f ~/.SetupMountEFIAtemp.txt
 #####################################################################################################################
 CHECK_TTY_COUNT	
-if [[ ${TTYcount} = 0  ]]; then  sleep 1.2; osascript -e 'quit app "terminal.app"' & exit
+if [[ ${TTYcount} = 0  ]]; then   osascript -e 'quit app "terminal.app"' & exit
 	else
-    sleep 1; osascript -e 'tell application "Terminal" to close first window' & exit
+     osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 }
 ##########################################################################################################################
@@ -1019,9 +1024,9 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
 
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover revision:"` ; check_loader=`echo ${check_loader:0:16}`
+					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
 
-                					if [[ ${check_loader} = "Clover revision:" ]]; then
+                					if [[ ${check_loader} = "Clover" ]]; then
 
                        						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
@@ -1350,11 +1355,11 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
 
         if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover revision:"` ; check_loader=`echo ${check_loader:0:16}`
-                        if [[ ${check_loader} = "Clover revision:" ]]; then loader="C"
+                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
+                        if [[ ${check_loader} = "Clover" ]]; then loader="Clover"
                         else
                              check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
-                					if [[ ${check_loader} = "OpenCore" ]]; then loader="O"; fi   
+                					if [[ ${check_loader} = "OpenCore" ]]; then loader="OpenCore"; fi   
 	         fi
         fi
 
@@ -1378,8 +1383,8 @@ printf "\033[H"
                 while [ $var99 != 0 ] 
                     do 
                          let "line=ldnlist[pointer]+8" 
-  
-                        printf "\r\033[$line;f\033[9C"; printf '\e[5m'${ldlist[$pointer]}'\e[0m' 
+                        if [[ ${ldlist[$pointer]} = "Clover" ]]; then printf "\r\033[$line;f\033[47C"; else printf "\r\033[$line;f\033[46C"; fi
+                        printf '\e[37m'${ldlist[$pointer]}'\e[0m'
                         let "pointer++"
                         let "var99--"
                     done
@@ -1400,8 +1405,10 @@ spinny(){
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
 
+GET_LOADERS
+if [[ ! $CheckLoaders = 0 ]]; then col=88; ldcorr=8; else col=80; ldcorr=2;  fi 
 
-printf '\e[8;'${lines}';80t' && printf '\e[3J'
+printf '\e[8;'${lines}';'$col't' && printf '\e[3J'
 
 unset ldlist; unset ldnlist
 var0=$pos
@@ -1469,12 +1476,14 @@ do
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 
-         if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi           
+         if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi   
+
+            
         
                      if [[ ! $mcheck = "Yes" ]]; then
-        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
                             else
-        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
       
               fi
         spinny
@@ -1495,12 +1504,20 @@ printf "\r\033[3A"
 		if [[ $loc = "ru" ]]; then
 	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
-	printf '.%.0s' {1..68} 
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..68} 
+                else
+                printf '.%.0s' {1..76}
+                fi
 	printf '\n\n      0)  повторить поиск разделов\n' 
 		else
 	printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
 	printf '     '
-	printf '.%.0s' {1..68} 
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..68} 
+                else
+                printf '.%.0s' {1..76}
+                fi 
 	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
@@ -1510,7 +1527,11 @@ echo "${screen_buffer}"
 	let "ch++"
 	
 	printf '\n     '
-	printf '.%.0s' {1..68}
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..68} 
+                else
+                printf '.%.0s' {1..76}
+                fi
 
 if [[ $ShowKeys = 1 ]]; then
 
@@ -1527,7 +1548,9 @@ if [[ $ShowKeys = 1 ]]; then
 	printf '      Q  -   close terminal and exit from the program\n'
     printf '                                                    \n' 
 	     fi
-else printf '\n'
+else 
+        printf '\n'
+        if [[ $CheckLoaders = 0 ]]; then printf '\n\n'; fi
 fi
 	
 
@@ -1544,8 +1567,7 @@ SHOW_LOADERS
 # Определение функции обновления информации  экрана при подключении и отключении разделов
 UPDATELIST(){
 
-
-    clear && printf '\e[8;'${lines}';80t' && printf '\e[3J'
+ clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J'
 
 if [[ ! $order = 3 ]] && [[ ! $order = 4 ]]; then
 if [[ $order = 0 ]]; then
@@ -1562,13 +1584,21 @@ fi
         	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
-	printf '.%.0s' {1..68} 
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..68} 
+                else
+                printf '.%.0s' {1..76}
+                fi
 	printf '\n\n      0)  повторить поиск разделов\n' 
 			else
         	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
 	printf '     '
-	printf '.%.0s' {1..68} 
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..68} 
+                else
+                printf '.%.0s' {1..76}
+                fi 
 	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
@@ -1577,7 +1607,11 @@ echo  "$screen_buffer"
 	if [[ ! $order = 1 ]] || [[ ! $order = 0 ]]; then printf "\r\033[1A"; fi
     
 	printf '\n\n     '
-	printf '.%.0s' {1..68}
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..68} 
+                else
+                printf '.%.0s' {1..76}
+                fi
 
 if [[ $ShowKeys = 1 ]]; then
 
@@ -1658,7 +1692,6 @@ if [[ $mcheck = "Yes" ]]; then
 
         FIND_LOADERS        
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
-stop="данные в массивы"; DEBUG
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
         screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1) ...  /$ch1)   +  /" )
@@ -1894,8 +1927,8 @@ fi
 printf '\n\n'
 printf '                                                                                \n'
 printf '                                                                                '
-printf "\r\n\033[3A\033[49C"
-printf "\033[2A"
+printf "\r\n\033[2A\033[49C"
+printf "\033[3A"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 SET_INPUT
 if [[ ${ch} -le 10 ]]; then
@@ -1911,6 +1944,7 @@ CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
 done
 else
+printf '\033[1B'
 READ_TWO_SYMBOLS; sym=2
 
 fi
