@@ -18,7 +18,7 @@
 	<key>Backups</key>
 	<dict>
 		<key>Auto</key>
-		<false/>
+		<true/>
 		<key>Maximum</key>
 		<integer>10</integer>
 	</dict>

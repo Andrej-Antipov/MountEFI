@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.3"
-s_edit_vers="016"
+s_edit_vers="018"
 
 ############################################################################################################################################################################################################
 
@@ -85,9 +85,9 @@ let "TTYc=AllTTYc-MyTTYc"
 EXIT_PROG(){
 cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
 CHECK_TTY_C	
-if [[ ${TTYc} = 0  ]]; then  sleep 0.5; osascript -e 'quit app "terminal.app"' & exit
+if [[ ${TTYc} = 0  ]]; then   osascript -e 'quit app "terminal.app"' & exit
 	else
-    sleep 1.2; osascript -e 'tell application "Terminal" to close first window' & exit
+     osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 }
 
@@ -96,7 +96,7 @@ fi
 
 
 
-# MountEFI версия скрипта настроек 1.3. 016 master
+# MountEFI версия скрипта настроек 1.3. 018 master
 # ---------------------------------------------------------------------------------------------------------------------
 # Добавлены опции автомонтирования 
 # Добавлены  в конфиг настройки  цвета для встроенных тем вида {65535, 48573, 50629} По именам тоже работает как и ранее
@@ -129,6 +129,8 @@ fi
 # 014 - Резервные копии конфигов с разных компов каждый в своей отдельной папке в iCloud
 # 015 - Поделиться настройками через iCloud
 # 016 - Фикс в отображении меню если нет пароля на русском языке. Расшарить бэкап настроек через iCloud
+# 017 - Убрана задержка закрытия программы
+# 018 - Несколько фиксов вывода в функциях бэкапа, удаления псевдонимов, и установки пароля.  
 #------------------------------------------------------------------------------------------------------------------------
 
 #clear && printf "\033[0;0H"
@@ -765,7 +767,8 @@ SET_USER_PASSWORD(){
 if [[ $cache = 1 ]]; then
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
     if [[ $login = "LoginPassword" ]]; then
-                printf '\n\n'
+                printf '\r'; printf "%"80"s"
+                printf '\r'
                 if [[ $loc = "ru" ]]; then
                 echo "удалить сохранённый пароль из программы?"
                         else
@@ -783,7 +786,8 @@ login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
                 fi
         else
                 
-                printf '\n\n'
+                printf '\r'; printf "%"80"s"
+                printf '\r'
                     if [[ $loc = "ru" ]]; then
                 echo "введите ваш пароль для постоянного хранения:"
                         else
@@ -1377,7 +1381,7 @@ printf '  Enter a letter S, R, D, C, M, P or Q :   ' ; printf '                 
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
-printf "\r\033[40C"
+printf "\r\033[42C"
 printf "\033[?25h"
 
 read -n 1 inputs 
@@ -1423,7 +1427,7 @@ if [[ $inputs = [sS] ]]; then printf "\r\033"
 fi
 
 if [[ ${inputs} = [dD] ]]; then
-                            printf "\r\033"; printf '\n\n'"%"80"s"
+                            printf "\r"; printf "%"80"s"
                             if [[ $loc = "ru" ]]; then
                         printf '\r  Удаление бэкапа. (или просто "Enter" для отмены):\n\n'
                             else
@@ -1456,7 +1460,7 @@ if [[ ${inputs} = [dD] ]]; then
 fi
 
 if [[ ${inputs} = [rR] ]]; then
-                            printf "\r\033"; printf '\n\n'"%"80"s"
+                            printf "\r\033"; printf "%"80"s"
                             if [[ $loc = "ru" ]]; then
                         printf '\r  Восстановление конфигурации из бэкапа. (или просто "Enter" для отмены):\n\n'
                             else
@@ -1517,10 +1521,11 @@ if [[  ${inputs}  = [mM] ]]; then
                     unset get_num
                     while [[ ! ${get_num} =~ ^[0-9]+$ ]]
                     do
-                    printf "\r\033"
-                    printf '\n                                                      '
-                    printf '\n                                                      '
-                    printf "\r\033[1A"
+                    printf "\r\033"; printf "%"79"s"
+                    
+                    printf '\n                                                         '
+                    printf '\n                                                         '
+                    printf "\r\033[3A"
                     if [[ $loc = "ru" ]]; then
                     printf '\n  Максимальное количество бэкапов конфига:  ' 
 			           else
@@ -1530,10 +1535,10 @@ if [[  ${inputs}  = [mM] ]]; then
                     read get_num
                     printf "\033[?25l"
                     printf "\r\033[1A"
-                    if [[ ${get_num} = 0 ]]; then unset get_num 2>&-
+                    if [[ ${get_num} = "" ]]; then  unset get_num; fi 
+                    if [[ ${get_num} = 0 ]]; then  unset get_num; fi 2>&-
                     if [[ ${get_num} -gt 99 ]]; then unset get_num; fi 2>&-
-                    fi
-                    printf "\033[2A"
+                    
                     done
             plutil -replace Backups.Maximum -integer ${get_num} ${HOME}/.MountEFIconf.plist 
             UPDATE_CACHE
@@ -1555,13 +1560,13 @@ fi
 if [[ $inputs = [pP] ]]; then printf "\r\033"
                         if [[ $loc = "ru" ]]; then
                 
-                printf ' Подтвердите публикацию настроек (y/N) ? '
+                printf '   Подтвердите публикацию настроек (y/N) ?  '
 			else
-                printf ' Confirm the publication of settings (y/N)? '
+                printf '   Confirm the publication of settings (y/N)?  '
                 
                 fi
                 printf "\033[?25h"
-                read  -n 1 -r
+                read  -n 1 -r                
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
                 PUT_SHARE_IN_ICLOUD
@@ -2452,7 +2457,7 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
 fi
 
 if [[ ${inputs} = [dD] ]]; then
-                            printf "\r\033[2A"; printf '\n\n'"%"80"s"
+                            printf "\r"; printf "%"80"s"
                             if [[ $loc = "ru" ]]; then
                         printf '\r  Удаление пседонима. (или просто "Enter" для отмены):\n\n'
                             else
@@ -2470,17 +2475,19 @@ if [[ ${inputs} = [dD] ]]; then
                         read  inputs
                         printf "\033[?25l" 
                         printf '\r';  printf "%"80"s"
+                        if [[ $inputs = 0 ]]; then inputs="p"; fi &> /dev/null
                         if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
                         if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
                         printf "\033[1A"
                         printf "\r"
                         done
-                        if [[ ! ${inputs} = "p" ]]; then
+                        if [[ ! ${inputs} = "p" ]]; then 
                         GET_DRIVE
                         DEL_RENAMEHD
                         fi
-                        SHOW_FULL_EFI
-                        unset inputs
+                        clear
+    
+                        inputs=0
 fi
 
 if [[ ${inputs} = [vV] ]]; then  
