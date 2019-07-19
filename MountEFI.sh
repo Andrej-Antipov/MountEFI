@@ -1,75 +1,9 @@
 #!/bin/bash
 
 ############################################################################## Mount EFI #########################################################################################################################
-prog_vers="1.63"
-edit_vers="030"
+prog_vers="1.7"
+edit_vers="003"
 ##################################################################################################################################################################################################################
-
-# MountEFI версия 1.63.030 master
-#------------------------------------------------------------------------------------
-# Добавлена очистка истории bash от записей запусков MountEFI перед выходом 
-# Добавлен таймаут прерывания выхода для автомонтирования
-# Автосокрытие курсора командами printf "\033[?25l"/ printf "\033[?25h"
-# Поддержка псевдонимов из  нового парамтра RenamedHD
-# Ускорено сканирование EFI разделов и другие операции поиска и монтирования
-# Фиксы удвоения данных и испраление ошибки поиска системного раздела
-# Исправление вывода размера разделов
-# Фикс автопереключения раскладки в Мохаве
-# Добавлен детект подключения / отключения медиа в пробной версии
-# 001 - Добавлен контроль версий
-# 002 - Фикс экрана в DO_MOUNT
-# 003 - Фикс экрана в unmounted check и getlist
-# 004 - Буфер экрана в GETLIST / UPDATELIST через переменную screen_buffer
-# 005 - Кэширование конфига в переменную для блока проверки и инициализации конфига
-# 006 - Кэширование конфига для автозапуска и темизации
-# 007 - Кэширование конфига для получения псевдонимов и других
-# 008 - Фикс обновление кэша после вызова скрипта настроек
-# 009 - Функция для реализации ввода по 2 байта через read -n
-# 010 - 4 функции обновления информации по хотплагу
-# 011 - Детект хотплага для двух-байтового ввода
-# 012 - Очистка истории sh на старте и временных файлов MountEFi больше не используюмых
-# 014 - Функция проверки загручиков на подключенных разделах
-# 015 - фикс форматирования на экране если разделов больше 10. Фикс строки ввода 2 байт
-# 016 - Исправлена ошибка если в имени системного раздела EFI. Ещё фикс строки ввода 2 байта
-# 017 - Исправлен ввод по 2 байта в цикле GETKEYS.
-# 018 - Дополнительные фиксы для режима без подсказок
-# 019 - Фиксы в GETKEYS для 1 байтового ввода после измнений связанных с детектом хотплага
-# 020 - Отображение подсказок со спиннером для функций поиска загрузчиков
-# 021 - Фикс переменной с одним именем в разных функциях - UPDATE_SCREEN_BUFFER и MOUNTS
-# 022 - Фикс имени диска для компьютеров со старыми дисками
-# 023 - Начальная поддержка бэкапов конфига
-# 024 - Загрузка архива конфига из iCloud
-# 025 - Раздельные папки для бэкапов в iCloud
-# 026 - Поддержка загрузки публичнго бэкапа через iCloud
-# 027 - Фикс определения Clover
-# 028 - Убрана задержка на выходе 
-# 029 - Изменение в форматироании вывода для отображения загрузчика
-# 030 - Фикс появления запроса пароля если он не сохранён в конфиге 
-#--------------------------------------------------------------------------------------------
-
-SHOW_VERSION(){
-clear && printf "\e[3J" 
-printf "\033[?25l"
-GET_LOADERS
-var=${lines} 
-while [[ ! $var = 0 ]]; do
-if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88}; else printf '\e[40m %.0s\e[0m' {1..80}; fi
-let "var--"; done
-printf "\033[H"
-
-printf "\033[10;21f"
-printf '\e[40m\e[1;33m________________________________________\e[0m''\n\033[20C'
-printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
-printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
-printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
-printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
-printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
-printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m®\e[0m''\n'   
-read -n 1 
-clear && printf "\e[3J"
-} 
-
-
 
 # функция отладки ##################################################################################################
 demo1="0"
@@ -79,62 +13,45 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
-#term=`ps`; AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`; echo $AllTTYcount
-#echo "ch = "$ch >> ~/temp.txt
-#echo "check = "$check >> ~/temp.txt
-#echo "mcheck = "$mcheck >> ~/temp.txt
-#echo "string = "$string >> ~/temp.txt
-#echo >> ~/temp.txt
-#echo "${screen_buffer}" >> ~/temp.txt
-#echo >> ~/temp.txt
-#echo "ldlist(pointer) ="${ldlist[$pointer]} >> ~/temp.txt
-#echo "ldnlist(pointer) ="${ldnlist[$pointer]} >> ~/temp.txt
-#echo "line = "$line >> ~/temp.txt
-#echo "posl = "$posl >> ~/temp.txt
-#echo "chs = "$chs
-#echo "autom_open = "$autom_open
-#echo "alist = "${alist[@]}
-#echo "alist(posa) = "${alist[$posa]} 
-#echo "am_enabled= "$am_enabled
-#echo "apos ="$apos
-#echo "posa = "$posa
-#echo "strng1 = "$strng1
-#echo "ttys001 --------------------------------------------"
-#echo "mcheck = "$mcheck
-#echo "mounted= "$mounted
-#echo "was mounted = "$was_mounted
-#echo "vname = "$vname >> ~/temp.txt
-#echo "-----------------------------------------------------"
-#echo
-#echo "ttys000 --------------------------------------------"
-#echo "PID = "$PID_ttys000
-#echo "Time000 = "$Time000
-#echo "-----------------------------------------------------"
-#echo "Time Diff = "$TimeDiff
-#echo "xkbs = "$xkbs
-#echo "layout name = "$layout_name
-#echo "var2 = "$var2
-#echo " layouts = "$layouts
-#echo "keyboard = "$keyboard
-#echo "layouts names = "${layouts_names[$num]}
-#echo "mypassword = "$mypassword
-#echo "login = "$login
-#echo "var = "$var
-#echo "current = "$current
-#echo "pcount = "$pcount
-#echo "ldlist = "${ldlist[@]} >> ~/temp.txt
-#echo "ldnlist[@] = "${ldnlist[@]} >> ~/temp.txt
-#echo "demo = "$demo
-#echo "pik = "$pik
-#echo "flag = "$flag
 
 printf '............................................................\n\n' >> ~/temp.txt
 sleep 0.5
-#read -n 1 -s
+read -n 1 -s
 fi
 }
 #########################################################################################################################################
 
+
+############################ Mount EFI Master v.1.7 edit 003
+# Исправление для функции обработки с одним разделом EFI 
+# Исправления смещения курсора на две строки вверх после Unmounts с выключенной функцией A
+# Исправление после сообщения "смените раскладку на латиницу" фраза не исчезает после смены раскладки
+
+
+
+
+
+SHOW_VERSION(){
+clear && printf "\e[3J" 
+printf "\033[?25l"
+GET_LOADERS
+var=${lines} 
+while [[ ! $var = 0 ]]; do
+if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88}; vcorr=32; v2corr=24; v3corr=25; else printf '\e[40m %.0s\e[0m' {1..80}; vcorr=28; v2corr=20; v3corr=21; fi
+let "var--"; done
+printf "\033[H"
+
+printf "\033[10;'$v3corr'f"
+printf '\e[40m\e[1;33m________________________________________\e[0m''\n\033['$v2corr'C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
+printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
+printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m®\e[0m''\n'   
+read -n 1 
+clear && printf "\e[3J"
+} 
 
 
 clear  && printf '\e[3J'
@@ -570,7 +487,6 @@ if [[ $strng = "false" ]]; then ShowKeys=0; fi
 
 }
 
-
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #избавляемся от второго окна терминала по оценке времени с моментв запуска
 #############################################################################################################################
@@ -734,7 +650,6 @@ cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_histo
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG_PARTS(){
-#ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
 pstring=`df | cut -f1 -d " " | grep "/dev"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; old_puid_count=$puid_count
             
@@ -778,11 +693,11 @@ posi=${#ilist[@]}
 drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
 sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
 
-#CHECK_HOTPLUG_DISKS
+
 ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
         if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
 
-#CHECK_HOTPLUG_PARTS
+
 pstring=`df | cut -f1 -d " " | grep "/dev"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; fi
 
@@ -1198,7 +1113,6 @@ GETARR
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
 
-
 if [[ $pos = 1 ]]; then 
 
 if [[ ! ${menue} = 1 ]]; then
@@ -1215,9 +1129,11 @@ if [[ ! $mcheck = "Yes" ]]; then
 
     if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
 
+
 theme="system"
 GET_THEME
 if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
+
 
     if [[ $loc = "ru" ]]; then
         printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
@@ -1259,29 +1175,48 @@ if [[ $loc = "ru" ]]; then
 	printf '\n              '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"'\n' 
     printf '\n     '
 	printf '.%.0s' {1..68}
+    var98=3 
+    while [[ ! $var98 = 0 ]]; 
+    do
         if [[ $loc = "ru" ]]; then
-    printf '\n\nДля перехода в меню сохранения пароля нажмите Enter\n'
-    printf 'или просто введите пароль для подключения EFI: '
+    printf '\n\nвведите пароль для подключения EFI: '
          else
-    printf '\n\nTo save your password permanent press Enter\n'
-    printf 'or just enter your password to mount EFI: '
+    printf '\n\nenter your password to mount EFI: '
         fi
     read -s mypassword
-    if [[ $mypassword = "" ]]; then SET_USER_PASSWORD; GET_USER_PASSWORD; fi
     if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-    printf '\nOK.'
+    printf '\n\n OK!'; break
         else
             if [[ ! $mypassword = "0" ]]; then
                         if [[ $loc = "ru" ]]; then
-                printf '\nНе верный пароль '$mypassword' \n'
+                printf '\n\nНе верный пароль \e[1m'$mypassword'\e[0m \n'
                                         else
-                printf '\nWrong password '$mypassword' \n'
+                printf '\n\nWrong password \e[1m'$mypassword'\e[0m \n'
                         fi
+            read -t 2 -n 1 -s
             mypassword="0"
+            let "var98--"
+            printf '\r\033[3A'
+            printf ' %.0s' {1..68}; printf ' %.0s' {1..68}; printf ' %.0s' {1..68};
+            printf '\r\033[4A'
             fi
-        fi
-    fi        
-			
+     fi
+    done
+ fi        
+
+if [[ $var98 = 0 ]]; then 
+            printf '\r'
+            printf ' %.0s' {1..68}; printf ' %.0s' {1..68}
+            printf '\r\033[1A'
+            if [[ $loc = "ru" ]]; then
+            printf '\n\n Без правильного пароля EFI не подключить. Выходим.....\n\n\n'
+            else
+            printf '\n\n You have to input valid password to mount EFI. Exiting....\n\n\n'
+            fi
+            read -t 2 -n 1 -s
+            EXIT_PROGRAM
+fi
+
 DO_MOUNT
 
 MOUNTED_CHECK
@@ -1345,12 +1280,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
 
     unset loader
     if [[ $mcheck = "Yes" ]]; then 
-#    was_mounted=0
-#        DO_MOUNT	
-#        MOUNTED_CHECK
-#    else
-#		was_mounted=1
-#    fi
+
 
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
@@ -1363,8 +1293,6 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 					if [[ ${check_loader} = "OpenCore" ]]; then loader="OpenCore"; fi   
 	         fi
         fi
-
-#if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 
     fi
 fi
@@ -1389,11 +1317,9 @@ printf "\033[H"
                         let "pointer++"
                         let "var99--"
                     done
-    fi
-                        
-printf "\033[H"; let "correct=lines-7"; printf "\r\033[$correct;f\033[51C"
+    fi                       
 fi
-
+printf "\033[H"; let "correct=lines-7"; printf "\r\033[$correct;f\033[49C"
 }
 #################################################################################################
 spinny(){
@@ -1675,6 +1601,8 @@ if [[ $CheckLoaders = 1 ]]; then
             unset old_puid_count; CHECK_HOTPLUG_PARTS
         fi
 fi
+
+
 }
 # Конец определения функции UPDATELIST ######################################################
 
@@ -1729,6 +1657,7 @@ if [[ $ShowKeys = 1 ]]; then
 fi
   
 SHOW_LOADERS
+
                       
 }
 ################################### конец функции обновления списка подключенных  на экране ##################################
@@ -1739,6 +1668,7 @@ ADVANCED_MENUE(){
 }
 ##################### Детект раскладки  и адаптация ввода для двухбайтовых UTF-8  ####################################################################################################
 SET_INPUT(){
+stop="1"; DEBUG
 
 layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
 xkbs=1
@@ -1777,43 +1707,18 @@ done
 if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; fi
    else
         if [[ $loc = "ru" ]]; then
-printf '\n\n                          ! Смените раскладку на латиницу !'
+printf '\n\n                         ! Смените раскладку на латиницу !'
             else
 printf '\n\n                          ! Change layout to UTF-8 ABC, US or EN !'
         fi
+read -t 2 -n 2 -s
+printf '\r                                                                               \r'
  printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi   fi
+
 fi
 }
 
-# Определение функции обработки ввода кирилицы вместо латиницы
-#############################
-CYRILLIC_TRANSLIT(){
 
-case ${choice} in
- 
- [е] ) unset choice; choice="t";;
- [Е] ) unset choice; choice="T";;
- [г] ) unset choice; choice="u";;
- [с] ) unset choice; choice="c";;
- [й] ) unset choice; choice="q";;
- [у] ) unset choice; choice="e";;
- [ш] ) unset choice; choice="i";;
- [Ш] ) unset choice; choice="i";;
- [щ] ) unset choice; choice="o";;
- [Щ] ) unset choice; choice="O";;
- [Ў] ) unset choice; choice="O";;
- [ў] ) unset choice; choice="o";;
- [Г] ) unset choice; choice="U";;
- [У] ) unset choice; choice="E";;
- [С] ) unset choice; choice="C";;
- [Й] ) unset choice; choice="Q";;
- [з] ) unset choice; choice="p";;
- [З] ) unset choice; choice="P";;
-
-esac
-
-}
-#############################
 ##################################################################################################################################################################
 
 ############## обновление даных после выхода из скрипта настроек #########################################################
@@ -1888,26 +1793,11 @@ printf "\033[?25l"
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
-
-#cd $(dirname $0)
-
 unset choice
 while [[ ! ${choice} =~ ^[0-9uUqQ]+$ ]]; do
-if [[ $order = 2 ]]; then 
-#printf '\r                                                          '
-#printf "\r\033[2A"
-#printf '\r                                                          '
+if [[ $order = 2 ]]; then                                               
 order=0
 fi
-
-#if [[ $sym = 2 ]]; then printf "\r\033[1A" ; printf '                              '; printf "\r\n"; fi
-#if [[ $ShowKeys = 1 ]]; 
-
-
-#if [[ $choice = " " ]]; then printf '\r\n'
- #else printf "\r\n\033[1A"
-#fi
-
 printf "\r\n\033[1A"
 if [[ $order = 3 ]]; then 
     let "schs=$ch-1"
@@ -1924,14 +1814,12 @@ printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):  
 printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):      ' ; printf '                           '
     fi
 fi
-
 printf '\n\n'
 printf '                                                                                \n'
 printf '                                                                                '
 printf "\r\n\033[2A\033[49C"
 printf "\033[3A"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
-SET_INPUT
 if [[ ${ch} -le 10 ]]; then
 printf "\033[?25h"
 choice="±"
@@ -1940,23 +1828,18 @@ while [[ $choice = "±" ]]
 do
 IFS="±"; read -n 1 -t 1 choice ; unset IFS; sym=2
 if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; fi
-#if [[ $choice = [0-9a-zA-Z] ]]; then printf '\033[1A'; fi
 CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
 done
+SET_INPUT
 else
 printf '\033[1B'
 READ_TWO_SYMBOLS; sym=2
-
 fi
 printf "\033[?25l\033[1D"
-
-#if  [[ ${choice} = "" ]]; then unset choice; printf "\r\n\033[2A\033[49C"; fi
-
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
-
 if [[ ! $order = 3 ]]; then
-if [[ ! $choice =~ ^[0-9uUqQeEiIvV]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQeEiIvV]$ ]]; then  unset choice; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
@@ -1992,7 +1875,6 @@ let "num=chs-1"
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 strng0=${string}
-stop="string получило значение"; DEBUG
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 wasmounted=0
@@ -2002,25 +1884,20 @@ if [[ ! $mcheck = "Yes" ]]; then
 
     MOUNTED_CHECK
 
-#    FIND_LOADERS
 
 	order=0; UPDATELIST
 
 else 
     wasmounted=1
-#	printf "\r\033[1A"
+
 fi
 string=${strng0}
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-stop="vname получил значение"; DEBUG
 if [[ $OpenFinder = 0 ]] ; then 
         if [[ $wasmounted = 1 ]]; then open "$vname"; fi
     else 
         open "$vname"
 fi
-
-
-
 
 nogetlist=1
 
@@ -2032,11 +1909,10 @@ nogetlist=1
 GET_USER_PASSWORD
 
 chs=0
-# переменная nogetlist является флагом - будет ли экран обновлён GETLIST или UPDATELIST
-# если nogetlist=1 то обновление через функцию UPDATELIST
-# значением этого флага управляют MOUNTS, UNMOUNTS, GETKEYS
+
 nogetlist=0
 
+SET_INPUT
 while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
         clear && printf '\e[3J'
@@ -2053,7 +1929,6 @@ fi
 
 
  if [[ ! $nogetlist = 1  ]]; then  GETLIST; fi
-
 
 	GETKEYS	
 
