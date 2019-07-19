@@ -1,0 +1,3 @@
+appify.command - script to convert MountEFI.sh and setup.sh to unix executables. And if MountEFI.app is in the one folder with MountEFI.sh, the script puts the converted executable in that app, and corrects the version of app with data about version from MountEFI.sh. The script must be run from its folder, it searches MountEFI.sh and setup.sh in folder upper. 
+
+appify.command - скрипт который конвертирует MountEFI.sh и setup.sh в исполнимые файлы unix. И если в одной папке с MountEFI и Setup находится апплет MountEFI, помещает сконвертированные скрипты в него, и прописывает в plist апплета версию, которую находит в скрипте MountEFI. Скрипт должен запускаться из его папки, он ищет MountEFI, Setup и апплет  в папке выше своей (предыдущей) по уровню вложения.  
