@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8"
-edit_vers="008"
+edit_vers="009"
 ##################################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -13,15 +13,16 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
-#echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
+echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
 echo "usblist = ""${usblist[@]}" >> ~/temp.txt
-#echo "ldlist = ""${ldlist[@]}" >> ~/temp.txt
-#echo "ldnlist = ""${ldnlist[@]}" >> ~/temp.txt
-echo "sata_lines = "${sata_lines} >> ~/temp.txt
-echo "usb_lines = "${usb_lines} >> ~/temp.txt
+echo "puid_list = ""${puid_list[@]}" >> ~/temp.txt
+echo "old_puid_list = ""${old_puid_list[@]}" >> ~/temp.txt
+#echo "sata_lines = "${sata_lines} >> ~/temp.txt
+#echo "usb_lines = "${usb_lines} >> ~/temp.txt
 #echo "screen_buffer = ""$screen_buffer" >> ~/temp.txt
 #echo "usb_screen_buffer = ""$usb_screen_buffer" >> ~/temp.txt
 echo "pos = "$pos >> ~/temp.txt
+echo "match = "$match >> ~/temp.txt
 #echo "n = "$n >> ~/temp.txt
 #echo "i = "$i >> ~/temp.txt
 #echo "lines = "$lines >> ~/temp.txt
@@ -29,8 +30,8 @@ echo "usb_string = "$usb_string >> ~/temp.txt
 #echo "posi = "$posi >> ~/temp.txt
 echo "dlist = *"${dlist[@]}"*" >> ~/temp.txt
 #echo "ilist/n = *"${ilist[$n]}"*" >> ~/temp.txt
-#cho "ilist  = "${ilist[@]}"*" >> ~/temp.txt
-#echo "dfdstring = *"$dfdstring"*" >> ~/temp.txt
+echo "ilist  = "${ilist[@]}"*" >> ~/temp.txt
+echo "dfdstring = *"$dfdstring"*" >> ~/temp.txt
 echo "string = *"$string"*" >> ~/temp.txt
 
 printf '............................................................\n\n' >> ~/temp.txt
@@ -41,7 +42,7 @@ fi
 #########################################################################################################################################
 
 
-############################ Mount EFI Master v.1.8 edit 008
+############################ Mount EFI Master v.1.8 edit 009
 # Разделение данных на SATA и USB для отдельного отображения
 # Исправление показывать заголовок USB, если USB не входит в список отображаемых 
 # Начало переделки функции сканирования разделов в GET_EFI_S
@@ -51,6 +52,7 @@ fi
 # Исправление в начальном определении числа lines 
 # Исправление ошибки списка string при занесении в него USB
 # Исправление позиции курора при вводе по 2 байта, при выключенной функции A.
+# Исправление в разделении буферов экрана для функции UPDATE_SCREEN_BUFFER
 
 
 
@@ -696,15 +698,16 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
                                      if [[ "$dfdstring" = "${ilist[$n]}" ]]; then match=1;  break; fi
                                 
                         done
+                                     
                                      if [[ ! $match = 1 ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; fi
                         done
 
                         else
                                     
-                                    UPDATE_SCREEN_BUFFER; UPDATE_SCREEN
+                                     UPDATE_SCREEN_BUFFER; UPDATE_SCREEN
 
                     fi
-
+            
            old_puid_count=$puid_count; old_puid_list=($pstring)
             
         fi
@@ -725,7 +728,7 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
                     for (( i=0; i<$posui; i++ )); do
                         match=0
                     for (( n=0; n<=$posi; n++ )); do
-                        if [[ "${diff_uuid[$i]}" = "${ilist[$n]}" ]]; then match=1; stop="OK2"; DEBUG; break; fi
+                        if [[ "${diff_uuid[$i]}" = "${ilist[$n]}" ]]; then match=1;  break; fi
                     done
                         if [[ ! $match = 1 ]]; then  choice=0; hotplug=1; fi
                     done
@@ -809,7 +812,6 @@ fi
 if [[ ! "$usb_string" = "" ]]; then string+="$usb_string"; usb=1; fi
 syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
 
-stop="1"; DEBUG
 
 IFS=';' 
 dlist=($string)
@@ -1520,7 +1522,6 @@ do
 	
 	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 
-stop="2"; DEBUG
 
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
@@ -1532,7 +1533,6 @@ stop="2"; DEBUG
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 
-  stop="3"; DEBUG  
 
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
@@ -1543,9 +1543,7 @@ stop="2"; DEBUG
             fi
     fi
 
-stop="4"; DEBUG	
 	
-
     		scorr=`echo ${#dsize}`
     		let "scorr=scorr-5"
     		let "scorr=6-scorr"
@@ -1840,6 +1838,41 @@ fi
 # Конец определения функции UPDATELIST ######################################################
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
+#UPDATE_SCREEN_BUFFER(){
+#unset ldlist; unset ldnlist
+#var0=$pos; num=0; ch1=0
+#unset string
+#while [ $var0 != 0 ] 
+#do 
+#pnum=${nlist[num]}
+#string=`echo ${dlist[$pnum]}`
+#	let "ch1++"
+#mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+#if [[ $mcheck = "Yes" ]]; then
+
+#        FIND_LOADERS        
+#        if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
+#            check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
+#            if [[ "${check}" = "" ]]; then
+##        screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1) ...  /$ch1)   +  /" )
+#     fi
+
+#else
+#            check=$( echo "${screen_buffer}" | grep "$ch1) ..." )
+#           if [[ ! "${check}" = "" ]]; then 
+#        screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
+#    fi
+#fi
+#let "num++"
+#let "var0--"
+#done
+
+
+
+#}
+############################ конец определения функции UPDATE PARTS ############################################
+
+##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
 unset ldlist; unset ldnlist
 var0=$pos; num=0; ch1=0
@@ -1854,18 +1887,35 @@ if [[ $mcheck = "Yes" ]]; then
 
         FIND_LOADERS        
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
+
+    if [[ $ch1 -le $sata_lines ]]; then
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
         screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1) ...  /$ch1)   +  /" )
-     fi
-
+            fi
+    
     else
-            check=$( echo "${screen_buffer}" | grep "$ch1) ..." )
-           if [[ 
 
-! "${check}" = "" ]]; then 
-        screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
+        check=$( echo "${usb_screen_buffer}" | grep "$ch1)   +" )
+            if [[ "${check}" = "" ]]; then
+        usb_screen_buffer=$( echo  "$usb_screen_buffer" | sed "s/$ch1) ...  /$ch1)   +  /" )
+            fi
     fi
+
+else
+
+     if [[ $ch1 -lt $sata_lines ]]; then   
+            check=$( echo "${screen_buffer}" | grep "$ch1) ..." )
+           if [[ ! "${check}" = "" ]]; then 
+        screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
+            fi
+     else
+
+           check=$( echo "${usb_screen_buffer}" | grep "$ch1) ..." )
+           if [[ ! "${check}" = "" ]]; then 
+        usb_screen_buffer=$( echo  "$usb_screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
+            fi
+     fi 
 fi
 let "num++"
 let "var0--"
@@ -1874,7 +1924,7 @@ done
 
 
 }
-############################ конец определения функции UPDATE PARTS ############################################
+
 
 ###################################### обновление на экране списка подключенных ###########################################
 UPDATE_SCREEN(){
