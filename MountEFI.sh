@@ -1,8 +1,8 @@
 #!/bin/bash
 
 ############################################################################## Mount EFI #########################################################################################################################
-prog_vers="1.7"
-edit_vers="003"
+prog_vers="1.8"
+edit_vers="008"
 ##################################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -13,20 +13,44 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
+#echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
+echo "usblist = ""${usblist[@]}" >> ~/temp.txt
+#echo "ldlist = ""${ldlist[@]}" >> ~/temp.txt
+#echo "ldnlist = ""${ldnlist[@]}" >> ~/temp.txt
+echo "sata_lines = "${sata_lines} >> ~/temp.txt
+echo "usb_lines = "${usb_lines} >> ~/temp.txt
+#echo "screen_buffer = ""$screen_buffer" >> ~/temp.txt
+#echo "usb_screen_buffer = ""$usb_screen_buffer" >> ~/temp.txt
+echo "pos = "$pos >> ~/temp.txt
+#echo "n = "$n >> ~/temp.txt
+#echo "i = "$i >> ~/temp.txt
+#echo "lines = "$lines >> ~/temp.txt
+echo "usb_string = "$usb_string >> ~/temp.txt
+#echo "posi = "$posi >> ~/temp.txt
+echo "dlist = *"${dlist[@]}"*" >> ~/temp.txt
+#echo "ilist/n = *"${ilist[$n]}"*" >> ~/temp.txt
+#cho "ilist  = "${ilist[@]}"*" >> ~/temp.txt
+#echo "dfdstring = *"$dfdstring"*" >> ~/temp.txt
+echo "string = *"$string"*" >> ~/temp.txt
 
 printf '............................................................\n\n' >> ~/temp.txt
-sleep 0.5
+sleep 0.2
 read -n 1 -s
 fi
 }
 #########################################################################################################################################
 
 
-############################ Mount EFI Master v.1.7 edit 003
-# Исправление для функции обработки с одним разделом EFI 
-# Исправления смещения курсора на две строки вверх после Unmounts с выключенной функцией A
-# Исправление после сообщения "смените раскладку на латиницу" фраза не исчезает после смены раскладки
-
+############################ Mount EFI Master v.1.8 edit 008
+# Разделение данных на SATA и USB для отдельного отображения
+# Исправление показывать заголовок USB, если USB не входит в список отображаемых 
+# Начало переделки функции сканирования разделов в GET_EFI_S
+# Исправление - не показывает разделы на USB HDD
+# Исправление - очистка string от DMG
+# Устранение реакции на подключение/отключение DMG
+# Исправление в начальном определении числа lines 
+# Исправление ошибки списка string при занесении в него USB
+# Исправление позиции курора при вводе по 2 байта, при выключенной функции A.
 
 
 
@@ -650,16 +674,67 @@ cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_histo
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG_PARTS(){
-pstring=`df | cut -f1 -d " " | grep "/dev"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; old_puid_count=$puid_count
+pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then
+                
+               if [[  $old_puid_count -lt $puid_count ]]; then 
+                       
+                    ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+                    disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+                    IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
+               fi
+                    
+                    diff_list=()
+                    IFS=';'; diff_list=(`echo ${puid_list[@]} ${old_puid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posdi=${#diff_list[@]}
+                    if [[ ! $posi = 0 ]] && [[ ! $posdi = 0 ]]; then 
+                            
+                        for (( i=0; i<$posdi; i++ )); do
+                            match=0
+                            dfdstring=`echo ${diff_list[$i]} | rev | cut -f2-3 -d"s" | rev`
+                                
+                                for (( n=0; n<=$posi; n++ )); do
+                                     if [[ "$dfdstring" = "${ilist[$n]}" ]]; then match=1;  break; fi
+                                
+                        done
+                                     if [[ ! $match = 1 ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; fi
+                        done
+
+                        else
+                                    
+                                    UPDATE_SCREEN_BUFFER; UPDATE_SCREEN
+
+                    fi
+
+           old_puid_count=$puid_count; old_puid_list=($pstring)
             
         fi
 }
 
 CHECK_HOTPLUG_DISKS(){
 hotplug=0
-ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
-        if [[ ! $old_uuid_count = $uuid_count ]]; then choice=0; hotplug=1; old_uuid_count=$uuid_count
+ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
+        if [[ ! $old_uuid_count = $uuid_count ]]; then
+            if [[  $old_uuid_count -lt $uuid_count ]]; then 
+               ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+                    disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+                    IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
+            fi
+                diff_uuid=()
+                IFS=';'; diff_uuid=(`echo ${uuid_list[@]} ${old_uuid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posui=${#diff_uuid[@]}
+                if [[ ! $posi = 0 ]] && [[ ! $posui = 0 ]]; then 
+                    for (( i=0; i<$posui; i++ )); do
+                        match=0
+                    for (( n=0; n<=$posi; n++ )); do
+                        if [[ "${diff_uuid[$i]}" = "${ilist[$n]}" ]]; then match=1; stop="OK2"; DEBUG; break; fi
+                    done
+                        if [[ ! $match = 1 ]]; then  choice=0; hotplug=1; fi
+                    done
+                 else
+                    
+                    choice=0; hotplug=1
+            fi
+                            
+          old_uuid_count=$uuid_count ; old_uuid_list=($ustring)
             
         fi
 }
@@ -675,31 +750,99 @@ fi
 # Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
 # И список указателей на валидные значения в нём - nlist
 
+CHECK_USB(){
+
+if [[ ! $posrm = 0 ]]; then
+                usb=0
+                for (( i=0; i<$posrm; i++ ))
+                do
+                if [[ "${dstring}" = "${rmlist[$i]}" ]]; then usb=1; break; fi
+                done                
+            fi
+}
+
 GET_EFI_S(){
 
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-
-string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+usb_iomedia=`ioreg -c IOUSB | tr -d '"|+{}\t'`
+#string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+efi_string=`echo "$ioreg_iomedia" | grep -v "Statistics = " |  grep -i -A 22 "EFI System Partition" | grep -A 10 -B 10 "Removable = No" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+rem_string=`echo "$ioreg_iomedia" | grep -v "Statistics = " | grep -A 22 "<class IOMedia," | grep -A 10 -B 10 "Removable = Yes" | grep -A 5 -B 5  "Whole = No" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
 disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
+drives_string=`echo "$drives_iomedia" | grep -v "Statistics = "  | grep -A 10 -B 10 "Removable = No" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+removables=`echo "$drives_iomedia" | grep -A 10 -B 10 "Removable = Yes" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | cut -f2 -d "=" | tr -d " " | tr "\n" ";"`
+IFS=';'; dmlist=($drives_string); ilist=($disk_images); remlist=($rem_string); unset IFS; posd=${#dmlist[@]}; posi=${#ilist[@]}; posrem=${#remlist[@]}
+usblist=()
+if [[ ! $posi = 0 ]]; then 
+for (( i=0; i<$posrem; i++ )); do
+    dmstring=`echo ${remlist[$i]} | rev | cut -f2-3 -d"s" | rev`
+    match=0
+        for (( n=0; n<=$posi; n++ )); do
+                if [[ "$dmstring" = "${ilist[$n]}" ]]; then match=1; break; fi
+        done
+                if [[ ! $match = 1 ]]; then usblist+=( ${remlist[$i]} ); fi
+    done
+    else
+      usblist=( ${remlist[@]} )
+fi
+usb_string=""
+for (( i=0; i<$posd; i++ )); do
+dmname=`echo "$drives_iomedia" | grep -B 10 ${dmlist[$i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+#usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice," | grep -m 1 -w "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
+usbname=`echo "$usb_iomedia" | grep  "<class IOUSBHostDevice," | grep -m 1 -wo "$dmname"`
+if [[ "$usbname" = "$dmname" ]]; then 
+usb_string+=`echo "$ioreg_iomedia" | egrep -A 22 "<class IOMedia," | grep -A 5 -B 5  "Whole = No" | grep "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
+removables+="${dmlist[$i]}"";"
+fi
+done 
+
+
+usb=0
+string="$efi_string"";"
+if [[ ! "${#usblist[@]}" = 0 ]]; then 
+    for (( i=0; i<${#usblist[@]}; i++ )); do
+        string+="${usblist[$i]}"";"
+    done
+    usb=1
+fi
+if [[ ! "$usb_string" = "" ]]; then string+="$usb_string"; usb=1; fi
 syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
+
+stop="1"; DEBUG
 
 IFS=';' 
 dlist=($string)
-ilist=($disk_images)
+tmlist=($removables)
 unset IFS;
 pos=${#dlist[@]}
-posi=${#ilist[@]}
-
-drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
+posrm=${#tmlist[@]}
+if [[ ! $posi = 0 ]]; then
+        if [[ ! $posrm = 0 ]]; then
+            unset rmlist
+                for (( i=0; i<$posrm; i++ )); do
+                    match=0
+                        for (( n=0; n<=$posi; n++ )); do
+                            if [[ "${ilist[$n]}" = "${tmlist[$i]}" ]]; then match=1;  break; fi
+                        done
+                        if [[ $match = 0 ]]; then rmlist+=( ${tmlist[$i]} );  fi
+                done
+            posrm=${#rmlist[@]}
+        fi
+    else
+        if [[ $posrm != 0 ]]; then
+            rmlist=( ${tmlist[@]} )
+        fi
+fi
+#if [[ $posrm = 0 ]]; then usb=0
+#fi
 sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
 
-
-ustring=`ioreg -c IOMedia -r  | grep "<class IOMedia," | cut -f1 -d"<" | sed 's/+-o/;/'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
+ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
         if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
 
-
-pstring=`df | cut -f1 -d " " | grep "/dev"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; fi
+pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
 }
 
@@ -707,11 +850,10 @@ GETARR(){
 
 GET_EFI_S
 
-
-
 GET_SKEYS
 if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 let "lines=lines+pos"
+if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
 lists_updated=1
 
 if [[ ! $pos = 0 ]]; then 
@@ -719,12 +861,13 @@ if [[ ! $pos = 0 ]]; then
 		num=0
 		dnum=0; 
         unset nlist
+        unset rnlist
 	while [[ ! $var0 = 0 ]] 
 		do
 		string=`echo ${dlist[$num]}`
 if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
             else
-		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev `
 		dlenth=`echo ${#dstring}`
 
 		
@@ -732,7 +875,7 @@ if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
         while [[ ! $var10 = 0 ]] 
 		do
 
-		if [[ ${dstring} = ${ilist[numi]} ]]; then
+		if [[ ${dstring} = ${ilist[$numi]} ]]; then
         unset dlist[$num]; let "pos--"; out=1
         fi 
         if [[ $out = 1 ]]; then break; fi
@@ -740,15 +883,15 @@ if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
         done
   
 		if [[ $var10 = 0 ]]; then nlist+=( $num ); fi
+            
 	fi	
 		let "var0--"
 		let "num++"
 	done
-
-
 fi
 
 
+#rnlist - указатель на USB в списе разделов
 
 	if [[ $pos = 0 ]]; then
 clear
@@ -1300,18 +1443,21 @@ fi
 }
 #######################################################################################################################################################
 
-########################### вывод знаков загрузчиков #########################################
+########################### вывод признаков наличия загрузчика #########################################
 SHOW_LOADERS(){
 
 if [[ $CheckLoaders = 1 ]]; then
 printf "\033[H"
         posl=${#ldlist[@]}
             if [[ ! $posl = 0 ]]; then
-
             var99=$posl; pointer=0
                 while [ $var99 != 0 ] 
                     do 
-                         let "line=ldnlist[pointer]+8" 
+                        if [[ ${ldnlist[pointer]} -le $sata_lines ]]; then
+                        let "line=ldnlist[pointer]+8" 
+                        else
+                        let "line=ldnlist[pointer]+11"
+                        fi
                         if [[ ${ldlist[$pointer]} = "Clover" ]]; then printf "\r\033[$line;f\033[47C"; else printf "\r\033[$line;f\033[46C"; fi
                         printf '\e[37m'${ldlist[$pointer]}'\e[0m'
                         let "pointer++"
@@ -1343,6 +1489,9 @@ num=0
 ch=0
 unset string
 unset screen_buffer
+unset usb_screen_buffer
+sata_lines=0
+usb_lines=0
 
 
 			if [[ $loc = "ru" ]]; then
@@ -1369,8 +1518,10 @@ do
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 	
-	
-        dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+
+stop="2"; DEBUG
+
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
     spinny
@@ -1381,7 +1532,7 @@ do
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 
-    
+  stop="3"; DEBUG  
 
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
@@ -1392,7 +1543,7 @@ do
             fi
     fi
 
-	
+stop="4"; DEBUG	
 	
 
     		scorr=`echo ${#dsize}`
@@ -1405,7 +1556,22 @@ do
 
          if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi   
 
-            
+        
+          CHECK_USB
+          
+
+        if [[ $usb = 1 ]]; then 
+                    let "usb_lines++"
+                    
+                     if [[ ! $mcheck = "Yes" ]]; then
+        usb_screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+                            else
+        usb_screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+      
+              fi
+
+        else
+                    let "sata_lines++"
         
                      if [[ ! $mcheck = "Yes" ]]; then
         screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
@@ -1413,6 +1579,8 @@ do
         screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
       
               fi
+        fi
+
         spinny
 
         FIND_LOADERS        
@@ -1432,28 +1600,51 @@ printf "\r\033[3A"
 	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
                 if [[ $CheckLoaders = 0 ]]; then
-	            printf '.%.0s' {1..68} 
+	            printf '.%.0s' {1..32} 
+                printf ' SATA '
+                printf '.%.0s' {1..30}
                 else
-                printf '.%.0s' {1..76}
+                printf '.%.0s' {1..36}
+                printf ' SATA '
+                printf '.%.0s' {1..34}
                 fi
 	printf '\n\n      0)  повторить поиск разделов\n' 
 		else
 	printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
 	printf '     '
                 if [[ $CheckLoaders = 0 ]]; then
-	            printf '.%.0s' {1..68} 
+	            printf '.%.0s' {1..32} 
+                printf ' SATA '
+                printf '.%.0s' {1..30}
                 else
-                printf '.%.0s' {1..76}
-                fi 
+                printf '.%.0s' {1..36}
+                printf ' SATA '
+                printf '.%.0s' {1..34}
+                fi
 	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
 echo "${screen_buffer}"
+if [[ ! $usb_lines = 0 ]]; then
 
+                printf '\n     '
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..32} 
+                printf ' USB '
+                printf '.%.0s' {1..31}
+                else
+                printf '.%.0s' {1..36}
+                printf ' USB '
+                printf '.%.0s' {1..35}
+                fi
+                printf '\n     '
+
+echo "${usb_screen_buffer}"
+fi
 
 	let "ch++"
 	
-	printf '\n     '
+	            printf '\n     '
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..68} 
                 else
@@ -1494,14 +1685,29 @@ SHOW_LOADERS
 # Определение функции обновления информации  экрана при подключении и отключении разделов
 UPDATELIST(){
 
- clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J'
+dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+
+CHECK_USB
+
+
+
+ clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
+
+
 
 if [[ ! $order = 3 ]] && [[ ! $order = 4 ]]; then
 if [[ $order = 0 ]]; then
-
+            if [[ $usb = 0 ]]; then
 screen_buffer=$( echo  "$screen_buffer" | sed "s/$chs) ...  /$chs)   +  /" )
+            else
+usb_screen_buffer=$( echo  "$usb_screen_buffer" | sed "s/$chs) ...  /$chs)   +  /" )
+            fi
     else
+            if [[ $usb = 0 ]]; then
 screen_buffer=$( echo  "$screen_buffer" | sed "s/$chs)   +  /$chs) ...  /" )
+            else
+usb_screen_buffer=$( echo  "$usb_screen_buffer" | sed "s/$chs)   +  /$chs) ...  /" )
+            fi
     fi
 
 fi
@@ -1511,10 +1717,14 @@ fi
         	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
 	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
 	printf '     '
-                if [[ $CheckLoaders = 0 ]]; then
-	            printf '.%.0s' {1..68} 
+               if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..32} 
+                printf ' SATA '
+                printf '.%.0s' {1..30}
                 else
-                printf '.%.0s' {1..76}
+                printf '.%.0s' {1..36}
+                printf ' SATA '
+                printf '.%.0s' {1..34}
                 fi
 	printf '\n\n      0)  повторить поиск разделов\n' 
 			else
@@ -1522,14 +1732,36 @@ fi
 	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
 	printf '     '
                 if [[ $CheckLoaders = 0 ]]; then
-	            printf '.%.0s' {1..68} 
+	            printf '.%.0s' {1..32} 
+                printf ' SATA '
+                printf '.%.0s' {1..30}
                 else
-                printf '.%.0s' {1..76}
-                fi 
+                printf '.%.0s' {1..36}
+                printf ' SATA '
+                printf '.%.0s' {1..34}
+                fi
 	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
+
 echo  "$screen_buffer"
+if [[ ! $usb_lines = 0 ]]; then
+
+                printf '\n     '
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..32} 
+                printf ' USB '
+                printf '.%.0s' {1..31}
+                else
+                printf '.%.0s' {1..36}
+                printf ' USB '
+                printf '.%.0s' {1..35}
+                fi
+                printf '\n     '
+
+echo "${usb_screen_buffer}"
+fi
+
 
 	if [[ ! $order = 1 ]] || [[ ! $order = 0 ]]; then printf "\r\033[1A"; fi
     
@@ -1603,6 +1835,7 @@ if [[ $CheckLoaders = 1 ]]; then
 fi
 
 
+
 }
 # Конец определения функции UPDATELIST ######################################################
 
@@ -1648,12 +1881,39 @@ UPDATE_SCREEN(){
 printf "\033[H"
 printf "\r\033[8f"
 echo  "$screen_buffer"
-if [[ $ShowKeys = 1 ]]; then
+if [[ ! $usb_lines = 0 ]]; then
+
+                printf '\n     '
+                if [[ $CheckLoaders = 0 ]]; then
+	            printf '.%.0s' {1..32} 
+                printf ' USB '
+                printf '.%.0s' {1..31}
+                else
+                printf '.%.0s' {1..36}
+                printf ' USB '
+                printf '.%.0s' {1..35}
+                fi
+                printf '\n     '
+
+echo "${usb_screen_buffer}"
+fi
+
+if [[ $posrm = 0 ]]; then
+    if [[ $ShowKeys = 1 ]]; then
                 printf "\033[9B"
                 printf "\r\033[49C"
     else
                 printf "\033[4B"
                 printf "\r\033[49C"
+    fi
+else
+if [[ $ShowKeys = 1 ]]; then
+                printf "\033[12B"
+                printf "\r\033[49C"
+    else
+                printf "\033[7B"
+                printf "\r\033[49C"
+    fi
 fi
   
 SHOW_LOADERS
@@ -1668,7 +1928,6 @@ ADVANCED_MENUE(){
 }
 ##################### Детект раскладки  и адаптация ввода для двухбайтовых UTF-8  ####################################################################################################
 SET_INPUT(){
-stop="1"; DEBUG
 
 layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
 xkbs=1
@@ -1833,7 +2092,7 @@ CHECK_HOTPLUG_PARTS
 done
 SET_INPUT
 else
-printf '\033[1B'
+if [[ $CheckLoaders = 1 ]]; then printf '\033[1B' ; fi
 READ_TWO_SYMBOLS; sym=2
 fi
 printf "\033[?25l\033[1D"
