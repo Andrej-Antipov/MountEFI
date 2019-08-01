@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7"
-edit_vers="010"
+edit_vers="011"
 ##################################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -14,7 +14,7 @@ if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
 #echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
-echo "usblist = ""${usblist[@]}" >> ~/temp.txt
+#echo "usblist = ""${usblist[@]}" >> ~/temp.txt
 #echo "puid_list = ""${puid_list[@]}" >> ~/temp.txt
 #echo "old_puid_list = ""${old_puid_list[@]}" >> ~/temp.txt
 #echo "sata_lines = "${sata_lines} >> ~/temp.txt
@@ -26,14 +26,14 @@ echo "pos = "$pos >> ~/temp.txt
 #echo "match = "$match >> ~/temp.txt
 #echo "n = "$n >> ~/temp.txt
 #echo "i = "$i >> ~/temp.txt
-#echo "lines = "$lines >> ~/temp.txt
-echo "usb_string = "$usb_string >> ~/temp.txt
-echo "drives_string = "$usb_string >> ~/temp.txt
+echo "lines = "$lines >> ~/temp.txt
+#echo "usb_string = "$usb_string >> ~/temp.txt
+#echo "drives_string = "$usb_string >> ~/temp.txt
 #echo "posi = "$posi >> ~/temp.txt
 echo "dlist = *"${dlist[@]}"*" >> ~/temp.txt
 #echo "ilist/n = *"${ilist[$n]}"*" >> ~/temp.txt
 echo "ilist  = "${ilist[@]}"*" >> ~/temp.txt
-echo "dfdstring = *"$dfdstring"*" >> ~/temp.txt
+#echo "dfdstring = *"$dfdstring"*" >> ~/temp.txt
 echo "string = *"$string"*" >> ~/temp.txt
 
 printf '............................................................\n\n' >> ~/temp.txt
@@ -56,7 +56,8 @@ fi
 # Исправление позиции курора при вводе по 2 байта, при выключенной функции A.
 # Исправление в разделении буферов экрана для функции UPDATE_SCREEN_BUFFER
 # Фильтр DMG переделан для исключения других образов дисков
-# Изменения форматирования вывода. Переделка строки 2.   
+# Изменения форматирования вывода. Переделка строки 2.  
+# Исправление - подсчёт строк при обновлении экрана с DMG 
 
 
 
@@ -762,7 +763,7 @@ CHECK_USB(){
 
 if [[ ! $posrm = 0 ]]; then
                 usb=0
-                for (( i=0; i<$posrm; i++ ))
+                for (( i=0; i<=$posrm; i++ ))
                 do
                 if [[ "${dstring}" = "${rmlist[$i]}" ]]; then usb=1; break; fi
                 done                
@@ -836,12 +837,6 @@ GETARR(){
 
 GET_EFI_S
 
-GET_SKEYS
-if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
-let "lines=lines+pos"
-if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
-lists_updated=1
-
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos
 		num=0
@@ -874,6 +869,13 @@ if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
 		let "var0--"
 		let "num++"
 	done
+
+GET_SKEYS
+
+if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
+let "lines=lines+pos"
+if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
+lists_updated=1
 fi
 
 
@@ -1673,9 +1675,7 @@ dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 
 CHECK_USB
 
-
-
- clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
+clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 
 
 
