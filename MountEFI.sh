@@ -1,8 +1,8 @@
 #!/bin/bash
 
 ############################################################################## Mount EFI #########################################################################################################################
-prog_vers="1.8"
-edit_vers="009"
+prog_vers="1.7"
+edit_vers="010"
 ##################################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -13,20 +13,22 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
-echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
+#echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
 echo "usblist = ""${usblist[@]}" >> ~/temp.txt
-echo "puid_list = ""${puid_list[@]}" >> ~/temp.txt
-echo "old_puid_list = ""${old_puid_list[@]}" >> ~/temp.txt
+#echo "puid_list = ""${puid_list[@]}" >> ~/temp.txt
+#echo "old_puid_list = ""${old_puid_list[@]}" >> ~/temp.txt
 #echo "sata_lines = "${sata_lines} >> ~/temp.txt
 #echo "usb_lines = "${usb_lines} >> ~/temp.txt
 #echo "screen_buffer = ""$screen_buffer" >> ~/temp.txt
 #echo "usb_screen_buffer = ""$usb_screen_buffer" >> ~/temp.txt
+#echo $usb_string >> ~/temp.txt
 echo "pos = "$pos >> ~/temp.txt
-echo "match = "$match >> ~/temp.txt
+#echo "match = "$match >> ~/temp.txt
 #echo "n = "$n >> ~/temp.txt
 #echo "i = "$i >> ~/temp.txt
 #echo "lines = "$lines >> ~/temp.txt
 echo "usb_string = "$usb_string >> ~/temp.txt
+echo "drives_string = "$usb_string >> ~/temp.txt
 #echo "posi = "$posi >> ~/temp.txt
 echo "dlist = *"${dlist[@]}"*" >> ~/temp.txt
 #echo "ilist/n = *"${ilist[$n]}"*" >> ~/temp.txt
@@ -42,7 +44,7 @@ fi
 #########################################################################################################################################
 
 
-############################ Mount EFI Master v.1.8 edit 009
+############################ Mount EFI Master v.1.7 edit 010
 # Разделение данных на SATA и USB для отдельного отображения
 # Исправление показывать заголовок USB, если USB не входит в список отображаемых 
 # Начало переделки функции сканирования разделов в GET_EFI_S
@@ -53,6 +55,9 @@ fi
 # Исправление ошибки списка string при занесении в него USB
 # Исправление позиции курора при вводе по 2 байта, при выключенной функции A.
 # Исправление в разделении буферов экрана для функции UPDATE_SCREEN_BUFFER
+# Фильтр DMG переделан для исключения других образов дисков
+# Изменения форматирования вывода. Переделка строки 2.   
+
 
 
 
@@ -682,7 +687,7 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
                if [[  $old_puid_count -lt $puid_count ]]; then 
                        
                     ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-                    disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+                    disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
                fi
                     
@@ -719,7 +724,7 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
         if [[ ! $old_uuid_count = $uuid_count ]]; then
             if [[  $old_uuid_count -lt $uuid_count ]]; then 
                ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-                    disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+                    disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
             fi
                 diff_uuid=()
@@ -768,63 +773,42 @@ GET_EFI_S(){
 
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 usb_iomedia=`ioreg -c IOUSB | tr -d '"|+{}\t'`
-#string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-efi_string=`echo "$ioreg_iomedia" | grep -v "Statistics = " |  grep -i -A 22 "EFI System Partition" | grep -A 10 -B 10 "Removable = No" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-rem_string=`echo "$ioreg_iomedia" | grep -v "Statistics = " | grep -A 22 "<class IOMedia," | grep -A 10 -B 10 "Removable = Yes" | grep -A 5 -B 5  "Whole = No" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
-disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+
+string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
+syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
 drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
-drives_string=`echo "$drives_iomedia" | grep -v "Statistics = "  | grep -A 10 -B 10 "Removable = No" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 removables=`echo "$drives_iomedia" | grep -A 10 -B 10 "Removable = Yes" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | cut -f2 -d "=" | tr -d " " | tr "\n" ";"`
-IFS=';'; dmlist=($drives_string); ilist=($disk_images); remlist=($rem_string); unset IFS; posd=${#dmlist[@]}; posi=${#ilist[@]}; posrem=${#remlist[@]}
-usblist=()
-if [[ ! $posi = 0 ]]; then 
-for (( i=0; i<$posrem; i++ )); do
-    dmstring=`echo ${remlist[$i]} | rev | cut -f2-3 -d"s" | rev`
-    match=0
-        for (( n=0; n<=$posi; n++ )); do
-                if [[ "$dmstring" = "${ilist[$n]}" ]]; then match=1; break; fi
-        done
-                if [[ ! $match = 1 ]]; then usblist+=( ${remlist[$i]} ); fi
-    done
-    else
-      usblist=( ${remlist[@]} )
-fi
+drives_string=`echo "$drives_iomedia" | grep -v "Statistics = "  | grep -A 10 -B 10 "Removable = No" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' '\n' | sort -u | tr '\n' ';'`
+IFS=';'; dlist=($string); dmlist=($drives_string); ilist=($disk_images); unset IFS; pos=${#dlist[@]}; posd=${#dmlist[@]}; posi=${#ilist[@]}; posrm=${#tmlist[@]}
+
 usb_string=""
 for (( i=0; i<$posd; i++ )); do
 dmname=`echo "$drives_iomedia" | grep -B 10 ${dmlist[$i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 #usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice," | grep -m 1 -w "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
 usbname=`echo "$usb_iomedia" | grep  "<class IOUSBHostDevice," | grep -m 1 -wo "$dmname"`
 if [[ "$usbname" = "$dmname" ]]; then 
-usb_string+=`echo "$ioreg_iomedia" | egrep -A 22 "<class IOMedia," | grep -A 5 -B 5  "Whole = No" | grep "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
+usb_string+=`echo "$ioreg_iomedia" | egrep -A 22 "<class IOMedia," | grep -A 5 -B 5  "Whole = No" | grep  "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
 removables+="${dmlist[$i]}"";"
+else
+dmname=`echo "$dmname" | tr ' ' '|'`
+usbname=""
+usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice," | egrep -m 1 "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
+if [[ ! $usbname = "" ]]; then
+usb_string+=`echo "$ioreg_iomedia" | egrep -A 22 "<class IOMedia," | grep -A 5 -B 5  "Whole = No" | grep -m 1 "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
+removables+="${dmlist[$i]}"";" 
+fi
 fi
 done 
 
+IFS=';'; tmlist=($removables); unset IFS; posrm=${#tmlist[@]}
 
-usb=0
-string="$efi_string"";"
-if [[ ! "${#usblist[@]}" = 0 ]]; then 
-    for (( i=0; i<${#usblist[@]}; i++ )); do
-        string+="${usblist[$i]}"";"
-    done
-    usb=1
-fi
-if [[ ! "$usb_string" = "" ]]; then string+="$usb_string"; usb=1; fi
-syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
-
-
-IFS=';' 
-dlist=($string)
-tmlist=($removables)
-unset IFS;
-pos=${#dlist[@]}
-posrm=${#tmlist[@]}
 if [[ ! $posi = 0 ]]; then
         if [[ ! $posrm = 0 ]]; then
             unset rmlist
                 for (( i=0; i<$posrm; i++ )); do
                     match=0
-                        for (( n=0; n<=$posi; n++ )); do
+                        for (( n=0; n<$posi; n++ )); do
                             if [[ "${ilist[$n]}" = "${tmlist[$i]}" ]]; then match=1;  break; fi
                         done
                         if [[ $match = 0 ]]; then rmlist+=( ${tmlist[$i]} );  fi
@@ -836,8 +820,8 @@ if [[ ! $posi = 0 ]]; then
             rmlist=( ${tmlist[@]} )
         fi
 fi
-#if [[ $posrm = 0 ]]; then usb=0
-#fi
+
+if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
 sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
 
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
@@ -1188,8 +1172,8 @@ nogetlist=1
 
 UNMOUNTS(){
 
+GETARR
 
-		GETARR
 var1=$pos
 num=0
 spin='-\|/'
@@ -1281,9 +1265,9 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
 
 
     if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.14)      *******\n\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
 	                 fi
                     	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		
@@ -1496,14 +1480,10 @@ sata_lines=0
 usb_lines=0
 
 
-			if [[ $loc = "ru" ]]; then
-	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n'
-
-	printf '\n\n      0)  поиск разделов ..... '
-		else
-	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n'
-
-	printf '\n\n      0)  updating partitions list ..... '
+		if [[ $loc = "ru" ]]; then
+    printf '\n\n      0)  поиск разделов ..... '
+        else
+    printf '\n\n      0)  updating partitions list ..... '
         fi
 
 
@@ -1595,31 +1575,37 @@ printf "\r\033[3A"
 
 
 		if [[ $loc = "ru" ]]; then
-	printf '  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
-	printf '     '
-                if [[ $CheckLoaders = 0 ]]; then
+            if [[ $CheckLoaders = 0 ]]; then
+                printf '\n\n\n      0)  повторить поиск разделов                     "+" - подключенные  \n\n'
+	            printf '     '
 	            printf '.%.0s' {1..32} 
                 printf ' SATA '
                 printf '.%.0s' {1..30}
+                printf '\n'
                 else
+                printf '\n\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n'
+	            printf '     '
                 printf '.%.0s' {1..36}
                 printf ' SATA '
                 printf '.%.0s' {1..34}
-                fi
-	printf '\n\n      0)  повторить поиск разделов\n' 
+                printf '\n'
+                fi 
 		else
-	printf '   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
-	printf '     '
-                if [[ $CheckLoaders = 0 ]]; then
+	         if [[ $CheckLoaders = 0 ]]; then
+                printf '\n\n\n      0)  update EFI partitions list                        "+" - mounted \n\n' 
+	            printf '     '
 	            printf '.%.0s' {1..32} 
                 printf ' SATA '
                 printf '.%.0s' {1..30}
+                printf '\n'
                 else
+                printf '\n\n\n      0)  update EFI partitions list                              "+" - mounted \n\n' 
+	            printf '     '
                 printf '.%.0s' {1..36}
                 printf ' SATA '
                 printf '.%.0s' {1..34}
+                printf '\n'
                 fi
-	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
 echo "${screen_buffer}"
@@ -1712,33 +1698,42 @@ fi
 
 
 		if [[ $loc = "ru" ]]; then
-        	printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
-	printf '\n  Подключить (открыть) EFI разделы: (  +  уже подключенные) \n' 
-	printf '     '
-               if [[ $CheckLoaders = 0 ]]; then
+             if [[ $CheckLoaders = 0 ]]; then
+        	    printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.14)      *******\n'
+                printf '\n\n      0)  повторить поиск разделов                     "+" - подключенные  \n\n' 
+	            printf '     '
 	            printf '.%.0s' {1..32} 
                 printf ' SATA '
                 printf '.%.0s' {1..30}
+                printf '\n'
                 else
+                printf '\n*********        Программа монтирует EFI разделы в Mac OS (X.11 - X.14)        *********\n'
+                printf '\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n' 
+	            printf '     '
                 printf '.%.0s' {1..36}
                 printf ' SATA '
                 printf '.%.0s' {1..34}
+                printf '\n'
                 fi
-	printf '\n\n      0)  повторить поиск разделов\n' 
+
 			else
-        	printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
-	printf '\n   Mount (open folder) EFI partitions:  (  +  already mounted) \n' 
-	printf '     '
-                if [[ $CheckLoaders = 0 ]]; then
+        	printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+
+             if [[ $CheckLoaders = 0 ]]; then
+                printf '\n\n      0)  update EFI partitions list                        "+" - mounted \n\n'  
+	            printf '     '
 	            printf '.%.0s' {1..32} 
                 printf ' SATA '
                 printf '.%.0s' {1..30}
+                printf '\n'
                 else
+                printf '\n\n      0)  update EFI partitions list                              "+" - mounted \n\n'  
+	            printf '     '
                 printf '.%.0s' {1..36}
                 printf ' SATA '
                 printf '.%.0s' {1..34}
+                printf '\n'
                 fi
-	printf '\n\n      0)  update EFI partitions list             \n' 
         fi
 
 
@@ -1837,40 +1832,7 @@ fi
 }
 # Конец определения функции UPDATELIST ######################################################
 
-##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
-#UPDATE_SCREEN_BUFFER(){
-#unset ldlist; unset ldnlist
-#var0=$pos; num=0; ch1=0
-#unset string
-#while [ $var0 != 0 ] 
-#do 
-#pnum=${nlist[num]}
-#string=`echo ${dlist[$pnum]}`
-#	let "ch1++"
-#mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-#if [[ $mcheck = "Yes" ]]; then
 
-#        FIND_LOADERS        
-#        if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
-#            check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
-#            if [[ "${check}" = "" ]]; then
-##        screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1) ...  /$ch1)   +  /" )
-#     fi
-
-#else
-#            check=$( echo "${screen_buffer}" | grep "$ch1) ..." )
-#           if [[ ! "${check}" = "" ]]; then 
-#        screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
-#    fi
-#fi
-#let "num++"
-#let "var0--"
-#done
-
-
-
-#}
-############################ конец определения функции UPDATE PARTS ############################################
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
@@ -2052,6 +2014,7 @@ printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
 printf "\r\n\033[3A\033[49C"
+if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 IFS="±"; read   -n 1 -t 1  choice1 ; unset IFS 
 if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
@@ -2079,6 +2042,7 @@ printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
 printf "\r\n\033[3A\033[49C"
+if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 CHECK_HOTPLUG_DISKS
 if [[ $hotplug = 1 ]]; then break; fi
 CHECK_HOTPLUG_PARTS
@@ -2113,7 +2077,7 @@ if [[ $order = 3 ]]; then
     if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до '$schs' (или  C, O, S, I, Q ):   ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  C, O, S, I, Q ):   ' ; printf '                           '
+printf '  Enter a number from 0 to '$schs' (or C, O, S, I, Q ):   ' ; printf '                            '
     fi
         else
             let "schs=$ch-1"
@@ -2222,14 +2186,26 @@ chs=0
 nogetlist=0
 
 SET_INPUT
+
 while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
-        clear && printf '\e[3J'
+        #clear && printf '\e[3J'
+        GET_LOADERS
+        if [[ ! $CheckLoaders = 0 ]]; then col=88; ldcorr=8; else col=80; ldcorr=2;  fi 
+        clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 
 	if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n'
-			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+        if [[ $CheckLoaders = 0 ]]; then
+            printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.14)      *******\n'
+        else
+            printf '\n*********        Программа монтирует EFI разделы в Mac OS (X.11 - X.14)        *********\n'
+        fi
+    else
+        if [[ $CheckLoaders = 0 ]]; then
+            printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n'
+        else
+            printf '\n*********      This program mounts EFI partitions on Mac OS (X.11 - X.14)      *********\n'
+        fi
 	fi
 fi
         unset nlist
