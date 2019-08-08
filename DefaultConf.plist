@@ -59,7 +59,7 @@
 		<key>GreenField</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>{0, 29812, 0}</string>
+			<string>{1028, 12850, 10240}</string>
 			<key>FontName</key>
 			<string>SF Mono</string>
 			<key>FontSize</key>
