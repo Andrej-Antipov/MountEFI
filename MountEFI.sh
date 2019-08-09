@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7"
-edit_vers="012"
+edit_vers="013"
 ##################################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -44,7 +44,7 @@ fi
 #########################################################################################################################################
 
 
-############################ Mount EFI Master v.1.7 edit 012
+############################ Mount EFI Master v.1.7 edit 013
 # Разделение данных на SATA и USB для отдельного отображения
 # Исправление - не показывать заголовок USB, если USB не входит в список отображаемых 
 # Начало переделки функции сканирования разделов в GET_EFI_S
@@ -60,6 +60,7 @@ fi
 # Исправление подсчёта строк GETARR перед обновлением экрана с DMG 
 # Исправление подсчёта строк GETARR перед обновлением экрана с  USB который не попадёт в список отображения
 # Изменене бэкграунда темы GreenField
+# Коррекция для старых машин с ICH7 чипсетом
 
 
 
@@ -777,6 +778,9 @@ GET_EFI_S(){
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 usb_iomedia=`ioreg -c IOUSB | tr -d '"|+{}\t'`
 
+#ioreg_iomedia=`cat /Users/andrej/455608_IO_G31/IOreg.txt | tr -d '"|+{}\t'`
+#usb_iomedia=`cat /Users/andrej/455608_IO_G31/IOUSB.txt | tr -d '"|+{}\t'`
+
 string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
 syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
@@ -788,6 +792,7 @@ IFS=';'; dlist=($string); dmlist=($drives_string); ilist=($disk_images); unset I
 usb_string=""
 for (( i=0; i<$posd; i++ )); do
 dmname=`echo "$drives_iomedia" | grep -B 10 ${dmlist[$i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
 #usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice," | grep -m 1 -w "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
 usbname=`echo "$usb_iomedia" | grep  "<class IOUSBHostDevice," | grep -m 1 -wo "$dmname"`
 if [[ "$usbname" = "$dmname" ]]; then 
