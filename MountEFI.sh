@@ -1,69 +1,9 @@
 #!/bin/bash
 
 ############################################################################## Mount EFI #########################################################################################################################
-prog_vers="1.7"
-edit_vers="013"
+prog_vers="1.7.2"
+edit_vers="002"
 ##################################################################################################################################################################################################################
-
-# функция отладки ##################################################################################################
-demo1="0"
-deb=0
-
-DEBUG(){
-if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
-printf '............................................................\n' >> ~/temp.txt
-#echo "diff_list = ""${diff_list[@]}" >> ~/temp.txt
-#echo "usblist = ""${usblist[@]}" >> ~/temp.txt
-#echo "puid_list = ""${puid_list[@]}" >> ~/temp.txt
-#echo "old_puid_list = ""${old_puid_list[@]}" >> ~/temp.txt
-#echo "sata_lines = "${sata_lines} >> ~/temp.txt
-#echo "usb_lines = "${usb_lines} >> ~/temp.txt
-#echo "screen_buffer = ""$screen_buffer" >> ~/temp.txt
-#echo "usb_screen_buffer = ""$usb_screen_buffer" >> ~/temp.txt
-#echo $usb_string >> ~/temp.txt
-echo "pos = "$pos >> ~/temp.txt
-#echo "match = "$match >> ~/temp.txt
-#echo "n = "$n >> ~/temp.txt
-#echo "i = "$i >> ~/temp.txt
-echo "lines = "$lines >> ~/temp.txt
-#echo "usb_string = "$usb_string >> ~/temp.txt
-#echo "drives_string = "$usb_string >> ~/temp.txt
-#echo "posi = "$posi >> ~/temp.txt
-echo "dlist = *"${dlist[@]}"*" >> ~/temp.txt
-#echo "ilist/n = *"${ilist[$n]}"*" >> ~/temp.txt
-echo "ilist  = "${ilist[@]}"*" >> ~/temp.txt
-#echo "dfdstring = *"$dfdstring"*" >> ~/temp.txt
-echo "string = *"$string"*" >> ~/temp.txt
-
-printf '............................................................\n\n' >> ~/temp.txt
-sleep 0.2
-read -n 1 -s
-fi
-}
-#########################################################################################################################################
-
-
-############################ Mount EFI Master v.1.7 edit 013
-# Разделение данных на SATA и USB для отдельного отображения
-# Исправление - не показывать заголовок USB, если USB не входит в список отображаемых 
-# Начало переделки функции сканирования разделов в GET_EFI_S
-# Исправление - показывать разделы на USB HDD
-# Исправление - очистка string от DMG
-# Устранение реакции на подключение/отключение DMG
-# Исправление в начальном определении числа lines 
-# Исправление ошибки списка string при занесении в него USB
-# Исправление позиции курора при вводе по 2 байта, при выключенной функции A.
-# Исправление в разделении буферов экрана для функции UPDATE_SCREEN_BUFFER
-# Фильтр DMG переделан для исключения других типов образов дисков
-# Изменения форматирования вывода. Переделка строки 2.  
-# Исправление подсчёта строк GETARR перед обновлением экрана с DMG 
-# Исправление подсчёта строк GETARR перед обновлением экрана с  USB который не попадёт в список отображения
-# Изменене бэкграунда темы GreenField
-# Коррекция для старых машин с ICH7 чипсетом
-
-
-
 
 
 SHOW_VERSION(){
@@ -400,7 +340,7 @@ do
 fi
 
 if  [[ $autom_open = 1 ]]; then 
-#				vname=`diskutil info ${alist[$posa]} | grep "Mount Point:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev`
+
                 string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
                 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 				open "$vname"
@@ -443,7 +383,7 @@ function set_foreground_color {
     color=$(get_apple_color $*)
     if [ "$color" != "" ] ; then
         osascript -e "tell application \"Terminal\" to set normal text color of window 1 to ${color}"
-#        echo "Normal test color set to: $*: $color"
+
     fi
 }    
 
@@ -451,7 +391,7 @@ function set_background_color {
     color=$(get_apple_color $*)
     if [ "$color" != "" ] ; then
         osascript -e "tell application \"Terminal\" to set background color of window 1 to ${color}"
-#        echo "Background color set to: $*: $color"
+
     fi
 }    
   
@@ -527,21 +467,21 @@ if [[ $strng = "false" ]]; then ShowKeys=0; fi
 #############################################################################################################################
 MyTTY=`tty | tr -d " dev/\n"`
 #Если мы на первой консоли - значит есть нулевая и её время жизни надо проверить
-if [[ ${MyTTY} = "ttys001" ]]; then
+#if [[ ${MyTTY} = "ttys001" ]]; then
 # Получаем uid и pid первой консоли
-MY_uid=`echo $UID`; PID_ttys001=`echo $$`
+#MY_uid=`echo $UID`; PID_ttys001=`echo $$`
 # получаем pid нулевой консоли
-temp=`ps -ef | grep ttys000 | grep $MY_uid`; PID_ttys000=`echo $temp | awk  '{print $2}'`
+#temp=`ps -ef | grep ttys000 | grep $MY_uid`; PID_ttys000=`echo $temp | awk  '{print $2}'`
 # вычисляем время жизни нашей консоли в секундах
-Time001=`ps -p $PID_ttys001 -oetime= | tr '-' ':' | awk -F: '{ total=0; m=1; } { for (i=0; i < NF; i++) {total += $(NF-i)*m; m *= i >= 2 ? 24 : 60 }} {print total}'`
+#Time001=`ps -p $PID_ttys001 -oetime= | tr '-' ':' | awk -F: '{ total=0; m=1; } { for (i=0; i < NF; i++) {total += $(NF-i)*m; m *= i >= 2 ? 24 : 60 }} {print total}'`
 # Вычисляем время жизни нулевой консоли в секундах
-Time000=`ps -p $PID_ttys000 -oetime= | tr '-' ':' | awk -F: '{ total=0; m=1; } { for (i=0; i < NF; i++) {total += $(NF-i)*m; m *= i >= 2 ? 24 : 60 }} {print total}'`
-	if [[ ${Time001} -le ${Time000} ]]; then 
-let "TimeDiff=Time000-Time001"
+#Time000=`ps -p $PID_ttys000 -oetime= | tr '-' ':' | awk -F: '{ total=0; m=1; } { for (i=0; i < NF; i++) {total += $(NF-i)*m; m *= i >= 2 ? 24 : 60 }} {print total}'`
+#	if [[ ${Time001} -le ${Time000} ]]; then 
+#let "TimeDiff=Time000-Time001"
 # Здесь задаётся постоянная в секундах по которой можно считать что нулевая консоль запущена сразу перед первой и потому её надо закрыть
-		if [[ ${TimeDiff} -le 4 ]]; then osascript -e 'tell application "Terminal" to close second  window'; fi
-	fi	
-fi
+#		if [[ ${TimeDiff} -le 4 ]]; then osascript -e 'tell application "Terminal" to close second  window'; fi
+#	fi	
+#fi
 term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
 ##############################################################################################################################
 GET_LOCALE(){
@@ -631,8 +571,7 @@ let "TTYcount=AllTTYcount-MyTTYcount"
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
 cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
-#rm -f   ~/.MountEFItemp.txt; rm -f ~/.MountEFItemp2.txt; rm -f ~/.SetupMountEFItemp.txt; rm -f ~/.SetupMountEFItemp2.txt
-#rm -f ~/.SetupMountEFIAtemp.txt
+
 #####################################################################################################################
 CHECK_TTY_COUNT	
 if [[ ${TTYcount} = 0  ]]; then   osascript -e 'quit app "terminal.app"' & exit
@@ -759,9 +698,6 @@ if [[ $strng = "false" ]]; then CheckLoaders=0
 fi
 }
 
-# Заполнение массивов dlist и nlist. Получаем списки EFI разделов - dlist
-# И список указателей на валидные значения в нём - nlist
-
 CHECK_USB(){
 
 if [[ ! $posrm = 0 ]]; then
@@ -776,10 +712,8 @@ if [[ ! $posrm = 0 ]]; then
 GET_EFI_S(){
 
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-usb_iomedia=`ioreg -c IOUSB | tr -d '"|+{}\t'`
-
-#ioreg_iomedia=`cat /Users/andrej/455608_IO_G31/IOreg.txt | tr -d '"|+{}\t'`
-#usb_iomedia=`cat /Users/andrej/455608_IO_G31/IOUSB.txt | tr -d '"|+{}\t'`
+#usb_iomedia=`ioreg -c IOUSB | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice,"`
+usb_iomedia=`ioreg -p IOUSB | tr -d '"|+{}\t'`
 
 string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
@@ -792,18 +726,18 @@ IFS=';'; dlist=($string); dmlist=($drives_string); ilist=($disk_images); unset I
 usb_string=""
 for (( i=0; i<$posd; i++ )); do
 dmname=`echo "$drives_iomedia" | grep -B 10 ${dmlist[$i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+
 if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
-#usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice," | grep -m 1 -w "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
-usbname=`echo "$usb_iomedia" | grep  "<class IOUSBHostDevice," | grep -m 1 -wo "$dmname"`
+usbname=`echo "$usb_iomedia" | grep -m 1 -wo "$dmname"`
 if [[ "$usbname" = "$dmname" ]]; then 
-usb_string+=`echo "$ioreg_iomedia" | egrep -A 22 "<class IOMedia," | grep -A 5 -B 5  "Whole = No" | grep  "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
+usb_string+=`echo "$drives_iomedia" | grep -A 5 -B 5  "Whole = No" | grep  "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
 removables+="${dmlist[$i]}"";"
 else
 dmname=`echo "$dmname" | tr ' ' '|'`
 usbname=""
-usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice," | egrep -m 1 "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
+usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t'  | egrep -m 1 "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
 if [[ ! $usbname = "" ]]; then
-usb_string+=`echo "$ioreg_iomedia" | egrep -A 22 "<class IOMedia," | grep -A 5 -B 5  "Whole = No" | grep -m 1 "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
+usb_string+=`echo "$drives_iomedia"  | grep -A 5 -B 5  "Whole = No" | grep -m 1 "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
 removables+="${dmlist[$i]}"";" 
 fi
 fi
@@ -841,6 +775,10 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
 }
 
 GETARR(){
+
+if [[ $hotplug = 1 ]]; then
+    if [[ $cpu_family = 0 ]]; then sleep 2; fi
+fi
 
 GET_EFI_S
 
@@ -893,7 +831,6 @@ lists_updated=1
 fi
 
 
-#rnlist - указатель на USB в списе разделов
 
 	if [[ $pos = 0 ]]; then
 clear
@@ -1251,7 +1188,7 @@ if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]
         flag=0
 fi
 
-
+cpu_family=1
 
 GETARR
 
@@ -2195,6 +2132,12 @@ nogetlist=1
 ############################ MAIN MAIN MAIN ################################################
 GET_USER_PASSWORD
 
+cpu_family=$(sysctl -n machdep.cpu.brand_string | grep -)
+if [[ $cpu_family = "" ]]; then cpu_family=0
+ else
+    cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f1 -d"-" | cut -c1)
+fi
+
 chs=0
 
 nogetlist=0
@@ -2203,7 +2146,7 @@ SET_INPUT
 
 while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
-        #clear && printf '\e[3J'
+        clear && printf '\e[3J'
         GET_LOADERS
         if [[ ! $CheckLoaders = 0 ]]; then col=88; ldcorr=8; else col=80; ldcorr=2;  fi 
         clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
