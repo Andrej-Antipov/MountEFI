@@ -94,6 +94,15 @@
 	<string></string>
 	<key>ShowKeys</key>
 	<true/>
+	<key>SysLoadAM</key>
+	<dict>
+		<key>Enabled</key>
+		<false/>
+		<key>Open</key>
+		<false/>
+		<key>PartUUIDs</key>
+		<string> </string>
+	</dict>
 	<key>Theme</key>
 	<string>system</string>
 </dict>

@@ -2,9 +2,13 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="003"
+edit_vers="004"
 ##################################################################################################################################################################################################################
 
+
+############################ Mount EFI Master v.1.7.2 edit 004
+# Проверка конфига и исправление для совместимости с функцией автомонтирования EFI при старте системы
+# 
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
@@ -158,6 +162,14 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>SysLoadAM</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>system</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
@@ -225,6 +237,15 @@ if [[ ! $strng = "AutoMount" ]]; then
 			plutil -insert AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
 			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>SysLoadAM</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "SysLoadAM" ]]; then 
+			plutil -insert SysLoadAM -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+			plutil -insert SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+			plutil -insert SysLoadAM.Open -bool NO ${HOME}/.MountEFIconf.plist
+            plutil -insert SysLoadAM.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
             cache=0
 fi
 
