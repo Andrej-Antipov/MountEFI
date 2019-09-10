@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="015"
+s_edit_vers="017"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 015 master
+# MountEFI версия скрипта настроек 1.6. 017 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -21,7 +21,37 @@ s_edit_vers="015"
 # 013 - правки для совместимости со старым конфигом
 # 014 - правка функции заполнения sh для использования связки ключей
 # 015 - исправление ошибок с путями при работе с облаком
+# 016 - добавлена функция зарузки конфига из файла через GUI
+# 017 - добавлена функция экспорта конфига через GUI
 #############################################################################################################################################################################################################
+
+# функция отладки ##################################################################################################
+
+demo1="0"
+deb=0
+
+DEBUG(){
+if [[ ! $deb = 0 ]]; then
+printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
+printf '............................................................\n' >> ~/temp.txt
+echo "filecounts = "$filecounts >> ~/temp.txt
+echo "errorep = ""${errorep}" >> ~/temp.txt
+
+echo "filepath = "$filepath >> ~/temp.txt
+echo "folderpath = "$folderpath >> ~/temp.txt
+
+echo "filename = "$filename >> ~/temp.txt
+echo "extension = "$extension >> ~/temp.txt
+
+echo "filename_1 = ""${filename_1}" >> ~/temp.txt
+
+
+printf '............................................................\n\n' >> ~/temp.txt
+sleep 0.2
+read -n 1 -s
+fi
+}
+########################################################################################################################################
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
@@ -471,6 +501,7 @@ fi
 UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
+CHECK_CONFIG(){
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
@@ -561,6 +592,11 @@ if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
             zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
             rm -R ${HOME}/.MountEFIconfBackups
 fi
+
+}
+
+CHECK_CONFIG
+
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG(){
 hotplug=0
@@ -2087,12 +2123,122 @@ done
 unset inputs
 }
 
+SET_PLIST(){
+filename_1=$(echo $filename | tr -d '.')
+
+if [[ "${filename_1}" = "MountEFIconfplist" ]]; then
+
+mv -f "${filepath}" ${HOME}/.MountEFIconf.plist
+
+UPDATE_CACHE
+CHECK_CONFIG
+            else
+                
+                errorep=1
+fi
+
+}
+
+SET_ZIP(){
+unzip  -o -qq "${filepath}" -d ~/.temp2
+
+filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d " \t\n")
+     
+     if [[ ! $filecounts = 1 ]]; then
+           
+           errorep=2 
+     else
+            
+           filename=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | tr -d ' \n\t')
+            
+           if [[ $filename = "" ]]; then 
+            
+           errorep=3
+           else
+               
+                mv -f ~/.temp2/*/*/"${filename}" ${HOME}/.MountEFIconf.plist
+                
+                UPDATE_CACHE
+                CHECK_CONFIG
+                
+            fi
+         fi
+rm -r ~/.temp2
+
+}
+
 #######################################################################################################################################################################
+
+DOWNLOAD_CONFIG_FROM_FILE(){
+errorep=0
+
+if filepath=$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file)'); then 
+        
+        filepath=$(echo -n "${filepath}" | sed "s/ /\\\ /g" | xargs )
+        
+        filename="${filepath##*/}"; extension="${filename##*.}"
+        
+     if [[ "${extension}" = "plist" ]]; then  SET_PLIST; 
+            else
+                if [[ "${extension}" = "zip" ]]; then  SET_ZIP; 
+                    else
+                        
+                        errorep=1
+                 fi
+       fi
+    
+fi >/dev/null 2>&1
+
+if [[ $loc = "ru" ]]; then
+if [[ $errorep = 0 ]]; then printf '\n\n  Новый файл конфигурации установлен              '; sleep 2; fi
+if [[ $errorep = 1 ]]; then printf '\n\n  Файл не является файлом конфигурации MountEFI   '; sleep 2; fi
+if [[ $errorep = 2 ]]; then printf '\n\n  В архиве нет файла или больше одного файла. Такой импорт не поддерживается '; sleep 2; fi
+else
+if [[ $errorep = 0 ]]; then printf '\n\n  New configuration file installed                '; sleep 2; fi
+if [[ $errorep = 1 ]]; then printf '\n\n  The file is not a MountEFI configuration file   '; sleep 2; fi
+if [[ $errorep = 2 ]]; then printf '\n\n  There is no file in the archive or more than one file. This import is not supported. '; sleep 2; fi
+fi
+
+
+}
+
+UPLOAD_CONFIG_TO_FILE(){
+
+if folderpath=$(osascript -e 'tell application "Terminal" to return POSIX path of (choose folder)'); then 
+        
+        folderpath=$(echo -n "${folderpath}" | sed "s/ /\\\ /g" | xargs )
+        
+        if [[ -f ${HOME}/MountEFIconf.plist ]]; then rm ${HOME}/MountEFIconf.plist; fi
+        cp ${HOME}/.MountEFIconf.plist ${HOME}/MountEFIconf.plist
+        
+        if [[ -f ${HOME}/.MountEFIconf.zip ]]; then rm ${HOME}/.MountEFIconf.zip; fi
+        zip -X -qq ${HOME}/.MountEFIconf.zip ${HOME}/MountEFIconf.plist
+        rm ${HOME}/MountEFIconf.plist
+        
+        mv -f ${HOME}/.MountEFIconf.zip "${folderpath}"/MountEFIconf.zip
+        
+fi >/dev/null 2>&1
+
+if [[ $loc = "ru" ]]; then
+if [[ -f "${folderpath}"/MountEFIconf.zip ]]; then printf '\n\n  Конфигурация успешно экспортирована в архиве   '; sleep 2 
+  else
+        printf '\n\n  Ошибка. Экспорт конфигурации не удался   '; sleep 2
+fi
+else
+if [[ -f "${folderpath}"/MountEFIconf.zip ]]; then printf '\n\n  Configuration exported to archive successfully   '; sleep 2 
+  else
+        printf '\n\n  Error. Export configuration failed   '; sleep 2
+fi
+fi
+        
+
+
+}
 
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlL]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeE]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2178,10 +2324,13 @@ printf ' 6) Пресет "'$itheme_set'" из '$pcount' встроенных'"%"
 printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n'
 printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)     \n'
 printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)     \n'
-printf ' A) Создать или править псевдонимы физических носителей                       \n'
 printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n'
-printf ' B) Резервное сохранение и восстановление настроек                              \n'
 printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n'
+printf ' A) Создать или править псевдонимы физических носителей                       \n'
+printf ' B) Резервное сохранение и восстановление настроек                              \n'
+printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n'
+printf ' E) Сохранить конфиг в файл (zip)                                               \n'
+
             else
 printf ' 0) Setup all parameters to defaults                                            \n'
 printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n'
@@ -2193,10 +2342,13 @@ printf ' 6) Theme preset "'$itheme_set'" of '$pcount' presets'"%"$btheme_corr"s"
 printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n'
 printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)            \n'
 printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)            \n'
-printf ' A) Create or edit aliases physical device/media                              \n'
 printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n'
-printf ' B) Backup and restore configuration settings                                   \n'
 printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n'
+printf ' A) Create or edit aliases physical device/media                              \n'
+printf ' B) Backup and restore configuration settings                                   \n'
+printf ' I) Import config from file (zip or plist)                                      \n'
+printf ' E) Upload config to file (zip)                                                 \n'
+
 
             fi
                     Lit="C"
@@ -3096,7 +3248,7 @@ theme="system"
 var4=0
 while [ $var4 != 1 ] 
 do
-lines=27; col=80
+lines=29; col=80
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
 UPDATE_SCREEN
@@ -3410,6 +3562,18 @@ if [[ $inputs = [dD] ]]; then
 ########################################################################################################################
 
 if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
+
+##############################################################################
+
+########################################################################################################################
+
+if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE; UPDATE_CACHE; clear; fi
+
+##############################################################################
+
+########################################################################################################################
+
+if [[ $inputs = [eE] ]]; then UPLOAD_CONFIG_TO_FILE;  fi
 
 ##############################################################################
 
