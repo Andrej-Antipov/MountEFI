@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="017"
+s_edit_vers="018"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 017 master
+# MountEFI версия скрипта настроек 1.6. 018 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -23,6 +23,7 @@ s_edit_vers="017"
 # 015 - исправление ошибок с путями при работе с облаком
 # 016 - добавлена функция зарузки конфига из файла через GUI
 # 017 - добавлена функция экспорта конфига через GUI
+# 018 - различные исправления и доработки
 #############################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -2175,10 +2176,10 @@ errorep=0
 if filepath=$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file)'); then 
         
         filepath=$(echo -n "${filepath}" | sed "s/ /\\\ /g" | xargs )
-        
         filename="${filepath##*/}"; extension="${filename##*.}"
         
-     if [[ "${extension}" = "plist" ]]; then  SET_PLIST; 
+     if [[ "${extension}" = "plist" ]]; then  SET_PLIST;
+ 
             else
                 if [[ "${extension}" = "zip" ]]; then  SET_ZIP; 
                     else
@@ -2186,6 +2187,8 @@ if filepath=$(osascript -e 'tell application "Terminal" to return POSIX path of 
                         errorep=1
                  fi
        fi
+
+else errorep=4
     
 fi >/dev/null 2>&1
 
@@ -2193,17 +2196,19 @@ if [[ $loc = "ru" ]]; then
 if [[ $errorep = 0 ]]; then printf '\n\n  Новый файл конфигурации установлен              '; sleep 2; fi
 if [[ $errorep = 1 ]]; then printf '\n\n  Файл не является файлом конфигурации MountEFI   '; sleep 2; fi
 if [[ $errorep = 2 ]]; then printf '\n\n  В архиве нет файла или больше одного файла. Такой импорт не поддерживается '; sleep 2; fi
+if [[ $errorep = 4 ]]; then printf '\n\n  Импорт конфигурации отменён                     '; sleep 2; fi
 else
 if [[ $errorep = 0 ]]; then printf '\n\n  New configuration file installed                '; sleep 2; fi
 if [[ $errorep = 1 ]]; then printf '\n\n  The file is not a MountEFI configuration file   '; sleep 2; fi
 if [[ $errorep = 2 ]]; then printf '\n\n  There is no file in the archive or more than one file. This import is not supported. '; sleep 2; fi
+if [[ $errorep = 4 ]]; then printf '\n\n  Configuration import canceled                   '; sleep 2; fi
 fi
 
 
 }
 
 UPLOAD_CONFIG_TO_FILE(){
-
+errorep=0
 if folderpath=$(osascript -e 'tell application "Terminal" to return POSIX path of (choose folder)'); then 
         
         folderpath=$(echo -n "${folderpath}" | sed "s/ /\\\ /g" | xargs )
@@ -2216,18 +2221,26 @@ if folderpath=$(osascript -e 'tell application "Terminal" to return POSIX path o
         rm ${HOME}/MountEFIconf.plist
         
         mv -f ${HOME}/.MountEFIconf.zip "${folderpath}"/MountEFIconf.zip
+
+else errorep=1
         
 fi >/dev/null 2>&1
 
 if [[ $loc = "ru" ]]; then
+    if [[ $errorep = 1 ]]; then printf '\n\n  Экспорт конфигурации отменён   '; sleep 2 
+        else
 if [[ -f "${folderpath}"/MountEFIconf.zip ]]; then printf '\n\n  Конфигурация успешно экспортирована в архиве   '; sleep 2 
   else
         printf '\n\n  Ошибка. Экспорт конфигурации не удался   '; sleep 2
 fi
+fi
 else
+    if [[ $errorep = 1 ]]; then printf '\n\n  Configuration export canceled   '; sleep 2 
+        else
 if [[ -f "${folderpath}"/MountEFIconf.zip ]]; then printf '\n\n  Configuration exported to archive successfully   '; sleep 2 
   else
         printf '\n\n  Error. Export configuration failed   '; sleep 2
+fi
 fi
 fi
         
@@ -3567,7 +3580,9 @@ if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
 
 ########################################################################################################################
 
-if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE; UPDATE_CACHE; clear; fi
+if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE; 
+    if [[ $errorep = 0 ]]; then UPDATE_CACHE; clear; fi
+fi
 
 ##############################################################################
 
