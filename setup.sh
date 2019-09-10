@@ -2,19 +2,24 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="009"
+s_edit_vers="014"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 009 master
+# MountEFI версия скрипта настроек 1.6. 014 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
-# 003 - переимеоание пункта 9 в A
+# 003 - переименование пункта 9 в A
 # 004 - добавление пункта 9 для функции автомонтирования при загрузке системы
 # 005 - реализация управления из меню конфигом для функции 9 автомонтирования при загрузке системы
 # 006 - проверка конфига и добавление пунктов для автозапуска при загрузке системы
-# 007 - добвить запрос пароля в функции 9
+# 007 - добавить запрос пароля в функции 9
 # 008 - добавлены установка и запуск сервиса SETUP_SYS_AUTOMOUNT
 # 009 - мелкие исправления форматирования
+# 010 - перенос хранения пароля в связку ключей
+# 011 - отображение пароля пользователя в списке звёздочками
+# 012 - при вооде пароля показывать звёздочки
+# 013 - правки для совместимости со старым конфигом
+# 014 - правка функции заполнения sh для использования связки ключей
 #############################################################################################################################################################################################################
 
 SHOW_VERSION(){
@@ -466,15 +471,21 @@ UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
 
+login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
+if [[ $login = "LoginPassword" ]]; then
+        mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $mypassword = "" ]]; then
+            if ! (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+                security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+            fi
+            plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        fi
+fi
+
 deleted=0
 if [[ $cache = 1 ]]; then
 strng=`echo "$MountEFIconf" | grep  "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
       if [[ ! $strng = "CurrentPreset" ]]; then
-        mypassword="0"
-        login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
-                if [[ $login = "LoginPassword" ]]; then
-        mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-                fi
         theme=`echo "$MountEFIconf" |  grep -A 1   "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
         rm ${HOME}/.MountEFIconf.plist; unset MountEFIconf; cache=0; deleted=1
     fi
@@ -489,9 +500,6 @@ if [[ ! $cache = 1 ]]; then
 fi
 
 if [[ $deleted = 1 ]]; then
-    if [[ ! $mypassword = 0 ]]; then 
-    plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist
-    fi
     plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
 fi
 
@@ -702,13 +710,53 @@ function set_font {
 }
 ##################################################################################################################################################
 
+ENTER_PASSWORD(){
+
+unset PASSWORD
+unset CHARCOUNT
+
+if [[ $loc = "ru" ]]; then
+echo -n "  Введите пароль: "
+else
+echo -n "  Enter password: "
+fi
+
+stty -echo
+sleep 0.8
+
+unset CHAR
+
+CHARCOUNT=0
+while IFS= read -p "$PROMPT" -r -s -n 1 CHAR
+do
+    # Enter - accept password
+    if [[ $CHAR == $'\0' ]] ; then
+        break
+    fi
+    # Backspace
+    if [[ $CHAR == $'\177' ]] ; then
+        if [ $CHARCOUNT -gt 0 ] ; then
+            CHARCOUNT=$((CHARCOUNT-1))
+            PROMPT=$'\b \b'
+            PASSWORD="${PASSWORD%?}"
+        else
+            PROMPT=''
+        fi
+    else
+        CHARCOUNT=$((CHARCOUNT+1))
+        PROMPT='*'
+        PASSWORD+="$CHAR"
+    fi
+done
+
+stty echo
+
+}
 
 
-# Установка/удаление пароля для sudo через конфиг
+# Установка/удаление пароля для sudo через связку ключей
 SET_USER_PASSWORD(){
-if [[ $cache = 1 ]]; then
-login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
-    if [[ $login = "LoginPassword" ]]; then
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then 
                 printf '\r'; printf "%"80"s"
                 printf '\r'
                 if [[ $loc = "ru" ]]; then
@@ -718,7 +766,7 @@ login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
                     fi
                 read -p "  (y/N) " -n 1 -r -s
                 if [[ $REPLY =~ ^[yY]$ ]]; then
-                plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+                security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
                 if [[ $loc = "ru" ]]; then
                 echo "  пароль удалён. "
                         else
@@ -730,21 +778,18 @@ login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
                 
                 printf '\r'; printf "%"80"s"
                 printf '\r'
-                    if [[ $loc = "ru" ]]; then
-                echo "  введите ваш пароль для постоянного хранения:"
-                        else
-                echo "  enter password to save it into this programm:"
-                    fi
-                printf '\n'
-                read -s mypassword
+                ENTER_PASSWORD
+                mypassword=$PASSWORD
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
                 if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                plutil -replace LoginPassword -string $mypassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+                security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
                 printf "\r\033[1A"
+                passl=`echo ${#mypassword}`
+                mypassword_set=$(echo $mypassword | tr -c '\n' "*")
                 if [[ $loc = "ru" ]]; then
-                printf '\n  пароль '$mypassword' сохранён. '
+                printf '\n  пароль '$mypassword_set' сохранён. '
                         else
-                printf '\n  password '$mypassword' saved. '
+                printf '\n  password '$mypassword_set' saved. '
                     fi
                 read -n 1 -s -t 1
                 else
@@ -755,49 +800,42 @@ login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
                 printf '\n  Wrong password '$mypassword' not saved. \n'               
                     fi
                 read -n 1 -s -t 1
-                 
-                
-        fi
-    fi
-fi
+        fi         
+ fi
 }
 
-#Получение пароля для sudo из конфига
+#Получение пароля для sudo из связки ключей
 GET_USER_PASSWORD(){
 mypassword="0"
 
-login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
-    if [[ $login = "LoginPassword" ]]; then
-mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-    fi
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+                passl=`echo ${#mypassword}`
+                mypassword_set=$(echo $mypassword | tr -c '\n' "*")
+                if [[ $loc = "ru" ]]; then
+                let "pass_corr=30-passl"
+                else
+                let "pass_corr=33-passl"
+                fi
 
-
-if [[ $mypassword = 0 ]]
-         then 
+else
                     if [[ $loc = "ru" ]]; then
                mypassword_set="нет пароля"; pass_corr=20
                     else
                mypassword_set="not saved"; pass_corr=24
                     fi
-    else 
-        mypassword_set=`echo ${mypassword}`
-        passl=`echo ${#mypassword}`
-        if [[ $loc = "ru" ]]; then
-        let "pass_corr=30-passl"
-        else
-        let "pass_corr=33-passl"
-        fi
-        
+    
+       
 fi
 }
 
 CHECK_USER_PASSWORD(){
 mypassword=""
 
-login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
-    if [[ $login = "LoginPassword" ]]; then
-mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-    fi
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+fi
+
 }
 
 SET_INPUT(){
@@ -2975,9 +3013,8 @@ echo 'macos=${macos:0:4}' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
 echo 'mypassword="0"' >> ${HOME}/.MountEFIa.sh
-echo 'login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '"'\\\n'"'`' >> ${HOME}/.MountEFIa.sh
-echo '    if [[ $login = "LoginPassword" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo 'mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e '"'s/.*>\(.*\)<.*/\1/'"' | tr -d '"'\\\n'"'`' >> ${HOME}/.MountEFIa.sh
+echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)' >> ${HOME}/.MountEFIa.sh
 echo '    fi' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ "$mypassword" = "0" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '  if [[ $flag = 1 ]]; then exit; fi' >> ${HOME}/.MountEFIa.sh
