@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="014"
+s_edit_vers="015"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 014 master
+# MountEFI версия скрипта настроек 1.6. 015 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -20,6 +20,7 @@ s_edit_vers="014"
 # 012 - при вооде пароля показывать звёздочки
 # 013 - правки для совместимости со старым конфигом
 # 014 - правка функции заполнения sh для использования связки ключей
+# 015 - исправление ошибок с путями при работе с облаком
 #############################################################################################################################################################################################################
 
 SHOW_VERSION(){
@@ -1541,7 +1542,7 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
         if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid ]]; then
                         mkdir ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid; fi
         if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
-                cloud_archv=$(md5 -qq /Users/andrej/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip)
+                cloud_archv=$(md5 -qq /Users/$(whoami)/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip)
                 local_archv=$(md5 -qq ${HOME}/.MountEFIconfBackups.zip)
                     if [[ ! $cloud_archv = $local_archv ]]; then
                         rm -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/$hwuuid/.MountEFIconfBackups.zip
@@ -1568,7 +1569,7 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
         if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared ]]; then
                 mkdir ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared ; fi
                         if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
-                                cloud_archv=$(md5 -qq /Users/andrej/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip)
+                                cloud_archv=$(md5 -qq /Users/$(whoami)/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip)
                                 local_archv=$(md5 -qq ${HOME}/.MountEFIconfBackups.zip)
                                         if [[ ! $cloud_archv = $local_archv ]]; then
                                 rm -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
