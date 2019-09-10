@@ -64,7 +64,7 @@ fi
 
 cd $(dirname $0)
 
-
+if [[ ! -d ~/Library/LaunchAgents ]]; then mkdir ~/Library/LaunchAgents; fi
 
 SET_LOCALE(){
 
@@ -3031,6 +3031,7 @@ if [[ -f ~/.MountEFIa.sh ]]; then rm ~/.MountEFIa.sh; fi
 
 
 SETUP_SYS_AUTOMOUNT(){
+
 
 REMOVE_SYS_AUTOMOUNT_SERVICE
 FILL_SYS_AUTOMOUNT_PLIST
