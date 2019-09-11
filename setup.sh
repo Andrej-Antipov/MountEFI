@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="018"
+s_edit_vers="022"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 018 master
+# MountEFI версия скрипта настроек 1.6. 022 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -17,13 +17,17 @@ s_edit_vers="018"
 # 009 - мелкие исправления форматирования
 # 010 - перенос хранения пароля в связку ключей
 # 011 - отображение пароля пользователя в списке звёздочками
-# 012 - при вооде пароля показывать звёздочки
+# 012 - при вводе пароля показывать звёздочки
 # 013 - правки для совместимости со старым конфигом
 # 014 - правка функции заполнения sh для использования связки ключей
 # 015 - исправление ошибок с путями при работе с облаком
-# 016 - добавлена функция зарузки конфига из файла через GUI
+# 016 - добавлена функция загрузки конфига из файла через GUI
 # 017 - добавлена функция экспорта конфига через GUI
 # 018 - различные исправления и доработки
+# 019 - добавлена проверка сервиса авто-загрузки на соответствие настройкам 
+# 020 - в сервис авто-монтирования функции 9 добавлены уведомления об ошибках
+# 021 - обработка ситуации с разным максимальным количеством бэкапов в заменяемых конфигах
+# 022 - функция запроса пароля через GUI с системными уведомлениями 
 #############################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -35,16 +39,16 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
-echo "filecounts = "$filecounts >> ~/temp.txt
-echo "errorep = ""${errorep}" >> ~/temp.txt
+echo "Now = "$Now >> ~/temp.txt
+echo "Maximum = "$Maximum >> ~/temp.txt
+Config_Maximum=`echo "$MountEFIconf" | grep Backups -A 5 | grep -A 1 -e "Maximum</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+echo "Config_Maximum = "$Config_Maximum >> ~/temp.txt
+#echo "folderpath = "$folderpath >> ~/temp.txt
 
-echo "filepath = "$filepath >> ~/temp.txt
-echo "folderpath = "$folderpath >> ~/temp.txt
+#echo "filename = "$filename >> ~/temp.txt
+#echo "extension = "$extension >> ~/temp.txt
 
-echo "filename = "$filename >> ~/temp.txt
-echo "extension = "$extension >> ~/temp.txt
-
-echo "filename_1 = ""${filename_1}" >> ~/temp.txt
+#echo "filename_1 = ""${filename_1}" >> ~/temp.txt
 
 
 printf '............................................................\n\n' >> ~/temp.txt
@@ -791,6 +795,20 @@ stty echo
 
 }
 
+SET_TITLE(){
+echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
+echo '' >> ${HOME}/.MountEFInoty.sh
+echo 'TITLE="MountEFI"' >> ${HOME}/.MountEFInoty.sh
+echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
+}
+
+DISPLAY_NOTIFICATION(){
+echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
+echo ' exit' >> ${HOME}/.MountEFInoty.sh
+chmod u+x ${HOME}/.MountEFInoty.sh
+sh ${HOME}/.MountEFInoty.sh
+rm ${HOME}/.MountEFInoty.sh
+}
 
 # Установка/удаление пароля для sudo через связку ключей
 SET_USER_PASSWORD(){
@@ -814,32 +832,64 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
                 fi
         else
                 
-                printf '\r'; printf "%"80"s"
-                printf '\r'
-                ENTER_PASSWORD
+
+
+        TRY=3
+        while [[ ! $TRY = 0 ]]; do
+        if [[ $loc = "ru" ]]; then
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        else
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        fi      
+                if [[ $cansel = 1 ]]; then break; fi  
                 mypassword=$PASSWORD
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
+
                 if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
-                printf "\r\033[1A"
-                passl=`echo ${#mypassword}`
-                mypassword_set=$(echo $mypassword | tr -c '\n' "*")
-                if [[ $loc = "ru" ]]; then
-                printf '\n  пароль '$mypassword_set' сохранён. '
+                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                         else
-                printf '\n  password '$mypassword_set' saved. '
-                    fi
-                read -n 1 -s -t 1
+                        echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
+                        break
                 else
-                printf "\r\033[1A"
+                        let "TRY--"
+                        if [[ ! $TRY = 0 ]]; then 
+                        SET_TITLE
+                            if [[ $loc = "ru" ]]; then
+                        if [[ $TRY = 2 ]]; then ATTEMPT="ПОПЫТКИ"; LAST="ОСТАЛОСЬ"; fi
+                        if [[ $TRY = 1 ]]; then ATTEMPT="ПОПЫТКА"; LAST="ОСТАЛАСЬ"; fi
+                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ. '$LAST' '$TRY' '$ATTEMPT' !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                            else
+                        if [[ $TRY = 2 ]]; then ATTEMPT="ATTEMPTS"; fi
+                        if [[ $TRY = 1 ]]; then ATTEMPT="ATTEMPT"; fi
+                        echo 'SUBTITLE="INCORRECT PASSWORD. LEFT '$TRY' '$ATTEMPT' !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                            fi
+                DISPLAY_NOTIFICATION
+                fi
+                fi
+            done
+            mypassword="0"
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w); 
+fi
+            if [[ "$mypassword" = "0" ]]; then
+                SET_TITLE
                     if [[ $loc = "ru" ]]; then
-                printf '\n  Не верный пароль '$mypassword' не сохранён.\n'
-                        else
-                printf '\n  Wrong password '$mypassword' not saved. \n'               
+                echo 'SUBTITLE="ПАРОЛЬ НЕ ПОЛУЧЕН !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                    else
+                echo 'SUBTITLE="PASSWORD NOT KEEPED IN KEYCHAIN !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     fi
-                read -n 1 -s -t 1
-        fi         
- fi
+                DISPLAY_NOTIFICATION
+                
+        fi
+    fi
+
+osascript -e 'tell application "Terminal" to activate'
+
 }
 
 #Получение пароля для sudo из связки ключей
@@ -1040,6 +1090,7 @@ strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</ke
 alist=($strng1); apos=${#alist[@]}
 }
 
+
 GET_SYS_AUTOMOUNT(){
 sys_autom_enabled=0
 strng=`echo "$MountEFIconf" | grep SysLoadAM -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
@@ -1056,6 +1107,20 @@ if [[ $strng = "true" ]]; then sys_autom_enabled=1
         sys_am_set="No"; sys_am_corr=10
             fi
 fi
+}
+
+CHECK_SYS_AUTOMOUNT_SERVICE(){
+
+if [[ $(launchctl list | grep "MountEFIa.job" | cut -f3 | grep -x "MountEFIa.job") ]]; then  sam_serv="работает"
+        else
+if [[ ! -f ~/Library/LaunchAgents/MountEFIa.plist ]]; then sam_serv="не установлен"
+            else
+                 sam_serv="остановлен"
+        fi
+fi
+GET_SYS_AUTOMOUNT
+if [[ "$sam_serv" = "работает" ]] && [[ $sys_autom_enabled = 0 ]]; then REMOVE_SYS_AUTOMOUNT_SERVICE; fi
+if [[ "$sam_serv" = "не установлен" ]] && [[ $sys_autom_enabled = 1 ]]; then display=0; SETUP_SYS_AUTOMOUNT; fi
 }
 
 GET_SYS_AUTO_OPEN(){
@@ -1454,7 +1519,7 @@ clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H"
 	                    printf '.%.0s' {1..34}
                         printf '\n'
 	                         fi
-                        printf '\n'
+                        printf '\r                                                                                '
 GET_BACKUPS
 if [[ ! $Now = 0 ]]; then
 var6=$Maximum; chn=1
@@ -1619,6 +1684,22 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
 fi
 }
 
+CORRECT_BACKUPS_MAXIMUM(){
+CHECK_BUNZIP
+Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+stop="1"; DEBUG
+UPDATE_CACHE
+GET_BACKUPS
+stop="2"; DEBUG
+if [[ $Now > $Maximum ]]; then
+stop="3"; DEBUG
+plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
+UPDATE_CACHE
+stop="4"; DEBUG
+fi
+stop="5"; DEBUG
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
+}
 
 SET_BACKUPS(){
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
@@ -1749,6 +1830,13 @@ if [[ ${inputs} = [rR] ]]; then
                         if [[ ! ${inputs} = "p" ]]; then
                         CHECK_BUNZIP
                         RESTORE_BACKUP
+                        UPDATE_CACHE
+                        Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+                        GET_BACKUPS
+                        if [[ $Now > $Maximum ]]; then
+                        plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
+                        UPDATE_CACHE
+                        fi
                         fi
                         inputs=0
 fi
@@ -2133,6 +2221,7 @@ mv -f "${filepath}" ${HOME}/.MountEFIconf.plist
 
 UPDATE_CACHE
 CHECK_CONFIG
+CORRECT_BACKUPS_MAXIMUM
             else
                 
                 errorep=1
@@ -2161,6 +2250,8 @@ filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d "
                 
                 UPDATE_CACHE
                 CHECK_CONFIG
+                CORRECT_BACKUPS_MAXIMUM
+                
                 
             fi
          fi
@@ -2396,7 +2487,7 @@ UPDATE_SCREEN(){
         GET_THEME
         GET_SHOWKEYS
         GET_AUTOMOUNT
-        GET_SYS_AUTOMOUNT
+        CHECK_SYS_AUTOMOUNT_SERVICE
         GET_LOADERS
         GET_AUTOBACKUP
         CHECK_ICLOUD_BACKUPS
@@ -3128,18 +3219,34 @@ FILL_SYS_AUTOMOUNT_EXEC(){
 
 echo '#!/bin/bash'  >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
+echo 'DISPLAY_NOTIFICATION(){' >> ${HOME}/.MountEFIa.sh
+echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFIa.sh
+echo '}' >> ${HOME}/.MountEFIa.sh
+echo                >> ${HOME}/.MountEFIa.sh
+echo 'TITLE="MountEFI"' >> ${HOME}/.MountEFIa.sh
+echo 'SOUND="Submarine"' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then' >> ${HOME}/.MountEFIa.sh
+echo 'loc=$(locale | grep LANG | sed -e '"'s/.*LANG="'"'"\(.*\)_.*/\1/'"')' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo 'SUBTITLE="ФАЙЛ КОНФИГУРАЦИИ НЕ НАЙДЕН !"; MESSAGE="Авто-монтирование EFI отменено"' >> ${HOME}/.MountEFIa.sh
+echo 'else' >> ${HOME}/.MountEFIa.sh
+echo 'SUBTITLE="CONFIGURATION FILE NOT FOUND"; MESSAGE="EFI auto-mount canceled"' >> ${HOME}/.MountEFIa.sh
+echo 'fi' >> ${HOME}/.MountEFIa.sh
+echo 'DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
+echo 'exit; fi' >> ${HOME}/.MountEFIa.sh
+echo                >> ${HOME}/.MountEFIa.sh
 echo 'UPDATE_CACHE(){' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ -f ${HOME}/.MountEFIconf.plist ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )' >> ${HOME}/.MountEFIa.sh
 echo 'cache=1' >> ${HOME}/.MountEFIa.sh
-echo 'else' >> ${HOME}/.MountEFIa.sh
-echo 'unset MountEFIconf; cache=0' >> ${HOME}/.MountEFIa.sh
-echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo '}' >> ${HOME}/.MountEFIa.sh
 echo    >> ${HOME}/.MountEFIa.sh
 echo 'UPDATE_CACHE' >> ${HOME}/.MountEFIa.sh
 echo    >> ${HOME}/.MountEFIa.sh
-
+echo 'SET_LOCALE(){' >> ${HOME}/.MountEFIa.sh
+echo 'locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e '"'s/.*>\(.*\)<.*/\1/'"' | tr -d '"'\n'"'`' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ $locale = "auto" ]]; then loc="ru"; else loc=$(echo ${locale}); fi' >> ${HOME}/.MountEFIa.sh
+echo '}' >> ${HOME}/.MountEFIa.sh
+echo   >> ${HOME}/.MountEFIa.sh
 echo 'REM_ABSENT(){' >> ${HOME}/.MountEFIa.sh
 echo
 echo 'strng1=`echo "$MountEFIconf" | grep SysLoadAM -A 7 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e '"'s/.*>\(.*\)<.*/\1/'"' | tr -d '"'\\\n'"'`' >> ${HOME}/.MountEFIa.sh
@@ -3182,8 +3289,70 @@ echo 'mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
 echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)' >> ${HOME}/.MountEFIa.sh
 echo '    fi' >> ${HOME}/.MountEFIa.sh
+echo '' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ "$mypassword" = "0" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo '  if [[ $flag = 1 ]]; then exit; fi' >> ${HOME}/.MountEFIa.sh
+echo '  if [[ $flag = 1 ]]; then ' >> ${HOME}/.MountEFIa.sh
+echo '        SET_LOCALE' >> ${HOME}/.MountEFIa.sh
+echo '        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '        SUBTITLE="ПАРОЛЬ НЕ НАЙДЕН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Авто-монтирование EFI отменено"' >> ${HOME}/.MountEFIa.sh
+echo '        else' >> ${HOME}/.MountEFIa.sh
+echo '        SUBTITLE="PASSWORD NOT FOUND IN KEYCHAIN !"; MESSAGE="EFI auto-mount canceled"' >> ${HOME}/.MountEFIa.sh
+echo '        fi' >> ${HOME}/.MountEFIa.sh
+echo '        DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
+echo '        TRY=3' >> ${HOME}/.MountEFIa.sh
+echo '        while [[ ! $TRY = 0 ]]; do' >> ${HOME}/.MountEFIa.sh
+echo '        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Введите пароль для подключения EFI разделов: "'" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        else' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        fi' >> ${HOME}/.MountEFIa.sh
+echo '                if [[ $cansel = 1 ]]; then break; fi ' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$PASSWORD' >> ${HOME}/.MountEFIa.sh
+echo '                if [[ $mypassword = "" ]]; then mypassword="?"; fi' >> ${HOME}/.MountEFIa.sh
+echo '                if echo $mypassword | sudo -Sk printf '"''"' 2>/dev/null; then' >> ${HOME}/.MountEFIa.sh
+echo '                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '                        SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Авто-монтирование EFI работает"' >> ${HOME}/.MountEFIa.sh
+echo '                        else' >> ${HOME}/.MountEFIa.sh
+echo '                        SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="EFI auto-mount is now enabled"' >> ${HOME}/.MountEFIa.sh
+echo '                        fi' >> ${HOME}/.MountEFIa.sh
+echo '                        DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
+echo '                        break' >> ${HOME}/.MountEFIa.sh
+echo '                else' >> ${HOME}/.MountEFIa.sh
+echo '                        let "TRY--"' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ ! $TRY = 0 ]]; then ' >> ${HOME}/.MountEFIa.sh
+echo '                            if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ $TRY = 2 ]]; then ATTEMPT="ПОПЫТКИ"; LAST="ОСТАЛОСЬ"; fi' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ $TRY = 1 ]]; then ATTEMPT="ПОПЫТКА"; LAST="ОСТАЛАСЬ"; fi' >> ${HOME}/.MountEFIa.sh
+echo '                        SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ. ""$LAST"" ""$TRY"" ""$ATTEMPT"" !"; MESSAGE="Авто-монтирование EFI отменено"' >> ${HOME}/.MountEFIa.sh
+echo '                            else' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ $TRY = 2 ]]; then ATTEMPT="ATTEMPTS"; fi' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ $TRY = 1 ]]; then ATTEMPT="ATTEMPT"; fi' >> ${HOME}/.MountEFIa.sh
+echo '                        SUBTITLE="INCORRECT PASSWORD. LEFT ""$TRY"" ""$ATTEMPT"" !"; MESSAGE="EFI auto-mount canceled"' >> ${HOME}/.MountEFIa.sh
+echo '                            fi' >> ${HOME}/.MountEFIa.sh
+echo '                DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
+echo '                fi' >> ${HOME}/.MountEFIa.sh
+echo '                fi' >> ${HOME}/.MountEFIa.sh
+echo '            done' >> ${HOME}/.MountEFIa.sh
+echo '            mypassword="0"' >> ${HOME}/.MountEFIa.sh
+echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w); ' >> ${HOME}/.MountEFIa.sh
+echo 'fi' >> ${HOME}/.MountEFIa.sh
+echo '            if [[ "$mypassword" = "0" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '                    if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '                SUBTITLE="ПАРОЛЬ НЕ СОХРАНЁН !"; MESSAGE="Авто-монтирование EFI отменено"' >> ${HOME}/.MountEFIa.sh
+echo '                    else' >> ${HOME}/.MountEFIa.sh
+echo '                SUBTITLE="PASSWORD NOT KEEPED IN KEYCHAIN !"; MESSAGE="EFI auto-mount canceled"' >> ${HOME}/.MountEFIa.sh
+echo '                    fi' >> ${HOME}/.MountEFIa.sh
+echo '                DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
+echo '                strng=$(echo "$MountEFIconf" | grep -e "<key>SysLoadAM</key>" | grep key | sed -e '"'s/.*>\(.*\)<.*/\1/'"' | tr -d '"'\t\n'"')' >> ${HOME}/.MountEFIa.sh
+echo '                if [[ $strng = "SysLoadAM" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '                plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist' >> ${HOME}/.MountEFIa.sh
+echo '                UPDATE_CACHE' >> ${HOME}/.MountEFIa.sh
+echo '                fi' >> ${HOME}/.MountEFIa.sh
+echo '            exit' >> ${HOME}/.MountEFIa.sh
+echo '        fi' >> ${HOME}/.MountEFIa.sh
+echo '    fi' >> ${HOME}/.MountEFIa.sh
 echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
 echo 'autom_open=0' >> ${HOME}/.MountEFIa.sh
@@ -3222,6 +3391,7 @@ echo 'exit' >> ${HOME}/.MountEFIa.sh
 
 chmod u+x ${HOME}/.MountEFIa.sh
 
+
 }
 
 REMOVE_SYS_AUTOMOUNT_SERVICE(){
@@ -3234,8 +3404,6 @@ if [[ -f ~/.MountEFIa.sh ]]; then rm ~/.MountEFIa.sh; fi
 
 
 SETUP_SYS_AUTOMOUNT(){
-
-
 REMOVE_SYS_AUTOMOUNT_SERVICE
 FILL_SYS_AUTOMOUNT_PLIST
 FILL_SYS_AUTOMOUNT_EXEC
@@ -3243,13 +3411,14 @@ mv ${HOME}/.MountEFIa.plist ~/Library/LaunchAgents/MountEFIa.plist
 plutil -remove ProgramArguments.0 ~/Library/LaunchAgents/MountEFIa.plist
 plutil -insert ProgramArguments.0 -string "/Users/$(whoami)/.MountEFIa.sh" ~/Library/LaunchAgents/MountEFIa.plist
 launchctl load -w ~/Library/LaunchAgents/MountEFIa.plist
-if [[ $loc = "ru" ]]; then
+if [[ $display = 1 ]]; then
+    if [[ $loc = "ru" ]]; then
 printf '\r  Сервис автоподключения EFI установлен ...'
-else
+    else
 printf '\r  Serice automount EFI installed ... '
-fi
+    fi
 read -n 1 -s -t 2
-
+fi
 }
 
 
@@ -3406,7 +3575,7 @@ if [[ $inputs = 9 ]]; then
     read -n 1 -s -t 2
 
  else 
-
+  display=1
   SET_SYS_AUTOMOUNT
   if [[ ! $apos = 0 ]]; then
   macos=`sw_vers -productVersion`
@@ -3535,43 +3704,6 @@ if [[ $inputs = [dD] ]]; then
        fi
  fi
                 
-
-
-if [[ $inputs = [dD] ]]; then
-                CHECK_ICLOUD_BACKUPS
-         if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
-                        if [[ $loc = "ru" ]]; then
-                echo "Заместить локальный бэкап архивами из iCloud                       "
-                        else
-                echo "Replace the local backup with archives from iCloud?                "
-                        fi
-                read -p "(y/N) " -n 1 -r -s
-                if [[ $REPLY =~ ^[yY]$ ]]; then
-                mv  ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups2.zip
-                GET_BACKUPS_FROM_ICLOUD
-                if [[ -f ${HOME}/.MountEFIconfBackups.zip ]]; then rm -f ${HOME}/.MountEFIconfBackups2.zip
-                inputs="B"
-                        else
-                            mv  ${HOME}/.MountEFIconfBackups2.zip ${HOME}/.MountEFIconfBackups.zip
-                printf "\r\033[1A"
-                             if [[ $loc = "ru" ]]; then
-                echo "Замещение не удалось. Локальный архив сохранён                     "
-                printf '                    '
-                        else
-                echo "Replacement failed. Local archive saved                            "
-                printf '                    '
-                        fi
-                read  -n 1 -s
-                clear
-
-                fi
-            fi
-       fi
- fi
-
-
-
-
 ########################################################################################################################
 
 if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi

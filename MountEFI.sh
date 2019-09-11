@@ -2,17 +2,18 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="009"
+edit_vers="010"
 ##################################################################################################################################################################################################################
 
 
-############################ Mount EFI Master v.1.7.2 edit 009
+############################ Mount EFI Master v.1.7.2 edit 010
 # 004 - Проверка конфига и исправление для совместимости с функцией автомонтирования EFI при старте системы
 # 005 - Переход на использование пароля из связки ключей
 # 006 - правки для совместимости со старым конфигом
 # 007 - запрос пароля с заменой ввода звёздочками при одном EFI
 # 008 - форматирование запроса пароля если пароль не установлен
 # 009 - исправление поведения после неверного ввода пароля
+# 010 - функция запроса пароля через GUI c системными уведомлениями
 
 
 
@@ -288,6 +289,99 @@ if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
             rm -R ${HOME}/.MountEFIconfBackups
 fi
 
+SET_TITLE(){
+echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
+echo '' >> ${HOME}/.MountEFInoty.sh
+echo 'TITLE="MountEFI"' >> ${HOME}/.MountEFInoty.sh
+echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
+}
+
+DISPLAY_NOTIFICATION(){
+echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
+echo ' exit' >> ${HOME}/.MountEFInoty.sh
+chmod u+x ${HOME}/.MountEFInoty.sh
+sh ${HOME}/.MountEFInoty.sh
+rm ${HOME}/.MountEFInoty.sh
+}
+
+ENTER_PASSWORD(){
+
+macos=`sw_vers -productVersion`
+macos=`echo ${macos//[^0-9]/}`
+macos=${macos:0:4}
+if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+
+mypassword="0"
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+fi
+
+if [[ "$mypassword" = "0" ]]; then
+  if [[ $flag = 1 ]]; then 
+        #SET_TITLE
+       # if [[ $loc = "ru" ]]; then
+        #echo 'SUBTITLE="ПАРОЛЬ НЕ НАЙДЕН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Для подключения разделов EFI нужен пароль"' >> ${HOME}/.MountEFInoty.sh
+        #else
+        #echo 'SUBTITLE="PASSWORD NOT FOUND IN KEYCHAIN !"; MESSAGE="Password required to mount EFI partitions"' >> ${HOME}/.MountEFInoty.sh
+        #fi
+       # DISPLAY_NOTIFICATION
+        TRY=3
+        while [[ ! $TRY = 0 ]]; do
+        if [[ $loc = "ru" ]]; then
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль для подключения разделов EFI: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        else
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        fi      
+                if [[ $cansel = 1 ]]; then break; fi  
+                mypassword=$PASSWORD
+                if [[ $mypassword = "" ]]; then mypassword="?"; fi
+
+                if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI теперь работает"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="Mount EFI Partitions Now Available"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
+                        break
+                else
+                        let "TRY--"
+                        if [[ ! $TRY = 0 ]]; then 
+                        SET_TITLE
+                            if [[ $loc = "ru" ]]; then
+                        if [[ $TRY = 2 ]]; then ATTEMPT="ПОПЫТКИ"; LAST="ОСТАЛОСЬ"; fi
+                        if [[ $TRY = 1 ]]; then ATTEMPT="ПОПЫТКА"; LAST="ОСТАЛАСЬ"; fi
+                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ. '$LAST' '$TRY' '$ATTEMPT' !"; MESSAGE="Для подключения разделов EFI нужен пароль"' >> ${HOME}/.MountEFInoty.sh
+                            else
+                        if [[ $TRY = 2 ]]; then ATTEMPT="ATTEMPTS"; fi
+                        if [[ $TRY = 1 ]]; then ATTEMPT="ATTEMPT"; fi
+                        echo 'SUBTITLE="INCORRECT PASSWORD. LEFT '$TRY' '$ATTEMPT' !"; MESSAGE="Password required to mount EFI partitions"' >> ${HOME}/.MountEFInoty.sh
+                            fi
+                DISPLAY_NOTIFICATION
+                fi
+                fi
+            done
+            mypassword="0"
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w); 
+fi
+            if [[ "$mypassword" = "0" ]]; then
+                SET_TITLE
+                    if [[ $loc = "ru" ]]; then
+                echo 'SUBTITLE="ПАРОЛЬ НЕ ПОЛУЧЕН !"; MESSAGE="Подключение разделов EFI недоступно"' >> ${HOME}/.MountEFInoty.sh
+                    else
+                echo 'SUBTITLE="PASSWORD NOT KEEPED IN KEYCHAIN !"; MESSAGE="Mount EFI Partitions Unavailable"' >> ${HOME}/.MountEFInoty.sh
+                    fi
+                DISPLAY_NOTIFICATION
+                
+        fi
+    fi
+fi
+osascript -e 'tell application "Terminal" to activate'
+}
+
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
 REM_ABSENT(){
@@ -327,17 +421,9 @@ if [[ ! $am_enabled = 0 ]]; then
 
 if [[ ! $apos = 0 ]]; then
 
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
-if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+ENTER_PASSWORD
 
-
-mypassword="0"
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-    fi
-
+if [[ $flag = 1 ]] && [[ ! $mypassword = "0" ]]; then
 
 autom_open=0
 strng3=`echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
@@ -376,6 +462,8 @@ let "posa++"
 let "var9--"
 done
 	fi
+    
+  fi
 
 fi
 ################################################ конец функции автомонтирования ########################################################## 
@@ -637,6 +725,7 @@ if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then
         if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
     if [[ $auto_timeout = 0 ]]; then EXIT_PROGRAM
                 else
+              osascript -e 'tell application "Terminal" to activate'
               COUNTDOWN $auto_timeout
             if [[ $demo = "±" ]]; then  EXIT_PROGRAM
         fi
@@ -1201,49 +1290,6 @@ if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
 
 }
 
-ENTER_PASSWORD(){
-
-unset PASSWORD
-unset CHARCOUNT
-
-if [[ $loc = "ru" ]]; then
-printf '\n\n'
-echo -n "  Введите пароль: "
-else
-echo -n "  Enter password: "
-fi
-
-stty -echo
-sleep 0.8
-
-unset CHAR
-
-CHARCOUNT=0
-while IFS= read -p "$PROMPT" -r -s -n 1 CHAR
-do
-    # Enter - accept password
-    if [[ $CHAR == $'\0' ]] ; then
-        break
-    fi
-    # Backspace
-    if [[ $CHAR == $'\177' ]] ; then
-        if [ $CHARCOUNT -gt 0 ] ; then
-            CHARCOUNT=$((CHARCOUNT-1))
-            PROMPT=$'\b \b'
-            PASSWORD="${PASSWORD%?}"
-        else
-            PROMPT=''
-        fi
-    else
-        CHARCOUNT=$((CHARCOUNT+1))
-        PROMPT='*'
-        PASSWORD+="$CHAR"
-    fi
-done
-
-stty echo
-
-}
 
 # У Эль Капитан другой термин для размера раздела
 # Установка флага необходимости в SUDO - flag	
@@ -1327,32 +1373,10 @@ if [[ $loc = "ru" ]]; then
 	printf '\n              '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"'\n' 
     printf '\n     '
 	printf '.%.0s' {1..68}
-    var98=3 
-    while [[ ! $var98 = 0 ]]; 
-    do
     ENTER_PASSWORD
-    mypassword=$PASSWORD
-    if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-    printf '\n\n OK!'; break
-        else
-            if [[ ! $mypassword = "0" ]]; then
-                        if [[ $loc = "ru" ]]; then
-                printf '\n\n  Не верный пароль \e[1m'$mypassword'\e[0m \n'
-                                        else
-                printf '\n\n  Wrong password \e[1m'$mypassword'\e[0m \n'
-                        fi
-            read -t 2 -n 1 -s
-            mypassword="0"
-            let "var98--"
-            printf '\r\033[3A'
-            printf ' %.0s' {1..68}; printf ' %.0s' {1..68}; printf ' %.0s' {1..68};
-            printf '\r\033[4A'
-            fi
-     fi
-    done
  fi        
 
-if [[ $var98 = 0 ]]; then 
+if [[ $mypassword = "0" ]]; then 
             printf '\r'
             printf ' %.0s' {1..68}; printf ' %.0s' {1..68}
             printf '\r\033[1A'
@@ -2169,24 +2193,34 @@ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 
 wasmounted=0
 if [[ ! $mcheck = "Yes" ]]; then
+        ENTER_PASSWORD
+    if [[ ! $mypassword = "0" ]]; then
 
     DO_MOUNT
 
     MOUNTED_CHECK
 
-
 	order=0; UPDATELIST
-
+    fi
+    
 else 
     wasmounted=1
 
 fi
+
 string=${strng0}
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 if [[ $OpenFinder = 0 ]] ; then 
+        
         if [[ $wasmounted = 1 ]]; then open "$vname"; fi
+        
     else 
+        if [[ ! $mypassword = "0" ]]; then open "$vname"
+            else
+       if [[ ! $wasmounted = 0 ]] &&  [[ $mypassword = "0" ]]; then
         open "$vname"
+       fi
+    fi
 fi
 
 nogetlist=1
@@ -2257,24 +2291,7 @@ fi
 
 # Монтировать раздел если он выбран (chs - номер в списке разделов)
 if [[ ! ${chs} = 0 ]]; then 
-    GET_USER_PASSWORD
-    if [[ $flag = 1 ]] && [[ $mypassword = "0" ]]; then ENTER_PASSWORD; mypassword=$PASSWORD
-            if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
-                    MOUNTS;  chs=0
-                else
-                    chs=0
-                    if [[ $loc = "ru" ]]; then
-                printf '\n\n  Не верный пароль '$mypassword'.\n'
-                        else
-                printf '\n\n  Wrong password '$mypassword'. \n'               
-                    fi
-                sleep 1
-             fi
-            
-            else MOUNTS;  chs=0
-          
-      fi
+MOUNTS;  chs=0
 fi
 done
 
