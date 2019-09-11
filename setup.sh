@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="022"
+s_edit_vers="023"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 022 master
+# MountEFI версия скрипта настроек 1.6. 023 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -28,6 +28,7 @@ s_edit_vers="022"
 # 020 - в сервис авто-монтирования функции 9 добавлены уведомления об ошибках
 # 021 - обработка ситуации с разным максимальным количеством бэкапов в заменяемых конфигах
 # 022 - функция запроса пароля через GUI с системными уведомлениями 
+# 023 - добавлен запрос на ввод пароля в функции 8 если необходим
 #############################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -810,31 +811,9 @@ sh ${HOME}/.MountEFInoty.sh
 rm ${HOME}/.MountEFInoty.sh
 }
 
-# Установка/удаление пароля для sudo через связку ключей
-SET_USER_PASSWORD(){
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then 
-                printf '\r'; printf "%"80"s"
-                printf '\r'
-                if [[ $loc = "ru" ]]; then
-                echo "  удалить сохранённый пароль из программы?"
-                        else
-                echo "  delete saved password from this programm?"
-                    fi
-                read -p "  (y/N) " -n 1 -r -s
-                if [[ $REPLY =~ ^[yY]$ ]]; then
-                security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
-                if [[ $loc = "ru" ]]; then
-                echo "  пароль удалён. "
-                        else
-                echo "  password removed. "
-                    fi
-                read -n 1 -s -t 1
-                fi
-        else
-                
+ENTER_PASSWORD(){
 
-
-        TRY=3
+TRY=3
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
         if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
@@ -886,6 +865,34 @@ fi
                 DISPLAY_NOTIFICATION
                 
         fi
+
+}
+
+# Установка/удаление пароля для sudo через связку ключей
+SET_USER_PASSWORD(){
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then 
+                printf '\r'; printf "%"80"s"
+                printf '\r'
+                if [[ $loc = "ru" ]]; then
+                echo "  удалить сохранённый пароль из программы?"
+                        else
+                echo "  delete saved password from this programm?"
+                    fi
+                read -p "  (y/N) " -n 1 -r -s
+                if [[ $REPLY =~ ^[yY]$ ]]; then
+                security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                if [[ $loc = "ru" ]]; then
+                echo "  пароль удалён. "
+                        else
+                echo "  password removed. "
+                    fi
+                read -n 1 -s -t 1
+                fi
+        else
+                
+            ENTER_PASSWORD
+
+        
     fi
 
 osascript -e 'tell application "Terminal" to activate'
@@ -1993,6 +2000,11 @@ if [[  ${inputs}  = [qQ] ]]; then
 			GET_AUTOMOUNTED
 			if [[ ! $apos = 0 ]]; then 
 				plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+                GET_SYSTEM_FLAG
+                GET_USER_PASSWORD
+                if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; osascript -e 'tell application "Terminal" to activate'; fi
+                GET_USER_PASSWORD
+                if [[ $mypassword = "0" ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; fi
                     else
                 plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
             fi
@@ -3561,6 +3573,13 @@ if [[ $inputs = 8 ]]; then
 fi  
 ###############################################################################
 
+GET_SYSTEM_FLAG(){
+macos=`sw_vers -productVersion`
+  macos=`echo ${macos//[^0-9]/}`
+  macos=${macos:0:4}
+  if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+}
+
 # Подключение разделов при запуске системы  ################################
 if [[ $inputs = 9 ]]; then 
    if [[ $sys_autom_enabled = 1 ]]; then 
@@ -3578,10 +3597,7 @@ if [[ $inputs = 9 ]]; then
   display=1
   SET_SYS_AUTOMOUNT
   if [[ ! $apos = 0 ]]; then
-  macos=`sw_vers -productVersion`
-  macos=`echo ${macos//[^0-9]/}`
-  macos=${macos:0:4}
-  if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+  GET_SYSTEM_FLAG
   if [[ $flag = 0 ]]; then SETUP_SYS_AUTOMOUNT
     else
   CHECK_USER_PASSWORD
