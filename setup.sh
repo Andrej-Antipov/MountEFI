@@ -29,7 +29,7 @@ s_edit_vers="024"
 # 021 - обработка ситуации с разным максимальным количеством бэкапов в заменяемых конфигах
 # 022 - функция запроса пароля через GUI с системными уведомлениями 
 # 023 - добавлен запрос на ввод пароля в функции 8 если необходим
-# 024 - добавление или редактирование псевдонимов через окно GUI
+# 024 - добавление или редактирование псевдонима в окошке GUI
 #############################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -3188,7 +3188,7 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcC]+$ ]]; then
                         if [[ $loc = "ru" ]]; then
                         if demo=$(osascript -e 'set T to text returned of (display dialog "< Редактировать псевдоним >|<- 30 знаков !" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
                         else
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "<-------- Edit aliases -------->|<- 30 characters !" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "<-------- Edit aliases -------->|<- 30 characters !" buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
                         fi
                         if [[ $cancel = 0 ]]; then
                             if [[ ! "${demo}" = "${drive}" ]]; then
