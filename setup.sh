@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="023"
+s_edit_vers="024"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 023 master
+# MountEFI версия скрипта настроек 1.6. 024 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -29,6 +29,7 @@ s_edit_vers="023"
 # 021 - обработка ситуации с разным максимальным количеством бэкапов в заменяемых конфигах
 # 022 - функция запроса пароля через GUI с системными уведомлениями 
 # 023 - добавлен запрос на ввод пароля в функции 8 если необходим
+# 024 - добавление или редактирование псевдонимов через окно GUI
 #############################################################################################################################################################################################################
 
 # функция отладки ##################################################################################################
@@ -3007,7 +3008,7 @@ while [ $var8 != 1 ]
 do
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9rReEvVcCdDqQ]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9rRvVcCdDqQ]+$ ]]; do 
 
 SET_INPUT
                 if [[ $loc = "ru" ]]; then
@@ -3078,6 +3079,7 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 printf "\r\033[6A"
                 fi
 fi
+                        
 
 if [[ ${inputs} = [dD] ]]; then
                             printf "\r"; printf "%"80"s"
@@ -3155,13 +3157,13 @@ fi
 
 if [[ ! ${inputs} =~ ^[0vVdDrRqQcC]+$ ]]; then
                  if  [[ ${inputs} -le $ch ]]; then
-                        printf "\r\033[2A"; printf '\n\n'"%"80"s"
+                        printf "\r"; printf "%"80"s"
                             if [[ $loc = "ru" ]]; then
-                        printf '\r  Добавление псевдонима. (или просто "Enter" для отмены):\n\n'
+                        printf '\r  Редактирование псевдонима. (или просто "Enter" для отмены):\n\n'
                             else
-                        printf '\r  Editing an alias. (or just "Enter" to cancel):\n\n'
+                        printf '\r  Edit an alias. (or just "Enter" to cancel):\n\n'
                         fi
-                        while [[ ! ${inputs} =~ ^[0-9] ]]; do 
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do
                         printf "%"80"s"
                         printf "\033[1A"
                         if [[ $loc = "ru" ]]; then
@@ -3173,18 +3175,38 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcC]+$ ]]; then
                         read  inputs
                         printf "\033[?25l" 
                         printf '\r';  printf "%"80"s"
+                        if [[ $inputs = 0 ]]; then inputs="p"; fi &> /dev/null
                         if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
                         if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
                         printf "\033[1A"
                         printf "\r"
                         done
-                        if [[ ! ${inputs} = "p" ]]; then
+                        if [[ ! ${inputs} = "p" ]]; then 
                         GET_DRIVE
                         GET_RENAMEHD
-                        EDIT_RENAMEHD
+                        if [[ $adrive = "±" ]]; then  adrive="${drive}"; fi
+                        if [[ $loc = "ru" ]]; then
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "< Редактировать псевдоним >|<- 30 знаков !" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                        else
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "<-------- Edit aliases -------->|<- 30 characters !" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                        fi
+                        if [[ $cancel = 0 ]]; then
+                            if [[ ! "${demo}" = "${drive}" ]]; then
+                        demo=$(echo "${demo}" | sed 's/^[ \t]*//')
+                        if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
+                        #Фильтр недопустимых символов ввода
+                        demo=`echo "$demo" | tr -cd "[:print:]\n"`
+                        demo=`echo "$demo" | tr -d "=;{}]><[&^$"`
+                        if [[ ${#demo} = 0 ]]; then DEL_RENAMEHD
+                        else
+                        ADD_RENAMEHD
+                        fi
+                        fi
+                        fi
                         fi
                         SHOW_FULL_EFI
                         unset inputs
+                        
                 fi
 
 else
