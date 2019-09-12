@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="026"
+s_edit_vers="027"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 026 master
+# MountEFI версия скрипта настроек 1.6. 027 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -31,7 +31,8 @@ s_edit_vers="026"
 # 023 - добавлен запрос на ввод пароля в функции 8 если необходим
 # 024 - добавление или редактирование псевдонима в окошке GUI
 # 025 - небольшие фиксы в работе функции 9
-# 026 - - перезапуск при смене темы со встроенной на системную
+# 026 - перезапуск при смене темы со встроенной на системную
+# 027 - перемещение по истории правки псевдонимов на один сеанс
 #############################################################################################################################################################################################################
 
 
@@ -2641,9 +2642,9 @@ if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]]
 fi
 
 if [[ $loc = "ru" ]]; then
-    printf '\n\n\n    0)  поиск разделов .....    '
+    printf '\n\n\n     0)  поиск разделов .....      '
 		else
-	printf '\n\n\n    0)  updating  list .....      '
+	printf '\n\n\n     0)  updating  list .....      '
         fi
 
 spin='-\|/'
@@ -2795,6 +2796,8 @@ fi
         printf '               С)    Сменить режим предпросмотра                               \n'
         printf '               V)    Посмотреть всю базу псевдонимов                           \n'
         printf '               D)    Удалить псевдоним                                         \n'
+        printf '               Z)    Откатить изменения (из истории)                           \n'
+        printf '               X)    Возвратить изменения (из истории)                         \n'
         printf '               R)    Удалить всю базу псевдонимов!                             \n'
         printf '               Q)    Вернуться в главное меню                                  \n\n' 
 
@@ -2807,6 +2810,8 @@ fi
         printf '               С)    Change the preview mode                                   \n'
         printf '               V)    View the entire alias database                            \n'
         printf '               D)    Delete an alias                                           \n'
+        printf '               Z)    Roll back changes (from history)                          \n'
+        printf '               X)    Revert changes (from history)                             \n'
         printf '               R)    Delete the entire alias database!                         \n'
         printf '               Q)    Quit to the main menu                                     \n\n' 
 
@@ -3004,18 +3009,25 @@ fi
 
 ############################ функция псевдонимов ####################################################
 
+SAVE_STRING(){
+strng=`echo "$MountEFIconf" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ ! $strng = "" ]]; then backstrings+=("$strng"); let "bmax++"; let "bpos=bmax-1"; fi
+}
+
 SET_ALIASES(){
-clear
+clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 GET_FULL_EFI
 SHOW_FULL_EFI
 vid=0
 UPDATE_FULL_EFI
 var8=0
+backstrings=(); bmax=0
+SAVE_STRING
 while [ $var8 != 1 ] 
 do
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9rRvVcCdDqQ]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9rRvVcCdDqQzZxX]+$ ]]; do 
 
 SET_INPUT
                 if [[ $loc = "ru" ]]; then
@@ -3074,6 +3086,7 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 read  -n 1 -r
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
+                SAVE_STRING
                 plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 inputs=0
                 fi
@@ -3085,6 +3098,29 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
                 printf "\r\033[6A"
                 fi
+fi
+
+if [[ ${inputs} = [zZ] ]]; then 
+                         if [[ ! $bmax = 0 ]]; then 
+                                    if [[ ! $bpos = 0 ]] && [[ ! $bmax = 1 ]]; then 
+                                       let "bpos--"; plutil -replace RenamedHD -string "${backstrings[bpos]}" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; 
+                                    fi
+                          
+                          SHOW_FULL_EFI
+                          #inputs=0
+            fi
+                        
+fi
+                         
+if [[ ${inputs} = [xX] ]]; then 
+                         if [[ ! $bmax = 0 ]]; then let "pmax=bmax-1"; fi
+                         if [[ $pmax > $bpos ]]; then 
+                                     let "bpos++"; plutil -replace RenamedHD -string "${backstrings[bpos]}" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; 
+                          
+                          SHOW_FULL_EFI
+                          #inputs=0
+        
+             fi           
 fi
                         
 
@@ -3115,7 +3151,7 @@ if [[ ${inputs} = [dD] ]]; then
                         done
                         if [[ ! ${inputs} = "p" ]]; then 
                         GET_DRIVE
-                        DEL_RENAMEHD
+                        DEL_RENAMEHD; SAVE_STRING
                         fi
                         clear
     
@@ -3162,7 +3198,7 @@ read -n 1
 clear
 fi 
 
-if [[ ! ${inputs} =~ ^[0vVdDrRqQcC]+$ ]]; then
+if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
                  if  [[ ${inputs} -le $ch ]]; then
                         printf "\r"; printf "%"80"s"
                             if [[ $loc = "ru" ]]; then
@@ -3204,9 +3240,9 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcC]+$ ]]; then
                         #Фильтр недопустимых символов ввода
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "=;{}]><[&^$"`
-                        if [[ ${#demo} = 0 ]]; then DEL_RENAMEHD
+                        if [[ ${#demo} = 0 ]]; then DEL_RENAMEHD; SAVE_STRING
                         else
-                        ADD_RENAMEHD
+                        ADD_RENAMEHD; SAVE_STRING
                         fi
                         fi
                         fi
