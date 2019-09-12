@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="024"
+s_edit_vers="026"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 024 master
+# MountEFI версия скрипта настроек 1.6. 026 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -30,35 +30,11 @@ s_edit_vers="024"
 # 022 - функция запроса пароля через GUI с системными уведомлениями 
 # 023 - добавлен запрос на ввод пароля в функции 8 если необходим
 # 024 - добавление или редактирование псевдонима в окошке GUI
+# 025 - небольшие фиксы в работе функции 9
+# 026 - - перезапуск при смене темы со встроенной на системную
 #############################################################################################################################################################################################################
 
-# функция отладки ##################################################################################################
 
-demo1="0"
-deb=0
-
-DEBUG(){
-if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
-printf '............................................................\n' >> ~/temp.txt
-echo "Now = "$Now >> ~/temp.txt
-echo "Maximum = "$Maximum >> ~/temp.txt
-Config_Maximum=`echo "$MountEFIconf" | grep Backups -A 5 | grep -A 1 -e "Maximum</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-echo "Config_Maximum = "$Config_Maximum >> ~/temp.txt
-#echo "folderpath = "$folderpath >> ~/temp.txt
-
-#echo "filename = "$filename >> ~/temp.txt
-#echo "extension = "$extension >> ~/temp.txt
-
-#echo "filename_1 = ""${filename_1}" >> ~/temp.txt
-
-
-printf '............................................................\n\n' >> ~/temp.txt
-sleep 0.2
-read -n 1 -s
-fi
-}
-########################################################################################################################################
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
@@ -389,16 +365,16 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
             echo '<dict>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>5</integer>' >> ${HOME}/.MountEFIconf.plist
-	        echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>Backups</key>' >> ${HOME}/.MountEFIconf.plist
             echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
@@ -407,7 +383,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
             echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -487,7 +463,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
 	        echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>system</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
 
@@ -509,6 +485,15 @@ UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
 CHECK_CONFIG(){
+
+reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
+if [[ $reload_check = "Reload" ]]; then
+        if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
+                launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
+        plutil -remove Reload ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+fi
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
@@ -1695,17 +1680,12 @@ fi
 CORRECT_BACKUPS_MAXIMUM(){
 CHECK_BUNZIP
 Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
-stop="1"; DEBUG
 UPDATE_CACHE
 GET_BACKUPS
-stop="2"; DEBUG
 if [[ $Now > $Maximum ]]; then
-stop="3"; DEBUG
 plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
 UPDATE_CACHE
-stop="4"; DEBUG
 fi
-stop="5"; DEBUG
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 }
 
@@ -1837,8 +1817,18 @@ if [[ ${inputs} = [rR] ]]; then
                         done
                         if [[ ! ${inputs} = "p" ]]; then
                         CHECK_BUNZIP
+                        GET_THEME
+                        old_theme=$theme
                         RESTORE_BACKUP
                         UPDATE_CACHE
+                        GET_THEME
+                        if [[ $theme = "system" ]]; then 
+                            if [[ ! $old_theme = $theme ]]; then 
+                                need_restart=1
+                                    else
+                                need_restart=0
+                            fi
+                        fi
                         Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
                         GET_BACKUPS
                         if [[ $Now > $Maximum ]]; then
@@ -2230,11 +2220,21 @@ filename_1=$(echo $filename | tr -d '.')
 
 if [[ "${filename_1}" = "MountEFIconfplist" ]]; then
 
+GET_THEME
+old_theme=$theme
 mv -f "${filepath}" ${HOME}/.MountEFIconf.plist
 
 UPDATE_CACHE
 CHECK_CONFIG
 CORRECT_BACKUPS_MAXIMUM
+GET_THEME
+if [[ $theme = "system" ]]; then 
+    if [[ ! $old_theme = $theme ]]; then 
+          need_restart=1
+               else
+          need_restart=0
+     fi
+fi               
             else
                 
                 errorep=1
@@ -2258,13 +2258,20 @@ filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d "
             
            errorep=3
            else
-               
+                GET_THEME
+                old_theme=$theme
                 mv -f ~/.temp2/*/*/"${filename}" ${HOME}/.MountEFIconf.plist
-                
                 UPDATE_CACHE
                 CHECK_CONFIG
                 CORRECT_BACKUPS_MAXIMUM
-                
+                GET_THEME
+                if [[ $theme = "system" ]]; then 
+                    if [[ ! $old_theme = $theme ]]; then 
+                        need_restart=1
+                            else
+                        need_restart=0
+                    fi
+                fi                
                 
             fi
          fi
@@ -3241,7 +3248,7 @@ echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIa.plist
 echo '  <integer>1</integer>' >> ${HOME}/.MountEFIa.plist
 echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIa.plist
 echo '  <array>' >> ${HOME}/.MountEFIa.plist
-echo '      <string>/Users/user/.MountEFIa.sh</string>' >> ${HOME}/.MountEFIa.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIa.sh</string>' >> ${HOME}/.MountEFIa.plist
 echo '  </array>' >> ${HOME}/.MountEFIa.plist
 echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIa.plist
 echo '  <true/>' >> ${HOME}/.MountEFIa.plist
@@ -3442,8 +3449,6 @@ REMOVE_SYS_AUTOMOUNT_SERVICE
 FILL_SYS_AUTOMOUNT_PLIST
 FILL_SYS_AUTOMOUNT_EXEC
 mv ${HOME}/.MountEFIa.plist ~/Library/LaunchAgents/MountEFIa.plist
-plutil -remove ProgramArguments.0 ~/Library/LaunchAgents/MountEFIa.plist
-plutil -insert ProgramArguments.0 -string "/Users/$(whoami)/.MountEFIa.sh" ~/Library/LaunchAgents/MountEFIa.plist
 launchctl load -w ~/Library/LaunchAgents/MountEFIa.plist
 if [[ $display = 1 ]]; then
     if [[ $loc = "ru" ]]; then
@@ -3451,10 +3456,51 @@ printf '\r  Сервис автоподключения EFI установлен
     else
 printf '\r  Serice automount EFI installed ... '
     fi
-read -n 1 -s -t 2
+sleep 1
 fi
 }
 
+
+
+START_RELOAD_SERVICE(){
+if [[ ! $par = "-r" ]]; then
+MEFI_path=$(ps xao tty,command | grep -w "setup.sh" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
+else
+MEFI_path=$(ps xao tty,command | grep -w "MountEFI" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
+fi
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
+echo '<dict>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <array>' >> ${HOME}/.MountEFIr.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
+echo '  </array>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <true/>' >> ${HOME}/.MountEFIr.plist
+echo '</dict>' >> ${HOME}/.MountEFIr.plist
+echo '</plist>' >> ${HOME}/.MountEFIr.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'sleep 0.5'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_path")'"''' >> ${HOME}/.MountEFIr.sh
+echo '            open ${ProgPath}'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'exit'             >> ${HOME}/.MountEFIr.sh
+
+chmod u+x ${HOME}/.MountEFIr.sh
+
+if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+}
 
 ###############################################################################
 ################### MAIN ######################################################
@@ -3549,16 +3595,10 @@ fi
 if [[ $inputs = 5 ]]; then 
     if [[ $theme = "built-in" ]]; then 
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+        plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
         UPDATE_CACHE
-                printf '\n\n'
-                    if [[ $loc = "ru" ]]; then
-                echo "включена системная тема. выполните перезапуск программы" 
-                printf 'нажмите любую клавишу для возврата в меню...'
-                        else
-                echo "set up system theme. restart required. "
-                printf 'press any key return to menu ....'
-                    fi
-                read -n 1 demo
+        START_RELOAD_SERVICE
+        if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
         else
           plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
           UPDATE_CACHE
@@ -3613,7 +3653,7 @@ if [[ $inputs = 9 ]]; then
     else
     printf '\n\n  Serice automount EFI stopped ... '
     fi
-    read -n 1 -s -t 2
+    
 
  else 
   display=1
@@ -3632,7 +3672,7 @@ if [[ $inputs = 9 ]]; then
     else
     printf '\n  EFI automounter disabled. You should enter a valid password  '
     fi
-    read -n 1 -s -t 3
+    read -n 1 -s -t 2
     else
         SETUP_SYS_AUTOMOUNT
   fi
@@ -3744,7 +3784,15 @@ if [[ $inputs = [dD] ]]; then
                 
 ########################################################################################################################
 
-if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
+if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE;
+if [[ $need_restart = 1 ]]; then 
+    plutil -insert Reload -bool Yes ${HOME}/.MountEFIconf.plist
+    UPDATE_CACHE
+    need_restart=0
+    START_RELOAD_SERVICE
+    if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+    fi
+fi
 
 ##############################################################################
 
@@ -3752,6 +3800,13 @@ if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; fi
 
 if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE; 
     if [[ $errorep = 0 ]]; then UPDATE_CACHE; clear; fi
+    if [[ $need_restart = 1 ]]; then 
+    plutil -insert Reload -bool Yes ${HOME}/.MountEFIconf.plist
+    UPDATE_CACHE
+    need_restart=0
+    START_RELOAD_SERVICE
+    if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+    fi
 fi
 
 ##############################################################################

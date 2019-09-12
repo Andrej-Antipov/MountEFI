@@ -2,11 +2,11 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="010"
+edit_vers="011"
 ##################################################################################################################################################################################################################
 
 
-############################ Mount EFI Master v.1.7.2 edit 010
+############################ Mount EFI Master v.1.7.2 edit 011
 # 004 - Проверка конфига и исправление для совместимости с функцией автомонтирования EFI при старте системы
 # 005 - Переход на использование пароля из связки ключей
 # 006 - правки для совместимости со старым конфигом
@@ -14,7 +14,7 @@ edit_vers="010"
 # 008 - форматирование запроса пароля если пароль не установлен
 # 009 - исправление поведения после неверного ввода пароля
 # 010 - функция запроса пароля через GUI c системными уведомлениями
-
+# 011 - перезапуск при смене темы со встроенной на системную
 
 
 SHOW_VERSION(){
@@ -56,6 +56,7 @@ if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RES
 fi
 
 
+
 GET_BACKUPS_FROM_ICLOUD(){
 hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
 if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
@@ -95,7 +96,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
             echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
@@ -175,7 +176,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
 	        echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>system</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
 
@@ -197,6 +198,10 @@ fi
 UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
+
+reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
+if [[ $reload_check = "Reload" ]]; then par="-s"; fi
+ 
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
@@ -288,6 +293,11 @@ if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
             zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
             rm -R ${HOME}/.MountEFIconfBackups
 fi
+
+CHECK_RELOAD(){
+reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ $reload_check = "Reload" ]]; then rel=1; else rel=0; fi
+}
 
 SET_TITLE(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
@@ -2161,7 +2171,7 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi
+if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
@@ -2237,6 +2247,8 @@ if [[ $cpu_family = "" ]]; then cpu_family=0
  else
     cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f1 -d"-" | cut -c1)
 fi
+
+if [ "$par" = "-s" ]; then par=""; cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 
 chs=0
 
