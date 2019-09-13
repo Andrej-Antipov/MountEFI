@@ -1861,9 +1861,9 @@ if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
 
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):  '; printf '                               '
+printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):  '; printf '                               '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):  ';  printf '                              '
+printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):  ';  printf '                              '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -2134,9 +2134,9 @@ printf '  Enter a number from 0 to '$schs' (or C, O, S, I, Q ):   ' ; printf '  
         else
             let "schs=$ch-1"
             if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  U, E, I, Q ):      ' ; printf '                             '
+printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):      ' ; printf '                             '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, I, Q ):      ' ; printf '                           '
+printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):      ' ; printf '                           '
     fi
 fi
 printf '\n\n'
