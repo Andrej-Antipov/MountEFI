@@ -2,10 +2,10 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="027"
+s_edit_vers="028"
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 027 master
+# MountEFI версия скрипта настроек 1.6. 028 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -33,6 +33,7 @@ s_edit_vers="027"
 # 025 - небольшие фиксы в работе функции 9
 # 026 - перезапуск при смене темы со встроенной на системную
 # 027 - перемещение по истории правки псевдонимов на один сеанс
+# 028 - очистка неиcпользуемой функции EDIT_RENAMED; упрощён алгоритм SET_THEME и 6 -й функции
 #############################################################################################################################################################################################################
 
 
@@ -195,11 +196,7 @@ fi
 
 GET_PRESETS_COUNTS(){
 pcount=0
-pstring=`echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | tr ' \n' ';'`
-IFS=';'; slist=($pstring); unset IFS;
-pcount=${#slist[@]}
-unset slist
-unset pstring
+pcount=$(echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | wc -l | xargs)
 }
 
 GET_PRESETS_NAMES(){
@@ -245,88 +242,21 @@ fi
 
 
 SET_THEMES(){
-
-HasTheme=`echo "$MountEFIconf" | grep -Eo "Theme"  | tr -d '\n'`
-if [[ ! $HasTheme = "Theme" ]]; then
-plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-else
- theme=`echo "$MountEFIconf" | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-   if [[ $theme = "system" ]]; then 
+theme=`echo "$MountEFIconf" | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+ if [[ $theme = "system" ]]; then  plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+                else
                 GET_PRESETS_COUNTS
-                CUSTOM_SET
-                plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 GET_PRESETS_NAMES
                 current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
  
-                var3=$pcount
-                num=0
-                while [[ ! $var3 = 0 ]]; do 
-                    if [[ "$current" = "${plist[$num]}" ]]; then 
-                            let "var3=0"
-                               else
-                            let "num++" 
-                            let "var3--"
-                     fi
-
-                done  
-                var2=1 
+                num=0; while [[ ! $pcount = $num ]]; do if [[ "$current" = "${plist[$num]}" ]]; then break;  else let "num++"; fi ;done  
                 let "pik=pcount-1"            
-                while [[  $var2 = 1  ]]; do
-                current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-                    printf "\r\033[1A"
-                    printf '                                                          \n'
-                    if [[ $loc = "ru" ]]; then
-                printf 'Встроенных тем: '$pcount'                                           \n'
-                printf 'Текущий выбор - тема: '"${plist[$num]}"'                             \n'
-                printf 'N - выбрать следующую тему и S для применения :  '
-                        else
-                printf 'There is '$pcount' themes.                                             \n'
-                printf ' Current preset choose: '"${plist[$num]}"'                            \n'
-                printf 'N for next theme and S to confirm :  '
-                    fi
-                demo="~"; unset demo
-                if [[ ! $pcount = 1 ]]; then 
-                read -sn1 demo
-                if [[ ! $demo =~ ^[sSnN]$ ]]; then unset demo; fi
-                else
-                    printf '\r'
-                    if [[ $loc = "ru" ]]; then
-                printf 'Нажмите любую клавишу для продолжения ...             '
-                        else
-                printf 'Press any key to continue ....                        '
-                    fi
-                    read -sn1 
-                    demo="s"
-                fi
-                if [[ $demo = [nN] ]]; then 
-                    if [[ $num = $pik ]]; then let "num=0"; else let "num++"; fi
-                    plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
-                    unset demo
-                    CUSTOM_SET
-                fi
-                   printf "\r\033[2A"
-               
-                
-if [[ $demo = [sS] ]]; then let "var2=0"; fi
-
-                
-                done
- 
-        else
-            plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
-                printf '\n\n'
-                    if [[ $loc = "ru" ]]; then
-                echo "включена системная тема. выполните перезапуск программы" 
-                echo "нажмите любую клавишу для возврата в меню..."
-                        else
-                echo "set up system theme. restart required. "
-                echo "press any key return to menu ...."
-                    fi
-                read -n 1 demo 
-    fi
-fi            
-
-}
+         
+                if [[ $num = $pik ]]; then let "num=0"; else let "num++"; fi
+                plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+fi
+                CUSTOM_SET
+ }
 
 GET_CURRENT_SET(){
 
@@ -2897,45 +2827,7 @@ fi
         plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 }
 
-EDIT_RENAMEHD(){ # adrive ->  |   demo ->
-printf '\r  '"$drive"
-if [[ ! $adrive = "±" ]]; then
-if [[ $loc = "ru" ]]; then 
-printf ':   псевдоним = '"$adrive"
-else
-printf ':   alias = '"$adrive"
-fi
-fi
-if [[ $loc = "ru" ]]; then
-if [[ $adrive = "±" ]]; then
-printf '\n                     |------------------------------|' 
-printf '\n  Введите псевдоним:  '
-else
-printf '\n                           |------------------------------|'
-printf '\n  Введите новый псевдоним:  '
-fi
-else
-if [[ $adrive = "±" ]]; then
-printf '\n                     |------------------------------|' 
-printf '\n  Enter alias:        '
-else
-printf '\n                           |------------------------------|'
-printf '\n  Enter new alias:          '
-fi
-fi
-printf "\033[?25h"
-read -r demo  
-printf "\033[?25l"
-        if [[ ! $demo = "" ]]; then 
-            if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
-#Фильтр недопустимых символов ввода
-demo=`echo "$demo" | tr -cd "[:print:]\n"`
-demo=`echo "$demo" | tr -d "=;{}]><[&^$"`
 
-         ADD_RENAMEHD
-
-fi
-}
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
@@ -3101,8 +2993,8 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
 fi
 
 if [[ ${inputs} = [zZ] ]]; then 
-                         if [[ ! $bmax = 0 ]]; then 
-                                    if [[ ! $bpos = 0 ]] && [[ ! $bmax = 1 ]]; then 
+                         if [[ $bmax > 1 ]]; then 
+                                    if [[ ! $bpos = 0 ]]; then 
                                        let "bpos--"; plutil -replace RenamedHD -string "${backstrings[bpos]}" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; 
                                     fi
                           
@@ -3643,7 +3535,6 @@ fi
 
 #################################################################################
  if [[ $inputs = 6 ]]; then 
-    if [[ $theme = "built-in" ]]; then plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; fi
   SET_THEMES
 fi
       
