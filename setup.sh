@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="043"
+s_edit_vers="044"
 
 # функция отладки ##################################################################################################
 demo1="0"
@@ -41,7 +41,7 @@ fi
 #########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 043 master
+# MountEFI версия скрипта настроек 1.6. 044 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -85,6 +85,7 @@ fi
 # 041 - в главном меню редактора темы добавлена отметка текущей встроенной темы
 # 042 - добавлен выбор дефолтного пресета в редакторе
 # 043 - изменения в функции выхода - закрыть окно перед закртытием терминала
+# 044 - в функции настройки цвета пресетов добавлен прогресс-бар
 #############################################################################################################################################################################################################
 clear
 
@@ -3327,6 +3328,38 @@ fi
 
 }
 
+function ProgressBar {
+
+let _progress=(${1}*100/${2}*100)/100
+let _done=(${_progress}*4)/10
+let _left=40-$_done
+
+_fill=$(printf "%${_done}s")
+_empty=$(printf "%${_left}s")
+
+printf "       ${_fill// /|}${_empty// / }| ${_progress}%% "
+
+}
+
+STEP_BAR_CORR(){
+case "$step" in
+                    4096 ) step2=65535;;
+                    2048 ) step2=33000;;
+                    1024 ) step2=17000;;
+                    512 ) step2=9000;;
+                    255 ) step2=6000;;
+                    128 ) step2=4000;;
+                    65 ) step2=2000;;
+                    15 ) step2=1500;;
+                    1 ) step2=1000;;
+
+                    esac
+
+
+}
+
+
+
 EDIT_COLOR(){
 printf "\033[?25l"
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"
@@ -3358,17 +3391,17 @@ color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ',')
 color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ',')
 ncolor1=$color1; ncolor2=$color2; ncolor3=$color3
 
-c_ptr=1; l_ptr=16; step=2048; swap_one=0; swap_all=0
+c_ptr=1; l_ptr=16; step=2048; swap_one=0; swap_all=0; _start=0; _end=65535
 printf "\033[?25l"
 cvar=0
 
 printf "\033[16;0H"
-                LEN $color1; printf '           R:''%'$ncr's'$color1'    \n\n'
-                LEN $color2; printf '           G:''%'$ncr's'$color2'    \n\n'
-                LEN $color3; printf '           B:''%'$ncr's'$color3'    \n\n'
-                LEN $step ;  printf '         ШАГ:''%'$ncr's'$step'      \n\n'
-                printf "\033['$l_ptr';10H""*";  printf "\033[23;0H"
-                printf '\n\n'
+                LEN $color1; printf '           R:''%'$ncr's'$color1 ;  ProgressBar ${color1} ${_end}; printf '\n\n'
+                LEN $color2; printf '           G:''%'$ncr's'$color2 ;  ProgressBar ${color2} ${_end}; printf '\n\n'
+                LEN $color3; printf '           B:''%'$ncr's'$color3 ;  ProgressBar ${color3} ${_end}; printf '\n\n'
+                LEN $step ;  printf '         ШАГ:''%'$ncr's'$step   ;  STEP_BAR_CORR; ProgressBar ${step2} ${_end};  printf '\n\n'
+                printf "\033['$l_ptr';10H""*";  printf "\033[23;0H"  
+                printf '\n\n'                                           
 unset inputs
 
 printf "\033[25;43f"; printf '                                    \r'
@@ -3430,9 +3463,9 @@ do
         
         if [[ $inputs = [zZ] ]]; then
                 
-                if [[ $c_ptr = 1 ]]; then if [[ $color1 -ge $step ]]; then let "color1=color1-step"; else color1=0; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                             '; printf "\033[16;14f"; fi
-                if [[ $c_ptr = 2 ]]; then if [[ $color2 -ge $step ]]; then let "color2=color2-step"; else color2=0; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                             '; printf "\033[18;14f"; fi
-                if [[ $c_ptr = 3 ]]; then if [[ $color3 -ge $step ]]; then let "color3=color3-step"; else color3=0; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                             '; printf "\033[20;14f"; fi
+                if [[ $c_ptr = 1 ]]; then if [[ $color1 -ge $step ]]; then let "color1=color1-step"; else color1=0; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"; ProgressBar ${color1} ${_end}; printf "\033[16;14f"; fi
+                if [[ $c_ptr = 2 ]]; then if [[ $color2 -ge $step ]]; then let "color2=color2-step"; else color2=0; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"; ProgressBar ${color2} ${_end}; printf "\033[18;14f"; fi
+                if [[ $c_ptr = 3 ]]; then if [[ $color3 -ge $step ]]; then let "color3=color3-step"; else color3=0; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"; ProgressBar ${color3} ${_end}; printf "\033[20;14f"; fi
                
                 
 
@@ -3442,9 +3475,9 @@ do
         if [[ $inputs = [xX] ]]; then
                 
                 let "maxi=65535-step"
-                if [[ $c_ptr = 1 ]]; then if [[ $color1 -le $maxi ]]; then let "color1=color1+step"; else color1=65535; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
-                if [[ $c_ptr = 2 ]]; then if [[ $color2 -le $maxi ]]; then let "color2=color2+step"; else color2=65535; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
-                if [[ $c_ptr = 3 ]]; then if [[ $color3 -le $maxi ]]; then let "color3=color3+step"; else color3=65535; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+                if [[ $c_ptr = 1 ]]; then if [[ $color1 -le $maxi ]]; then let "color1=color1+step"; else color1=65535; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"; ProgressBar ${color1} ${_end}; printf "\033[16;14f"; fi
+                if [[ $c_ptr = 2 ]]; then if [[ $color2 -le $maxi ]]; then let "color2=color2+step"; else color2=65535; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"; ProgressBar ${color2} ${_end}; printf "\033[18;14f"; fi
+                if [[ $c_ptr = 3 ]]; then if [[ $color3 -le $maxi ]]; then let "color3=color3+step"; else color3=65535; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"; ProgressBar ${color3} ${_end}; printf "\033[20;14f"; fi
                 
                 
         fi
@@ -3460,7 +3493,7 @@ do
                     65 ) step=15;;
                     15 ) step=1;;
                     esac
-                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step'      '; printf "\033[22;17f" 
+                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step; STEP_BAR_CORR; ProgressBar ${step2} ${_end}; printf "\033[22;17f" 
         fi
 
         if [[ $inputs = [vV] ]]; then 
@@ -3474,21 +3507,21 @@ do
                     1024 ) step=2048;;
                     2048 ) step=4096;;
                     esac
-                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step'      '; printf "\033[22;17f"
+                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step; STEP_BAR_CORR; ProgressBar ${step2} ${_end}; printf "\033[22;17f"
         fi
 
         if [[ $inputs = [qQ2-3] ]]; then  unset inputs; cvar=1; break;   fi
 
         if [[ $inputs = [bB] ]]; then inputs="s"
             if [[ $swap_one = 0 ]]; then 
-            if [[ $c_ptr = 1 ]]; then color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ','); LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
-            if [[ $c_ptr = 2 ]]; then color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ','); LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
-            if [[ $c_ptr = 3 ]]; then color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ','); LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+            if [[ $c_ptr = 1 ]]; then color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ','); LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"; ProgressBar ${color1} ${_end}; printf "\033[16;14f"; fi
+            if [[ $c_ptr = 2 ]]; then color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ','); LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"; ProgressBar ${color2} ${_end}; printf "\033[18;14f"; fi
+            if [[ $c_ptr = 3 ]]; then color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ','); LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"; ProgressBar ${color3} ${_end}; printf "\033[20;14f"; fi
             swap_one=1
             else
-            if [[ $c_ptr = 1 ]]; then color1=$ncolor1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
-            if [[ $c_ptr = 2 ]]; then color2=$ncolor2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
-            if [[ $c_ptr = 3 ]]; then color3=$ncolor3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+            if [[ $c_ptr = 1 ]]; then color1=$ncolor1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1";ProgressBar ${color1} ${_end};printf "\033[16;14f"; fi
+            if [[ $c_ptr = 2 ]]; then color2=$ncolor2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2";ProgressBar ${color2} ${_end};printf "\033[18;14f"; fi
+            if [[ $c_ptr = 3 ]]; then color3=$ncolor3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3";ProgressBar ${color3} ${_end};printf "\033[20;14f"; fi
             swap_one=0
             fi
         fi
@@ -3502,9 +3535,9 @@ do
         else
         color1=$ncolor1; color2=$ncolor2; color3=$ncolor3; swap_all=0; swap_one=0
         fi
-        LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"
-        LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"
-        LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"
+        LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"; ProgressBar ${color1} ${_end}; printf "\033[16;14f"
+        LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"; ProgressBar ${color2} ${_end}; printf "\033[18;14f"
+        LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"; ProgressBar ${color3} ${_end}; printf "\033[20;14f"
         fi                  
 
         if [[ $inputs = [zZxXsSaA] ]]; then  RET_BORDER; if [[ $border = 0 ]]; then osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"; fi ; fi   &  
