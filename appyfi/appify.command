@@ -21,19 +21,26 @@ if [[ -f ../setup.sh ]]; then
             cp setup.app/Contents/MacOS/setup .
             rm -R setup.app
 fi
-
+            if [[ ../Extra ]]; then rm -R -f ../Extra; fi
+            mkdir ../Extra
+            if [[ -f MountEFI ]]; then cp MountEFI ../Extra; fi
+            if [[ -f setup ]]; then cp setup ../Extra; fi
 if [[ -d ../MountEFI.app ]]; then
             if [[ -f MountEFI ]]; then 
-                rm -f ../MountEFI.app/Contents/Resources/MountEFI
-                mv MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
+                mv -f MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
             fi
             if [[ -f setup ]]; then
-                rm -f ../MountEFI.app/Contents/Resources/setup
-                mv setup ../MountEFI.app/Contents/Resources/setup
+                
+                mv -f setup ../MountEFI.app/Contents/Resources/setup
             fi
 fi
 
+cd ..
+if [[ -d MountEFI.app ]]; then
+ditto -c -k --sequesterRsrc --keepParent MountEFI.app  newMountEFI.zip
+mv -f newMountEFI.zip MountEFI.zip
+fi
  
 cat  ~/.bash_history | sed -n '/appify/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
 osascript -e 'quit app "terminal.app"' & exit
