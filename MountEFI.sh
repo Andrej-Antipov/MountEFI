@@ -2,11 +2,11 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="012"
+edit_vers="016"
 ##################################################################################################################################################################################################################
 
 
-############################ Mount EFI Master v.1.7.2 edit 012
+############################ Mount EFI Master v.1.7.2 edit 016
 # 004 - Проверка конфига и исправление для совместимости с функцией автомонтирования EFI при старте системы
 # 005 - Переход на использование пароля из связки ключей
 # 006 - правки для совместимости со старым конфигом
@@ -16,6 +16,10 @@ edit_vers="012"
 # 010 - функция запроса пароля через GUI c системными уведомлениями
 # 011 - перезапуск при смене темы со встроенной на системную
 # 012 - настройки теперь можно запускать из основного меню
+# 013 - изменения в функции READ_TWO_SYMBOLS. Добавлено сообщение с предложением ввести второй разряд числа или Enter.
+# 014 - новая команда определения локализации 
+# 015 - в двухбайтовом вводе исправлен ввод литеры O
+# 016 - установка темы CUSTOM_SET переведена в параллельный режим
 
 
 SHOW_VERSION(){
@@ -612,12 +616,12 @@ term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
 GET_LOCALE(){
 if [[ $cache = 1 ]] ; then
         locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
             else
                 loc=`echo ${locale}`
         fi
     else   
-        loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
 fi  
 }
 
@@ -1341,7 +1345,7 @@ if [[ ! $mcheck = "Yes" ]]; then
 
 theme="system"
 GET_THEME
-if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
 
 
     if [[ $loc = "ru" ]]; then
@@ -1434,7 +1438,7 @@ fi
 ################### применение темы ##########################################################
 theme="system"
 GET_THEME
-if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
 ############################################################################################
 
 ################################ получение имени диска для переименования #####################
@@ -2057,6 +2061,7 @@ GET_USER_PASSWORD
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
+unset pos_corr; pos_corr=$1; if [[ $pos_corr = "" ]]; then pos_corr=50; fi
 if [[ ! $order = 3 ]]; then order=4; fi 
 choice1="±"; choice="±";
 printf "\033[?25h"
@@ -2065,16 +2070,16 @@ do
 printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
-printf "\r\n\033[3A\033[49C"
+printf "\r\n\033[3A\033['$pos_corr'C"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 IFS="±"; read   -n 1 -t 1  choice1 ; unset IFS 
 if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         if [[ ! $order = 3 ]]; then
-            if [[ $choice1 = [uUqQeEiIvV] ]]; then choice=${choice1}; break; fi
+            if [[ $choice1 = [uUqQeEiIvVsSoO] ]]; then choice=${choice1}; break; fi
                     else
-             if [[ $choice1 = [qQcCoOsSiIvV] ]]; then choice=${choice1}; break; fi
+             if [[ $choice1 = [qQcCoOsSiIvVoO] ]]; then choice=${choice1}; break; fi
         fi
  
 fi
@@ -2093,7 +2098,12 @@ do
 printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
-printf "\r\n\033[3A\033[49C"
+if [[ $loc = "ru" ]]; then
+printf '\n  ! введите вторую цифру или нажмите <Enter> '
+else
+printf '\n  ! Press the second digit or press <Enter>  '
+fi
+printf "\r\n\033[4A\033['$pos_corr'C"$choice
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 CHECK_HOTPLUG_DISKS
 if [[ $hotplug = 1 ]]; then break; fi
@@ -2187,6 +2197,8 @@ done
 
 chs=$choice
 if [[ $chs = 0 ]]; then nogetlist=0; fi
+
+
 
 }
 # Конец определения GETKEYS #######################################

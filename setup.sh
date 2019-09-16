@@ -2,10 +2,46 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="028"
+s_edit_vers="042"
+
+# функция отладки ##################################################################################################
+demo1="0"
+deb=0
+
+DEBUG(){
+if [[ ! $deb = 0 ]]; then
+printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
+printf '............................................................\n' >> ~/temp.txt
+                       
+                        echo "old_preset=""$old_preset" >> ~/temp.txt
+                        echo "old_BackgroundColor=""$old_BackgroundColor" >> ~/temp.txt
+                        echo "old_FontName=""$old_FontName" >> ~/temp.txt
+                        echo "old_FontSize=""$old_FontSize"    >> ~/temp.txt
+                        echo "old_TextColor=""$old_TextColor" >> ~/temp.txt
+                        echo "" >> ~/temp.txt
+                        echo "current_preset=""$current_preset" >> ~/temp.txt
+                        echo "current_background=""$current_background" >> ~/temp.txt
+                        echo "current_fontname=""$current_fontname" >> ~/temp.txt
+                        echo "current_fontsize=""$current_fontsize"    >> ~/temp.txt
+                        echo "current_foreground=""$current_foreground" >> ~/temp.txt
+                        echo "" >> ~/temp.txt
+                        echo "new_preset=""$new_preset" >> ~/temp.txt
+                        echo "new_background=""$new_background" >> ~/temp.txt
+                        echo "new_fontname=""$new_fontname" >> ~/temp.txt
+                        echo "new_fontsize=""$new_fontsize"    >> ~/temp.txt
+                        echo "new_foreground=""$new_foreground" >> ~/temp.txt
+                        echo "" >> ~/temp.txt
+                        echo "swap_preset="$swap_preset >> ~/temp.txt
+
+printf '............................................................\n\n' >> ~/temp.txt
+sleep 0.2
+read -n 1 -s
+fi
+}
+#########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 028 master
+# MountEFI версия скрипта настроек 1.6. 042 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -34,8 +70,22 @@ s_edit_vers="028"
 # 026 - перезапуск при смене темы со встроенной на системную
 # 027 - перемещение по истории правки псевдонимов на один сеанс
 # 028 - очистка неиcпользуемой функции EDIT_RENAMED; упрощён алгоритм SET_THEME и 6 -й функции
+# 029 - добавлен вызов редактора пресетов в меню
+# 030 - функции удаления, добавления пресета в конфиг. Мелкие исправления в других функциях. 
+# 031 - простейшая функция редактирования пресета. часть 1 (функции управления редактированием)
+# 032 - изменения функции READ_TWO_SYMBOLS (как в MountEFI) и добавление в неё сообщение о втором разряде ввода. 
+# 033 - простейшая функция редактирования пресетов. часть 2 (редактирование параметров пресета)
+# 034 - добавлено редактирование размера шрифта
+# 035 - новая команда определения локализации
+# 036 - новая команда в сервисе автозапуска функции 9 
+# 037 - исправление в функции READ_TWO_SYMBOLS - добавлена литера "O"
+# 038 - в редактор встроенных тем добавлена функция выбора шрифта. 
+# 039 - запуск функций установки темы переведён в параллеьный режим CUSTOM_SET &
+# 040 - добавлены шрифты и исправлена их обработка
+# 041 - в главном меню редактора темы добавлена отметка текущей встроенной темы
+# 042 - добавлен выбор дефолтного пресета в редакторе
 #############################################################################################################################################################################################################
-
+clear
 
 
 SHOW_VERSION(){
@@ -91,12 +141,12 @@ SET_LOCALE(){
 
 if [[ $cache = 1 ]] ; then
         locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
             else
                 loc=`echo ${locale}`
         fi
     else   
-        loc=`locale | grep LANG | sed -e 's/.*LANG="\(.*\)_.*/\1/'`
+        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
 fi
             if [[ $loc = "ru" ]]; then
 if [[ $locale = "ru" ]]; then loc_set="русский"; loc_corr=17; fi
@@ -196,13 +246,17 @@ fi
 
 GET_PRESETS_COUNTS(){
 pcount=0
-pcount=$(echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | wc -l | xargs)
+pcount=$(echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | wc -l | xargs)
 }
 
+
 GET_PRESETS_NAMES(){
-pstring=`echo "$MountEFIconf" | grep  -B 2 -e "<key>BackgroundColor</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/BackgroundColor/;/g' | tr -d '\n'`
-IFS=';'; plist=($pstring); unset IFS
-unset pstring
+pcount=$(echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | wc -l | xargs)
+N0=0; N1=2; N2=3; plist=()
+for ((i=0; i<$pcount; i++)); do
+plist+=( "$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')" )
+let "N1=N1+11"; let "N2=N2+11"
+done
 }
 
 GET_THEME(){
@@ -235,11 +289,27 @@ if [[ $loc = "ru" ]]; then
 let "btheme_corr=29-tlenth"
 btspc_corr=8
 else
-let "btheme_corr=23-tlenth"
+let "btheme_corr=26-tlenth"
 fi
 
 }
 
+DELETE_THEME_PRESET(){
+
+plutil -remove Presets."$editing_preset" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+
+}
+
+ADD_THEME_PRESET(){
+
+plutil -replace  Presets."$editing_preset" -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+plutil -replace  Presets."$editing_preset".BackgroundColor -string "$editing_BackgroundColor" ${HOME}/.MountEFIconf.plist
+plutil -replace  Presets."$editing_preset".FontName -string "$editing_FontName" ${HOME}/.MountEFIconf.plist
+plutil -replace  Presets."$editing_preset".FontSize -string "$editing_FontSize" ${HOME}/.MountEFIconf.plist
+plutil -replace  Presets."$editing_preset".TextColor -string "$editing_TextColor" ${HOME}/.MountEFIconf.plist
+UPDATE_CACHE
+
+}
 
 SET_THEMES(){
 theme=`echo "$MountEFIconf" | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -255,18 +325,33 @@ theme=`echo "$MountEFIconf" | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.
                 if [[ $num = $pik ]]; then let "num=0"; else let "num++"; fi
                 plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
 fi
-                CUSTOM_SET
+                CUSTOM_SET &
  }
+
+
+
+GET_DATA_OF_PRESET_NUMBER(){
+i=$1
+let "base=(i*11)+2"; let "N1=base+3"; let "N2=base+4"
+current_background=$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')
+let "N1=N1+2"; let "N2=N2+2"
+current_fontname=$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')
+let "N1=N1+2"; let "N2=N2+2"
+current_fontsize=$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')
+let "N1=N1+2"; let "N2=N2+2"
+current_foreground=$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')
+
+}
 
 GET_CURRENT_SET(){
 
+GET_PRESETS_NAMES
 current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_background=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_foreground=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_fontname=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_fontsize=`echo "$MountEFIconf" | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then break; fi; done
+GET_DATA_OF_PRESET_NUMBER $i
 
 }
+
 
 
 CUSTOM_SET(){
@@ -1620,6 +1705,8 @@ fi
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 }
 
+##############################################################################################################
+
 SET_BACKUPS(){
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 unzip  -o -qq ${HOME}/.MountEFIconfBackups.zip -d ~/.temp
@@ -1900,7 +1987,11 @@ if [[ ${ch} -le 9 ]]; then
     IFS="±"; read -n 1 -t 1 inputs ; unset IFS  ; CHECK_HOTPLUG
     done
 else
-    calls=1; READ_TWO_SYMBOLS    
+    if [[ $loc = "ru" ]]; then
+    READ_TWO_SYMBOLS 49
+        else
+    READ_TWO_SYMBOLS 49
+        fi    
 fi
 #IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
@@ -2061,7 +2152,11 @@ if [[ ${ch} -le 9 ]]; then
     IFS="±"; read -n 1 -t 1 inputs ; unset IFS  ; CHECK_HOTPLUG
     done
 else
-    calls=1; READ_TWO_SYMBOLS    
+    if [[ $loc = "ru" ]]; then
+    READ_TWO_SYMBOLS 43
+        else
+    READ_TWO_SYMBOLS 43
+        fi        
 fi
 #IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
@@ -2293,7 +2388,7 @@ fi
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeE]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpP]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2375,7 +2470,7 @@ printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(
 printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n'
 printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n'
 printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(система, встроенная) \n'
-printf ' 6) Пресет "'$itheme_set'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"' \n'
+printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"' \n'
 printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n'
 printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)     \n'
 printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)     \n'
@@ -2385,6 +2480,7 @@ printf ' A) Создать или править псевдонимы физич
 printf ' B) Резервное сохранение и восстановление настроек                              \n'
 printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n'
 printf ' E) Сохранить конфиг в файл (zip)                                               \n'
+printf ' P) Редактировать встроенные пресеты тем                                        \n'
 
             else
 printf ' 0) Setup all parameters to defaults                                            \n'
@@ -2393,7 +2489,7 @@ printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)      
 printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)    \n'
 printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n'
 printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in)       \n'
-printf ' 6) Theme preset "'$itheme_set'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name)            \n'
+printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name)            \n'
 printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n'
 printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)            \n'
 printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)            \n'
@@ -2403,6 +2499,7 @@ printf ' A) Create or edit aliases physical device/media                        
 printf ' B) Backup and restore configuration settings                                   \n'
 printf ' I) Import config from file (zip or plist)                                      \n'
 printf ' E) Upload config to file (zip)                                                 \n'
+printf ' P) Edit built-in theme presets                                                 \n'
 
 
             fi
@@ -2419,7 +2516,7 @@ printf ' D) Upload settings backups from iCloud                                 
 
 UPDATE_SCREEN(){
         GET_THEME
-        if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi
+        if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
 
         SET_LOCALE
 
@@ -2831,70 +2928,64 @@ fi
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
-
-inputs1="±"; inputs="±";
-while [[ $inputs1 = "±" ]]
+unset pos_corr; pos_corr=$1
+if [[ $pos_corr = "" ]]; then pos_corr=38; fi
+choice1="±"; choice="±";
+printf "\033[?25h"
+while [[ $choice1 = "±" ]]
 do
 printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
-if [[ $loc = "ru" ]]; then
-printf "\r\n\033[3A\033[55C"
-else
-printf "\r\n\033[3A\033[51C"
-fi
-IFS="±"; read   -n 1 -t 1  inputs1 ; unset IFS 
-if [[ $inputs1 = "" ]]; then printf "\033[1A"; inputs1="±"; fi
-if [[ $inputs1 = [0-9] ]]; then inputs=${inputs1}; break
+printf "\r\n\033[3A\033['$pos_corr'C"
+if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
+IFS="±"; read   -n 1 -t 1  choice1 ; unset IFS 
+if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
+if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
-        if [[ ! $calls = 1 ]]; then
-            if [[ $inputs1 = [rReEvVcCdDqQ] ]]; then inputs=${inputs1}; break; fi
-                    else
-             if [[ $inputs1 = [oOqQdDcCtT] ]]; then inputs=${inputs1}; break; fi
-        fi
- 
+        
+            if [[ $choice1 = [uUqQeEiIvVdDaAoO] ]]; then choice=${choice1}; break; fi
+       
 fi
- inputs1="±"
+ choice1="±"
 
 
 CHECK_HOTPLUG
 if [[ $hotplug = 1 ]]; then break; fi
-if [[ $calls = 0 ]]; then CHECK_HOTPLUG_PARTS; fi
+CHECK_HOTPLUG_PARTS
 done
 if [[ ! $hotplug = 1 ]]; then 
-    if [[ $inputs1 = [0-9] ]]; then
-inputs1="±"
-while [[ $inputs1 = "±" ]]
+    if [[ $choice1 = [0-9] ]]; then
+choice1="±"
+while [[ $choice1 = "±" ]]
 do
 printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
 if [[ $loc = "ru" ]]; then
-printf "\r\n\033[3A\033[55C"
+printf '  ! введите вторую цифру или <Enter>        '
 else
-printf "\r\n\033[3A\033[51C"
+printf '  ! Press the second digit or press <Enter> '
 fi
+printf "\r\n\033[4A\033['$pos_corr'C"$choice
+if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 CHECK_HOTPLUG
 if [[ $hotplug = 1 ]]; then break; fi
-if [[ $calls = 0 ]]; then CHECK_HOTPLUG_PARTS; fi
-IFS="±"; read  -n 1 -t 1  inputs1 ; unset IFS 
-if [[ ! $inputs1 = [0-9] ]]; then 
-        if [[ $inputs1 = "" ]]; then printf "\033[1A"; break
-            else inputs1="±"; fi
+CHECK_HOTPLUG_PARTS
+IFS="±"; read  -n 1 -t 1  choice1 ; unset IFS 
+if [[ ! $choice1 = [0-9] ]]; then 
+        if [[ $choice1 = "" ]]; then printf "\033[1A"; break
+            else choice1="±"; fi
     else
-        if [[ $inputs = 0 ]]; then unset inputs; fi
-        inputs+=${inputs1}
+        if [[ $choice = 0 ]]; then unset choice; fi
+        choice+=${choice1}
         
 fi
 done
     fi
 fi
 printf "\033[?25l"
-if [[ $inputs = [0-9] ]]; then
-let "chan=ch+1"
-if [[ ${inputs} -ge ${chan} ]]; then inputs="0"; fi
-fi
- 
+inputs=$choice
   }
 ########################################################################################
 
@@ -2943,7 +3034,11 @@ printf "\033[?25h"
     IFS="±"; read -n 1 -t 1 inputs ; unset IFS ; sym=1 ; CHECK_HOTPLUG ; CHECK_HOTPLUG_PARTS
     done
   else
-    calls=0; READ_TWO_SYMBOLS
+        if [[ $loc = "ru" ]]; then
+    READ_TWO_SYMBOLS 55
+        else
+    READ_TWO_SYMBOLS 49
+        fi
   fi  
     #IFS="±"; read -n 1 inputs ; unset IFS 
     if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; fi
@@ -3125,13 +3220,13 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
                         else
                         if demo=$(osascript -e 'set T to text returned of (display dialog "<-------- Edit aliases -------->|<- 30 characters !" buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
                         fi
+                        demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
+                        demo=`echo "$demo" | tr -cd "[:print:]\n"`
+                        demo=`echo "$demo" | tr -d "={}]><[&^$"`
+                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
                         if [[ $cancel = 0 ]]; then
                             if [[ ! "${demo}" = "${drive}" ]]; then
-                        demo=$(echo "${demo}" | sed 's/^[ \t]*//')
                         if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
-                        #Фильтр недопустимых символов ввода
-                        demo=`echo "$demo" | tr -cd "[:print:]\n"`
-                        demo=`echo "$demo" | tr -d "=;{}]><[&^$"`
                         if [[ ${#demo} = 0 ]]; then DEL_RENAMEHD; SAVE_STRING
                         else
                         ADD_RENAMEHD; SAVE_STRING
@@ -3161,6 +3256,869 @@ unset inputs
 clear
 }
 ############################## конец определения функции псевдонимов ##################################
+
+GET_COLOR_INPUT(){
+            
+                        
+             while [[ ! ${inputs} =~ ^[aAbBsSqQzZxXcCvVuU2-3]+$ ]]; do
+            
+            printf "\033[25;43f"; printf '                                    \r'
+                if [[ $loc = "ru" ]]; then
+            printf '\r  Ожидание ввода (или Q - возврат к меню):  \n\n'
+            printf '        A/S - выбрать компонент цвета для редактирования     \n'
+            printf '        Z/X - установка значения выбранного компонента       \n'
+            printf '        С/V - изменение шага смены значения компонента       \n'
+            printf '        B/B - отменить последнее изменение компонента        \n'
+            printf '        U/U - отменить последние изменения цвета             \n'
+            
+			       else
+            printf '\r    Waiting for input (Q - back to menu):   \n\n'
+            printf '        A/S - select a color component to edit               \n'
+            printf '        Z/X - control the value of the selected component    \n'
+            printf '        С/V - control the step of changing the color value   \n'
+            printf '        B/B - discard the last color component change        \n'
+            printf '        U/U - discard recent color value changes             \n'
+            
+                fi 
+            printf "\033[25;43f"; printf '                                    \r'
+            #printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+            #printf "\033[4A"
+            if [[ $loc = "ru" ]]; then
+            printf "\r\033[43C"
+            else
+            printf "\r\033[42C"
+            fi
+            printf "\033[?25h"
+           
+ 
+        
+        read -s -n 1  inputs 
+        
+        if [[ ! $inputs = [aAbBsSqQzZxXcCvVuU2-3] ]]; then 
+                        if [[ ${inputs} = "" ]]; then  unset inputs; fi 
+                        if [[ ${inputs} -gt 65535 ]]; then unset inputs; fi 2>&-
+                        
+                        printf '\r'
+                        
+        fi
+        printf '\r'
+        done
+}
+
+LEN(){
+str="$1"
+lenth=${#str}
+let "ncr=6-lenth"
+}
+
+RET_BORDER(){
+border=0
+if [[ $inputs = [zZ] ]]; then
+if [[ $c_ptr = 1 ]] && [[ $color1 = 0 ]]; then border=1; fi
+if [[ $c_ptr = 2 ]] && [[ $color2 = 0 ]]; then border=1; fi
+if [[ $c_ptr = 3 ]] && [[ $color3 = 0 ]]; then border=1; fi
+fi
+if [[ $inputs = [xX] ]]; then
+if [[ $c_ptr = 1 ]] && [[ $color1 = 65535 ]]; then border=1; fi
+if [[ $c_ptr = 2 ]] && [[ $color2 = 65535 ]]; then border=1; fi
+if [[ $c_ptr = 3 ]] && [[ $color3 = 65535 ]]; then border=1; fi
+fi  
+
+}
+
+EDIT_COLOR(){
+printf "\033[?25l"
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+token=$1; if [[ $token = "" ]]; then token="background"; fi
+if [[ $token = "background" ]]; then
+                            old_color="$current_background"
+                            if [[ $loc = "ru" ]]; then
+                            words="Редакция цвета фона:"
+                            else
+                            words="Edit Background color:"
+                            fi
+    else
+if [[ $token = "foreground" ]]; then
+                            token="normal text"
+                            old_color="$current_foreground"
+                            if [[ $loc = "ru" ]]; then
+                            words="Редакция цвета текста:"
+                            else
+                            words="Edit text color:"
+                            fi
+    fi
+fi
+
+                            printf "\033[14;0H"'                            '"$words"'                         \n\n'
+
+
+color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ',')
+color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ',')
+color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ',')
+ncolor1=$color1; ncolor2=$color2; ncolor3=$color3
+
+c_ptr=1; l_ptr=16; step=2048; swap_one=0; swap_all=0
+printf "\033[?25l"
+cvar=0
+
+printf "\033[16;0H"
+                LEN $color1; printf '           R:''%'$ncr's'$color1'    \n\n'
+                LEN $color2; printf '           G:''%'$ncr's'$color2'    \n\n'
+                LEN $color3; printf '           B:''%'$ncr's'$color3'    \n\n'
+                LEN $step ;  printf '         ШАГ:''%'$ncr's'$step'      \n\n'
+                printf "\033['$l_ptr';10H""*";  printf "\033[23;0H"
+                printf '\n\n'
+unset inputs
+
+printf "\033[25;43f"; printf '                                    \r'
+                if [[ $loc = "ru" ]]; then
+            printf '\r  Ожидание ввода (или Q - возврат к меню):  \n\n'
+            printf '        A/S - выбрать компонент цвета для редактирования     \n'
+            printf '        Z/X - установка значения выбранного компонента       \n'
+            printf '        С/V - изменение шага смены значения компонента       \n'
+            printf '        B/B - отменить последнее изменение компонента        \n'
+            printf '        U/U - отменить последние изменения цвета             \n'
+			       else
+            printf '\r    Waiting for input (Q - back to menu):   \n\n'
+            printf '        A/S - select a color component to edit               \n'
+            printf '        Z/X - control the value of the selected component    \n'
+            printf '        С/V - control the step of changing the color value   \n'
+            printf '        B/B - discard the last color component change        \n'
+            printf '        U/U - discard recent color value changes             \n'
+            
+                fi
+            printf "\033[25;43f"; printf '                                    \r'
+   
+            if [[ $loc = "ru" ]]; then
+            printf "\r\033[43C"
+            else
+            printf "\r\033[42C"
+            fi
+           
+
+osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"
+
+while [[ $cvar = 0 ]]; 
+do
+                
+         GET_COLOR_INPUT
+
+        printf "\033[?25l"
+                
+         if [[ $inputs = [sS] ]]; then
+                
+                printf "\033['$l_ptr';10f"" "
+                if [[ $c_ptr > 1 ]]; then let "c_ptr--"; let "l_ptr=l_ptr-2"
+                    else
+                        c_ptr=3; l_ptr=20
+                fi
+                printf "\033['$l_ptr';10f""*"; printf "\033[25;43f"
+               
+         fi
+
+         if [[ $inputs = [aA] ]]; then
+                
+                printf "\033['$l_ptr';10f"" "
+                if [[ $c_ptr < 3 ]]; then let "c_ptr++"; let "l_ptr=l_ptr+2"
+                    else
+                        c_ptr=1; l_ptr=16
+                fi
+                printf "\033['$l_ptr';10f""*"; printf "\033[25;43f"
+                
+         fi
+        
+        if [[ $inputs = [zZ] ]]; then
+                
+                if [[ $c_ptr = 1 ]]; then if [[ $color1 -ge $step ]]; then let "color1=color1-step"; else color1=0; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                             '; printf "\033[16;14f"; fi
+                if [[ $c_ptr = 2 ]]; then if [[ $color2 -ge $step ]]; then let "color2=color2-step"; else color2=0; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                             '; printf "\033[18;14f"; fi
+                if [[ $c_ptr = 3 ]]; then if [[ $color3 -ge $step ]]; then let "color3=color3-step"; else color3=0; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                             '; printf "\033[20;14f"; fi
+               
+                
+
+                
+        fi
+
+        if [[ $inputs = [xX] ]]; then
+                
+                let "maxi=65535-step"
+                if [[ $c_ptr = 1 ]]; then if [[ $color1 -le $maxi ]]; then let "color1=color1+step"; else color1=65535; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
+                if [[ $c_ptr = 2 ]]; then if [[ $color2 -le $maxi ]]; then let "color2=color2+step"; else color2=65535; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
+                if [[ $c_ptr = 3 ]]; then if [[ $color3 -le $maxi ]]; then let "color3=color3+step"; else color3=65535; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+                
+                
+        fi
+        
+        if [[ $inputs = [cC] ]]; then 
+                    case "$step" in
+                    4096 ) step=2048;;
+                    2048 ) step=1024;;
+                    1024 ) step=512;;
+                    512 ) step=255;;
+                    255 ) step=128;;
+                    128 ) step=65;;
+                    65 ) step=15;;
+                    15 ) step=1;;
+                    esac
+                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step'      '; printf "\033[22;17f" 
+        fi
+
+        if [[ $inputs = [vV] ]]; then 
+                    case "$step" in
+                    1 ) step=15;;
+                    15 ) step=65;;
+                    65 ) step=128;;
+                    128 ) step=255;;
+                    255 ) step=512;;
+                    512 ) step=1024;;
+                    1024 ) step=2048;;
+                    2048 ) step=4096;;
+                    esac
+                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step'      '; printf "\033[22;17f"
+        fi
+
+        if [[ $inputs = [qQ2-3] ]]; then  unset inputs; cvar=1; break;   fi
+
+        if [[ $inputs = [bB] ]]; then inputs="s"
+            if [[ $swap_one = 0 ]]; then 
+            if [[ $c_ptr = 1 ]]; then color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ','); LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
+            if [[ $c_ptr = 2 ]]; then color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ','); LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
+            if [[ $c_ptr = 3 ]]; then color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ','); LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+            swap_one=1
+            else
+            if [[ $c_ptr = 1 ]]; then color1=$ncolor1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
+            if [[ $c_ptr = 2 ]]; then color2=$ncolor2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
+            if [[ $c_ptr = 3 ]]; then color3=$ncolor3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+            swap_one=0
+            fi
+        fi
+         
+        if [[ $inputs = [uU] ]]; then 
+            inputs="s"
+        if [[ $swap_all = 0 ]]; then
+        color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ','); color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ','); color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ',')
+        swap_all=1
+        swap_one=1
+        else
+        color1=$ncolor1; color2=$ncolor2; color3=$ncolor3; swap_all=0; swap_one=0
+        fi
+        LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"
+        LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"
+        LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"
+        fi                  
+
+        if [[ $inputs = [zZxXsSaA] ]]; then  RET_BORDER; if [[ $border = 0 ]]; then osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"; fi ; fi   &  
+
+        if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
+        
+        read -s -n 1  inputs
+        
+done
+
+if [[ $token = "background" ]]; then current_background="{"$color1", "$color2", "$color3"}"
+            if [[ "$current_background" = "$old_background" ]]; then swap_preset=0; fi
+        else
+         current_foreground="{"$color1", "$color2", "$color3"}"
+         if [[ "$current_foreground" = "$old_foreground" ]]; then swap_preset=0; fi
+fi
+
+
+}
+
+SAVE_ORIGINAL_PRESET(){
+                        let "preset_num=inputs-1"
+                        GET_DATA_OF_PRESET_NUMBER $preset_num
+                        current_preset="${plist[preset_num]}"
+                        old_preset="$current_preset"
+                        old_BackgroundColor="$current_background"
+                        old_FontName="$current_fontname"
+                        old_FontSize="$current_fontsize"
+                        old_TextColor="$current_foreground"
+
+
+}
+
+SAVE_NEW_PRESET(){
+
+                        new_preset="$current_preset"
+                        new_background="$current_background"
+                        new_fontname="$current_fontname"
+                        new_fontsize="$current_fontsize"
+                        new_foreground="$current_foreground"
+
+}
+
+RESTORE_NEW_PRESET(){
+
+                        current_preset="$new_preset"
+                        current_background="$new_background"
+                        current_fontname="$new_fontname"
+                        current_fontsize="$new_fontsize"
+                        current_foreground="$new_foreground"
+
+}
+
+RESTORE_ORIGINAL_PRESET(){
+                        
+                        current_preset="$old_preset"
+                        current_background="$old_BackgroundColor"
+                        current_fontname="$old_FontName"
+                        current_fontsize="$old_FontSize"
+                        current_foreground="$old_TextColor"
+
+}
+
+CUSTOM_SET_EDITED_THEME(){
+osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
+osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
+set_font "$current_fontname" $current_fontsize
+}
+
+EDIT_PRESET_UPDATE_SCREEN(){
+                        printf "\033[0;0H"
+                        if [[ $loc = "ru" ]]; then
+                        printf '\n                              Редактирование  пресета:                        \n'
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+                        
+                        
+			               else
+                        printf '\n                               Edit the preset                                \n'
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+                        fi
+                        printf '\n\n'
+
+name_lenth=${#current_preset}
+let "ncorr=30-name_lenth"
+font_name_lenth=${#current_fontname}
+if [[ ${#current_fontname} -gt 30 ]]; then current_fontname_s="${current_fontname:0:28}"".."; else current_fontname_s="$current_fontname"; fi
+let "fcorr=32-font_name_lenth"
+                        if [[ $loc = "ru" ]]; then
+printf '             1)   Имя пресета:      '"$current_preset""%"$ncorr"s"'\n'
+printf '             2)   Цвет фона:        '"$current_background"'     \n'
+printf '             3)   Цвет текста:      '"$current_foreground"'     \n'
+printf '             4)   Название шрифта:  '"$current_fontname_s""%"$fcorr"s"'\n'
+printf '             5)   Размер шрифта:    '"$current_fontsize"'       \n'
+printf '\n   '
+printf '.%.0s' {1..74}
+printf '\n\n  '
+                        else
+
+printf '             1)   Preset Name:      '"$current_preset""%"$ncorr"s"'\n'
+printf '             2)   Background color: '"$current_background"'      \n'
+printf '             3)   Text color:       '"$current_foreground"'      \n'
+printf '             4)   Font Name:        '"$current_fontname_s""%"$fcorr"s"'\n'
+printf '             5)   Font size:        '"$current_fontsize"'      \n'
+printf '\n   '
+printf '.%.0s' {1..74}
+printf '\n\n  '
+                        fi
+
+}
+
+EDIT_PRESET_NAME(){
+
+                        unset demo
+                                if [[ $loc = "ru" ]]; then
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "Имя нового пресета:" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "New preset name:" buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                                fi
+                        demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
+                        demo=`echo "$demo" | tr -cd "[:print:]\n"`
+                        demo=`echo "$demo" | tr -d "={}]><[&^$"`
+                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        editing_preset="$demo"
+
+}
+
+UPDATE_PRESETS_LIST(){
+GET_PRESETS_NAMES
+currents=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+
+                                    if [[ $loc = "ru" ]]; then
+                        printf '\n                              Список пресетов:                                  '
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+                        
+                        
+			               else
+                        printf '\n                               Preset List:                                     '
+                        printf '\n   '
+	                    printf '.%.0s' {1..74}
+                        fi
+                        printf '\n\n'
+var6=0; chn=1
+while [[ ! $var6 = $pcount ]] 
+do
+            if [[ $chn -le 9 ]]; then
+            printf '                           '$chn')      '
+            else
+            printf '                          '$chn')      '
+            fi
+            echo "${plist[var6]}"
+            if [[ "${plist[var6]}" = "$currents" ]]; then currents=$var6; let "currents=currents+5"; fi
+let "chn++"; let "var6++"
+done
+             printf '\n  '; printf '.%.0s' {1..74}
+                if [[ $loc = "ru" ]]; then
+        
+        printf '\n           * Звёздочкой отмечен пресет который используется по умолчанию       \n' 
+        printf '              Выбор номера темы применяет её и запускает редактор темы           \n\n'
+        printf '                     Z/X)    Выбрать дефолтный пресет                          \n'                  
+        printf '                       R)    Удалить пресет темы                               \n'
+        printf '                       N)    Добавить пресет темы                              \n'
+        printf '                       Q)    Вернуться в главное меню                          \n\n' 
+
+                    else
+        
+        printf '\n        selecting a theme number applies it and launches the theme editor      \n'
+        printf '                * The asterisk marks the default preset.                       \n\n'
+        printf '                     Z/X)    Select default preset                             \n'
+        printf '                       R)    Add theme preset                                  \n'
+        printf '                       N)    Delete theme preset                               \n'
+        printf '                       Q)    Quit to the main menu                             \n\n' 
+
+                    fi
+let "chn--";
+
+
+
+}
+
+UPDATE_FONTS_LIST(){
+
+fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
+Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;SF Mono Light;SF Mono Light Italic;SF Mono Medium;SF Mono Medium Italic;SF Mono Regular;\
+SF Mono Regular Italic;SF Mono Semibold;SF Mono Semibold Italic;SF Mono Bold;SF Mono Bold Italic;SF Mono Heavy;SF Mono Heavy Italic;"
+
+IFS=';' 
+fonts=($fontlist)
+unset IFS;
+font_counts=${#fonts[@]};
+let "lines=17+font_counts"
+printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+printf "\033[14;0H"
+printf "\033[?25l"
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+chn=1
+printf "\033[14;0H"
+for (( i=0; i<${#fonts[@]}; i++ )); 
+            do printf '                                  '"${fonts[$i]}"'              \n'; let "chn++"; done
+chn=1
+printf '\n\n'
+}
+
+
+EDIT_FONTNAME(){
+f_ptr=0; l_ptr=13 ; max=${#fonts[@]}; let "maxl=max+12"; let "max--"; let "c_pos=maxl+3"
+for (( i=0; i<${#fonts[@]}; i++ )); do if [[ "$current_fontname" = "${fonts[$i]}" ]]; then break; else let "f_ptr++"; let "l_ptr++"; fi; done
+if [[ $i = ${#fonts[@]} ]]; then f_ptr=0; l_ptr=13; fi
+printf "\033['$l_ptr';32f""*"
+ vc=0
+                        unset inputs
+                   while [[ $vc = 0 ]]; do
+
+                        while [[ ! ${inputs} =~ ^[aAsSqQ4]+$ ]]; do
+                        read -s -n 1  inputs 
+        
+                        if [[ ! $inputs = [aAsSqQ4] ]]; then 
+                        if [[ ${inputs} = "" ]]; then  unset inputs; fi 
+                        
+                        
+                        fi
+                        printf '\r'
+
+                
+                    done 
+                    
+                        printf "\033[?25l"
+                
+         if [[ $inputs = [sS] ]]; then
+                
+                printf "\033['$l_ptr';32f"" "
+                if [[ $f_ptr > 0 ]]; then let "f_ptr--"; let "l_ptr--"
+                    else
+                        let f_ptr=$max; l_ptr=$maxl
+                fi
+                printf "\033['$l_ptr';32f""*"
+               
+         fi
+
+         if [[ $inputs = [aA] ]]; then
+                
+                printf "\033['$l_ptr';32f"" "
+                if [[ "${f_ptr}" -lt "${max}" ]]; then let "f_ptr++"; let "l_ptr++"
+                    else
+                        f_ptr=0; l_ptr=13
+                fi
+                printf "\033['$l_ptr';32f""*"
+                #echo -n "f_ptr = "$f_ptr" " >> ~/temp.txt; echo -n "l_ptr = "$l_ptr"  " >> ~/temp.txt; echo -n "max= "$max"  " >> ~/temp.txt; echo "maxl= "$maxl >> ~/temp.txt;
+         fi
+                      
+                        current_fontname="${fonts[$f_ptr]}"; new_fontname="$current_fontname"
+
+                       
+
+                        if [[ $inputs = [aAsS] ]];  then set_font "$current_fontname" $current_fontsize; fi &
+
+                        printf "\033[8;37f""$current_fontname"'                    '
+    
+                        if [[ $inputs = [qQ4] ]]; then  vc=1; break; fi
+
+                        read -s -n 1  inputs 
+                        
+                       
+                 done 
+
+}
+
+THEME_EDITOR(){
+UPDATE_CACHE
+oldlines=$lines
+GET_PRESETS_COUNTS
+let "lines=20+pcount"
+UPDATE_CACHE
+var5=0
+while [[ $var5 = 0 ]]; do 
+
+clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+
+ if [[ $loc = "ru" ]]; then
+        printf '                     Редактор пресетов встроенных тем                           '
+			else
+        printf '                      Built-in Themes Preset Editor                             '
+ fi
+
+UPDATE_PRESETS_LIST
+
+printf '\n\n'
+unset inputs
+while [[ ! ${inputs} =~ ^[0-9nNrRzZxXqQ]+$ ]]; do 
+
+SET_INPUT
+                if [[ $loc = "ru" ]]; then
+printf '  Выберите от 1 до '$chn' (или N, R, Z, X, Q ):  '
+			else
+printf '  Select from 1 to '$chn' (or N, R, z, X, Q ):   '
+                fi
+printf "%"80"s"'\n'"%"80"s"
+printf "\033[3A"
+
+printf "\033['$currents';34f""*"
+if [[ $loc = "ru" ]]; then
+let "poscur=pcount+18"
+printf "\033['$poscur';44f"
+else
+let "poscur=pcount+17"
+printf "\033['$poscur';44f"
+fi
+printf "\033[?25h"
+
+
+        inputs="±"
+        if [[ ${chn} -le 9 ]]; then
+        IFS="±"; read -n 1  inputs ; unset IFS ; sym=1 
+        else
+            if [[ $loc = "ru" ]]; then
+        READ_TWO_SYMBOLS
+            else
+        READ_TWO_SYMBOLS 35
+        fi 
+        fi
+        if [[ ! $inputs = [qQnNrRzZxX] ]]; then 
+                        if [[ ${inputs} = "" ]]; then  unset inputs; printf "\033[1A";  fi 
+                        if [[ ${inputs} = 0 ]]; then  unset inputs; fi 2>&-
+                        if [[ ${inputs} -gt "$chn" ]]; then unset inputs; fi 2>&-
+                        printf "\033[?25l"
+                        printf '\r'
+        fi
+
+    
+done
+
+        if [[ $inputs = "" ]]; then printf "\033[2A"; fi
+        if [[ $inputs = [qQ] ]]; then  unset inputs;  break;  fi
+        
+
+
+if [[ $inputs = [zZxX] ]]; then 
+                            printf "\033[?25l"
+                            printf "\033['$currents';34f"" "; if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+17"; fi ; printf "\033['$poscur';44f"
+                            current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                            for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then cp_pos=$i; break; fi; done
+                            let "max_pos=pcount-1"
+                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            unset inputs
+                            CUSTOM_SET &
+                            
+fi
+                            
+
+if [[ $inputs = [rR] ]]; then 
+
+                        printf "\r"; printf "%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Удаление пресета. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  Delete a preset. (or just "Enter" to cancel):\n\n'
+                        fi
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите номер пресета  ( 1 - '$pcount' ): ' 
+                            else
+                        printf '   Choose preset number  ( 1 - '$pcount' ): '
+                        fi
+                        printf "\033[?25h" 
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs = 0 ]]; then inputs="p"; fi &> /dev/null
+                        if [[ $inputs -gt $chn ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        if [[ $inputs = 1 ]] && [[ $pcount = 1 ]]; then 
+                             if [[ $loc = "ru" ]]; then
+                        printf '   Нельзя удалить последний пресет  ' 
+                            else
+                        printf '   Cannot delete last preset        '
+                        sleep 2
+                             fi
+                            else
+                        let "inputs--" 
+                        editing_preset="${plist[inputs]}"
+                        DELETE_THEME_PRESET
+                        UPDATE_CACHE
+                        GET_PRESETS_COUNTS
+                        let "lines=20+pcount"
+                        fi
+                        printf "\033[H"
+                        printf "\r\033[2f"
+                        UPDATE_PRESETS_LIST
+                        fi
+                        unset inputs
+fi
+
+if [[ $inputs = [nN] ]]; then
+                        EDIT_PRESET_NAME
+                        if [[ ! $demo = "" ]]; then
+                        if [[ ${#demo} -gt 28 ]]; then demo="${demo:0:28}"; fi
+                        editing_BackgroundColor="{3341, 25186, 40092}"
+                        editing_FontName="SF Mono Regular"
+                        editing_FontSize="12"
+                        editing_TextColor="{65535, 65535, 65535}"
+                        ADD_THEME_PRESET
+                        UPDATE_CACHE
+                        GET_PRESETS_COUNTS
+                        let "lines=20+pcount"
+                        fi
+                        printf "\033[H"
+                        printf "\r\033[2f"
+                        UPDATE_PRESETS_LIST
+                        unset inputs
+                       
+fi
+
+if [[ ! $inputs = [qQnNrRzZxX]+$ ]] &&  [[ ! $inputs = "" ]]; then
+                        old2lines=$lines; lines=20; swap_preset=0
+                        clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                        SAVE_ORIGINAL_PRESET
+                        CUSTOM_SET_EDITED_THEME &
+                        var9=0
+                        while [ $var9 != 1 ] 
+    do
+                        EDIT_PRESET_UPDATE_SCREEN
+
+                        unset inputs
+                        while [[ ! ${inputs} =~ ^[1-5qQeE]+$ ]]; 
+                    do 
+
+                        SET_INPUT
+                        if [[ $loc = "ru" ]]; then
+                        printf '\r  Выберите от 1 до 5 (или Q, E):                                   \n\n'
+                        printf '        Q   - вернуться в меню сохранив новые настройки пресета     \n'
+                        printf '        E/E - отменить/возвратить результаты редактирования         \n'
+			                   else
+                            printf '\r  Select from 1 to 5 (or Q, E):                                    \n\n'
+                            printf '        Q   - return to the menu saving the new preset settings     \n'
+                            printf '        E/E - cancel/return the editing results                     \n'
+                        fi
+                         printf "\033[14;0H"   
+                        if [[ $loc = "ru" ]]; then
+                        printf "\r\033[33C"
+                        else
+                        printf "\r\033[33C"
+                        fi
+                        printf "\033[?25h"
+
+                        
+                        if [[ ${ch} -le 9 ]]; then
+                        read -n 1  inputs 
+                        fi  
+                        printf "\033[?25l"
+                        if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; printf "\033[?25l"; fi
+                        printf '\r'
+                   done
+
+if [[ $inputs = "" ]]; then printf "\033[2A"; fi
+
+                        if [[ $inputs = [qQ] ]]; then var9=1; unset inputs 
+
+                            if [[ ! "$old_preset" = "$current_preset" ]]; then    
+                        plutil -remove   Presets."$old_preset" ${HOME}/.MountEFIconf.plist
+                        plutil -replace  Presets."$current_preset" -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist  
+                        plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" ${HOME}/.MountEFIconf.plist
+                        plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" ${HOME}/.MountEFIconf.plist
+                        plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" ${HOME}/.MountEFIconf.plist
+                        plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" ${HOME}/.MountEFIconf.plist
+                            else
+                                if [[ ! "$old_BackgroundColor" = "$current_background" ]]; then plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" ${HOME}/.MountEFIconf.plist; fi
+                                if [[ ! "$old_FontName" = "$current_fontname" ]]; then plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" ${HOME}/.MountEFIconf.plist; fi
+                                if [[ ! "$old_FontSize" = "$current_fontsize" ]]; then plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" ${HOME}/.MountEFIconf.plist; fi
+                                if [[ ! "$old_TextColor" = "$current_foreground" ]]; then plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" ${HOME}/.MountEFIconf.plist; fi
+                            fi
+                        UPDATE_CACHE
+                        fi
+
+                        if [[ $inputs = [eE] ]]; then
+                               
+                                if [[ $swap_preset = 0 ]]; then SAVE_NEW_PRESET; RESTORE_ORIGINAL_PRESET; swap_preset=1; else  DEBUG; RESTORE_NEW_PRESET; swap_preset=0; fi
+                                CUSTOM_SET_EDITED_THEME &
+                        fi
+
+if [[ $inputs = 1 ]]; then 
+                        EDIT_PRESET_NAME
+                        if [[ ! $demo = "" ]]; then
+                        if [[ ${#demo} -gt 28 ]]; then demo="${demo:0:28}"; fi
+                        current_preset="$editing_preset"
+                        if [[ "$current_preset" = "$old_preset" ]]; then swap_preset=0; fi
+                        fi
+fi
+
+if [[ $inputs = 2 ]]; then 
+                         lines=32
+                         printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                         EDIT_PRESET_UPDATE_SCREEN
+                         EDIT_COLOR
+                         lines=20
+                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                         EDIT_PRESET_UPDATE_SCREEN
+fi
+
+if [[ $inputs = 3 ]]; then 
+                         lines=32
+                         printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                         EDIT_PRESET_UPDATE_SCREEN
+                         EDIT_COLOR foreground
+                         lines=20
+                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                         EDIT_PRESET_UPDATE_SCREEN
+fi
+
+if [[ $inputs = 4 ]]; then
+                          unset new_fontname
+                         
+                          
+                          UPDATE_FONTS_LIST
+                          
+                         if [[ $loc = "ru" ]]; then
+                        printf '\r   Выберите шрифт клавишами A-S:                            \n\n'
+                       
+			                   else
+                            printf '\r   Select a font with the A-S keys:                          \n\n'
+                         fi
+                            EDIT_FONTNAME
+                            unset inputs
+                         lines=20
+                         if [[ ! "$old_FontName" = "$new_fontname" ]]; then swap_preset=0; fi
+                        
+                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                         EDIT_PRESET_UPDATE_SCREEN
+fi
+
+
+if [[ $inputs = 5 ]]; then 
+                        unset new_fontsize
+                         printf "\033[10;36f""["; printf "\033[10;39f""]"; printf "\033[14;0f"
+                         if [[ $loc = "ru" ]]; then
+                        printf '\r  Изменяйте размер шрифта клавишами C-V:                            \n\n'
+                       
+			                   else
+                            printf '\r  Change the font size with the C-V keys:                          \n\n'
+                            
+                        fi
+                        printf "\033[14;33f"
+                        vc=0
+                        unset inputs
+                   while [[ $vc = 0 ]]; do
+
+                        while [[ ! ${inputs} =~ ^[cCvVeEqQ5]+$ ]]; do
+                        read -s -n 1  inputs 
+        
+                        if [[ ! $inputs = [cCvVeEqQ5] ]]; then 
+                        if [[ ${inputs} = "" ]]; then  unset inputs; fi 
+                        
+                        
+                        fi
+                        printf '\r'
+
+                
+                    done 
+                    
+                        printf "\033[10;39f""]"'                                       '
+                        if [[ $inputs = [cC] ]] && [[ $current_fontsize -ge 2 ]]; then  
+                        if [[ $inputs = [cC] ]]; then let "current_fontsize--";   printf "\033[10;36f""["$current_fontsize"]";  fi
+                        fi
+                        if [[ $inputs = [vV] ]] && [[ $current_fontsize -le 47 ]]; then 
+                        if [[ $inputs = [vV] ]]; then let "current_fontsize++";    printf "\033[10;36f""["$current_fontsize"]";  fi
+                        fi 
+
+                        
+
+                        
+                        printf "\033[10;39f""]"'                                       '
+
+                        if [[ $inputs = [cCvV] ]] && [[ $current_fontsize -lt 49 ]] && [[ $current_fontsize -gt 0 ]];  then set_font "$current_fontname" $current_fontsize; fi &
+    
+                        if [[ $inputs = [qQ5] ]]; then unset inputs; vc=1; break; fi
+
+                        read -s -n 1  inputs 
+                        
+                        printf "\033[10;39f""]"'                                       '
+                 done 
+                        new_fontsize="$current_fontsize"
+                        if [[ ! "$old_FontSize" = "$new_fontsize" ]]; then swap_preset=0; fi
+                        clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                        EDIT_PRESET_UPDATE_SCREEN
+                                  
+fi
+
+    done
+    clear
+    lines=$old2lines
+fi
+
+
+CUSTOM_SET &
+
+
+done
+GET_PRESETS_NAMES
+current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+pnow=$(echo "${plist[@]}" | grep -o "$current")
+if [[ ! "$pnow" =  "$current" ]]; then
+   pnow=$(echo "$MountEFIconf" | grep -A 2 -e "<key>Presets</key>"  |  awk '(NR == 3)' | sed -e 's/.*>\(.*\)<.*/\1/')
+   plutil -replace CurrentPreset -string "${pnow}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+fi 
+lines=$oldlines
+clear      
+}
 
 ############################## сервис автозапуска ##########################################################################
 
@@ -3210,10 +4168,17 @@ echo 'cache=1' >> ${HOME}/.MountEFIa.sh
 echo '}' >> ${HOME}/.MountEFIa.sh
 echo    >> ${HOME}/.MountEFIa.sh
 echo 'UPDATE_CACHE' >> ${HOME}/.MountEFIa.sh
-echo    >> ${HOME}/.MountEFIa.sh
-echo 'SET_LOCALE(){' >> ${HOME}/.MountEFIa.sh
+echo ''   >> ${HOME}/.MountEFIa.sh
+echo 'SET_LOCALE(){' >> ${HOME}/.MountEFIa.sh 
+echo 'if [[ $cache = 1 ]] ; then'   >> ${HOME}/.MountEFIa.sh
 echo 'locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e '"'s/.*>\(.*\)<.*/\1/'"' | tr -d '"'\n'"'`' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ $locale = "auto" ]]; then loc="ru"; else loc=$(echo ${locale}); fi' >> ${HOME}/.MountEFIa.sh
+echo '        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`' >> ${HOME}/.MountEFIa.sh
+echo '            else'   >> ${HOME}/.MountEFIa.sh
+echo '                loc=`echo ${locale}`'   >> ${HOME}/.MountEFIa.sh
+echo '        fi'   >> ${HOME}/.MountEFIa.sh
+echo '    else '   >> ${HOME}/.MountEFIa.sh
+echo '        loc=`defaults read -g AppleLocale | cut -d "_" -f1`'   >> ${HOME}/.MountEFIa.sh
+echo 'fi'   >> ${HOME}/.MountEFIa.sh
 echo '}' >> ${HOME}/.MountEFIa.sh
 echo   >> ${HOME}/.MountEFIa.sh
 echo 'REM_ABSENT(){' >> ${HOME}/.MountEFIa.sh
@@ -3438,7 +4403,7 @@ theme="system"
 var4=0
 while [ $var4 != 1 ] 
 do
-lines=29; col=80
+lines=30; col=80
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
 UPDATE_SCREEN
@@ -3737,6 +4702,8 @@ if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE;
 fi
 
 ##############################################################################
+
+if [[ $inputs = [pP] ]]; then THEME_EDITOR;  fi
 
 ########################################################################################################################
 
