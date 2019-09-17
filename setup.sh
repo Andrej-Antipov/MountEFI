@@ -4670,7 +4670,7 @@ fi
 if [[ $inputs = 5 ]]; then 
     if [[ $theme = "built-in" ]]; then 
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
-        plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
+        #plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
         UPDATE_CACHE
         #START_RELOAD_SERVICE
         system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
