@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="048"
+s_edit_vers="049"
 
 # функция отладки ##################################################################################################
 demo1="0"
@@ -41,7 +41,7 @@ fi
 #########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 048 master
+# MountEFI версия скрипта настроек 1.6. 049 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -90,6 +90,7 @@ fi
 # 046 - фикс бага не корректировался текущий пресет если он был удалён или переименован
 # 047 - исправлен список  шрифтов для Капитана 
 # 048 - установка системной темы без перезагрузки
+# 049 - очистка reload 
 #############################################################################################################################################################################################################
 clear
 
@@ -508,14 +509,6 @@ UPDATE_CACHE
 ########################## Инициализация нового конфига ##################################################################################
 CHECK_CONFIG(){
 
-reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
-if [[ $reload_check = "Reload" ]]; then
-        if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
-                launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
-        if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
-        if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
-        plutil -remove Reload ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-fi
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
@@ -4538,43 +4531,8 @@ fi
 
 
 START_RELOAD_SERVICE(){
-if [[ ! $par = "-r" ]]; then
-MEFI_path=$(ps xao tty,command | grep -w "setup.sh" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
-else
-MEFI_path=$(ps xao tty,command | grep -w "MountEFI" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
-fi
-
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
-echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
-echo '<dict>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <array>' >> ${HOME}/.MountEFIr.plist
-echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
-echo '  </array>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <true/>' >> ${HOME}/.MountEFIr.plist
-echo '</dict>' >> ${HOME}/.MountEFIr.plist
-echo '</plist>' >> ${HOME}/.MountEFIr.plist
-
-echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'sleep 0.5'             >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
-echo 'ProgPath=''"'$(echo "$MEFI_path")'"''' >> ${HOME}/.MountEFIr.sh
-echo '            open ${ProgPath}'             >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'exit'             >> ${HOME}/.MountEFIr.sh
-
-chmod u+x ${HOME}/.MountEFIr.sh
-
-if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
-if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
+osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
 }
 
 ###############################################################################
@@ -4670,12 +4628,11 @@ fi
 if [[ $inputs = 5 ]]; then 
     if [[ $theme = "built-in" ]]; then 
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
-        #plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
+        
         UPDATE_CACHE
-        #START_RELOAD_SERVICE
-        system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
-        osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
-        #if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+        
+        START_RELOAD_SERVICE
+       
         else
           plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
           UPDATE_CACHE
@@ -4862,11 +4819,11 @@ if [[ $inputs = [dD] ]]; then
 
 if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE;
 if [[ $need_restart = 1 ]]; then 
-    plutil -insert Reload -bool Yes ${HOME}/.MountEFIconf.plist
+
     UPDATE_CACHE
     need_restart=0
     START_RELOAD_SERVICE
-    if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+
     fi
 fi
 
@@ -4877,11 +4834,11 @@ fi
 if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE; 
     if [[ $errorep = 0 ]]; then UPDATE_CACHE; clear; fi
     if [[ $need_restart = 1 ]]; then 
-    plutil -insert Reload -bool Yes ${HOME}/.MountEFIconf.plist
+    
     UPDATE_CACHE
     need_restart=0
     START_RELOAD_SERVICE
-    if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+   
     fi
 fi
 
