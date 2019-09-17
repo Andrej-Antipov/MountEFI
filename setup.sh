@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="045"
+s_edit_vers="048"
 
 # функция отладки ##################################################################################################
 demo1="0"
@@ -41,7 +41,7 @@ fi
 #########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 045 master
+# MountEFI версия скрипта настроек 1.6. 048 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -87,6 +87,9 @@ fi
 # 043 - изменения в функции выхода - закрыть окно перед закртытием терминала
 # 044 - в функции настройки цвета пресетов добавлен прогресс-бар (не для машин с Core2Duo)
 # 045 - буфер списка главного экрана в переменной
+# 046 - фикс бага не корректировался текущий пресет если он был удалён или переименован
+# 047 - исправлен список  шрифтов для Капитана 
+# 048 - установка системной темы без перезагрузки
 #############################################################################################################################################################################################################
 clear
 
@@ -3847,9 +3850,22 @@ let "chn--";
 
 UPDATE_FONTS_LIST(){
 
+
+macos=`sw_vers -productVersion`
+macos=`echo ${macos//[^0-9]/}`
+macos=${macos:0:4}
+if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
+       
 fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
 Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;SF Mono Light;SF Mono Light Italic;SF Mono Medium;SF Mono Medium Italic;SF Mono Regular;\
 SF Mono Regular Italic;SF Mono Semibold;SF Mono Semibold Italic;SF Mono Bold;SF Mono Bold Italic;SF Mono Heavy;SF Mono Heavy Italic;"
+
+else 
+
+fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
+Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;Osaka-Mono"
+fi
+
 
 IFS=';' 
 fonts=($fontlist)
@@ -4053,6 +4069,9 @@ if [[ $inputs = [rR] ]]; then
                         let "inputs--" 
                         editing_preset="${plist[inputs]}"
                         DELETE_THEME_PRESET
+                        current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        if [[ "$editing_preset" = "$current" ]]; then  pnow=$(echo "$MountEFIconf" | grep -A 2 -e "<key>Presets</key>"  |  awk '(NR == 3)' | sed -e 's/.*>\(.*\)<.*/\1/');
+                                        plutil -replace CurrentPreset -string "$pnow" ${HOME}/.MountEFIconf.plist;  fi 
                         UPDATE_CACHE
                         GET_PRESETS_COUNTS
                         let "lines=20+pcount"
@@ -4129,13 +4148,15 @@ if [[ $inputs = "" ]]; then printf "\033[2A"; fi
 
                         if [[ $inputs = [qQ] ]]; then var9=1; unset inputs 
 
-                            if [[ ! "$old_preset" = "$current_preset" ]]; then    
+                            if [[ ! "$old_preset" = "$current_preset" ]]; then 
                         plutil -remove   Presets."$old_preset" ${HOME}/.MountEFIconf.plist
                         plutil -replace  Presets."$current_preset" -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist  
                         plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" ${HOME}/.MountEFIconf.plist
                         plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" ${HOME}/.MountEFIconf.plist
                         plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" ${HOME}/.MountEFIconf.plist
                         plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" ${HOME}/.MountEFIconf.plist
+                        current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        if [[ "$old_preset" = "$current" ]]; then  plutil -replace CurrentPreset -string "$current_preset" ${HOME}/.MountEFIconf.plist;  fi 
                             else
                                 if [[ ! "$old_BackgroundColor" = "$current_background" ]]; then plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" ${HOME}/.MountEFIconf.plist; fi
                                 if [[ ! "$old_FontName" = "$current_fontname" ]]; then plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" ${HOME}/.MountEFIconf.plist; fi
@@ -4152,12 +4173,14 @@ if [[ $inputs = "" ]]; then printf "\033[2A"; fi
                         fi
 
 if [[ $inputs = 1 ]]; then 
+                        unset demo
                         EDIT_PRESET_NAME
                         if [[ ! $demo = "" ]]; then
                         if [[ ${#demo} -gt 28 ]]; then demo="${demo:0:28}"; fi
                         current_preset="$editing_preset"
                         if [[ "$current_preset" = "$old_preset" ]]; then swap_preset=0; fi
-                        fi
+fi 
+                        
 fi
 
 if [[ $inputs = 2 ]]; then 
@@ -4273,7 +4296,7 @@ current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep s
 pnow=$(echo "${plist[@]}" | grep -o "$current")
 if [[ ! "$pnow" =  "$current" ]]; then
    pnow=$(echo "$MountEFIconf" | grep -A 2 -e "<key>Presets</key>"  |  awk '(NR == 3)' | sed -e 's/.*>\(.*\)<.*/\1/')
-   plutil -replace CurrentPreset -string "${pnow}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+  plutil -replace CurrentPreset -string "${pnow}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
 fi 
 lines=$oldlines
 clear      
@@ -4649,8 +4672,10 @@ if [[ $inputs = 5 ]]; then
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
         plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
         UPDATE_CACHE
-        START_RELOAD_SERVICE
-        if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+        #START_RELOAD_SERVICE
+        system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
+        osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
+        #if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
         else
           plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
           UPDATE_CACHE

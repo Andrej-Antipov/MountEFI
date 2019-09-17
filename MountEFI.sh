@@ -616,6 +616,9 @@ GET_LOCALE
 
 parm="$1"
 
+theme="system"
+GET_THEME
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
 
 if [ "$parm" = "-help" ] || [ "$parm" = "-h" ]  || [ "$parm" = "-H" ]  || [ "$parm" = "-HELP" ]
 then
@@ -1328,11 +1331,6 @@ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ ! $mcheck = "Yes" ]]; then
 
     if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
-
-
-theme="system"
-GET_THEME
-if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
 
 
     if [[ $loc = "ru" ]]; then
@@ -2249,7 +2247,7 @@ GET_USER_PASSWORD
 cpu_family=$(sysctl -n machdep.cpu.brand_string | grep -)
 if [[ $cpu_family = "" ]]; then cpu_family=0
  else
-    cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f1 -d"-" | cut -c1)
+    cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f2 -d"-" | cut -c1)
 fi
 
 if [ "$par" = "-s" ]; then par=""; cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
