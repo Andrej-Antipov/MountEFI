@@ -37,6 +37,22 @@ if [[ -d ../MountEFI.app ]]; then
 fi
 
 cd ..
+if [[ -f DefaultConf.plist ]]; then 
+        if [[ -f MountEFI.app/Contents/Resources/DefaultConf.plist ]]; then rm MountEFI.app/Contents/Resources/DefaultConf.plist; fi
+        cp DefaultConf.plist MountEFI.app/Contents/Resources/
+fi
+
+if [[ -f colors.csv ]]; then 
+        if [[ ! -f MountEFI.app/Contents/Resources/colors.csv ]]; then cp colors.csv MountEFI.app/Contents/Resources/ 
+        
+fi
+
+if [[ -f xkbswitch ]]; then 
+        if [[ ! -f MountEFI.app/Contents/Resources/xkbswitch ]]; then cp xkbswitch MountEFI.app/Contents/Resources/ 
+        
+fi
+
+
 if [[ -d MountEFI.app ]]; then
 ditto -c -k --sequesterRsrc --keepParent MountEFI.app  newMountEFI.zip
 mv -f newMountEFI.zip MountEFI.zip

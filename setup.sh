@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="049"
+s_edit_vers="050"
 
 # функция отладки ##################################################################################################
 demo1="0"
@@ -41,7 +41,7 @@ fi
 #########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 049 master
+# MountEFI версия скрипта настроек 1.6. 050 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -90,7 +90,8 @@ fi
 # 046 - фикс бага не корректировался текущий пресет если он был удалён или переименован
 # 047 - исправлен список  шрифтов для Капитана 
 # 048 - установка системной темы без перезагрузки
-# 049 - очистка reload 
+# 049 - очистка reload
+# 050 - исправлена ошибка в функии FILL_CONFIG (пропущен тэг)
 #############################################################################################################################################################################################################
 clear
 
@@ -405,17 +406,17 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
             echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
@@ -479,12 +480,13 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>SysLoadAM</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <false/>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <false/>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string> </string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
