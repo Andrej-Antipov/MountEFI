@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="044"
+s_edit_vers="045"
 
 # функция отладки ##################################################################################################
 demo1="0"
@@ -41,7 +41,7 @@ fi
 #########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 044 master
+# MountEFI версия скрипта настроек 1.6. 045 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -85,7 +85,8 @@ fi
 # 041 - в главном меню редактора темы добавлена отметка текущей встроенной темы
 # 042 - добавлен выбор дефолтного пресета в редакторе
 # 043 - изменения в функции выхода - закрыть окно перед закртытием терминала
-# 044 - в функции настройки цвета пресетов добавлен прогресс-бар
+# 044 - в функции настройки цвета пресетов добавлен прогресс-бар (не для машин с Core2Duo)
+# 045 - буфер списка главного экрана в переменной
 #############################################################################################################################################################################################################
 clear
 
@@ -291,7 +292,7 @@ if [[ $loc = "ru" ]]; then
 let "btheme_corr=29-tlenth"
 btspc_corr=8
 else
-let "btheme_corr=26-tlenth"
+let "btheme_corr=30-tlenth"
 fi
 
 }
@@ -2465,43 +2466,44 @@ fi
 }
 
 SET_SCREEN(){
-            if [[ $loc = "ru" ]]; then
-printf ' 0) Установить все настройки по умолчанию                                      \n'
-printf ' 1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(авто, англ, русский) \n'
-printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(авто, всегда)        \n'
-printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n'
-printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n'
-printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(система, встроенная) \n'
-printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"' \n'
-printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n'
-printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)     \n'
-printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)     \n'
-printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n'
-printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n'
-printf ' A) Создать или править псевдонимы физических носителей                       \n'
-printf ' B) Резервное сохранение и восстановление настроек                              \n'
-printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n'
-printf ' E) Сохранить конфиг в файл (zip)                                               \n'
-printf ' P) Редактировать встроенные пресеты тем                                        \n'
 
+unset sbuf
+            if [[ $loc = "ru" ]]; then
+sbuf=$(printf ' 0) Установить все настройки по умолчанию                                      \n')
+sbuf+=$(printf '  1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(авто, англ, русский) \n')
+sbuf+=$(printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(авто, всегда)        \n')
+sbuf+=$(printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n')
+sbuf+=$(printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(система, встроенная) \n')
+sbuf+=$(printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"' \n')
+sbuf+=$(printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' A) Создать или править псевдонимы физических носителей                         \n')
+sbuf+=$(printf ' B) Резервное сохранение и восстановление настроек                              \n')
+sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n')
+sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
+sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
             else
-printf ' 0) Setup all parameters to defaults                                            \n'
-printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n'
-printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)           \n'
-printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)    \n'
-printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n'
-printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in)       \n'
-printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name)            \n'
-printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n'
-printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)            \n'
-printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)            \n'
-printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n'
-printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n'
-printf ' A) Create or edit aliases physical device/media                              \n'
-printf ' B) Backup and restore configuration settings                                   \n'
-printf ' I) Import config from file (zip or plist)                                      \n'
-printf ' E) Upload config to file (zip)                                                 \n'
-printf ' P) Edit built-in theme presets                                                 \n'
+sbuf=$(printf ' 0) Setup all parameters to defaults                                            \n')
+sbuf+=$(printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n')
+sbuf+=$(printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)           \n')
+sbuf+=$(printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)    \n')
+sbuf+=$(printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in)       \n')
+sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name)            \n')
+sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' A) Create or edit aliases physical device/media                                \n')
+sbuf+=$(printf ' B) Backup and restore configuration settings                                   \n')
+sbuf+=$(printf ' I) Import config from file (zip or plist)                                      \n')
+sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
+sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
 
 
             fi
@@ -2509,11 +2511,12 @@ printf ' P) Edit built-in theme presets                                         
              if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
                     Lit="D"
                if [[ $loc = "ru" ]]; then
-printf ' D) Загрузить бэкапы настроек из iCloud                                         \n'
+sbuf+=$(printf ' D) Загрузить бэкапы настроек из iCloud                                         \n')
                 else
-printf ' D) Upload settings backups from iCloud                                         \n'
+sbuf+=$(printf ' D) Upload settings backups from iCloud                                         \n')
             fi
       fi
+echo "${sbuf}"
 }
 
 UPDATE_SCREEN(){
@@ -3344,7 +3347,9 @@ printf "       ${_fill// /|}${_empty// / }| ${_progress}%% "
 STEP_BAR_CORR(){
 case "$step" in
                     4096 ) step2=65535;;
+                    3072 ) step2=42000;;
                     2048 ) step2=33000;;
+                    1560 ) step2=25000;;
                     1024 ) step2=17000;;
                     512 ) step2=9000;;
                     255 ) step2=6000;;
@@ -3355,6 +3360,15 @@ case "$step" in
 
                     esac
 
+
+}
+
+GET_CPU_FAMILY(){
+cpu_family=$(sysctl -n machdep.cpu.brand_string | grep -)
+if [[ $cpu_family = "" ]]; then cpu_family=0
+ else
+    cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f2 -d"-" | cut -c1)
+fi
 
 }
 
@@ -3391,15 +3405,33 @@ color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ',')
 color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ',')
 ncolor1=$color1; ncolor2=$color2; ncolor3=$color3
 
-c_ptr=1; l_ptr=16; step=2048; swap_one=0; swap_all=0; _start=0; _end=65535
+GET_CPU_FAMILY; if [[ $cpu_family = 0 ]]; then step=4096; else step=2048; fi
+
+c_ptr=1; l_ptr=16;  swap_one=0; swap_all=0; _start=0; _end=65535
 printf "\033[?25l"
 cvar=0
 
+
 printf "\033[16;0H"
+             if [[ $cpu_family = 0 ]]; then
+                LEN $color1; printf '           R:''%'$ncr's'$color1'    \n\n'
+                LEN $color2; printf '           G:''%'$ncr's'$color2'    \n\n'
+                LEN $color3; printf '           B:''%'$ncr's'$color3'    \n\n'
+                    if [[ $loc = "ru" ]]; then 
+                LEN $step ;  printf '         ШАГ:''%'$ncr's'$step'      \n\n'
+                    else
+                LEN $step ;  printf '        STEP:''%'$ncr's'$step'      \n\n'
+                    fi
+             else
                 LEN $color1; printf '           R:''%'$ncr's'$color1 ;  ProgressBar ${color1} ${_end}; printf '\n\n'
                 LEN $color2; printf '           G:''%'$ncr's'$color2 ;  ProgressBar ${color2} ${_end}; printf '\n\n'
                 LEN $color3; printf '           B:''%'$ncr's'$color3 ;  ProgressBar ${color3} ${_end}; printf '\n\n'
+                    if [[ $loc = "ru" ]]; then 
                 LEN $step ;  printf '         ШАГ:''%'$ncr's'$step   ;  STEP_BAR_CORR; ProgressBar ${step2} ${_end};  printf '\n\n'
+                    else
+                LEN $step ;  printf '        STEP:''%'$ncr's'$step   ;  STEP_BAR_CORR; ProgressBar ${step2} ${_end};  printf '\n\n'
+                    fi
+             fi
                 printf "\033['$l_ptr';10H""*";  printf "\033[23;0H"  
                 printf '\n\n'                                           
 unset inputs
@@ -3458,9 +3490,12 @@ do
                         c_ptr=1; l_ptr=16
                 fi
                 printf "\033['$l_ptr';10f""*"; printf "\033[25;43f"
+
                 
          fi
-        
+       
+if [[ ! $cpu_family = 0 ]]; then
+
         if [[ $inputs = [zZ] ]]; then
                 
                 if [[ $c_ptr = 1 ]]; then if [[ $color1 -ge $step ]]; then let "color1=color1-step"; else color1=0; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"; ProgressBar ${color1} ${_end}; printf "\033[16;14f"; fi
@@ -3484,8 +3519,10 @@ do
         
         if [[ $inputs = [cC] ]]; then 
                     case "$step" in
-                    4096 ) step=2048;;
-                    2048 ) step=1024;;
+                    4096 ) step=3072;;
+                    3072 ) step=2048;;
+                    2048 ) step=1560;;
+                    1560 ) step=1024;;
                     1024 ) step=512;;
                     512 ) step=255;;
                     255 ) step=128;;
@@ -3504,13 +3541,19 @@ do
                     128 ) step=255;;
                     255 ) step=512;;
                     512 ) step=1024;;
-                    1024 ) step=2048;;
-                    2048 ) step=4096;;
+                    1024 ) step=1560;;
+                    1560 ) step=2048;;
+                    2048 ) step=3072;;
+                    3072) step=4096;;
+                    
                     esac
                      LEN $step ; printf "\033[22;14f"'%'$ncr's'$step; STEP_BAR_CORR; ProgressBar ${step2} ${_end}; printf "\033[22;17f"
         fi
 
         if [[ $inputs = [qQ2-3] ]]; then  unset inputs; cvar=1; break;   fi
+
+
+
 
         if [[ $inputs = [bB] ]]; then inputs="s"
             if [[ $swap_one = 0 ]]; then 
@@ -3539,8 +3582,90 @@ do
         LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"; ProgressBar ${color2} ${_end}; printf "\033[18;14f"
         LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"; ProgressBar ${color3} ${_end}; printf "\033[20;14f"
         fi                  
+ else
+        if [[ $inputs = [zZ] ]]; then
+                
+                if [[ $c_ptr = 1 ]]; then if [[ $color1 -ge $step ]]; then let "color1=color1-step"; else color1=0; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                             '; printf "\033[16;14f"; fi
+                if [[ $c_ptr = 2 ]]; then if [[ $color2 -ge $step ]]; then let "color2=color2-step"; else color2=0; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                             '; printf "\033[18;14f"; fi
+                if [[ $c_ptr = 3 ]]; then if [[ $color3 -ge $step ]]; then let "color3=color3-step"; else color3=0; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                             '; printf "\033[20;14f"; fi
+               
+                
 
-        if [[ $inputs = [zZxXsSaA] ]]; then  RET_BORDER; if [[ $border = 0 ]]; then osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"; fi ; fi   &  
+                
+        fi
+
+        if [[ $inputs = [xX] ]]; then
+                
+                let "maxi=65535-step"
+                if [[ $c_ptr = 1 ]]; then if [[ $color1 -le $maxi ]]; then let "color1=color1+step"; else color1=65535; fi; ncolor1=$color1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
+                if [[ $c_ptr = 2 ]]; then if [[ $color2 -le $maxi ]]; then let "color2=color2+step"; else color2=65535; fi; ncolor2=$color2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
+                if [[ $c_ptr = 3 ]]; then if [[ $color3 -le $maxi ]]; then let "color3=color3+step"; else color3=65535; fi; ncolor3=$color3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+                
+                
+        fi
+        
+        if [[ $inputs = [cC] ]]; then 
+                    case "$step" in
+                    4096 ) step=2048;;
+                    2048 ) step=1024;;
+                    1024 ) step=512;;
+                    512 ) step=255;;
+                    255 ) step=128;;
+                    128 ) step=65;;
+                    65 ) step=15;;
+                    15 ) step=1;;
+                    esac
+                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step'      '; printf "\033[22;17f" 
+        fi
+
+        if [[ $inputs = [vV] ]]; then 
+                    case "$step" in
+                    1 ) step=15;;
+                    15 ) step=65;;
+                    65 ) step=128;;
+                    128 ) step=255;;
+                    255 ) step=512;;
+                    512 ) step=1024;;
+                    1024 ) step=2048;;
+                    2048 ) step=4096;;
+                    esac
+                     LEN $step ; printf "\033[22;14f"'%'$ncr's'$step'      '; printf "\033[22;17f"
+        fi
+
+        if [[ $inputs = [qQ2-3] ]]; then  unset inputs; cvar=1; break;   fi
+
+        if [[ $inputs = [bB] ]]; then inputs="s"
+            if [[ $swap_one = 0 ]]; then 
+            if [[ $c_ptr = 1 ]]; then color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ','); LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
+            if [[ $c_ptr = 2 ]]; then color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ','); LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
+            if [[ $c_ptr = 3 ]]; then color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ','); LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+            swap_one=1
+            else
+            if [[ $c_ptr = 1 ]]; then color1=$ncolor1; LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"; fi
+            if [[ $c_ptr = 2 ]]; then color2=$ncolor2; LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"; fi
+            if [[ $c_ptr = 3 ]]; then color3=$ncolor3; LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"; fi
+            swap_one=0
+            fi
+        fi
+         
+        if [[ $inputs = [uU] ]]; then 
+            inputs="s"
+        if [[ $swap_all = 0 ]]; then
+        color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ','); color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ','); color3=$(echo "$old_color" | tr -d ' {}' | cut -f3 -d ',')
+        swap_all=1
+        swap_one=1
+        else
+        color1=$ncolor1; color2=$ncolor2; color3=$ncolor3; swap_all=0; swap_one=0
+        fi
+        LEN $color1; printf "\033[16;14f""%"$ncr"s""$color1"'                         '; printf "\033[16;14f"
+        LEN $color2; printf "\033[18;14f""%"$ncr"s""$color2"'                         '; printf "\033[18;14f"
+        LEN $color3; printf "\033[20;14f""%"$ncr"s""$color3"'                         '; printf "\033[20;14f"
+        fi                  
+
+fi
+
+
+        if [[ $inputs = [zZxXsSaA] ]]; then  RET_BORDER; if [[ $border = 0 ]]; then osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"; fi ; fi   & 
 
         if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
         
