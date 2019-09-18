@@ -26,6 +26,8 @@ edit_vers="022"
 # 020 - исправлен баг в FILL_CONFIG (пропущен тэг)
 # 021 - возвращение поддержки перезапуска для setup. Поддержка кастомной системной темы
 # 022 - исправление ошибки EXIT_PROGRAMM
+# 023 - исправление, пропущен параметр в FILL_CONFIG
+
 
 
 SHOW_VERSION(){
@@ -189,6 +191,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
 

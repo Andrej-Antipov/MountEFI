@@ -2,11 +2,11 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="053"
+s_edit_vers="054"
 
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 052 master
+# MountEFI версия скрипта настроек 1.6.0 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -60,6 +60,7 @@ s_edit_vers="053"
 # 051 - добавлена функция CORRECT_CURRENT_PRESET в функции I и B
 # 052 - новая функция выбора системной темы и новый параметр в конфиге
 # 053 - добавлена опция ручной перезагрузки клавишей R в верхнем регистре
+# 054 - добавлен текст подтверждение экспорта конфига в iCloud
 #############################################################################################################################################################################################################
 clear
 
@@ -1667,6 +1668,7 @@ hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2
 }
 
 PUT_SHARE_IN_ICLOUD(){
+success=0
 if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
         if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared ]]; then
                 mkdir ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared ; fi
@@ -1676,11 +1678,16 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
                                         if [[ ! $cloud_archv = $local_archv ]]; then
                                 rm -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
                                 cp ${HOME}/.MountEFIconfBackups.zip ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
+                                success=1 
+                                            else success=2
                                          fi
                          else
                                 cp ${HOME}/.MountEFIconfBackups.zip ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIBackups/Shared/.MountEFIconfBackups.zip
-                                        
+                                 success=1       
                         fi
+
+           else success=2
+
 fi
 }
 
@@ -1925,20 +1932,42 @@ fi
 if [[ $inputs = [pP] ]]; then printf "\r\033"
                         if [[ $loc = "ru" ]]; then
                 
-                printf '   Подтвердите публикацию настроек (y/N) ?  '
+                printf '   Подтвердите публикацию настроек (y/N) ? '
 			else
-                printf '   Confirm the publication of settings (y/N)?  '
+                printf '   Confirm the publication of settings (y/N)? '
                 
                 fi
                 printf "\033[?25h"
                 read  -n 1 -r                
                 printf "\033[?25l"
+              if [[ ! $REPLY = "" ]]; then 
                 if [[  $REPLY =~ ^[yY]$ ]]; then
+                   
                 PUT_SHARE_IN_ICLOUD
                 fi
+                if [[ $success = 1 ]]; then 
+                         if [[ $loc = "ru" ]]; then
+                         printf '\n\n  Настройки опубликованы.  '; sleep 1
+			                   else
+                         printf '\n\n  Settings published.  '; sleep 1
+                         fi
+                         elif [[ $success = 2 ]];then 
+                         if [[ $loc = "ru" ]]; then
+                         printf '\n\n  Настройки совпадают с ранее опубликованными.  '; read -s -n 1 -t 2
+			                   else
+                         printf '\n\n  The settings are the same as previously published.  '; read -s -n 1 -t 2
+                         fi
+                         elif [[ $success = 0 ]]; then 
+                        if [[ $loc = "ru" ]]; then
+                         printf '\n\n  Ошибка! Публикация не удалась.  '; read -s -n 1 -t 2
+			                   else
+                         printf '\n\n  Error! Publication failed.  '; read -s -n 1 -t 2
+                         fi
+                fi; fi    
                 printf "\r\033"
                 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
                 printf "\r\033[4A"
+  
 fi
                 
 
