@@ -25,7 +25,10 @@ fi
             mkdir ../Extra
             if [[ -f MountEFI ]]; then cp MountEFI ../Extra; fi
             if [[ -f setup ]]; then cp setup ../Extra; fi
-if [[ -d ../MountEFI.app ]]; then
+
+if [[ ! -d ../MountEFI.app ]] && [[ -f ../MountEFI.zip ]]; then unzip  -o -qq ../MountEFI.zip -d ../. ; rm -R -f ../*MACOSX ; fi
+
+if [[ -d ../MountEFI.app ]]; then 
             if [[ -f MountEFI ]]; then 
                 mv -f MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
@@ -58,6 +61,6 @@ mv -f newMountEFI.zip MountEFI.zip
 fi
  
 cat  ~/.bash_history | sed -n '/appify/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
-osascript -e 'quit app "terminal.app"' & exit
+#osascript -e 'quit app "terminal.app"' & exit
 
 exit
