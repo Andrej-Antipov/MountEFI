@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="052"
+s_edit_vers="053"
 
 
 ############################################################################################################################################################################################################
@@ -59,6 +59,7 @@ s_edit_vers="052"
 # 050 - исправлена ошибка в функии FILL_CONFIG (пропущен тэг)
 # 051 - добавлена функция CORRECT_CURRENT_PRESET в функции I и B
 # 052 - новая функция выбора системной темы и новый параметр в конфиге
+# 053 - добавлена опция ручной перезагрузки клавишей R в верхнем регистре
 #############################################################################################################################################################################################################
 clear
 
@@ -484,6 +485,15 @@ UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
 CHECK_CONFIG(){
+
+reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
+if [[ $reload_check = "Reload" ]]; then
+        if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
+                launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
+        plutil -remove Reload ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+fi
 
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
@@ -2387,7 +2397,7 @@ fi
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpP]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPR]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2522,12 +2532,17 @@ sbuf+=$(printf ' D) Загрузить бэкапы настроек из iCloud
 sbuf+=$(printf ' D) Upload settings backups from iCloud                                         \n')
             fi
       fi
+ if [[ $loc = "ru" ]]; then
+sbuf+=$(printf ' R) Быстро перезагрузить программу настройки              (SHIFT+R)             \n')
+else
+sbuf+=$(printf ' R) Restart the setup program immediately              (SHIFT+R)                \n')
+fi 
 echo "${sbuf}"
 }
 
 UPDATE_SCREEN(){
         GET_THEME
-        if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
+        if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 
         SET_LOCALE
 
@@ -4534,7 +4549,7 @@ fi
 
 
 
-START_RELOAD_SERVICE(){
+SET_SYSTEM_THEME(){
 profile=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 if [[ "$profile" = "default" ]]; then
 system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
@@ -4553,6 +4568,46 @@ if [[ $i < 9 ]]; then let "i++"; else i=0; fi
 profile="${profiles[i]}"; if  [[ "$profile" = "default_profile" ]]; then plutil -replace ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
 else plutil -replace ThemeProfile -string "$profile" ${HOME}/.MountEFIconf.plist; fi
 UPDATE_CACHE
+}
+
+START_RELOAD_SERVICE(){
+if [[ ! $par = "-r" ]]; then
+MEFI_path=$(ps xao tty,command | grep -w "setup.sh" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
+else
+MEFI_path=$(ps xao tty,command | grep -w "MountEFI" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
+fi
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
+echo '<dict>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <array>' >> ${HOME}/.MountEFIr.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
+echo '  </array>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <true/>' >> ${HOME}/.MountEFIr.plist
+echo '</dict>' >> ${HOME}/.MountEFIr.plist
+echo '</plist>' >> ${HOME}/.MountEFIr.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'sleep 0.5'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_path")'"''' >> ${HOME}/.MountEFIr.sh
+echo '            open ${ProgPath}'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'exit'             >> ${HOME}/.MountEFIr.sh
+
+chmod u+x ${HOME}/.MountEFIr.sh
+
+if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
 }
 
 ###############################################################################
@@ -4653,7 +4708,7 @@ if [[ $inputs = 5 ]]; then
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
         UPDATE_CACHE
     fi
-        START_RELOAD_SERVICE
+        #SET_SYSTEM_THEME
 fi 
 
 #################################################################################
@@ -4838,7 +4893,7 @@ if [[ $need_restart = 1 ]]; then
 
     UPDATE_CACHE
     need_restart=0
-    START_RELOAD_SERVICE
+    #SET_SYSTEM_THEME
 
     fi
 fi
@@ -4853,7 +4908,7 @@ if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE;
     
     UPDATE_CACHE
     need_restart=0
-    START_RELOAD_SERVICE
+    #SET_SYSTEM_THEME
    
     fi
 fi
@@ -4862,10 +4917,18 @@ fi
 
 if [[ $inputs = [pP] ]]; then THEME_EDITOR;  fi
 
-########################################################################################################################
+##############################################################################
 
 if [[ $inputs = [eE] ]]; then UPLOAD_CONFIG_TO_FILE;  fi
 
+##############################################################################
+
+if [[ $inputs = R ]]; then 
+        plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
+        UPDATE_CACHE
+        START_RELOAD_SERVICE 
+        if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+fi
 ##############################################################################
 
 done

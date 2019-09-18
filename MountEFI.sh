@@ -2,11 +2,11 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="020"
+edit_vers="021"
 ##################################################################################################################################################################################################################
 
 
-############################ Mount EFI Master v.1.7.2 edit 019
+############################ Mount EFI Master v.1.7.2 
 # 004 - Проверка конфига и исправление для совместимости с функцией автомонтирования EFI при старте системы
 # 005 - Переход на использование пароля из связки ключей
 # 006 - правки для совместимости со старым конфигом
@@ -24,6 +24,7 @@ edit_vers="020"
 # 018 - перед закрытием терминала надо закрыть окно EXIT_PROG
 # 019 - очистка от функций перезапуска 
 # 020 - исправлен баг в FILL_CONFIG (пропущен тэг)
+# 021 - возвращение поддержки перезапуска для setup. Поддержка кастомной системной темы
 
 
 SHOW_VERSION(){
@@ -209,6 +210,10 @@ UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
 
+reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
+if [[ $reload_check = "Reload" ]]; then par="-s"; fi
+
+
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
         mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -299,6 +304,11 @@ if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
             zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
             rm -R ${HOME}/.MountEFIconfBackups
 fi
+
+CHECK_RELOAD(){
+reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ $reload_check = "Reload" ]]; then rel=1; else rel=0; fi
+}
 
 SET_TITLE(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
@@ -550,6 +560,15 @@ current_fontsize=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | 
 
 }
 
+SET_SYSTEM_THEME(){
+profile=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ "$profile" = "default" ]]; then
+system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
+osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
+else osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$profile"'"'
+fi
+}
+
 
 CUSTOM_SET(){
 
@@ -606,7 +625,7 @@ parm="$1"
 
 theme="system"
 GET_THEME
-if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 
 if [ "$parm" = "-help" ] || [ "$parm" = "-h" ]  || [ "$parm" = "-H" ]  || [ "$parm" = "-HELP" ]
 then
@@ -666,6 +685,20 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
                 
 fi
 }
+
+############## обновление даных после выхода из скрипта настроек #########################################################
+
+REFRESH_SETUP(){
+UPDATE_CACHE
+GET_LOCALE
+strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
+GET_USER_PASSWORD
+}
+##########################################################################################################################
+
+if [ "$par" = "-s" ]; then par=""; cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+
 
 # Возвращает в переменной TTYcount 0 если наш терминал один
 CHECK_TTY_COUNT(){
@@ -1411,7 +1444,7 @@ fi
 ################### применение темы ##########################################################
 theme="system"
 GET_THEME
-if [[ $theme = "built-in" ]]; then CUSTOM_SET; fi &
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 ############################################################################################
 
 ################################ получение имени диска для переименования #####################
@@ -2021,16 +2054,7 @@ fi
 
 ##################################################################################################################################################################
 
-############## обновление даных после выхода из скрипта настроек #########################################################
 
-REFRESH_SETUP(){
-UPDATE_CACHE
-GET_LOCALE
-strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
-GET_USER_PASSWORD
-}
-##########################################################################################################################
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
@@ -2148,7 +2172,7 @@ printf "\033[?25l\033[1D"
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsS]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; 
+if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
@@ -2156,7 +2180,7 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; 
+if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
