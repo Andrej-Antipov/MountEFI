@@ -23,7 +23,7 @@
 		<integer>10</integer>
 	</dict>
 	<key>CheckLoaders</key>
-	<false/>
+	<true/>
 	<key>CurrentPreset</key>
 	<string>BlueSky</string>
 	<key>Locale</key>
@@ -104,6 +104,8 @@
 		<string> </string>
 	</dict>
 	<key>Theme</key>
-	<string>system</string>
+	<string>built-in</string>
+	<key>ThemeProfile</key>
+	<string>default</string>
 </dict>
 </plist>

@@ -2,46 +2,11 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="050"
+s_edit_vers="052"
 
-# функция отладки ##################################################################################################
-demo1="0"
-deb=0
-
-DEBUG(){
-if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
-printf '............................................................\n' >> ~/temp.txt
-                       
-                        echo "old_preset=""$old_preset" >> ~/temp.txt
-                        echo "old_BackgroundColor=""$old_BackgroundColor" >> ~/temp.txt
-                        echo "old_FontName=""$old_FontName" >> ~/temp.txt
-                        echo "old_FontSize=""$old_FontSize"    >> ~/temp.txt
-                        echo "old_TextColor=""$old_TextColor" >> ~/temp.txt
-                        echo "" >> ~/temp.txt
-                        echo "current_preset=""$current_preset" >> ~/temp.txt
-                        echo "current_background=""$current_background" >> ~/temp.txt
-                        echo "current_fontname=""$current_fontname" >> ~/temp.txt
-                        echo "current_fontsize=""$current_fontsize"    >> ~/temp.txt
-                        echo "current_foreground=""$current_foreground" >> ~/temp.txt
-                        echo "" >> ~/temp.txt
-                        echo "new_preset=""$new_preset" >> ~/temp.txt
-                        echo "new_background=""$new_background" >> ~/temp.txt
-                        echo "new_fontname=""$new_fontname" >> ~/temp.txt
-                        echo "new_fontsize=""$new_fontsize"    >> ~/temp.txt
-                        echo "new_foreground=""$new_foreground" >> ~/temp.txt
-                        echo "" >> ~/temp.txt
-                        echo "swap_preset="$swap_preset >> ~/temp.txt
-
-printf '............................................................\n\n' >> ~/temp.txt
-sleep 0.2
-read -n 1 -s
-fi
-}
-#########################################################################################################################################
 
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6. 050 master
+# MountEFI версия скрипта настроек 1.6. 052 master
 # 001 - в выводе пункта меню 8 - добавлено слово MountEFI
 # 002 - переименование пункта A в пункт L
 # 003 - переименование пункта 9 в A
@@ -84,7 +49,7 @@ fi
 # 040 - добавлены шрифты и исправлена их обработка
 # 041 - в главном меню редактора темы добавлена отметка текущей встроенной темы
 # 042 - добавлен выбор дефолтного пресета в редакторе
-# 043 - изменения в функции выхода - закрыть окно перед закртытием терминала
+# 043 - изменения в функции выхода - закрыть окно перед закрытием терминала
 # 044 - в функции настройки цвета пресетов добавлен прогресс-бар (не для машин с Core2Duo)
 # 045 - буфер списка главного экрана в переменной
 # 046 - фикс бага не корректировался текущий пресет если он был удалён или переименован
@@ -92,6 +57,8 @@ fi
 # 048 - установка системной темы без перезагрузки
 # 049 - очистка reload
 # 050 - исправлена ошибка в функии FILL_CONFIG (пропущен тэг)
+# 051 - добавлена функция CORRECT_CURRENT_PRESET в функции I и B
+# 052 - новая функция выбора системной темы и новый параметр в конфиге
 #############################################################################################################################################################################################################
 clear
 
@@ -263,29 +230,25 @@ pcount=$(echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | wc -l | 
 N0=0; N1=2; N2=3; plist=()
 for ((i=0; i<$pcount; i++)); do
 plist+=( "$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')" )
-let "N1=N1+11"; let "N2=N2+11"
-done
+let "N1=N1+11"; let "N2=N2+11"; done
 }
 
 GET_THEME(){
-if [[ $cache = 1 ]]; then
-HasTheme=`echo "$MountEFIconf" | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
-    if [[ $HasTheme = "Theme" ]]; then
 theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-    fi
+theme_name=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ "$theme_name" = "default" ]]; then theme_name=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
 fi
-if [[ $theme = "system" ]]; then 
-                if [[ $loc = "ru" ]]; then
-            theme_set="системная"; theme_corr=25
-                else
-            theme_set="system"; theme_corr=30
-                fi
-    else
-                if [[ $loc = "ru" ]]; then
-            theme_set="встроенная"; theme_corr=24
-                else
-            theme_set="built-in"; theme_corr=28
-                fi
+
+
+nlenth=${#theme_name}
+if [[ $loc = "ru" ]]; then
+if [[ $theme = "built-in" ]]; then
+let "theme_ncorr=37-nlenth"
+else
+let "theme_ncorr=34-nlenth"
+fi
+else
+let "theme_ncorr=33-nlenth"
 fi
         
 itheme_set=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -294,10 +257,10 @@ GET_PRESETS_COUNTS
 
 tlenth=`echo ${#itheme_set}`
 if [[ $loc = "ru" ]]; then
-let "btheme_corr=29-tlenth"
+let "btheme_corr=27-tlenth"
 btspc_corr=8
 else
-let "btheme_corr=30-tlenth"
+let "btheme_corr=25-tlenth"
 fi
 
 }
@@ -320,20 +283,20 @@ UPDATE_CACHE
 }
 
 SET_THEMES(){
-theme=`echo "$MountEFIconf" | grep -A 1 "Theme" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
- if [[ $theme = "system" ]]; then  plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-                else
-                GET_PRESETS_COUNTS
+                theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+          if [[ $theme = "built-in" ]]; then  
                 GET_PRESETS_NAMES
                 current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
- 
-                num=0; while [[ ! $pcount = $num ]]; do if [[ "$current" = "${plist[$num]}" ]]; then break;  else let "num++"; fi ;done  
-                let "pik=pcount-1"            
+                let "pmax=pcount-1"
+                for ((i=0; i<$pcount; i++)) do if [[ "$current" = "${plist[$i]}" ]]; then break;  fi ; done           
          
-                if [[ $num = $pik ]]; then let "num=0"; else let "num++"; fi
-                plutil -replace CurrentPreset -string "${plist[$num]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
-fi
-                CUSTOM_SET &
+                if [[ "${i}" -lt "${pmax}" ]]; then let "i++"; else i=0; fi
+                plutil -replace CurrentPreset -string "${plist[$i]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+           else
+                osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "Basic"'
+                plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+           fi
+                #CUSTOM_SET &
  }
 
 
@@ -358,6 +321,15 @@ current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep s
 for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then break; fi; done
 GET_DATA_OF_PRESET_NUMBER $i
 
+}
+
+CORRECT_CURRENT_PRESET(){
+GET_PRESETS_NAMES
+current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+pnow=$(echo "${plist[@]}" | grep -o "$current")
+if [[ ! "$pnow" =  "$current" ]]; then
+   plutil -replace CurrentPreset -string "${plist[0]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+fi 
 }
 
 
@@ -489,6 +461,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
 
@@ -587,6 +561,12 @@ if [[ ! $strng = "Backups" ]]; then
              plutil -insert Backups -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
              plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
              cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeProfile" ]]; then
+            plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
+            cache=0
 fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
@@ -1849,8 +1829,16 @@ if [[ ${inputs} = [rR] ]]; then
                             fi
                         fi
                         Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
-                        GET_BACKUPS
-                        if [[ $Now > $Maximum ]]; then
+                        GET_BACKUPS 
+                        if [[ "${Now}" -ge "${Maximum}" ]]; then
+                        if [[ "${Now}" -le 10 ]]; then Now=10
+
+                                    elif [[ "${Now}" -le 20 ]]; then Now=20
+                                    elif [[ "${Now}" -le 30 ]]; then Now=30
+                                    elif [[ "${Now}" -le 40 ]]; then Now=40
+                                    elif [[ "${Now}" -le 50 ]]; then Now=50
+
+                        fi
                         plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
                         UPDATE_CACHE
                         fi
@@ -2271,19 +2259,13 @@ fi
 
 SET_ZIP(){
 unzip  -o -qq "${filepath}" -d ~/.temp2
-
 filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d " \t\n")
-     
      if [[ ! $filecounts = 1 ]]; then
-           
            errorep=2 
      else
-            
            filename=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | tr -d ' \n\t')
-            
-           if [[ $filename = "" ]]; then 
-            
-           errorep=3
+        if [[ $filename = "" ]]; then 
+            errorep=3
            else
                 GET_THEME
                 old_theme=$theme
@@ -2291,6 +2273,22 @@ filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d "
                 UPDATE_CACHE
                 CHECK_CONFIG
                 CORRECT_BACKUPS_MAXIMUM
+                CORRECT_CURRENT_PRESET
+                CHECK_BUNZIP
+                Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+                        GET_BACKUPS 
+                    if [[ "${Now}" -ge "${Maximum}" ]]; then
+                        if [[ "${Now}" -le 10 ]]; then Now=10
+
+                                    elif [[ "${Now}" -le 20 ]]; then Now=20
+                                    elif [[ "${Now}" -le 30 ]]; then Now=30
+                                    elif [[ "${Now}" -le 40 ]]; then Now=40
+                                    elif [[ "${Now}" -le 50 ]]; then Now=50
+
+                        fi
+                        plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
+                    fi
+                if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
                 GET_THEME
                 if [[ $theme = "system" ]]; then 
                     if [[ ! $old_theme = $theme ]]; then 
@@ -2472,8 +2470,13 @@ sbuf+=$(printf '  1) Язык интерфейса программы = "'$loc_s
 sbuf+=$(printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(авто, всегда)        \n')
 sbuf+=$(printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n')
 sbuf+=$(printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf ' 5) Установки темы =  "'$theme_set'"'"%"$theme_corr"s"'(система, встроенная) \n')
-sbuf+=$(printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'(имя пресета)'"%"$btspc_corr"s"' \n')
+if [[ ! $theme = "system" ]]; then
+sbuf+=$(printf ' 5) Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"'(выключена)           \n')
+sbuf+=$(printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'* (включен)'"%"$btspc_corr"s"'     \n')
+else
+sbuf+=$(printf ' 5) Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"' * (включена)            \n')
+sbuf+=$(printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'  (выключен)'"%"$btspc_corr"s"'    \n')
+fi
 sbuf+=$(printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
@@ -2490,8 +2493,13 @@ sbuf+=$(printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, 
 sbuf+=$(printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)           \n')
 sbuf+=$(printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)    \n')
 sbuf+=$(printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf ' 5) Set theme =  "'$theme_set'"'"%"$theme_corr"s"'(system, built-in)       \n')
-sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'(preset name)            \n')
+if [[ ! $theme = "system" ]]; then
+sbuf+=$(printf ' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"'   (disabled)               \n')
+sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'   * (enabled)                \n')
+else
+sbuf+=$(printf ' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"' * (enabled)                \n')
+sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'     (disabled)               \n')
+fi
 sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
@@ -4286,13 +4294,7 @@ CUSTOM_SET &
 
 
 done
-GET_PRESETS_NAMES
-current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-pnow=$(echo "${plist[@]}" | grep -o "$current")
-if [[ ! "$pnow" =  "$current" ]]; then
-   pnow=$(echo "$MountEFIconf" | grep -A 2 -e "<key>Presets</key>"  |  awk '(NR == 3)' | sed -e 's/.*>\(.*\)<.*/\1/')
-  plutil -replace CurrentPreset -string "${pnow}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
-fi 
+CORRECT_CURRENT_PRESET
 lines=$oldlines
 clear      
 }
@@ -4533,8 +4535,24 @@ fi
 
 
 START_RELOAD_SERVICE(){
+profile=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ "$profile" = "default" ]]; then
 system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
 osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
+else osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$profile"'"'
+fi
+}
+
+SET_PROFILE(){
+profile=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+profiles=( "Basic" "Grass" "Homebrew" "Man Page" "Novel" "Ocean" "Pro" "Red Sands" "Silver Aerogel" "Solid Colors" )
+default_profile=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
+if [[ "$profile" = "default" ]]; then profile="$default_profile"; fi
+for ((i=0; i<9; i++)) do if [[ "$profile" = "${profiles[i]}" ]]; then break; fi; done
+if [[ $i < 9 ]]; then let "i++"; else i=0; fi
+profile="${profiles[i]}"; if  [[ "$profile" = "default_profile" ]]; then plutil -replace ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
+else plutil -replace ThemeProfile -string "$profile" ${HOME}/.MountEFIconf.plist; fi
+UPDATE_CACHE
 }
 
 ###############################################################################
@@ -4628,24 +4646,20 @@ fi
 
 # Установка темы ##############################################################
 if [[ $inputs = 5 ]]; then 
-    if [[ $theme = "built-in" ]]; then 
+        theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    if [[ ! $theme = "built-in" ]]; then 
+        SET_PROFILE
+    else
         plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
-        
         UPDATE_CACHE
-        
-        START_RELOAD_SERVICE
-       
-        else
-          plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist
-          UPDATE_CACHE
     fi
+        START_RELOAD_SERVICE
 fi 
 
 #################################################################################
  if [[ $inputs = 6 ]]; then 
   SET_THEMES
 fi
-      
 
 # Показывать подсказку по клавишам управления  ################################
 if [[ $inputs = 7 ]]; then 
@@ -4819,7 +4833,7 @@ if [[ $inputs = [dD] ]]; then
                 
 ########################################################################################################################
 
-if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE;
+if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; CORRECT_CURRENT_PRESET
 if [[ $need_restart = 1 ]]; then 
 
     UPDATE_CACHE
