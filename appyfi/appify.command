@@ -43,12 +43,11 @@ if [[ -f DefaultConf.plist ]]; then
 fi
 
 if [[ -f colors.csv ]]; then 
-        if [[ ! -f MountEFI.app/Contents/Resources/colors.csv ]]; then cp colors.csv MountEFI.app/Contents/Resources/ 
-        
+        if [[ ! -f MountEFI.app/Contents/Resources/colors.csv ]]; then cp colors.csv MountEFI.app/Contents/Resources ; fi
 fi
 
 if [[ -f xkbswitch ]]; then 
-        if [[ ! -f MountEFI.app/Contents/Resources/xkbswitch ]]; then cp xkbswitch MountEFI.app/Contents/Resources/ 
+        if [[ ! -f MountEFI.app/Contents/Resources/xkbswitch ]]; then cp xkbswitch MountEFI.app/Contents/Resources ; fi
         
 fi
 
