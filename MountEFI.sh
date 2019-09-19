@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="022"
+edit_vers="024"
 ##################################################################################################################################################################################################################
 
 
@@ -27,6 +27,7 @@ edit_vers="022"
 # 021 - возвращение поддержки перезапуска для setup. Поддержка кастомной системной темы
 # 022 - исправление ошибки EXIT_PROGRAMM
 # 023 - исправление, пропущен параметр в FILL_CONFIG
+# 024 - добавлена поддержка кастомного вывода имён загрузчиков
 
 
 
@@ -191,6 +192,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeLoaders</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>37</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
@@ -295,6 +298,20 @@ if [[ ! $strng = "Backups" ]]; then
              plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
              cache=0
 fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoaders</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeLoaders" ]]; then
+            plutil -insert ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeProfile" ]]; then
+            plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
@@ -555,6 +572,10 @@ unset pstring
 
 #################################################################################################
 
+
+themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+
+
 GET_CURRENT_SET(){
 
 current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -699,6 +720,7 @@ GET_LOCALE
 strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
+themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
 }
 ##########################################################################################################################
 
@@ -1513,7 +1535,7 @@ printf "\033[H"
                         let "line=ldnlist[pointer]+11"
                         fi
                         if [[ ${ldlist[$pointer]} = "Clover" ]]; then printf "\r\033[$line;f\033[47C"; else printf "\r\033[$line;f\033[46C"; fi
-                        printf '\e[37m'${ldlist[$pointer]}'\e[0m'
+                        printf '\e['$themeldrs'm'${ldlist[$pointer]}'\e[0m'
                         let "pointer++"
                         let "var99--"
                     done

@@ -105,6 +105,8 @@
 	</dict>
 	<key>Theme</key>
 	<string>built-in</string>
+	<key>ThemeLoaders</key>
+	<string>37</string>
 	<key>ThemeProfile</key>
 	<string>default</string>
 </dict>

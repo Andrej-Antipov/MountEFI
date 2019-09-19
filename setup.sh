@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="054"
+s_edit_vers="055"
 
 
 ############################################################################################################################################################################################################
@@ -61,8 +61,37 @@ s_edit_vers="054"
 # 052 - новая функция выбора системной темы и новый параметр в конфиге
 # 053 - добавлена опция ручной перезагрузки клавишей R в верхнем регистре
 # 054 - добавлен текст подтверждение экспорта конфига в iCloud
+# 055 - редактор вида указателя загрузчиков
 #############################################################################################################################################################################################################
 clear
+
+# функция отладки ##################################################################################################
+demo1="0"
+deb=1
+
+DEBUG(){
+if [[ ! $deb = 0 ]]; then
+printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
+printf '............................................................\n' >> ~/temp.txt
+echo "inputs="$inputs >> ~/temp.txt
+echo "code="$code >> ~/temp.txt
+echo "new_color="$new_color >> ~/temp.txt
+echo "cl_normal="$cl_normal >> ~/temp.txt
+echo "cl_bold="$cl_bold >> ~/temp.txt
+echo "cl_dim="$cl_dim >> ~/temp.txt
+echo "cl_underl="$cl_underl >> ~/temp.txt
+echo "cl_blink="$cl_blink >> ~/temp.txt
+echo "cl_inv="$cl_inv >> ~/temp.txt
+echo "cl_bit="$cl_bit >> ~/temp.txt
+echo "plcolor="$plcolor >> ~/temp.txt
+echo "lpos="$lpos >> ~/temp.txt
+echo "i="$i >> ~/temp.txt
+printf '............................................................\n\n' >> ~/temp.txt
+sleep 0.2
+#read -n 1 -s
+fi
+}
+#########################################################################################################################################
 
 
 SHOW_VERSION(){
@@ -463,6 +492,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeLoaders</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>37</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
@@ -572,6 +603,12 @@ if [[ ! $strng = "Backups" ]]; then
              plutil -insert Backups -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
              plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
              cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoaders</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeLoaders" ]]; then
+            plutil -insert ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
+            cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
@@ -3382,16 +3419,12 @@ fi
 }
 
 function ProgressBar {
-
 let _progress=(${1}*100/${2}*100)/100
 let _done=(${_progress}*4)/10
 let _left=40-$_done
-
 _fill=$(printf "%${_done}s")
 _empty=$(printf "%${_left}s")
-
 printf "       ${_fill// /|}${_empty// / }| ${_progress}%% "
-
 }
 
 STEP_BAR_CORR(){
@@ -3873,19 +3906,21 @@ done
                 if [[ $loc = "ru" ]]; then
         
         printf '\n           * Звёздочкой отмечен пресет который используется по умолчанию       \n' 
-        printf '              Выбор номера темы применяет её и запускает редактор темы           \n\n'
+        printf '              Выбор номера темы применяет её и запускает редактор темы           \n'
         printf '                     Z/X)    Выбрать дефолтный пресет                          \n'                  
         printf '                       R)    Удалить пресет темы                               \n'
         printf '                       N)    Добавить пресет темы                              \n'
+        printf '                       L)    Редактировать указатель загрузчиков               \n'
         printf '                       Q)    Вернуться в главное меню                          \n\n' 
 
                     else
         
         printf '\n        selecting a theme number applies it and launches the theme editor      \n'
-        printf '                * The asterisk marks the default preset.                       \n\n'
+        printf '                * The asterisk marks the default preset.                       \n'
         printf '                     Z/X)    Select default preset                             \n'
         printf '                       R)    Add theme preset                                  \n'
         printf '                       N)    Delete theme preset                               \n'
+        printf '                       L)    Edit bootloaders pointer               \n'
         printf '                       Q)    Quit to the main menu                             \n\n' 
 
                     fi
@@ -3995,6 +4030,297 @@ printf "\033['$l_ptr';32f""*"
 
 }
 
+function Progress {
+let _progress=(${1}*100/${2}*100)/100
+let _done=(${_progress}*3)/10
+let _left=30-$_done
+_fill=$(printf "%${_done}s")
+_empty=$(printf "%${_left}s")
+printf "   |${_fill// /|}${_empty// / }|  code: ${1}  "
+}
+
+COLOR_PARSER(){
+IFS=';'; lcolor=($1); unset IFS; plcolor=${#lcolor[@]}; let "lpos=plcolor-1"
+code=${lcolor[lpos]}
+    cl_bold=0
+    cl_dim=0
+    cl_underl=0
+    cl_blink=0
+    cl_inv=0
+    cl_bit=0
+if [[ $lpos -ge 1 ]]; then
+    cl_normal=0
+for (( i=0; i<=(( $lpos-1 )); i++)) do
+    case ${lcolor[i]} in
+    1 ) cl_bold=1;;
+    2 ) cl_dim=1;;
+    4 ) cl_underl=1;;
+    5 ) cl_blink=1; if [[ $cl_bit = 1 ]] && [[ $plcolor = 3 ]]; then cl_blink=0 ; fi ;;
+    7 ) cl_inv=1;;
+    38 ) cl_bit=1;;              
+    esac
+    if [[ $cl_bit = 1 ]] && [[ $plcolor = 3 ]]; then cl_normal=1; fi
+done
+else 
+    cl_normal=1
+fi        
+}
+
+SHOW_TEXT_FLAGS(){
+if [[ $cl_normal = 1 ]]; then printf '\033[13;25f''√' ;else printf '\033[13;25f'' '; fi
+if [[ $cl_bold = 1 ]]; then printf '\033[14;25f''√' ;else printf '\033[14;25f'' '; fi
+if [[ $cl_dim = 1 ]]; then printf '\033[15;25f''√' ;else printf '\033[15;25f'' '; fi
+if [[ $cl_underl = 1 ]]; then printf '\033[16;25f''√'; else printf '\033[16;25f'' '; fi
+if [[ $cl_blink = 1 ]]; then printf '\033[17;25f''√' ;else printf '\033[17;25f'' '; fi
+if [[ $cl_inv = 1 ]]; then printf '\033[18;25f''√' ;else printf '\033[18;25f'' '; fi
+if [[ $cl_bit = 1 ]]; then printf '\033[20;25f''√'; printf '\033[19;25f'' '; fi 
+if [[ $cl_bit = 0 ]]; then printf '\033[19;25f''√'; printf '\033[20;25f'' '; fi
+}
+
+GET_POINTER_INPUT(){
+            
+                        
+             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQ]+$ ]]; do
+             read -s -n 1 inputs 
+        
+            if [[ ! $inputs = [0-7zZxXeEqQ] ]]; then 
+                        if [[ ${inputs} = "" ]]; then  unset inputs; fi 
+                        
+                        printf '\r'
+                        
+            fi
+            printf '\r'
+            done
+}
+
+SET_STRIP(){
+
+posit=36; code2=40
+for ((i=0;i<16;i++)) do 
+if [[ ${cl_bit} = 0 ]]; then
+printf '\033[14;'$posit'f\e['$code2'm''   ''\e[0m'
+printf '\033[15;'$posit'f\e['$code2'm''   ''\e[0m'
+printf '\033[16;'$posit'f\e['$code2'm''   ''\e[0m'
+printf '\033[17;'$posit'f\e['$code2'm''   ''\e[0m'
+if [[ $code2 = 47 ]]; then code2=99; fi
+let "code2++"
+else
+printf '\033[14;'$posit'f\e['$rcol'm''   ''\e[0m'
+printf '\033[15;'$posit'f\e['$rcol'm''   ''\e[0m'
+printf '\033[16;'$posit'f\e['$rcol'm''   ''\e[0m'
+printf '\033[17;'$posit'f\e['$rcol'm''   ''\e[0m'
+fi
+let "posit=posit+3"
+done
+
+}
+
+SHOW_COLOR(){
+
+printf '\033[5;48f\e['$new_color'm''Clover''\e[0m'
+printf '\033[7;47f\e['$new_color'm''OpenCore''\e[0m'
+
+}
+
+MAKE_COLOR(){
+unset new_color
+if [[ $cl_normal = 0 ]]; then
+
+if [[ $cl_bold = 1 ]]; then new_color+="1;" ;fi
+if [[ $cl_dim = 1 ]]; then new_color+="2;" ;fi
+if [[ $cl_underl = 1 ]]; then new_color+="4;" ;fi
+if [[ $cl_blink = 1 ]]; then new_color+="5;" ;fi
+if [[ $cl_inv = 1 ]]; then new_color+="7;" ;fi
+fi
+if [[ $cl_bit = 1 ]]; then new_color+="38;5;"; fi 
+new_color+="$code"; rcol=$(echo $new_color | sed s'/38;5;/48;5;/')
+}
+
+EDIT_LOADER_POINTER(){
+printf "\033[?25l"
+old_themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+if [[ $old_themeldrs = "" ]]; then old_themeldrs=37; fi
+new_color=$old_themeldrs; new_color2=$new_color
+if [[ $loc = "ru" ]]; then
+        printf '                         Редактор вида указателя загрузчика                         '
+			else
+        printf '                             Loader Pointer View Editor                             '
+ fi
+printf '\n\n   '
+printf '.%.0s' {1..82}
+printf ' %.0s' {1..88}
+printf '   '
+printf '      1)   +   SanDisk SD8SBAT128G1122         ......  disk0s1        209.7 Mb     \n'
+printf '      2) ...   Hitachi HDS721010CLA330                 disk1s1        209.7 Mb     \n'
+printf '      3)   +   ST9160301AS                    ........ disk2s1        209.7 Mb     '
+printf ' %.0s' {1..88}
+printf '\n   '
+printf '.%.0s' {1..82}
+printf ' %.0s' {1..88}
+                if [[ $loc = "ru" ]]; then
+printf '                Текст                                       Цвет                           '
+printf '                                                                                        '
+printf '     0) Нормальный                   \n'  
+printf '     1) Жирный/яркий                 \n'
+printf '     2) Тусклый                      \n'
+printf '     3) Подчёркнутый                 \n'
+printf '     4) Мигающий                     \n'
+printf '     5) Инверсный                    \n'
+printf '     6) Цветов      16               \n'
+printf '     7) Цветов     256               \n'
+                    else
+printf '                Text                                        Color                          '
+printf '                                                                                        '
+printf '     0) Normal                       \n'  
+printf '     1) Bold/Bright                  \n'
+printf '     2) Dim                          \n'
+printf '     3) Underlined                   \n'
+printf '     4) Blink                        \n'
+printf '     5) Inverse                      \n'
+printf '     6) Colors      16               \n'
+printf '     7) Colors     256               \n'
+                    fi
+printf '\033[5;48f\e['$old_themeldrs'm''Clover''\e[0m'
+printf '\033[7;47f\e['$old_themeldrs'm''OpenCore''\e[0m'
+#printf '\033[19;45f'
+COLOR_PARSER ${old_themeldrs}
+SHOW_TEXT_FLAGS
+if [[ ${cl_bit} = 0 ]]; then  
+if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "clptr=code-29"; fi
+if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "clptr=code-89"; fi
+if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi 
+if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "NN=3*(code-89)+58"; fi
+printf '\033[13;'$NN'f''•'
+printf '\033[18;'$NN'f''•'
+else rcol=$(echo $old_themeldrs | sed s'/38;5;/48;5;/'); fi
+SET_STRIP
+if [[ ! ${cl_bit} = 0 ]]; then
+printf '\033[20;36f'; Progress ${code} 255
+fi
+printf '\033[22;5f'
+printf '.%.0s' {1..82}
+printf '\033[24;7f'
+                                if [[ $loc = "ru" ]]; then
+                        printf 'Выберите от 1 до 7 (или Z/X, Q, E):                                   \n\n'
+                        printf '             Z/X - выбор цвета                                            \n'
+                        printf '             E/E - отменить/возвратить результаты редактирования          \n'
+                        printf '             Q   - вернуться в меню сохранив новые настройки пресета      \n'
+			                   else
+                        printf 'Select from 1 to 7 (or Z/X, Q, E):                                    \n\n'
+                        printf '             Z/X - select color                                          \n'
+                        printf '             E/E - cancel/return the editing results                     \n'
+                        printf '             Q   - return to the menu saving the new preset settings     \n'
+                                fi
+                    cvar=0
+                    while [[ $cvar = 0 ]]; 
+                    do
+                    printf "\033[?25l"
+                    
+                    GET_POINTER_INPUT
+                    
+
+                    if [[ ${inputs} = [0-7] ]]; then
+                               case ${inputs} in  
+                             1)   if [[ $cl_bold = 1 ]]; then cl_bold=0; elif [[ $cl_bold = 0 ]]; then cl_bold=1; cl_normal=0; fi;;
+                             2)   if [[ $cl_dim = 1 ]]; then cl_dim=0; elif [[ $cl_dim = 0 ]]; then cl_dim=1; cl_normal=0; fi;;
+                             3)   if [[ $cl_underl = 1 ]]; then cl_underl=0; elif [[ $cl_underl = 0 ]]; then cl_underl=1; cl_normal=0; fi ;;
+                             4)   if [[ $cl_blink = 1 ]]; then cl_blink=0; elif [[ $cl_blink = 0 ]]; then cl_blink=1; cl_normal=0; fi ;;
+                             5)   if [[ $cl_inv = 1 ]]; then cl_inv=0; elif [[ $cl_inv = 0 ]]; then cl_inv=1; cl_normal=0; fi ;;
+                             6)   if [[ $cl_bit = 1 ]]; then cl_bit=0; fi ; printf '\033[13;'$NN'f''•  '; printf '\033[18;'$NN'f''•  '; MAKE_COLOR; SET_STRIP; SHOW_COLOR; printf '\033[20;36f'; printf ' %.0s' {1..48}; code=37;;  
+                             7)   if [[ $cl_bit = 0 ]]; then cl_bit=1; fi ; printf '\033[13;'$NN'f''   '; printf '\033[18;'$NN'f''   '; MAKE_COLOR; SET_STRIP; SHOW_COLOR; printf '\033[20;36f'; Progress ${code} 255; code=127;;
+                             0)   if [[ $cl_normal = 0 ]]; then cl_normal=1; cl_bold=0; cl_dim=0; cl_underl=0; cl_blink=0; cl_inv=0; fi ;;
+                               esac
+                                  
+                             MAKE_COLOR
+                             new_color2=$new_color
+                             SHOW_COLOR
+
+                             SHOW_TEXT_FLAGS
+                    fi
+                
+                if [[ $inputs = [xX] ]] && [[ $cl_bit = 0 ]]; then
+            
+                
+                printf '\033[13;'$NN'f''   '
+                printf '\033[18;'$NN'f''   '
+
+                
+                if [[ ${code} = 37 ]]; then code=90 ; elif [[ ${code} = 97 ]]; then code=30
+                    else
+                if [[ ${code} -ge 30 ]] && [[ ${code} -le 36 ]]; then let "code++"; fi
+                if [[ ${code} -ge 90 ]] && [[ ${code} -le 96 ]]; then let "code++"; fi
+                    fi
+                if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi 
+                if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "NN=3*(code-89)+58"; fi
+ 
+                printf '\033[13;'$NN'f''•  '
+                printf '\033[18;'$NN'f''•  '
+                
+                MAKE_COLOR
+                new_color2=$new_color
+                SHOW_COLOR
+               
+         fi
+
+         if [[ $inputs = [zZ] ]] && [[ $cl_bit = 0 ]]; then
+                
+                printf '\033[13;'$NN'f''   '
+                printf '\033[18;'$NN'f''   '
+
+                if [[ ${code} = 30 ]]; then code=97 ; elif [[ ${code} = 90 ]]; then code=37
+                    else
+                if [[ ${code} -ge 31 ]] && [[ ${code} -le 37 ]]; then let "code--"; fi
+                if [[ ${code} -ge 91 ]] && [[ ${code} -le 97 ]]; then let "code--"; fi
+                    fi
+                if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi 
+                if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "NN=3*(code-89)+58"; fi
+ 
+                printf '\033[13;'$NN'f''•  '
+                printf '\033[18;'$NN'f''•  '
+                
+                MAKE_COLOR
+                new_color2=$new_color
+
+                SHOW_COLOR
+                
+         fi
+
+                 if [[ $inputs = [zZ] ]] && [[ $cl_bit = 1 ]]; then
+                    if [[ $code -gt 0 ]]; then let "code--"; else code=255; fi
+                    printf '\033[20;36f'; Progress ${code} 255
+                    MAKE_COLOR
+                    new_color2=$new_color
+                    SHOW_COLOR
+                    SET_STRIP
+                fi
+
+                if [[ $inputs = [xX] ]] && [[ $cl_bit = 1 ]]; then
+                    if [[ $code -lt 255 ]]; then let "code++"; else code=0; fi
+                    printf '\033[20;36f'; Progress ${code} 255
+                    MAKE_COLOR
+                    new_color2=$new_color
+                    SHOW_COLOR
+                    SET_STRIP
+                fi
+            if [[ $inputs = [eE] ]]; then 
+                                    if [[ ! $new_color = $old_themeldrs ]]; then new_color=$old_themeldrs;  else new_color=$new_color2; fi
+                                    COLOR_PARSER $new_color
+                                    MAKE_COLOR
+                                    SHOW_COLOR
+                                    SET_STRIP
+                                    if [[ $cl_bit = 0 ]]; then printf '\033[20;36f'; printf ' %.0s' {1..48}; else printf '\033[20;36f'; Progress ${code} 255; fi
+                                    SHOW_TEXT_FLAGS
+            fi
+
+            if [[ $inputs = [qQ] ]]; then  unset inputs; cvar=1; break;   fi
+            if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
+        
+            read -s -n 1  inputs
+
+        
+done
+}
+
 THEME_EDITOR(){
 UPDATE_CACHE
 oldlines=$lines
@@ -4014,9 +4340,9 @@ clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 
 UPDATE_PRESETS_LIST
 
-printf '\n\n'
+printf '\n'
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9nNrRzZxXqQ]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9nNrRzZxXlLqQ]+$ ]]; do 
 
 SET_INPUT
                 if [[ $loc = "ru" ]]; then
@@ -4029,10 +4355,10 @@ printf "\033[3A"
 
 printf "\033['$currents';34f""*"
 if [[ $loc = "ru" ]]; then
-let "poscur=pcount+18"
+let "poscur=pcount+17"
 printf "\033['$poscur';44f"
 else
-let "poscur=pcount+17"
+let "poscur=pcount+16"
 printf "\033['$poscur';44f"
 fi
 printf "\033[?25h"
@@ -4048,7 +4374,7 @@ printf "\033[?25h"
         READ_TWO_SYMBOLS 35
         fi 
         fi
-        if [[ ! $inputs = [qQnNrRzZxX] ]]; then 
+        if [[ ! $inputs = [qQnNrRzZxXlL] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; printf "\033[1A";  fi 
                         if [[ ${inputs} = 0 ]]; then  unset inputs; fi 2>&-
                         if [[ ${inputs} -gt "$chn" ]]; then unset inputs; fi 2>&-
@@ -4058,25 +4384,19 @@ printf "\033[?25h"
 
     
 done
+        if [[ $inputs = [lL] ]]; then
+                        oldlines=$lines; lines=30
+                        clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
+                        EDIT_LOADER_POINTER
+                        plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
+                        lines=$oldlines
+                        unset inputs   
+        fi  
 
         if [[ $inputs = "" ]]; then printf "\033[2A"; fi
         if [[ $inputs = [qQ] ]]; then  unset inputs;  break;  fi
-        
 
 
-if [[ $inputs = [zZxX] ]]; then 
-                            printf "\033[?25l"
-                            printf "\033['$currents';34f"" "; if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+17"; fi ; printf "\033['$poscur';44f"
-                            current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-                            for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then cp_pos=$i; break; fi; done
-                            let "max_pos=pcount-1"
-                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
-                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
-                            unset inputs
-                            CUSTOM_SET &
-                            
-fi
-                            
 
 if [[ $inputs = [rR] ]]; then 
 
@@ -4150,7 +4470,21 @@ if [[ $inputs = [nN] ]]; then
                        
 fi
 
-if [[ ! $inputs = [qQnNrRzZxX]+$ ]] &&  [[ ! $inputs = "" ]]; then
+
+if [[ $inputs = [zZxX] ]]; then 
+                            printf "\033[?25l"
+                            printf "\033['$currents';34f"" "; if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+17"; fi ; printf "\033['$poscur';44f"
+                            current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                            for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then cp_pos=$i; break; fi; done
+                            let "max_pos=pcount-1"
+                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            unset inputs
+                            CUSTOM_SET &
+                            
+fi
+
+if [[ ! $inputs = [qQnNrRzZxXlL]+$ ]] &&  [[ ! $inputs = "" ]]; then
                         old2lines=$lines; lines=20; swap_preset=0
                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
                         SAVE_ORIGINAL_PRESET
