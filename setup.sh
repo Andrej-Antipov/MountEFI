@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="055"
+s_edit_vers="057"
 
 
 ############################################################################################################################################################################################################
@@ -62,6 +62,7 @@ s_edit_vers="055"
 # 053 - добавлена опция ручной перезагрузки клавишей R в верхнем регистре
 # 054 - добавлен текст подтверждение экспорта конфига в iCloud
 # 055 - редактор вида указателя загрузчиков
+# 056 - удалить подчёркивание из вывода цветов
 #############################################################################################################################################################################################################
 clear
 
@@ -4133,11 +4134,13 @@ if [[ $cl_blink = 1 ]]; then new_color+="5;" ;fi
 if [[ $cl_inv = 1 ]]; then new_color+="7;" ;fi
 fi
 if [[ $cl_bit = 1 ]]; then new_color+="38;5;"; fi 
-new_color+="$code"; rcol=$(echo $new_color | sed s'/38;5;/48;5;/')
+rcol=$(echo $new_color | sed s'/38;5;/48;5;/' | sed s'/4;//' | sed s'/7;//')
+new_color+="$code"; rcol+="$code"
 }
 
 EDIT_LOADER_POINTER(){
 printf "\033[?25l"
+UPDATE_CACHE
 old_themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
 if [[ $old_themeldrs = "" ]]; then old_themeldrs=37; fi
 new_color=$old_themeldrs; new_color2=$new_color
@@ -4192,7 +4195,7 @@ if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;f
 if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "NN=3*(code-89)+58"; fi
 printf '\033[13;'$NN'f''•'
 printf '\033[18;'$NN'f''•'
-else rcol=$(echo $old_themeldrs | sed s'/38;5;/48;5;/'); fi
+else MAKE_COLOR; fi
 SET_STRIP
 if [[ ! ${cl_bit} = 0 ]]; then
 printf '\033[20;36f'; Progress ${code} 255
@@ -4226,13 +4229,14 @@ printf '\033[24;7f'
                              3)   if [[ $cl_underl = 1 ]]; then cl_underl=0; elif [[ $cl_underl = 0 ]]; then cl_underl=1; cl_normal=0; fi ;;
                              4)   if [[ $cl_blink = 1 ]]; then cl_blink=0; elif [[ $cl_blink = 0 ]]; then cl_blink=1; cl_normal=0; fi ;;
                              5)   if [[ $cl_inv = 1 ]]; then cl_inv=0; elif [[ $cl_inv = 0 ]]; then cl_inv=1; cl_normal=0; fi ;;
-                             6)   if [[ $cl_bit = 1 ]]; then cl_bit=0; fi ; printf '\033[13;'$NN'f''•  '; printf '\033[18;'$NN'f''•  '; MAKE_COLOR; SET_STRIP; SHOW_COLOR; printf '\033[20;36f'; printf ' %.0s' {1..48}; code=37;;  
-                             7)   if [[ $cl_bit = 0 ]]; then cl_bit=1; fi ; printf '\033[13;'$NN'f''   '; printf '\033[18;'$NN'f''   '; MAKE_COLOR; SET_STRIP; SHOW_COLOR; printf '\033[20;36f'; Progress ${code} 255; code=127;;
+                             6)   if [[ $cl_bit = 1 ]]; then cl_bit=0; fi ; MAKE_COLOR; SET_STRIP; SHOW_COLOR; printf '\033[20;36f'; printf ' %.0s' {1..48}; code=37; if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi ;printf '\033[13;'$NN'f''•  '; printf '\033[18;'$NN'f''•  ';;  
+                             7)   if [[ $cl_bit = 0 ]]; then cl_bit=1; fi ; printf '\033[13;'$NN'f''   '; printf '\033[18;'$NN'f''   '; printf '\033[20;36f'; code=127; Progress ${code} 255;;
                              0)   if [[ $cl_normal = 0 ]]; then cl_normal=1; cl_bold=0; cl_dim=0; cl_underl=0; cl_blink=0; cl_inv=0; fi ;;
                                esac
                                   
                              MAKE_COLOR
                              new_color2=$new_color
+                             SET_STRIP
                              SHOW_COLOR
 
                              SHOW_TEXT_FLAGS
@@ -4389,6 +4393,7 @@ done
                         clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
                         EDIT_LOADER_POINTER
                         plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
+                        UPDATE_CACHE
                         lines=$oldlines
                         unset inputs   
         fi  
