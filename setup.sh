@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="057"
+s_edit_vers="060"
 
 
 ############################################################################################################################################################################################################
@@ -63,20 +63,25 @@ s_edit_vers="057"
 # 054 - добавлен текст подтверждение экспорта конфига в iCloud
 # 055 - редактор вида указателя загрузчиков
 # 056 - удалить подчёркивание из вывода цветов
+# 057 - исправление редакции в 16 цветах для темы загрузчика для Core2duo
+# 058 - поддержка кастомного имени загрузчика
+# 059 - кастомизация имени загрузчика
+# 060 - доавлена быстрая прокрутка 256 цвета для кастомизации загрузчика
 #############################################################################################################################################################################################################
 clear
 
 # функция отладки ##################################################################################################
 demo1="0"
-deb=1
+deb=0
 
 DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
 echo "inputs="$inputs >> ~/temp.txt
-echo "code="$code >> ~/temp.txt
-echo "new_color="$new_color >> ~/temp.txt
+#echo "code="$code >> ~/temp.txt
+#echo "new_color="$new_color >> ~/temp.txt
+echo "lcolor="${lcolor[@]} >> ~/temp.txt
 echo "cl_normal="$cl_normal >> ~/temp.txt
 echo "cl_bold="$cl_bold >> ~/temp.txt
 echo "cl_dim="$cl_dim >> ~/temp.txt
@@ -84,12 +89,12 @@ echo "cl_underl="$cl_underl >> ~/temp.txt
 echo "cl_blink="$cl_blink >> ~/temp.txt
 echo "cl_inv="$cl_inv >> ~/temp.txt
 echo "cl_bit="$cl_bit >> ~/temp.txt
-echo "plcolor="$plcolor >> ~/temp.txt
-echo "lpos="$lpos >> ~/temp.txt
-echo "i="$i >> ~/temp.txt
+#echo "plcolor="$plcolor >> ~/temp.txt
+#echo "lpos="$lpos >> ~/temp.txt
+#echo "i="$i >> ~/temp.txt
 printf '............................................................\n\n' >> ~/temp.txt
-sleep 0.2
-#read -n 1 -s
+#sleep 0.2
+read -n 1 -s
 fi
 }
 #########################################################################################################################################
@@ -270,6 +275,15 @@ theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | 
 theme_name=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 if [[ "$theme_name" = "default" ]]; then theme_name=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
 fi
+
+GET_THEME_LOADERS(){
+themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+Clover=$(echo $Loaders | cut -f1 -d ";"); OpenCore=$(echo $Loaders | cut -f2 -d ";")
+if [[ $Clover = "" ]]; then Clover="Clover"; fi; if [[ $OpenCore = "" ]]; then OpenCore="OpenCore"; fi
+pclov=${#Clover}; poc=${#OpenCore}; 
+let "c_clov=(9-pclov)/2+46"; let "c_oc=(9-poc)/2+46"
+}
 
 
 nlenth=${#theme_name}
@@ -495,6 +509,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeLoaders</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>37</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeLoadersLinks</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeLoadersNames</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
@@ -609,6 +627,18 @@ fi
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoaders</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeLoaders" ]]; then
             plutil -insert ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersLinks</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeLoadersLinks" ]]; then
+            plutil -insert ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersNames</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeLoadersNames" ]]; then
+            plutil -insert ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
 
@@ -3811,9 +3841,12 @@ RESTORE_ORIGINAL_PRESET(){
 }
 
 CUSTOM_SET_EDITED_THEME(){
+theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ $theme = "built-in" ]]; then
 osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
 set_font "$current_fontname" $current_fontsize
+fi
 }
 
 EDIT_PRESET_UPDATE_SCREEN(){
@@ -4031,6 +4064,21 @@ printf "\033['$l_ptr';32f""*"
 
 }
 
+EDIT_LODERS_NAMES(){
+unset demo
+                                if [[ $loc = "ru" ]]; then
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "Псевдоним загрузчика (максимум 8 символов):" buttons {"Отменить", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "BootLoader alias (max 8 characters):" buttons {"Cancel", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                                fi
+                        demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
+                        demo=`echo "$demo" | tr -cd "[:print:]\n"`
+                        demo=`echo "$demo" | tr -d "={}]><[&^$"`
+                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        
+
+}
+
 function Progress {
 let _progress=(${1}*100/${2}*100)/100
 let _done=(${_progress}*3)/10
@@ -4042,6 +4090,7 @@ printf "   |${_fill// /|}${_empty// / }|  code: ${1}  "
 
 COLOR_PARSER(){
 IFS=';'; lcolor=($1); unset IFS; plcolor=${#lcolor[@]}; let "lpos=plcolor-1"
+
 code=${lcolor[lpos]}
     cl_bold=0
     cl_dim=0
@@ -4056,7 +4105,7 @@ for (( i=0; i<=(( $lpos-1 )); i++)) do
     1 ) cl_bold=1;;
     2 ) cl_dim=1;;
     4 ) cl_underl=1;;
-    5 ) cl_blink=1; if [[ $cl_bit = 1 ]] && [[ $plcolor = 3 ]]; then cl_blink=0 ; fi ;;
+    5 ) if [[ ! $cl_bit = 1 ]] && [[ ! $plcolor = 3 ]] && [[ ! $cl_normal = 1 ]]; then cl_blink=1 ; fi ;;
     7 ) cl_inv=1;;
     38 ) cl_bit=1;;              
     esac
@@ -4064,7 +4113,8 @@ for (( i=0; i<=(( $lpos-1 )); i++)) do
 done
 else 
     cl_normal=1
-fi        
+fi 
+    
 }
 
 SHOW_TEXT_FLAGS(){
@@ -4081,10 +4131,10 @@ if [[ $cl_bit = 0 ]]; then printf '\033[19;25f''√'; printf '\033[20;25f'' '; f
 GET_POINTER_INPUT(){
             
                         
-             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQ]+$ ]]; do
+             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQcCoOaAsS]+$ ]]; do
              read -s -n 1 inputs 
         
-            if [[ ! $inputs = [0-7zZxXeEqQ] ]]; then 
+            if [[ ! $inputs = [0-7zZxXeEqQcCoOaAsS] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; fi 
                         
                         printf '\r'
@@ -4117,16 +4167,15 @@ done
 }
 
 SHOW_COLOR(){
-
-printf '\033[5;48f\e['$new_color'm''Clover''\e[0m'
-printf '\033[7;47f\e['$new_color'm''OpenCore''\e[0m'
-
+printf "\r\033[5;f\033['$c_clov'C"'\e['$new_color'm'"${Clover}"'\e[0m'
+printf "\033[7;f\033['$c_oc'C"'\e['$new_color'm'"${OpenCore}"'\e[0m'
+printf '\033[24;42f''                    '
 }
 
 MAKE_COLOR(){
 unset new_color
+if [[ $cl_normal = 1 ]]; then  cl_bold=0; cl_dim=0; cl_underl=0; cl_blink=0; cl_inv=0; fi
 if [[ $cl_normal = 0 ]]; then
-
 if [[ $cl_bold = 1 ]]; then new_color+="1;" ;fi
 if [[ $cl_dim = 1 ]]; then new_color+="2;" ;fi
 if [[ $cl_underl = 1 ]]; then new_color+="4;" ;fi
@@ -4137,10 +4186,11 @@ if [[ $cl_bit = 1 ]]; then new_color+="38;5;"; fi
 rcol=$(echo $new_color | sed s'/38;5;/48;5;/' | sed s'/4;//' | sed s'/7;//')
 new_color+="$code"; rcol+="$code"
 }
-
+################################# редактор темы и псевдонима загрузчиков ##################################################################
 EDIT_LOADER_POINTER(){
 printf "\033[?25l"
-UPDATE_CACHE
+old_clover="$Clover"; clover2="$Clover"
+old_opencore="$OpenCore"; opencore2="$OpenCore"
 old_themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
 if [[ $old_themeldrs = "" ]]; then old_themeldrs=37; fi
 new_color=$old_themeldrs; new_color2=$new_color
@@ -4149,13 +4199,14 @@ if [[ $loc = "ru" ]]; then
 			else
         printf '                             Loader Pointer View Editor                             '
  fi
-printf '\n\n   '
+printf ' %.0s' {1..88}
+printf '\n   '
 printf '.%.0s' {1..82}
 printf ' %.0s' {1..88}
 printf '   '
-printf '      1)   +   SanDisk SD8SBAT128G1122         ......  disk0s1        209.7 Mb     \n'
+printf '      1)   +   SanDisk SD8SBAT128G1122                 disk0s1        209.7 Mb     \n'
 printf '      2) ...   Hitachi HDS721010CLA330                 disk1s1        209.7 Mb     \n'
-printf '      3)   +   ST9160301AS                    ........ disk2s1        209.7 Mb     '
+printf '      3)   +   ST9160301AS                             disk2s1        209.7 Mb     '
 printf ' %.0s' {1..88}
 printf '\n   '
 printf '.%.0s' {1..82}
@@ -4183,8 +4234,7 @@ printf '     5) Inverse                      \n'
 printf '     6) Colors      16               \n'
 printf '     7) Colors     256               \n'
                     fi
-printf '\033[5;48f\e['$old_themeldrs'm''Clover''\e[0m'
-printf '\033[7;47f\e['$old_themeldrs'm''OpenCore''\e[0m'
+SHOW_COLOR
 #printf '\033[19;45f'
 COLOR_PARSER ${old_themeldrs}
 SHOW_TEXT_FLAGS
@@ -4196,7 +4246,7 @@ if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "NN=3*(code-89)+58"; f
 printf '\033[13;'$NN'f''•'
 printf '\033[18;'$NN'f''•'
 else MAKE_COLOR; fi
-SET_STRIP
+SET_STRIP 
 if [[ ! ${cl_bit} = 0 ]]; then
 printf '\033[20;36f'; Progress ${code} 255
 fi
@@ -4204,15 +4254,21 @@ printf '\033[22;5f'
 printf '.%.0s' {1..82}
 printf '\033[24;7f'
                                 if [[ $loc = "ru" ]]; then
-                        printf 'Выберите от 1 до 7 (или Z/X, Q, E):                                   \n\n'
+                        printf 'Выберите от 1 до 7 (или Z/X, Q, E):                                     \n\n'
                         printf '             Z/X - выбор цвета                                            \n'
+                        printf '             A/S - выбор цвета.быстрая прокрутка                          \n'
+                        printf '             C   - указать псевдоним для загрузчика Clover                \n'
+                        printf '             O   - указать псевдоним для загрузчика Open Core             \n'
                         printf '             E/E - отменить/возвратить результаты редактирования          \n'
                         printf '             Q   - вернуться в меню сохранив новые настройки пресета      \n'
 			                   else
-                        printf 'Select from 1 to 7 (or Z/X, Q, E):                                    \n\n'
-                        printf '             Z/X - select color                                          \n'
-                        printf '             E/E - cancel/return the editing results                     \n'
-                        printf '             Q   - return to the menu saving the new preset settings     \n'
+                        printf 'Select from 1 to 7 (or Z/X, Q, E):                                      \n\n'
+                        printf '             Z/X - select color                                           \n'
+                        printf '             A/S - select color.fast forward list                         \n'
+                        printf '             C   - Specify an alias for the Clover bootloader             \n'
+                        printf '             O   - Specify an alias for the Open Core bootloader          \n'
+                        printf '             E/E - cancel/return the editing results                      \n'
+                        printf '             Q   - return to the menu saving the new preset settings      \n'
                                 fi
                     cvar=0
                     while [[ $cvar = 0 ]]; 
@@ -4223,6 +4279,7 @@ printf '\033[24;7f'
                     
 
                     if [[ ${inputs} = [0-7] ]]; then
+                               
                                case ${inputs} in  
                              1)   if [[ $cl_bold = 1 ]]; then cl_bold=0; elif [[ $cl_bold = 0 ]]; then cl_bold=1; cl_normal=0; fi;;
                              2)   if [[ $cl_dim = 1 ]]; then cl_dim=0; elif [[ $cl_dim = 0 ]]; then cl_dim=1; cl_normal=0; fi;;
@@ -4231,15 +4288,17 @@ printf '\033[24;7f'
                              5)   if [[ $cl_inv = 1 ]]; then cl_inv=0; elif [[ $cl_inv = 0 ]]; then cl_inv=1; cl_normal=0; fi ;;
                              6)   if [[ $cl_bit = 1 ]]; then cl_bit=0; fi ; MAKE_COLOR; SET_STRIP; SHOW_COLOR; printf '\033[20;36f'; printf ' %.0s' {1..48}; code=37; if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi ;printf '\033[13;'$NN'f''•  '; printf '\033[18;'$NN'f''•  ';;  
                              7)   if [[ $cl_bit = 0 ]]; then cl_bit=1; fi ; printf '\033[13;'$NN'f''   '; printf '\033[18;'$NN'f''   '; printf '\033[20;36f'; code=127; Progress ${code} 255;;
-                             0)   if [[ $cl_normal = 0 ]]; then cl_normal=1; cl_bold=0; cl_dim=0; cl_underl=0; cl_blink=0; cl_inv=0; fi ;;
+                             0)   if [[ $cl_normal = 0 ]]; then cl_normal=1;  fi ;;
                                esac
-                                  
+                             if [[ $cl_bold = 0 ]] && [[ $cl_dim = 0 ]] && [[ $cl_underl = 0 ]] && [[ $cl_blink = 0 ]] && [[ $cl_inv = 0 ]]; then cl_normal=1; fi
+                              
                              MAKE_COLOR
-                             new_color2=$new_color
-                             SET_STRIP
-                             SHOW_COLOR
-
+                             
+                             SET_STRIP 
+                             SHOW_COLOR 
+                             
                              SHOW_TEXT_FLAGS
+                            
                     fi
                 
                 if [[ $inputs = [xX] ]] && [[ $cl_bit = 0 ]]; then
@@ -4261,8 +4320,8 @@ printf '\033[24;7f'
                 printf '\033[18;'$NN'f''•  '
                 
                 MAKE_COLOR
-                new_color2=$new_color
-                SHOW_COLOR
+                
+                SHOW_COLOR &
                
          fi
 
@@ -4283,9 +4342,9 @@ printf '\033[24;7f'
                 printf '\033[18;'$NN'f''•  '
                 
                 MAKE_COLOR
-                new_color2=$new_color
+                
 
-                SHOW_COLOR
+                SHOW_COLOR &
                 
          fi
 
@@ -4293,38 +4352,82 @@ printf '\033[24;7f'
                     if [[ $code -gt 0 ]]; then let "code--"; else code=255; fi
                     printf '\033[20;36f'; Progress ${code} 255
                     MAKE_COLOR
-                    new_color2=$new_color
-                    SHOW_COLOR
-                    SET_STRIP
+                    
+                    SHOW_COLOR 
+                    SET_STRIP 
                 fi
 
                 if [[ $inputs = [xX] ]] && [[ $cl_bit = 1 ]]; then
                     if [[ $code -lt 255 ]]; then let "code++"; else code=0; fi
                     printf '\033[20;36f'; Progress ${code} 255
                     MAKE_COLOR
-                    new_color2=$new_color
-                    SHOW_COLOR
-                    SET_STRIP
+                    
+                    SHOW_COLOR 
+                    SET_STRIP 
                 fi
-            if [[ $inputs = [eE] ]]; then 
-                                    if [[ ! $new_color = $old_themeldrs ]]; then new_color=$old_themeldrs;  else new_color=$new_color2; fi
+                if [[ $inputs = [aA] ]] && [[ $cl_bit = 1 ]]; then
+                    if [[ $code -gt 9 ]]; then let "code=code-10"; else code=255; fi
+                    printf '\033[20;36f'; Progress ${code} 255
+                    MAKE_COLOR
+                    
+                    SHOW_COLOR 
+                    SET_STRIP 
+                fi
+
+                if [[ $inputs = [sS] ]] && [[ $cl_bit = 1 ]]; then
+                    if [[ $code -lt 245 ]]; then let "code=code+10"; else code=0; fi
+                    printf '\033[20;36f'; Progress ${code} 255
+                    MAKE_COLOR
+                    
+                    SHOW_COLOR 
+                    SET_STRIP 
+                fi
+
+                if [[ $inputs = [eE] ]]; then 
+                                   
+                                    if [[ ! $new_color = $old_themeldrs ]]; then new_color2=$new_color; new_color=$old_themeldrs; else new_color=$new_color2; fi
+                                    if [[ ! "$Clover" = "$old_clover" ]]; then clover2="$Clover"; Clover="$old_clover"; else Clover="$clover2"; fi
+                                    if [[ ! "$OpenCore" = "$old_opencore" ]]; then opencore2="$OpenCore"; OpenCore="$old_opencore"; else OpenCore="$opencore2"; fi
+                                    pclov=${#Clover}; let "c_clov=(9-pclov)/2+46"; poc=${#OpenCore}; let "c_oc=(9-poc)/2+46"
+                                    printf "\033[5;f\033[45C"'          '; printf "\033[7;f\033[45C"'          '
                                     COLOR_PARSER $new_color
                                     MAKE_COLOR
-                                    SHOW_COLOR
-                                    SET_STRIP
+                                    SHOW_COLOR 
+                                    SET_STRIP 
                                     if [[ $cl_bit = 0 ]]; then printf '\033[20;36f'; printf ' %.0s' {1..48}; else printf '\033[20;36f'; Progress ${code} 255; fi
                                     SHOW_TEXT_FLAGS
-            fi
-
+                                    
+                fi
+                if [[ $inputs = [cC] ]]; then 
+                new_loader=$Clover                     
+                EDIT_LODERS_NAMES
+                if [[ ! $demo = "" ]]; then
+                if [[ ${#demo} -gt 8 ]]; then demo="${demo:0:8}"; fi
+                Clover="$demo"; pclov=${#Clover}; let "c_clov=(9-pclov)/2+46"; 
+                printf "\r\033[5;f\033[45C"'          '
+                SHOW_COLOR
+                fi
+                fi
+                if [[ $inputs = [oO] ]]; then 
+                new_loader=$OpenCore                     
+                EDIT_LODERS_NAMES
+                if [[ ! $demo = "" ]]; then
+                if [[ ${#demo} -gt 8 ]]; then demo="${demo:0:8}"; fi
+                OpenCore="$demo"; poc=${#OpenCore}; let "c_oc=(9-poc)/2+46"
+                printf "\033[7;f\033[45C"'          '
+                SHOW_COLOR
+                fi
+                fi
+            
             if [[ $inputs = [qQ] ]]; then  unset inputs; cvar=1; break;   fi
             if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
         
             read -s -n 1  inputs
-
+            if [[ $cl_normal = 1 ]]; then printf '\033[13;25f''√' ;else printf '\033[13;25f'' '; fi
         
 done
 }
-
+############################################# конец редактора загрузчиков #################################################
 THEME_EDITOR(){
 UPDATE_CACHE
 oldlines=$lines
@@ -4389,9 +4492,13 @@ printf "\033[?25h"
     
 done
         if [[ $inputs = [lL] ]]; then
-                        oldlines=$lines; lines=30
+                        oldlines=$lines; lines=32
                         clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
+                        UPDATE_CACHE
+                        GET_THEME_LOADERS
                         EDIT_LOADER_POINTER
+                        Loaders="$Clover"";""$OpenCore"
+                        plutil -replace ThemeLoadersNames -string "$Loaders" ${HOME}/.MountEFIconf.plist
                         plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
                         UPDATE_CACHE
                         lines=$oldlines
@@ -4485,7 +4592,8 @@ if [[ $inputs = [zZxX] ]]; then
                             if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
                             if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
                             unset inputs
-                            CUSTOM_SET &
+                            GET_THEME
+                                    if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
                             
 fi
 
@@ -4673,7 +4781,8 @@ fi
 fi
 
 
-CUSTOM_SET &
+GET_THEME
+        if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi & 
 
 
 done

@@ -107,6 +107,10 @@
 	<string>built-in</string>
 	<key>ThemeLoaders</key>
 	<string>37</string>
+	<key>ThemeLoadersLinks</key>
+	<string></string>
+	<key>ThemeLoadersNames</key>
+	<string>Clover;OpenCore</string>
 	<key>ThemeProfile</key>
 	<string>default</string>
 </dict>

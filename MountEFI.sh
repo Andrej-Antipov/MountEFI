@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="024"
+edit_vers="025"
 ##################################################################################################################################################################################################################
 
 
@@ -28,6 +28,7 @@ edit_vers="024"
 # 022 - исправление ошибки EXIT_PROGRAMM
 # 023 - исправление, пропущен параметр в FILL_CONFIG
 # 024 - добавлена поддержка кастомного вывода имён загрузчиков
+# 025 - поддержка кастомного текста имён загрузчиков
 
 
 
@@ -194,6 +195,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeLoaders</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>37</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeLoadersLinks</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>ThemeLoadersNames</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
@@ -305,13 +310,23 @@ if [[ ! $strng = "ThemeLoaders" ]]; then
             cache=0
 fi
 
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersLinks</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeLoadersLinks" ]]; then
+            plutil -insert ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersNames</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "ThemeLoadersNames" ]]; then
+            plutil -insert ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeProfile" ]]; then
             plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
-
-
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
@@ -572,9 +587,15 @@ unset pstring
 
 #################################################################################################
 
-
+GET_THEME_LOADERS(){
 themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
-
+Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+Clover=$(echo $Loaders | cut -f1 -d ";"); OpenCore=$(echo $Loaders | cut -f2 -d ";")
+if [[ $Clover = "" ]]; then Clover="Clover"; fi; if [[ $OpenCore = "" ]]; then OpenCore="OpenCore"; fi
+pclov=${#Clover}; 
+poc=${#OpenCore}; 
+let "c_clov=(9-pclov)/2+46"; let "c_oc=(9-poc)/2+46"
+}
 
 GET_CURRENT_SET(){
 
@@ -626,6 +647,7 @@ if [[ $strng = "false" ]]; then ShowKeys=0; fi
 
 }
 
+
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #избавляемся от второго окна терминала по оценке времени с моментв запуска
 #############################################################################################################################
@@ -648,6 +670,8 @@ fi
 GET_LOCALE
 
 parm="$1"
+
+GET_THEME_LOADERS
 
 theme="system"
 GET_THEME
@@ -720,7 +744,7 @@ GET_LOCALE
 strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
-themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+GET_THEME_LOADERS
 }
 ##########################################################################################################################
 
@@ -1534,8 +1558,10 @@ printf "\033[H"
                         else
                         let "line=ldnlist[pointer]+11"
                         fi
-                        if [[ ${ldlist[$pointer]} = "Clover" ]]; then printf "\r\033[$line;f\033[47C"; else printf "\r\033[$line;f\033[46C"; fi
-                        printf '\e['$themeldrs'm'${ldlist[$pointer]}'\e[0m'
+                        if [[ ${ldlist[$pointer]} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"'\e[0m'
+                                else
+                                    printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"'\e[0m' 
+                        fi 
                         let "pointer++"
                         let "var99--"
                     done
@@ -1897,9 +1923,9 @@ if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
 
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):  '; printf '                               '
+printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):  '; printf '                            '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):  ';  printf '                              '
+printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):  ';  printf '                         '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -2160,16 +2186,16 @@ printf "\r\n\033[1A"
 if [[ $order = 3 ]]; then 
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  C, O, S, I, Q ):   ' ; printf '                             '
+printf '  Введите число от 0 до '$schs' (или  C, O, S, I, Q ):   ' ; printf '                           '
 			else
-printf '  Enter a number from 0 to '$schs' (or C, O, S, I, Q ):   ' ; printf '                            '
+printf '  Enter a number from 0 to '$schs' (or C, O, S, I, Q ):   ' ; printf '                          '
     fi
         else
             let "schs=$ch-1"
             if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):      ' ; printf '                             '
+printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):      ' ; printf '                        '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):      ' ; printf '                           '
+printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):      ' ; printf '                      '
     fi
 fi
 printf '\n\n'
