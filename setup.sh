@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="064"
+s_edit_vers="065"
 
 
 ############################################################################################################################################################################################################
@@ -62,7 +62,7 @@ s_edit_vers="064"
 # 053 - добавлена опция ручной перезагрузки клавишей R в верхнем регистре
 # 054 - добавлен текст подтверждение экспорта конфига в iCloud
 # 055 - редактор вида указателя загрузчиков
-# 056 - удалить подчёркивание из вывода цветов
+# 056 - удалить режим подчёркивание из линейки предпросмотра цвета
 # 057 - исправление редакции в 16 цветах для темы загрузчика для Core2duo
 # 058 - поддержка кастомного имени загрузчика
 # 059 - кастомизация имени загрузчика
@@ -71,6 +71,7 @@ s_edit_vers="064"
 # 062 - ускорение навигации по меню редактора тем пресетов
 # 063 - добавлена очистка базы кастомных указателей загрузчиков
 # 064 - фиксы нет звёздочки после L и S и сбой строки ввода холостого выхода из R
+# 065 - добавлен предпросмотр некоторых данных конфига в бэкапах
 #############################################################################################################################################################################################################
 clear
 
@@ -1534,9 +1535,10 @@ printf '\n'
 SHOW_BACKUPS(){
 
 Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
-if [[ $Now -lt 5 ]]; then lncorr=0; else let "lncorr=Now-4"; fi
+if [[ $Now -lt 5 ]]; then lncorr=0; else let "lncorr=Now-9"; fi
 let "lines2=lines+lncorr"
-clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H" 
+if [[ "$1" = "double" ]]; then MM=160; else MM=80; fi
+clear && printf '\e[8;'${lines2}';'$MM't' && printf '\e[3J' && printf "\033[0;0H" 
                     if [[ $loc = "ru" ]]; then
         printf '                      Настройка бэкапов и восстановление                        '
 			else
@@ -1561,7 +1563,7 @@ clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H"
 	                    printf '.%.0s' {1..34}
                         printf '\n'
 	                         fi
-                        printf '\r                                                                                '
+                        printf '\r                                                                                \n\r'
 GET_BACKUPS
 if [[ ! $Now = 0 ]]; then
 var6=$Maximum; chn=1
@@ -1583,10 +1585,11 @@ let "chn--"
 fi
                         printf '\n   '
 	                    printf '.%.0s' {1..74}
-
+if [[ ! "$1" = "double" ]]; then
                 if [[ $loc = "ru" ]]; then
 
 printf '\n\n                  S)  Сохранить текущие настройки в архив       '
+printf '\n                  V)  Предпросмотр данных в архивах             '
 printf '\n                  R)  Восстановить настройки из архива          '
 printf '\n                  D)  Удалить сохранение из архива              '
 printf '\n                  С)  Удалить все сохранения                    '
@@ -1595,6 +1598,7 @@ printf '\n                  P)  Поделиться настройками че
 printf '\n                  Q)  Выйти в главное меню                      '
                     else
 printf '\n\n                  S)  Save current settings to archive          '
+printf '\n                  S)  Preview data in archives                  '
 printf '\n                  R)  Restore settings from archive             '
 printf '\n                  D)  Delete backup from archive                '
 printf '\n                  С)  Delete ALL backups                        '
@@ -1602,6 +1606,18 @@ printf '\n                  M)  Maximum number of backups                 <'$Max
 printf '\n                  P)  Share settings via iCloud                 '
 printf '\n                  Q)  Exit to the main menu                     '
                    fi
+else
+                  if [[ $loc = "ru" ]]; then
+printf '\n\n\r  Z/X - для выбора, Q - выход из просмотра :   ' ; printf '                             '
+			else
+printf '\n\n\r  Z/X - for choice, Q - exit from preview :   ' ; printf '                           '
+                fi
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[3A"
+printf "\r\033[45C"
+printf "\033[?25h"
+fi
+
 }
 
 #####################################################################################################################
@@ -1744,6 +1760,96 @@ fi
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 }
 
+SHOW_BACKUP_ALIASES(){
+                      
+                        
+                                            if [[ $loc = "ru" ]]; then
+                        printf '\033['$lc';84f''                                База псевдонимов                            '
+                        let "lc=lc+2"
+	                    printf '\033['$lc';84f'
+                        printf '.%.0s' {1..74}
+                        let 'lc++'
+                        printf '\033['$lc';84f''                Носитель               |              Псевдоним           '
+                        let 'lc++'
+	                    printf '\033['$lc';84f'
+                        printf '.%.0s' {1..74} 
+                        let 'lc++'
+			               else
+                        printf '\033['$lc';84f''                                Aliases database                            '
+                        let "lc=lc+2"
+                        printf '\033['$lc';84f'
+	                    printf '.%.0s' {1..74}
+                        let 'lc++'
+                        printf '\033['$lc';84f''                  Media                |              Alias               '
+                        let 'lc++'
+                        printf '\033['$lc';84f'
+	                    printf '.%.0s' {1..74}
+                        let 'lc++'
+	                         fi
+                                
+                        strng=`echo "$MountEFIback" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        IFS=';'; rlist=($strng); unset IFS
+                        rcount=${#rlist[@]}
+                        if [[ ! $rcount = 0 ]]; then
+                        var11=$rcount; posr=0
+                        while [[ ! $var11 = 0 ]]
+                        do
+                        hdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`                       
+                        sdrive=`echo "${rlist[$posr]}" | cut -f2 -d"="`
+                        printf '\033['$lc';84f''\033[7C'"$hdrive"
+                        printf '\033['$lc';84f''\033[44C'"$sdrive"
+                        let "var11--"
+                        let "posr++"
+                        let "lc++"
+                        done
+                        fi
+                       
+}
+
+SHOW_BACKUP_PRESETS(){
+MountEFIconf="$MountEFIback"
+GET_PRESETS_NAMES
+UPDATE_CACHE
+ if [[ $loc = "ru" ]]; then
+                        printf '\033['$lc';84f''                                Список пресетов                            '
+                        let "lc=lc+2"
+	                    printf '\033['$lc';84f'
+                        printf '.%.0s' {1..74}
+                        let 'lc++'
+			               else
+                        printf '\033['$lc';84f''                                Presets list                            '
+                        let "lc=lc+2"
+                        printf '\033['$lc';84f'
+	                    printf '.%.0s' {1..74}
+                        let 'lc++'
+	                         fi
+for (( i=0; i<$pcount; i++ )); do
+printf '\033['$lc';94f'"${plist[i]}"; let "i++" ; printf '\033['$lc';124f'"${plist[i]}"
+let "lc++"
+done
+printf '\033['$lc';84f'
+printf '.%.0s' {1..74}
+let 'lc++'
+}
+
+CLEAR_SPACE(){
+for (( i=0; i<(($lines2+8)); i++ )); do
+printf '\033['$i';83f'
+printf ' %.0s' {1..78}
+done 
+}
+
+
+SHOW_BACKUP_DATA(){
+MountEFIback=$( cat ~/.MountEFIconfBackups/$bptr/.MountEFIconf.plist )
+if [[ ! $MountEFIback = "" ]]; then
+lc=0
+CLEAR_SPACE
+SHOW_BACKUP_PRESETS
+SHOW_BACKUP_ALIASES
+fi
+}
+
 ##############################################################################################################
 
 SET_BACKUPS(){
@@ -1758,7 +1864,7 @@ SHOW_BACKUPS
 
 printf '\n\n'
 unset inputs
-while [[ ! ${inputs} =~ ^[sSdDcCmMqQrRpP]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[sSdDcCmMqQrRpPvV]+$ ]]; do 
 
 printf "\r"
 
@@ -1812,6 +1918,41 @@ if [[ $inputs = [sS] ]]; then printf "\r\033"
                 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
                 printf "\r\033[4A"
                 
+fi
+
+if [[ ${inputs} = [vV] ]]; then
+                SHOW_BACKUPS "double"
+                printf "\033[?25l"
+                vart=0; plines=6; bptr=1; let "ilines=Now+9"
+                printf '\033['$plines';10f''*'
+                SHOW_BACKUP_DATA
+                while [[ $vart = 0 ]]; do
+                while [[ ! ${inputs} =~ ^[zZxXqQ]+$ ]]; do
+                printf '\033['$ilines';46f'
+                printf "\033[?25h"
+                read -s -n 1 inputs
+                printf "\033[?25l"
+                done
+                if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A";  fi 
+                if [[ ${inputs} = [qQ] ]]; then unset inputs; break;  fi
+                if [[ ${inputs} = [zZ] ]]; then
+                               printf '\033['$plines';10f''   '
+                               if [[ "${bptr}" -gt "1" ]]; then let "bptr--"; else let "bptr=Now"; fi
+                               let "plines=bptr+5"
+                               printf '\033['$plines';10f''*  '
+                               printf '\033['$ilines';46f'
+                               SHOW_BACKUP_DATA
+                fi
+                if [[ ${inputs} = [xX] ]]; then
+                               printf '\033['$plines';10f''   '
+                               if [[ "${bptr}" -lt "$Now" ]]; then let "bptr++"; else let "bptr=1"; fi
+                               let "plines=bptr+5"
+                               printf '\033['$plines';10f''*  '
+                               printf '\033['$ilines';46f'
+                               SHOW_BACKUP_DATA
+                fi
+                read -s -n 1 inputs
+                done 
 fi
 
 if [[ ${inputs} = [dD] ]]; then
@@ -3319,7 +3460,7 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[0-9]*//')
                         if [[ $cancel = 0 ]]; then
                             if [[ ! "${demo}" = "${drive}" ]]; then
                         if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
@@ -3867,7 +4008,8 @@ EDIT_PRESET_NAME(){
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        demo=`echo "$demo" | tr -d " \t"`
+                        demo=$(echo "${demo}" | sed 's/^[0-9]*//')
                         editing_preset="$demo"
 
 }
@@ -4048,7 +4190,7 @@ unset demo
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[0-9]*//')
                         
 
 }
@@ -4169,19 +4311,20 @@ DEBUG(){
 if [[ ! $deb = 0 ]]; then
 printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
 printf '............................................................\n' >> ~/temp.txt
-echo "current_preset="$current_preset >> ~/temp.txt
-echo "current_background="$current_background >> ~/temp.txt
-echo "current_foreground="$current_foreground >> ~/temp.txt
-echo "current_fontname="$current_fontname >> ~/temp.txt
-echo "current_fontsize="$current_fontsize >> ~/temp.txt
-echo "old_preset="$old_preset >> ~/temp.txt
-echo "old_BackgroundColor="$old_BackgroundColor >> ~/temp.txt
-echo "old_TextColor="$old_TextColor >> ~/temp.txt
-echo "old_FontName="$old_FontName >> ~/temp.txt
-echo "old_FontSize="$old_FontSize >> ~/temp.txt
+#echo "current_preset="$current_preset >> ~/temp.txt
+#echo "current_background="$current_background >> ~/temp.txt
+#echo "current_foreground="$current_foreground >> ~/temp.txt
+#echo "current_fontname="$current_fontname >> ~/temp.txt
+#echo "current_fontsize="$current_fontsize >> ~/temp.txt
+#echo "old_preset="$old_preset >> ~/temp.txt
+#echo "old_BackgroundColor="$old_BackgroundColor >> ~/temp.txt
+#echo "old_TextColor="$old_TextColor >> ~/temp.txt
+#echo "old_FontName="$old_FontName >> ~/temp.txt
+#echo "old_FontSize="$old_FontSize >> ~/temp.txt
+echo "LC="$lc >> ~/temp.txt
 printf '............................................................\n\n' >> ~/temp.txt
 #sleep 0.2
-#read -n 1 -s
+read -n 1 -s
 fi
 }
 #########################################################################################################################################
