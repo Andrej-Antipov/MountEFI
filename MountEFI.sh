@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="025"
+edit_vers="026"
 ##################################################################################################################################################################################################################
 
 
@@ -28,7 +28,8 @@ edit_vers="025"
 # 022 - исправление ошибки EXIT_PROGRAMM
 # 023 - исправление, пропущен параметр в FILL_CONFIG
 # 024 - добавлена поддержка кастомного вывода имён загрузчиков
-# 025 - поддержка кастомного текста имён загрузчиков
+# 025 - поддержка кастомных псевдонимов загрузчиков
+# 026 - поддержка кастомных тем псевдонимов загрузчиков в отдельных темах (встроенных и системных)
 
 
 
@@ -588,8 +589,26 @@ unset pstring
 #################################################################################################
 
 GET_THEME_LOADERS(){
+strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
+theme=`echo "$MountEFIconf"  |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ "$theme" = "built-in" ]]; then 
+current=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+NN="B,"
+else
+current=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+NN="S,"
+fi
+check=$(echo $strng | grep -ow "$NN""$current")
+if [[ ! $check = "" ]]; then
+IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
+for (( i=0; i<$lptr; i++ )) do
+tname=$(echo "${llist[i]}" | cut -f2 -d ',')
+if [[ "$tname" = "$current" ]]; then Loaders=$(echo "${llist[i]}" | cut -f3 -d ','); themeldrs=$(echo "${llist[i]}" | cut -f4 -d ','); break; fi
+done
+else
 themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
 Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+fi
 Clover=$(echo $Loaders | cut -f1 -d ";"); OpenCore=$(echo $Loaders | cut -f2 -d ";")
 if [[ $Clover = "" ]]; then Clover="Clover"; fi; if [[ $OpenCore = "" ]]; then OpenCore="OpenCore"; fi
 pclov=${#Clover}; 

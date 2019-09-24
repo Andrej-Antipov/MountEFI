@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="060"
+s_edit_vers="063"
 
 
 ############################################################################################################################################################################################################
@@ -67,37 +67,13 @@ s_edit_vers="060"
 # 058 - поддержка кастомного имени загрузчика
 # 059 - кастомизация имени загрузчика
 # 060 - доавлена быстрая прокрутка 256 цвета для кастомизации загрузчика
+# 061 - кастомиация темы псевдонима загрузчика для отдельной темы
+# 062 - ускорение навигации по меню редактора тем пресетов
+# 063 - добавлена очистка базы кастомных указателей загрузчиков
 #############################################################################################################################################################################################################
 clear
 
-# функция отладки ##################################################################################################
-demo1="0"
-deb=0
 
-DEBUG(){
-if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
-printf '............................................................\n' >> ~/temp.txt
-echo "inputs="$inputs >> ~/temp.txt
-#echo "code="$code >> ~/temp.txt
-#echo "new_color="$new_color >> ~/temp.txt
-echo "lcolor="${lcolor[@]} >> ~/temp.txt
-echo "cl_normal="$cl_normal >> ~/temp.txt
-echo "cl_bold="$cl_bold >> ~/temp.txt
-echo "cl_dim="$cl_dim >> ~/temp.txt
-echo "cl_underl="$cl_underl >> ~/temp.txt
-echo "cl_blink="$cl_blink >> ~/temp.txt
-echo "cl_inv="$cl_inv >> ~/temp.txt
-echo "cl_bit="$cl_bit >> ~/temp.txt
-#echo "plcolor="$plcolor >> ~/temp.txt
-#echo "lpos="$lpos >> ~/temp.txt
-#echo "i="$i >> ~/temp.txt
-printf '............................................................\n\n' >> ~/temp.txt
-#sleep 0.2
-read -n 1 -s
-fi
-}
-#########################################################################################################################################
 
 
 SHOW_VERSION(){
@@ -276,16 +252,6 @@ theme_name=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | gr
 if [[ "$theme_name" = "default" ]]; then theme_name=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
 fi
 
-GET_THEME_LOADERS(){
-themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
-Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
-Clover=$(echo $Loaders | cut -f1 -d ";"); OpenCore=$(echo $Loaders | cut -f2 -d ";")
-if [[ $Clover = "" ]]; then Clover="Clover"; fi; if [[ $OpenCore = "" ]]; then OpenCore="OpenCore"; fi
-pclov=${#Clover}; poc=${#OpenCore}; 
-let "c_clov=(9-pclov)/2+46"; let "c_oc=(9-poc)/2+46"
-}
-
-
 nlenth=${#theme_name}
 if [[ $loc = "ru" ]]; then
 if [[ $theme = "built-in" ]]; then
@@ -303,17 +269,23 @@ GET_PRESETS_COUNTS
 
 tlenth=`echo ${#itheme_set}`
 if [[ $loc = "ru" ]]; then
-let "btheme_corr=27-tlenth"
+let "btheme_corr=26-tlenth"
 btspc_corr=8
 else
 let "btheme_corr=25-tlenth"
 fi
-
+if [[ $pcount -lt 10 ]]; then let "btheme_corr++"; fi
 }
 
 DELETE_THEME_PRESET(){
 
 plutil -remove Presets."$editing_preset" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+NN="B,"
+current="$editing_preset"
+strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
+IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
+check=$(echo "${llist[@]}" | grep -ow "$NN""$current")
+if [[ ! $check = "" ]]; then DEL_THEME_LOADERS; fi
 
 }
 
@@ -2602,10 +2574,10 @@ sbuf+=$(printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(pass
 sbuf+=$(printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n')
 if [[ ! $theme = "system" ]]; then
 sbuf+=$(printf ' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"'   (disabled)               \n')
-sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'   * (enabled)                \n')
+sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'  * (enabled)                \n')
 else
 sbuf+=$(printf ' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"' * (enabled)                \n')
-sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'     (disabled)               \n')
+sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'    (disabled)               \n')
 fi
 sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
@@ -3067,7 +3039,7 @@ if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         
-            if [[ $choice1 = [uUqQeEiIvVdDaAoO] ]]; then choice=${choice1}; break; fi
+            if [[ $choice1 = [uUqQeEiIvVdDaAoOzZxXnNrRlLsS] ]]; then choice=${choice1}; break; fi
        
 fi
  choice1="±"
@@ -3487,10 +3459,8 @@ fi
 }
 
 
-
 EDIT_COLOR(){
 printf "\033[?25l"
-printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 token=$1; if [[ $token = "" ]]; then token="background"; fi
 if [[ $token = "background" ]]; then
                             old_color="$current_background"
@@ -3512,7 +3482,6 @@ if [[ $token = "foreground" ]]; then
 fi
 
                             printf "\033[14;0H"'                            '"$words"'                         \n\n'
-
 
 color1=$(echo "$old_color" | tr -d ' {}' | cut -f1 -d ',')
 color2=$(echo "$old_color" | tr -d ' {}' | cut -f2 -d ',')
@@ -3549,7 +3518,6 @@ printf "\033[16;0H"
                 printf "\033['$l_ptr';10H""*";  printf "\033[23;0H"  
                 printf '\n\n'                                           
 unset inputs
-
 printf "\033[25;43f"; printf '                                    \r'
                 if [[ $loc = "ru" ]]; then
             printf '\r  Ожидание ввода (или Q - возврат к меню):  \n\n'
@@ -3577,7 +3545,6 @@ printf "\033[25;43f"; printf '                                    \r'
            
 
 osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"
-
 while [[ $cvar = 0 ]]; 
 do
                 
@@ -3777,8 +3744,7 @@ if [[ ! $cpu_family = 0 ]]; then
         fi                  
 
 fi
-
-
+        
         if [[ $inputs = [zZxXsSaA] ]]; then  RET_BORDER; if [[ $border = 0 ]]; then osascript -e "tell application \"Terminal\" to set ""$token"" color of window 1 to {"$color1", "$color2", "$color3"}"; fi ; fi   & 
 
         if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
@@ -3841,12 +3807,9 @@ RESTORE_ORIGINAL_PRESET(){
 }
 
 CUSTOM_SET_EDITED_THEME(){
-theme=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-if [[ $theme = "built-in" ]]; then
 osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
 osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
 set_font "$current_fontname" $current_fontsize
-fi
 }
 
 EDIT_PRESET_UPDATE_SCREEN(){
@@ -3874,8 +3837,8 @@ printf '             1)   Имя пресета:      '"$current_preset""%"$ncor
 printf '             2)   Цвет фона:        '"$current_background"'     \n'
 printf '             3)   Цвет текста:      '"$current_foreground"'     \n'
 printf '             4)   Название шрифта:  '"$current_fontname_s""%"$fcorr"s"'\n'
-printf '             5)   Размер шрифта:    '"$current_fontsize"'       \n'
-printf '\n   '
+printf '             5)   Размер шрифта:    '"$current_fontsize"'       \n\n'
+printf '   '
 printf '.%.0s' {1..74}
 printf '\n\n  '
                         else
@@ -3884,8 +3847,8 @@ printf '             1)   Preset Name:      '"$current_preset""%"$ncorr"s"'\n'
 printf '             2)   Background color: '"$current_background"'      \n'
 printf '             3)   Text color:       '"$current_foreground"'      \n'
 printf '             4)   Font Name:        '"$current_fontname_s""%"$fcorr"s"'\n'
-printf '             5)   Font size:        '"$current_fontsize"'      \n'
-printf '\n   '
+printf '             5)   Font size:        '"$current_fontsize"'      \n\n'
+printf '   '
 printf '.%.0s' {1..74}
 printf '\n\n  '
                         fi
@@ -3909,6 +3872,14 @@ EDIT_PRESET_NAME(){
 }
 
 UPDATE_PRESETS_LIST(){
+clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+
+ if [[ $loc = "ru" ]]; then
+        printf '                     Редактор пресетов встроенных тем                           '
+			else
+        printf '                      Built-in Themes Preset Editor                             '
+ fi
+
 GET_PRESETS_NAMES
 currents=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 
@@ -3940,22 +3911,26 @@ done
                 if [[ $loc = "ru" ]]; then
         
         printf '\n           * Звёздочкой отмечен пресет который используется по умолчанию       \n' 
-        printf '              Выбор номера темы применяет её и запускает редактор темы           \n'
+        printf '              Выбор номера темы применяет её и запускает редактор темы       \n\n'
         printf '                     Z/X)    Выбрать дефолтный пресет                          \n'                  
         printf '                       R)    Удалить пресет темы                               \n'
         printf '                       N)    Добавить пресет темы                              \n'
-        printf '                       L)    Редактировать указатель загрузчиков               \n'
-        printf '                       Q)    Вернуться в главное меню                          \n\n' 
+        printf '                       L)    Указатели загрузчиков для встроенных тем          \n'
+        printf '                       S)    Указатели загрузчиков для системных тем           \n'
+        printf '                       D)    Удалить всю базу кастомных указателей             \n'
+        printf '                       Q)    Вернуться в главное меню                          \n' 
 
-                    else
+                else    
         
         printf '\n        selecting a theme number applies it and launches the theme editor      \n'
-        printf '                * The asterisk marks the default preset.                       \n'
+        printf '                * The asterisk marks the default preset.                       \n\n'
         printf '                     Z/X)    Select default preset                             \n'
-        printf '                       R)    Add theme preset                                  \n'
-        printf '                       N)    Delete theme preset                               \n'
-        printf '                       L)    Edit bootloaders pointer               \n'
-        printf '                       Q)    Quit to the main menu                             \n\n' 
+        printf '                       N)    Add theme preset                                  \n'
+        printf '                       R)    Delete theme preset                               \n'
+        printf '                       L)    Edit bootloaders pointer for built-in themes      \n'
+        printf '                       S)    Bootloader pointers for system themes             \n'
+        printf '                       D)    Delete all database custom bootloader pointers    \n'
+        printf '                       Q)    Quit to the main menu                             \n' 
 
                     fi
 let "chn--";
@@ -4047,11 +4022,8 @@ printf "\033['$l_ptr';32f""*"
                 #echo -n "f_ptr = "$f_ptr" " >> ~/temp.txt; echo -n "l_ptr = "$l_ptr"  " >> ~/temp.txt; echo -n "max= "$max"  " >> ~/temp.txt; echo "maxl= "$maxl >> ~/temp.txt;
          fi
                       
-                        current_fontname="${fonts[$f_ptr]}"; new_fontname="$current_fontname"
-
-                       
-
-                        if [[ $inputs = [aAsS] ]];  then set_font "$current_fontname" $current_fontsize; fi &
+                        current_fontname="${fonts[$f_ptr]}"
+                       if [[ $inputs = [aAsS] ]];  then set_font "$current_fontname" $current_fontsize; fi &
 
                         printf "\033[8;37f""$current_fontname"'                    '
     
@@ -4061,6 +4033,7 @@ printf "\033['$l_ptr';32f""*"
                         
                        
                  done 
+
 
 }
 
@@ -4187,11 +4160,37 @@ rcol=$(echo $new_color | sed s'/38;5;/48;5;/' | sed s'/4;//' | sed s'/7;//')
 new_color+="$code"; rcol+="$code"
 }
 ################################# редактор темы и псевдонима загрузчиков ##################################################################
+# функция отладки ##################################################################################################
+demo1="0"
+deb=0
+
+DEBUG(){
+if [[ ! $deb = 0 ]]; then
+printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
+printf '............................................................\n' >> ~/temp.txt
+echo "current_preset="$current_preset >> ~/temp.txt
+echo "current_background="$current_background >> ~/temp.txt
+echo "current_foreground="$current_foreground >> ~/temp.txt
+echo "current_fontname="$current_fontname >> ~/temp.txt
+echo "current_fontsize="$current_fontsize >> ~/temp.txt
+echo "old_preset="$old_preset >> ~/temp.txt
+echo "old_BackgroundColor="$old_BackgroundColor >> ~/temp.txt
+echo "old_TextColor="$old_TextColor >> ~/temp.txt
+echo "old_FontName="$old_FontName >> ~/temp.txt
+echo "old_FontSize="$old_FontSize >> ~/temp.txt
+printf '............................................................\n\n' >> ~/temp.txt
+#sleep 0.2
+#read -n 1 -s
+fi
+}
+#########################################################################################################################################
+
 EDIT_LOADER_POINTER(){
+unset inputs
 printf "\033[?25l"
 old_clover="$Clover"; clover2="$Clover"
 old_opencore="$OpenCore"; opencore2="$OpenCore"
-old_themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+old_themeldrs="$themeldrs"
 if [[ $old_themeldrs = "" ]]; then old_themeldrs=37; fi
 new_color=$old_themeldrs; new_color2=$new_color
 if [[ $loc = "ru" ]]; then
@@ -4256,7 +4255,7 @@ printf '\033[24;7f'
                                 if [[ $loc = "ru" ]]; then
                         printf 'Выберите от 1 до 7 (или Z/X, Q, E):                                     \n\n'
                         printf '             Z/X - выбор цвета                                            \n'
-                        printf '             A/S - выбор цвета.быстрая прокрутка                          \n'
+                        printf '             A/S - выбор цвета.быстрая прокрутка (256 цветов)             \n'
                         printf '             C   - указать псевдоним для загрузчика Clover                \n'
                         printf '             O   - указать псевдоним для загрузчика Open Core             \n'
                         printf '             E/E - отменить/возвратить результаты редактирования          \n'
@@ -4264,7 +4263,7 @@ printf '\033[24;7f'
 			                   else
                         printf 'Select from 1 to 7 (or Z/X, Q, E):                                      \n\n'
                         printf '             Z/X - select color                                           \n'
-                        printf '             A/S - select color.fast forward list                         \n'
+                        printf '             A/S - select color.fast forward list (256 colors)            \n'
                         printf '             C   - Specify an alias for the Clover bootloader             \n'
                         printf '             O   - Specify an alias for the Open Core bootloader          \n'
                         printf '             E/E - cancel/return the editing results                      \n'
@@ -4384,7 +4383,7 @@ printf '\033[24;7f'
                 fi
 
                 if [[ $inputs = [eE] ]]; then 
-                                   
+                                    if [[ $cl_bit = 0 ]]; then printf '\033[13;'$NN'f''   ';  printf '\033[18;'$NN'f''   '; fi
                                     if [[ ! $new_color = $old_themeldrs ]]; then new_color2=$new_color; new_color=$old_themeldrs; else new_color=$new_color2; fi
                                     if [[ ! "$Clover" = "$old_clover" ]]; then clover2="$Clover"; Clover="$old_clover"; else Clover="$clover2"; fi
                                     if [[ ! "$OpenCore" = "$old_opencore" ]]; then opencore2="$OpenCore"; OpenCore="$old_opencore"; else OpenCore="$opencore2"; fi
@@ -4394,7 +4393,17 @@ printf '\033[24;7f'
                                     MAKE_COLOR
                                     SHOW_COLOR 
                                     SET_STRIP 
-                                    if [[ $cl_bit = 0 ]]; then printf '\033[20;36f'; printf ' %.0s' {1..48}; else printf '\033[20;36f'; Progress ${code} 255; fi
+                                    if [[ $cl_bit = 0 ]]; then 
+                                     printf '\033[20;36f'; printf ' %.0s' {1..48}
+                                     printf '\033[13;'$NN'f''   '
+                                     printf '\033[18;'$NN'f''   '
+                                     if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi 
+                                     if [[ ${code} -ge 90 ]] && [[ ${code} -le 97 ]]; then let "NN=3*(code-89)+58"; fi
+                                     printf '\033[13;'$NN'f''•  '
+                                     printf '\033[18;'$NN'f''•  '
+                                    else 
+                                        printf '\033[20;36f'; Progress ${code} 255;
+                                     fi
                                     SHOW_TEXT_FLAGS
                                     
                 fi
@@ -4427,48 +4436,138 @@ printf '\033[24;7f'
         
 done
 }
+
+ASK_SYSTEM_THEME(){
+if [[ $loc = "ru" ]]; then
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {"Basic", "Grass", "Homebrew", "Man Page", "Novel", "Ocean", "Pro", "Red Sands", "Silver Aerogel", "Solid Colors"}set FavoriteThemeAnswer to choose from list ThemeList with title "Выбор темы" with prompt "Для какой темы редактировать указатели?" default items "Basic"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
+end tell
+EOD
+else
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {"Basic", "Grass", "Homebrew", "Man Page", "Novel", "Ocean", "Pro", "Red Sands", "Silver Aerogel", "Solid Colors"}set FavoriteThemeAnswer to choose from list ThemeList with title "Choose theme" with prompt "What system theme set to edit?" default items "Basic"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
+end tell
+EOD
+fi
+}
+
+ASK_STORE_OPTIONS(){
+if [[ $loc = "ru" ]]; then
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeAsk to {"Для темы с которой они редактировались", "Для всех тем как указатели по умолчанию"}set FavoriteThemeAnswer to choose from list ThemeAsk with title "Сохранение указателей" with prompt "Как сохранить изменения указателей?" default items "Сохранить редакцию указателей для темы с которой они редактировались"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
+end tell
+EOD
+else
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeAsk to {"For the theme with which they were edited", "For all themes as default bootloaders pointers"}set FavoriteThemeAnswer to choose from list ThemeAsk with title "Saving pointers" with prompt "How to save edited pointers?" default items "Сохранить редакцию указателей для темы с которой они редактировались"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
+end tell
+EOD
+fi
+
+}
+
+GET_THEME_LOADERS(){
+strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
+theme="$1"
+current="$2"
+if [[ "$theme" = "built-in" ]]; then NN="B,"; else NN="S,"; fi
+check=$(echo $strng | grep -ow "$NN""$current")
+if [[ ! $check = "" ]]; then
+IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
+for (( i=0; i<$lptr; i++ )) do
+tname=$(echo "${llist[i]}" | cut -f2 -d ',')
+if [[ "$tname" = "$current" ]]; then Loaders=$(echo "${llist[i]}" | cut -f3 -d ','); themeldrs=$(echo "${llist[i]}" | cut -f4 -d ','); break; fi
+done
+else
+themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+fi
+Clover=$(echo $Loaders | cut -f1 -d ";"); OpenCore=$(echo $Loaders | cut -f2 -d ";")
+if [[ $Clover = "" ]]; then Clover="Clover"; fi; if [[ $OpenCore = "" ]]; then OpenCore="OpenCore"; fi
+pclov=${#Clover}; 
+poc=${#OpenCore}; 
+let "c_clov=(9-pclov)/2+46"; let "c_oc=(9-poc)/2+46"
+}
+
+DEL_THEME_LOADERS(){
+tllist=()
+for (( i=0; i<$lptr; i++ )) do
+tname=$(echo "${llist[i]}" | cut -f2 -d ',')
+tname2="$NN""$tname"; current2="$NN""$current"
+if [[ ! "$tname2" = "$current2" ]]; then tllist+=("${llist[i]}"); fi
+done
+tlptr=${#tllist[@]}; 
+unset strng
+if [[ ! tlptr = 0 ]]; then 
+for (( i=0; i<$((tlptr-1)); i++ )) do
+strng+="${tllist[i]}"'{'
+done
+plutil -replace ThemeLoadersLinks -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+else
+plutil -replace ThemeLoadersLinks -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+fi
+}
+
+ADD_THEME_LOADERS(){
+unset strng
+for (( i=0; i<$lptr; i++ )) do
+strng+="${llist[i]}"'{'
+done 
+strng+="$NN""$current"','"$Loaders"','"$new_color"'{'
+plutil -replace ThemeLoadersLinks -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+}
+
+SET_THEMES_LOADERS(){
+NN=$1
+current="$2"
+strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
+IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
+check=$(echo "${llist[@]}" | grep -ow "$NN""$current")
+if [[ $check = "" ]]; then 
+ADD_THEME_LOADERS 
+else 
+DEL_THEME_LOADERS
+strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
+IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
+ADD_THEME_LOADERS
+fi
+}
 ############################################# конец редактора загрузчиков #################################################
+
 THEME_EDITOR(){
 UPDATE_CACHE
 oldlines=$lines
 GET_PRESETS_COUNTS
-let "lines=20+pcount"
+let "lines=22+pcount"
 UPDATE_CACHE
 var5=0
+UPDATE_PRESETS_LIST
+printf "\033['$currents';34f""*"
 while [[ $var5 = 0 ]]; do 
 
-clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 
- if [[ $loc = "ru" ]]; then
-        printf '                     Редактор пресетов встроенных тем                           '
-			else
-        printf '                      Built-in Themes Preset Editor                             '
- fi
-
-UPDATE_PRESETS_LIST
 
 printf '\n'
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9nNrRzZxXlLqQ]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[0-9nNrRzZxXlLsSdDqQ]+$ ]]; do 
 
 SET_INPUT
                 if [[ $loc = "ru" ]]; then
-printf '  Выберите от 1 до '$chn' (или N, R, Z, X, Q ):  '
+let "poscur=pcount+18"
+printf "\033['$poscur';0f"
+printf '  Выберите от 1 до '$chn' (или N/R/Z/X/S/L/D/Q ):  '
 			else
-printf '  Select from 1 to '$chn' (or N, R, z, X, Q ):   '
+let "poscur=pcount+18"
+printf "\033['$poscur';0f"
+printf '  Select from 1 to '$chn' (or N/R/Z/X/S/L/D/Q ):   '
                 fi
-printf "%"80"s"'\n'"%"80"s"
-printf "\033[3A"
-
-printf "\033['$currents';34f""*"
-if [[ $loc = "ru" ]]; then
-let "poscur=pcount+17"
-printf "\033['$poscur';44f"
-else
-let "poscur=pcount+16"
-printf "\033['$poscur';44f"
-fi
+printf "\033['$poscur';46f"
 printf "\033[?25h"
+
 
 
         inputs="±"
@@ -4476,34 +4575,139 @@ printf "\033[?25h"
         IFS="±"; read -n 1  inputs ; unset IFS ; sym=1 
         else
             if [[ $loc = "ru" ]]; then
-        READ_TWO_SYMBOLS
+        READ_TWO_SYMBOLS 46
             else
-        READ_TWO_SYMBOLS 35
+        READ_TWO_SYMBOLS 45
         fi 
         fi
-        if [[ ! $inputs = [qQnNrRzZxXlL] ]]; then 
+        if [[ ! $inputs = [qQnNrRzZxXlLsSdD] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; printf "\033[1A";  fi 
                         if [[ ${inputs} = 0 ]]; then  unset inputs; fi 2>&-
                         if [[ ${inputs} -gt "$chn" ]]; then unset inputs; fi 2>&-
-                        printf "\033[?25l"
                         printf '\r'
         fi
+        printf "\033[?25l"
 
+        if [[ $inputs = [zZxX] ]]; then 
+                            printf "\033[?25l"
+                            printf "\033['$currents';34f"" "; if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+18"; fi ; printf "\033['$poscur';46f"
+                            current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                            for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then cp_pos=$i; break; fi; done
+                            let "max_pos=pcount-1"
+                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            currents=$cp_pos; let "currents=currents+5"; printf "\033['$currents';34f""*"
+                            if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+18"; fi; printf "\033['$poscur';46f"'        '
+                            printf "%"80"s"'\n'"%"80"s"
+                            printf "\033[3A"; printf "\033['$poscur';46f"'        '
+                            inputs="A"
+fi
     
 done
+        if [[ $inputs = [dD] ]]; then
+                                if [[ $loc = "ru" ]]; then
+                                if answer=$(osascript -e 'display dialog "Удалить всю базу кастомных указателей загрузчиков?"'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+                                if answer=$(osascript -e 'display dialog "Delete all database of custom bootloader pointers?"'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+                               
+                                if [[ $cancel = 0 ]]; then 
+                                        plutil -replace ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
+                                        plutil -replace ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
+                                        plutil -replace ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
+                                        UPDATE_CACHE
+                                        if [[ $loc = "ru" ]]; then
+                        SUBTITLE="БАЗА ОЧИЩЕНА !"
+                        else
+                        SUBTITLE="THE DATABASE WAS REMOVED !" 
+                        fi
+                        TITLE="MountEFI" 
+                        COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""
+                        MESSAGE=" "
+                        osascript -e "${COMMAND}"
+                                fi
+                                unset inputs 
+                                            
+        fi
+
         if [[ $inputs = [lL] ]]; then
                         oldlines=$lines; lines=32
                         clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
+                        GET_CURRENT_SET
+                        CUSTOM_SET_EDITED_THEME &
                         UPDATE_CACHE
-                        GET_THEME_LOADERS
+                        current=$(echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+                        themename="$current"
+                        GET_THEME_LOADERS "built-in" "$current"
+                        old_loaders="$Loaders"
                         EDIT_LOADER_POINTER
                         Loaders="$Clover"";""$OpenCore"
+                        if [[ ! "$old_loaders" = "$Loaders" ]] || [[ ! "$old_themeldrs" = "$new_color" ]]; then
+                        if result=$(ASK_STORE_OPTIONS); then
+                        if [[ $loc = "ru" ]]; then
+                        if [[ "$result" = "Для всех тем как указатели по умолчанию" ]]; then result=1; fi
+                        else
+                        if [[ "$result" = "For all themes as default bootloaders pointers" ]]; then result=1; fi
+                        fi
+                        if [[ $result = 1 ]]; then
                         plutil -replace ThemeLoadersNames -string "$Loaders" ${HOME}/.MountEFIconf.plist
                         plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
+                        else
+                        SET_THEMES_LOADERS "B," "$themename"
+                        fi
+                        UPDATE_CACHE
+                        fi 2>/dev/null
+                        fi
+                        lines=$oldlines
+                        unset inputs
+                        GET_THEME
+                        if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi & 
+                        lines=$oldlines
+                        UPDATE_PRESETS_LIST
+                        osascript -e 'tell application "Terminal" to activate' &
+                          
+        fi
+
+        if [[ $inputs = [sS] ]]; then
+                        if result=$(ASK_SYSTEM_THEME); then
+                                            osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$result"'"'
+                                            osascript -e 'tell application "Terminal" to activate' &
+                        oldlines=$lines; lines=32
+                        clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
+                        UPDATE_CACHE
+                        themename="$result"
+                        GET_THEME_LOADERS "system" "$result"
+                        old_loaders="$Loaders"
+                        EDIT_LOADER_POINTER
+                        Loaders="$Clover"";""$OpenCore"
+                        if [[ ! "$old_loaders" = "$Loaders" ]] || [[ ! "$old_themeldrs" = "$new_color" ]]; then
+                        if result=$(ASK_STORE_OPTIONS); then
+                        if [[ $loc = "ru" ]]; then
+                        if [[ "$result" = "Для всех тем как указатели по умолчанию" ]]; then result=1; fi
+                        else
+                        if [[ "$result" = "For all themes as default bootloaders pointers" ]]; then result=1; fi
+                        fi
+                        if [[ $result = 1 ]]; then
+                        plutil -replace ThemeLoadersNames -string "$Loaders" ${HOME}/.MountEFIconf.plist
+                        plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
+                        osascript -e 'tell application "Terminal" to activate' &
+                        else
+                        SET_THEMES_LOADERS "S," "$themename"
+                        fi
                         UPDATE_CACHE
                         lines=$oldlines
-                        unset inputs   
-        fi  
+                        fi  2>/dev/null
+                        fi
+                        else
+                        osascript -e 'tell application "Terminal" to activate' &
+                        fi 2>/dev/null
+                        unset inputs
+                        GET_THEME
+                        if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
+                        lines=$oldlines
+                        UPDATE_PRESETS_LIST
+                        osascript -e 'tell application "Terminal" to activate' &
+            fi  
 
         if [[ $inputs = "" ]]; then printf "\033[2A"; fi
         if [[ $inputs = [qQ] ]]; then  unset inputs;  break;  fi
@@ -4553,7 +4757,7 @@ if [[ $inputs = [rR] ]]; then
                                         plutil -replace CurrentPreset -string "$pnow" ${HOME}/.MountEFIconf.plist;  fi 
                         UPDATE_CACHE
                         GET_PRESETS_COUNTS
-                        let "lines=20+pcount"
+                        let "lines=22+pcount"
                         fi
                         printf "\033[H"
                         printf "\r\033[2f"
@@ -4573,7 +4777,7 @@ if [[ $inputs = [nN] ]]; then
                         ADD_THEME_PRESET
                         UPDATE_CACHE
                         GET_PRESETS_COUNTS
-                        let "lines=20+pcount"
+                        let "lines=22+pcount"
                         fi
                         printf "\033[H"
                         printf "\r\033[2f"
@@ -4583,30 +4787,17 @@ if [[ $inputs = [nN] ]]; then
 fi
 
 
-if [[ $inputs = [zZxX] ]]; then 
-                            printf "\033[?25l"
-                            printf "\033['$currents';34f"" "; if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+17"; fi ; printf "\033['$poscur';44f"
-                            current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-                            for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then cp_pos=$i; break; fi; done
-                            let "max_pos=pcount-1"
-                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
-                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
-                            unset inputs
-                            GET_THEME
-                                    if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
-                            
-fi
 
-if [[ ! $inputs = [qQnNrRzZxXlL]+$ ]] &&  [[ ! $inputs = "" ]]; then
+
+if [[ ! $inputs = [qQnNrRzZxXlLsS]+$ ]] &&  [[ ! $inputs = "" ]]; then
                         old2lines=$lines; lines=20; swap_preset=0
                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
                         SAVE_ORIGINAL_PRESET
-                        CUSTOM_SET_EDITED_THEME &
+                        CUSTOM_SET_EDITED_THEME
                         var9=0
                         while [ $var9 != 1 ] 
     do
                         EDIT_PRESET_UPDATE_SCREEN
-
                         unset inputs
                         while [[ ! ${inputs} =~ ^[1-5qQeE]+$ ]]; 
                     do 
@@ -4634,11 +4825,12 @@ if [[ ! $inputs = [qQnNrRzZxXlL]+$ ]] &&  [[ ! $inputs = "" ]]; then
                         read -n 1  inputs 
                         fi  
                         printf "\033[?25l"
-                        if [[ ${inputs} = "" ]]; then inputs="p" ;printf "\033[1A"; printf "\033[?25l"; fi
+                        if [[ ${inputs} = "" ]]; then inputs="A" ;printf "\033[1A"; printf "\033[?25l"; fi
                         printf '\r'
+                        #CUSTOM_SET_EDITED_THEME
                    done
 
-if [[ $inputs = "" ]]; then printf "\033[2A"; fi
+if [[ $inputs = "" ]]; then inputs="A"; printf "\033[2A"; fi
 
                         if [[ $inputs = [qQ] ]]; then var9=1; unset inputs 
 
@@ -4661,9 +4853,9 @@ if [[ $inputs = "" ]]; then printf "\033[2A"; fi
                         fi
 
                         if [[ $inputs = [eE] ]]; then
-                               
-                                if [[ $swap_preset = 0 ]]; then SAVE_NEW_PRESET; RESTORE_ORIGINAL_PRESET; swap_preset=1; else  DEBUG; RESTORE_NEW_PRESET; swap_preset=0; fi
-                                CUSTOM_SET_EDITED_THEME &
+    
+                                if [[ $swap_preset = 0 ]]; then SAVE_NEW_PRESET; RESTORE_ORIGINAL_PRESET; swap_preset=1 ; else  RESTORE_NEW_PRESET; swap_preset=0; fi
+                                 CUSTOM_SET_EDITED_THEME
                         fi
 
 if [[ $inputs = 1 ]]; then 
@@ -4679,6 +4871,9 @@ fi
 
 if [[ $inputs = 2 ]]; then 
                          lines=32
+                         printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'
+                         printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'
+                         printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
                          printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
                          EDIT_PRESET_UPDATE_SCREEN
                          EDIT_COLOR
@@ -4689,6 +4884,9 @@ fi
 
 if [[ $inputs = 3 ]]; then 
                          lines=32
+                         printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'
+                         printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'
+                         printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
                          printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
                          EDIT_PRESET_UPDATE_SCREEN
                          EDIT_COLOR foreground
@@ -4698,7 +4896,7 @@ if [[ $inputs = 3 ]]; then
 fi
 
 if [[ $inputs = 4 ]]; then
-                          unset new_fontname
+                          #unset new_fontname
                          
                           
                           UPDATE_FONTS_LIST
@@ -4712,7 +4910,7 @@ if [[ $inputs = 4 ]]; then
                             EDIT_FONTNAME
                             unset inputs
                          lines=20
-                         if [[ ! "$old_FontName" = "$new_fontname" ]]; then swap_preset=0; fi
+                         if [[ ! "$old_FontName" = "$current_fontname" ]]; then swap_preset=0; fi
                         
                          clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
                          EDIT_PRESET_UPDATE_SCREEN
@@ -4720,7 +4918,7 @@ fi
 
 
 if [[ $inputs = 5 ]]; then 
-                        unset new_fontsize
+                        #unset new_fontsize
                          printf "\033[10;36f""["; printf "\033[10;39f""]"; printf "\033[14;0f"
                          if [[ $loc = "ru" ]]; then
                         printf '\r  Изменяйте размер шрифта клавишами C-V:                            \n\n'
@@ -4768,8 +4966,7 @@ if [[ $inputs = 5 ]]; then
                         
                         printf "\033[10;39f""]"'                                       '
                  done 
-                        new_fontsize="$current_fontsize"
-                        if [[ ! "$old_FontSize" = "$new_fontsize" ]]; then swap_preset=0; fi
+                        if [[ ! "$old_FontSize" = "$current_fontsize" ]]; then swap_preset=0; fi
                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
                         EDIT_PRESET_UPDATE_SCREEN
                                   
@@ -4778,11 +4975,10 @@ fi
     done
     clear
     lines=$old2lines
+    UPDATE_PRESETS_LIST
+    printf "\033['$currents';34f""*"
 fi
 
-
-GET_THEME
-        if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi & 
 
 
 done
@@ -5095,7 +5291,7 @@ theme="system"
 var4=0
 while [ $var4 != 1 ] 
 do
-lines=30; col=80
+lines=31; col=80
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
 UPDATE_SCREEN
