@@ -2,7 +2,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.7.2"
-edit_vers="026"
+edit_vers="027"
 ##################################################################################################################################################################################################################
 
 
@@ -30,7 +30,7 @@ edit_vers="026"
 # 024 - добавлена поддержка кастомного вывода имён загрузчиков
 # 025 - поддержка кастомных псевдонимов загрузчиков
 # 026 - поддержка кастомных тем псевдонимов загрузчиков в отдельных темах (встроенных и системных)
-
+# 027 - добавлена проверка пароля после неудачного подключения раздела на случай если пароль был изменён 
 
 
 SHOW_VERSION(){
@@ -372,10 +372,21 @@ if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]
 
 mypassword="0"
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+                if [[ ! "$1" = "force" ]]; then
                 mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+                else
+                security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ УДАЛЁН ИЗ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="WRONG PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION 
+                fi
 fi
 
-if [[ "$mypassword" = "0" ]]; then
+if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
   if [[ $flag = 1 ]]; then 
         
         TRY=3
@@ -748,10 +759,8 @@ lists_updated=0
 #Получение пароля для sudo из связки ключей
 GET_USER_PASSWORD(){
 mypassword="0"
-
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
                 mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-                
 fi
 }
 
@@ -1061,25 +1070,18 @@ EXIT_PROGRAM
 
 DO_MOUNT(){
 
-		if [[ $flag = 1 ]]; then
-        if [[ ! $mypassword = "0" ]]; then
-                echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
-                    else
-                        sudo printf ''
-                        sudo diskutil quiet mount  /dev/${string}
-         fi
-
-       		 else
-
-        	 	diskutil quiet mount  /dev/${string}
-
-		fi
-
+		if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${string}
+                else
+                    if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; fi
+                    if ! echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null; then
+                        if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+                                ENTER_PASSWORD "force"
+                                echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
+                        fi
+                    fi
+        fi
+        
 }
-
-
-
-
 # Определение функции получения информаци о системном разделе EFI
 GET_SYSTEM_EFI(){
 
@@ -1114,22 +1116,15 @@ MOUNTED_CHECK(){
  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then
 
-	clear
-			if [[ $loc = "ru" ]]; then
-	printf '\n\n  !!! Не удалось подключить раздел EFI. Неизвестная ошибка !!!\n\n'
-	printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
-	printf 'Нажмите любую клавишу закрыть терминал  '
-			else
-	printf '\n\n  !!! Failed to mount EFI partition. Unknown error. !!!\n\n'
-	printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
-	printf 'Press any key to close the window  '
-			fi
+    	SET_TITLE
+    if [[ $loc = "ru" ]]; then
+    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения ..."' >> ${HOME}/.MountEFInoty.sh
+    else
+    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting ..."' >> ${HOME}/.MountEFInoty.sh
+    fi
+    DISPLAY_NOTIFICATION 
 
- 	sleep 0.5
-	read  -n1 demo
-	EXIT_PROGRAM
-
-	fi
+    fi
 }
 
 UNMOUNTED_CHECK(){
@@ -2289,15 +2284,11 @@ if [[ ! $mcheck = "Yes" ]]; then
     if [[ ! $mypassword = "0" ]]; then
 
     DO_MOUNT
-
     MOUNTED_CHECK
-
-	order=0; UPDATELIST
+    order=0; UPDATELIST
     fi
-    
-else 
+    else 
     wasmounted=1
-
 fi
 
 string=${strng0}

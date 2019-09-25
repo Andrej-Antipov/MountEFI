@@ -2,7 +2,7 @@
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.6"
-s_edit_vers="065"
+s_edit_vers="066"
 
 
 ############################################################################################################################################################################################################
@@ -72,6 +72,7 @@ s_edit_vers="065"
 # 063 - добавлена очистка базы кастомных указателей загрузчиков
 # 064 - фиксы нет звёздочки после L и S и сбой строки ввода холостого выхода из R
 # 065 - добавлен предпросмотр некоторых данных конфига в бэкапах
+# 066 - фикс ввода пароля и сервиса автозапуска если пароль пользователя  был изменён вне программы 
 #############################################################################################################################################################################################################
 clear
 
@@ -789,48 +790,7 @@ function set_font {
 }
 ##################################################################################################################################################
 
-ENTER_PASSWORD(){
 
-unset PASSWORD
-unset CHARCOUNT
-
-if [[ $loc = "ru" ]]; then
-echo -n "  Введите пароль: "
-else
-echo -n "  Enter password: "
-fi
-
-stty -echo
-sleep 0.8
-
-unset CHAR
-
-CHARCOUNT=0
-while IFS= read -p "$PROMPT" -r -s -n 1 CHAR
-do
-    # Enter - accept password
-    if [[ $CHAR == $'\0' ]] ; then
-        break
-    fi
-    # Backspace
-    if [[ $CHAR == $'\177' ]] ; then
-        if [ $CHARCOUNT -gt 0 ] ; then
-            CHARCOUNT=$((CHARCOUNT-1))
-            PROMPT=$'\b \b'
-            PASSWORD="${PASSWORD%?}"
-        else
-            PROMPT=''
-        fi
-    else
-        CHARCOUNT=$((CHARCOUNT+1))
-        PROMPT='*'
-        PASSWORD+="$CHAR"
-    fi
-done
-
-stty echo
-
-}
 
 SET_TITLE(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
@@ -848,6 +808,7 @@ rm ${HOME}/.MountEFInoty.sh
 }
 
 ENTER_PASSWORD(){
+
 
 TRY=3
         while [[ ! $TRY = 0 ]]; do
@@ -960,14 +921,6 @@ else
 fi
 }
 
-CHECK_USER_PASSWORD(){
-mypassword=""
-
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-fi
-
-}
 
 SET_INPUT(){
 
@@ -2224,10 +2177,10 @@ if [[  ${inputs}  = [qQ] ]]; then
 			if [[ ! $apos = 0 ]]; then 
 				plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
                 GET_SYSTEM_FLAG
-                GET_USER_PASSWORD
-                if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; osascript -e 'tell application "Terminal" to activate'; fi
-                GET_USER_PASSWORD
-                if [[ $mypassword = "0" ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; fi
+                FORCE_CHECK_PASSWORD;
+                if [[ $mypassword = "" ]]; then ENTER_PASSWORD;  osascript -e 'tell application "Terminal" to activate'; fi
+                FORCE_CHECK_PASSWORD;
+                if [[ $mypassword = "" ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; fi
                     else
                 plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
             fi
@@ -5233,7 +5186,20 @@ echo >> ${HOME}/.MountEFIa.sh
 echo 'mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
 echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)' >> ${HOME}/.MountEFIa.sh
-echo '    fi' >> ${HOME}/.MountEFIa.sh
+echo '                if ! echo $mypassword | sudo -Sk printf '"''"' 2>/dev/null; then ' >> ${HOME}/.MountEFIa.sh
+echo '                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
+echo '                    mypassword="0"' >> ${HOME}/.MountEFIa.sh
+echo '                    SET_LOCALE' >> ${HOME}/.MountEFIa.sh
+echo '                    SET_TITLE' >> ${HOME}/.MountEFIa.sh
+echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
+echo '                        SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ УДАЛЁН ИЗ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFIa.sh
+echo '                        else' >> ${HOME}/.MountEFIa.sh
+echo '                        SUBTITLE="WRONG PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> ${HOME}/.MountEFIa.sh
+echo '                        fi'  >> ${HOME}/.MountEFIa.sh
+echo '                        DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
+echo '                        sleep 2' >> ${HOME}/.MountEFIa.sh
+echo '             fi'  >> ${HOME}/.MountEFIa.sh
+echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo '' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ "$mypassword" = "0" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '  if [[ $flag = 1 ]]; then ' >> ${HOME}/.MountEFIa.sh
@@ -5427,6 +5393,38 @@ if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Libr
 if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
 }
 
+GET_SYSTEM_FLAG(){
+macos=`sw_vers -productVersion`
+  macos=`echo ${macos//[^0-9]/}`
+  macos=${macos:0:4}
+  if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+}
+
+FORCE_CHECK_PASSWORD(){
+mypassword=""
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+             mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+             if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then 
+                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                    mypassword=""
+                    SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ УДАЛЁН ИЗ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="WRONG PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION 
+             fi
+fi
+}
+
+CHECK_USER_PASSWORD(){
+mypassword=""
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+fi
+}
+
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
@@ -5556,13 +5554,6 @@ if [[ $inputs = 8 ]]; then
 fi  
 ###############################################################################
 
-GET_SYSTEM_FLAG(){
-macos=`sw_vers -productVersion`
-  macos=`echo ${macos//[^0-9]/}`
-  macos=${macos:0:4}
-  if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
-}
-
 # Подключение разделов при запуске системы  ################################
 if [[ $inputs = 9 ]]; then 
    if [[ $sys_autom_enabled = 1 ]]; then 
@@ -5583,9 +5574,9 @@ if [[ $inputs = 9 ]]; then
   GET_SYSTEM_FLAG
   if [[ $flag = 0 ]]; then SETUP_SYS_AUTOMOUNT
     else
-  CHECK_USER_PASSWORD
+  FORCE_CHECK_PASSWORD
   if [[ "$mypassword" = "" ]]; then SET_USER_PASSWORD; fi
-  CHECK_USER_PASSWORD
+  FORCE_CHECK_PASSWORD
   if [[ "$mypassword" = "" ]]; then 
     plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
     if [[ $loc = "ru" ]]; then
@@ -5706,12 +5697,10 @@ if [[ $inputs = [dD] ]]; then
 ########################################################################################################################
 
 if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; CORRECT_CURRENT_PRESET
-if [[ $need_restart = 1 ]]; then 
+    if [[ $need_restart = 1 ]]; then 
 
     UPDATE_CACHE
     need_restart=0
-    #SET_SYSTEM_THEME
-
     fi
 fi
 
@@ -5725,7 +5714,6 @@ if [[ $inputs = [iI] ]]; then DOWNLOAD_CONFIG_FROM_FILE;
     
     UPDATE_CACHE
     need_restart=0
-    #SET_SYSTEM_THEME
    
     fi
 fi
