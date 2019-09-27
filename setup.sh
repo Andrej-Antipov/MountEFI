@@ -1,79 +1,9 @@
 #!/bin/bash
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
-s_prog_vers="1.6"
-s_edit_vers="066"
-
-
+s_prog_vers="1.7"
+s_edit_vers="000"
 ############################################################################################################################################################################################################
-# MountEFI версия скрипта настроек 1.6.0 master
-# 001 - в выводе пункта меню 8 - добавлено слово MountEFI
-# 002 - переименование пункта A в пункт L
-# 003 - переименование пункта 9 в A
-# 004 - добавление пункта 9 для функции автомонтирования при загрузке системы
-# 005 - реализация управления из меню конфигом для функции 9 автомонтирования при загрузке системы
-# 006 - проверка конфига и добавление пунктов для автозапуска при загрузке системы
-# 007 - добавить запрос пароля в функции 9
-# 008 - добавлены установка и запуск сервиса SETUP_SYS_AUTOMOUNT
-# 009 - мелкие исправления форматирования
-# 010 - перенос хранения пароля в связку ключей
-# 011 - отображение пароля пользователя в списке звёздочками
-# 012 - при вводе пароля показывать звёздочки
-# 013 - правки для совместимости со старым конфигом
-# 014 - правка функции заполнения sh для использования связки ключей
-# 015 - исправление ошибок с путями при работе с облаком
-# 016 - добавлена функция загрузки конфига из файла через GUI
-# 017 - добавлена функция экспорта конфига через GUI
-# 018 - различные исправления и доработки
-# 019 - добавлена проверка сервиса авто-загрузки на соответствие настройкам 
-# 020 - в сервис авто-монтирования функции 9 добавлены уведомления об ошибках
-# 021 - обработка ситуации с разным максимальным количеством бэкапов в заменяемых конфигах
-# 022 - функция запроса пароля через GUI с системными уведомлениями 
-# 023 - добавлен запрос на ввод пароля в функции 8 если необходим
-# 024 - добавление или редактирование псевдонима в окошке GUI
-# 025 - небольшие фиксы в работе функции 9
-# 026 - перезапуск при смене темы со встроенной на системную
-# 027 - перемещение по истории правки псевдонимов на один сеанс
-# 028 - очистка неиcпользуемой функции EDIT_RENAMED; упрощён алгоритм SET_THEME и 6 -й функции
-# 029 - добавлен вызов редактора пресетов в меню
-# 030 - функции удаления, добавления пресета в конфиг. Мелкие исправления в других функциях. 
-# 031 - простейшая функция редактирования пресета. часть 1 (функции управления редактированием)
-# 032 - изменения функции READ_TWO_SYMBOLS (как в MountEFI) и добавление в неё сообщение о втором разряде ввода. 
-# 033 - простейшая функция редактирования пресетов. часть 2 (редактирование параметров пресета)
-# 034 - добавлено редактирование размера шрифта
-# 035 - новая команда определения локализации
-# 036 - новая команда в сервисе автозапуска функции 9 
-# 037 - исправление в функции READ_TWO_SYMBOLS - добавлена литера "O"
-# 038 - в редактор встроенных тем добавлена функция выбора шрифта. 
-# 039 - запуск функций установки темы переведён в параллеьный режим CUSTOM_SET &
-# 040 - добавлены шрифты и исправлена их обработка
-# 041 - в главном меню редактора темы добавлена отметка текущей встроенной темы
-# 042 - добавлен выбор дефолтного пресета в редакторе
-# 043 - изменения в функции выхода - закрыть окно перед закрытием терминала
-# 044 - в функции настройки цвета пресетов добавлен прогресс-бар (не для машин с Core2Duo)
-# 045 - буфер списка главного экрана в переменной
-# 046 - фикс бага не корректировался текущий пресет если он был удалён или переименован
-# 047 - исправлен список  шрифтов для Капитана 
-# 048 - установка системной темы без перезагрузки
-# 049 - очистка reload
-# 050 - исправлена ошибка в функии FILL_CONFIG (пропущен тэг)
-# 051 - добавлена функция CORRECT_CURRENT_PRESET в функции I и B
-# 052 - новая функция выбора системной темы и новый параметр в конфиге
-# 053 - добавлена опция ручной перезагрузки клавишей R в верхнем регистре
-# 054 - добавлен текст подтверждение экспорта конфига в iCloud
-# 055 - редактор вида указателя загрузчиков
-# 056 - удалить режим подчёркивание из линейки предпросмотра цвета
-# 057 - исправление редакции в 16 цветах для темы загрузчика для Core2duo
-# 058 - поддержка кастомного имени загрузчика
-# 059 - кастомизация имени загрузчика
-# 060 - доавлена быстрая прокрутка 256 цвета для кастомизации загрузчика
-# 061 - кастомиация темы псевдонима загрузчика для отдельной темы
-# 062 - ускорение навигации по меню редактора тем пресетов
-# 063 - добавлена очистка базы кастомных указателей загрузчиков
-# 064 - фиксы нет звёздочки после L и S и сбой строки ввода холостого выхода из R
-# 065 - добавлен предпросмотр некоторых данных конфига в бэкапах
-# 066 - фикс ввода пароля и сервиса автозапуска если пароль пользователя  был изменён вне программы 
-#############################################################################################################################################################################################################
 clear
 
 
@@ -2063,7 +1993,6 @@ if [[  ${inputs}  = [mM] ]]; then
             inputs=0
 fi
 
-
 if [[ $inputs = [pP] ]]; then printf "\r\033"
                         if [[ $loc = "ru" ]]; then
                 
@@ -2105,10 +2034,8 @@ if [[ $inputs = [pP] ]]; then printf "\r\033"
   
 fi
                 
-
 if [[  ${inputs}  = [qQ] ]]; then var5=1; fi
  
-
 done
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 clear
@@ -2355,9 +2282,6 @@ if [[  ${inputs}  = [oO] ]]; then
 	fi
 fi
 
-
-
-
 if [[ ! ${inputs} =~ ^[0oOdDqQ]+$ ]]; then
 
 GET_SYS_AUTOMOUNTED
@@ -2554,8 +2478,6 @@ fi
 fi
 fi
         
-
-
 }
 
 GET_INPUT(){
@@ -2718,7 +2640,6 @@ UPDATE_SCREEN(){
         printf '.%.0s' {1..80}
         printf ' %.0s' {1..80}
         
-
         GET_MENUE
         GET_USER_PASSWORD
         GET_OPENFINDER
@@ -2730,8 +2651,6 @@ UPDATE_SCREEN(){
         GET_AUTOBACKUP
         CHECK_ICLOUD_BACKUPS
         SET_SCREEN
-
-    
 
         printf ' %.0s' {1..80}
         printf ' %.0s' {1..80}
@@ -2770,10 +2689,7 @@ fi
 
 }
 
-
-
 ####################################### псевдонимы #############################################################################
-
 
 GET_FULL_EFI(){
 
@@ -2879,8 +2795,6 @@ do
 	pnum=${nslist[num]}
 	string=`echo ${slist[$pnum]}`
 	
-		
-				
 		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
@@ -2891,13 +2805,10 @@ do
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 		
-	
-
 	let "i++"
 	i=$(( (i+1) %4 ))
 	printf "\b$1${spin:$i:1}"
 
-        
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
     if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
         else
@@ -2947,7 +2858,6 @@ do
 	let "var0--"
 done
 printf "\r\033[4A"
-
 
 }
 
@@ -3431,8 +3341,6 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
 
 else
 
-                        
-                        
 if [[ $inputs = 0 ]]; then GET_FULL_EFI; clear && printf '\e[3J' && printf "\033[0;0H"; SHOW_FULL_EFI
 fi                
 fi
@@ -3448,10 +3356,7 @@ clear
 ############################## конец определения функции псевдонимов ##################################
 
 GET_COLOR_INPUT(){
-            
-                        
-             while [[ ! ${inputs} =~ ^[aAbBsSqQzZxXcCvVuU2-3]+$ ]]; do
-            
+            while [[ ! ${inputs} =~ ^[aAbBsSqQzZxXcCvVuU2-3]+$ ]]; do
             printf "\033[25;43f"; printf '                                    \r'
                 if [[ $loc = "ru" ]]; then
             printf '\r  Ожидание ввода (или Q - возврат к меню):  \n\n'
@@ -3553,7 +3458,6 @@ fi
 
 }
 
-
 EDIT_COLOR(){
 printf "\033[?25l"
 token=$1; if [[ $token = "" ]]; then token="background"; fi
@@ -3588,7 +3492,6 @@ GET_CPU_FAMILY; if [[ $cpu_family = 0 ]]; then step=4096; else step=2048; fi
 c_ptr=1; l_ptr=16;  swap_one=0; swap_all=0; _start=0; _end=65535
 printf "\033[?25l"
 cvar=0
-
 
 printf "\033[16;0H"
              if [[ $cpu_family = 0 ]]; then
@@ -4031,12 +3934,9 @@ done
                     fi
 let "chn--";
 
-
-
 }
 
 UPDATE_FONTS_LIST(){
-
 
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
@@ -4052,7 +3952,6 @@ else
 fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
 Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;Osaka-Mono"
 fi
-
 
 IFS=';' 
 fonts=($fontlist)
@@ -4079,58 +3978,39 @@ if [[ $i = ${#fonts[@]} ]]; then f_ptr=0; l_ptr=13; fi
 printf "\033['$l_ptr';32f""*"
  vc=0
                         unset inputs
-                   while [[ $vc = 0 ]]; do
-
-                        while [[ ! ${inputs} =~ ^[aAsSqQ4]+$ ]]; do
+ while [[ $vc = 0 ]]; do
+                    while [[ ! ${inputs} =~ ^[aAsSqQ4]+$ ]]; do
                         read -s -n 1  inputs 
-        
                         if [[ ! $inputs = [aAsSqQ4] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; fi 
-                        
-                        
                         fi
                         printf '\r'
-
-                
                     done 
-                    
                         printf "\033[?25l"
-                
          if [[ $inputs = [sS] ]]; then
-                
-                printf "\033['$l_ptr';32f"" "
-                if [[ $f_ptr > 0 ]]; then let "f_ptr--"; let "l_ptr--"
-                    else
+                        printf "\033['$l_ptr';32f"" "
+                        if [[ $f_ptr > 0 ]]; then let "f_ptr--"; let "l_ptr--"
+                            else
                         let f_ptr=$max; l_ptr=$maxl
-                fi
-                printf "\033['$l_ptr';32f""*"
-               
+                        fi
+                        printf "\033['$l_ptr';32f""*"
          fi
 
          if [[ $inputs = [aA] ]]; then
-                
                 printf "\033['$l_ptr';32f"" "
                 if [[ "${f_ptr}" -lt "${max}" ]]; then let "f_ptr++"; let "l_ptr++"
                     else
                         f_ptr=0; l_ptr=13
                 fi
                 printf "\033['$l_ptr';32f""*"
-                #echo -n "f_ptr = "$f_ptr" " >> ~/temp.txt; echo -n "l_ptr = "$l_ptr"  " >> ~/temp.txt; echo -n "max= "$max"  " >> ~/temp.txt; echo "maxl= "$maxl >> ~/temp.txt;
          fi
                       
                         current_fontname="${fonts[$f_ptr]}"
-                       if [[ $inputs = [aAsS] ]];  then set_font "$current_fontname" $current_fontsize; fi &
-
-                        printf "\033[8;37f""$current_fontname"'                    '
-    
-                        if [[ $inputs = [qQ4] ]]; then  vc=1; break; fi
-
+                         if [[ $inputs = [aAsS] ]];  then set_font "$current_fontname" $current_fontsize; fi &
+                         printf "\033[8;37f""$current_fontname"'                    '
+                         if [[ $inputs = [qQ4] ]]; then  vc=1; break; fi
                         read -s -n 1  inputs 
-                        
-                       
-                 done 
-
-
+done 
 }
 
 EDIT_LODERS_NAMES(){
@@ -4256,31 +4136,6 @@ rcol=$(echo $new_color | sed s'/38;5;/48;5;/' | sed s'/4;//' | sed s'/7;//')
 new_color+="$code"; rcol+="$code"
 }
 ################################# редактор темы и псевдонима загрузчиков ##################################################################
-# функция отладки ##################################################################################################
-demo1="0"
-deb=0
-
-DEBUG(){
-if [[ ! $deb = 0 ]]; then
-printf '\n\n Останов '"$stop"'  :\n\n' >> ~/temp.txt 
-printf '............................................................\n' >> ~/temp.txt
-#echo "current_preset="$current_preset >> ~/temp.txt
-#echo "current_background="$current_background >> ~/temp.txt
-#echo "current_foreground="$current_foreground >> ~/temp.txt
-#echo "current_fontname="$current_fontname >> ~/temp.txt
-#echo "current_fontsize="$current_fontsize >> ~/temp.txt
-#echo "old_preset="$old_preset >> ~/temp.txt
-#echo "old_BackgroundColor="$old_BackgroundColor >> ~/temp.txt
-#echo "old_TextColor="$old_TextColor >> ~/temp.txt
-#echo "old_FontName="$old_FontName >> ~/temp.txt
-#echo "old_FontSize="$old_FontSize >> ~/temp.txt
-echo "LC="$lc >> ~/temp.txt
-printf '............................................................\n\n' >> ~/temp.txt
-#sleep 0.2
-read -n 1 -s
-fi
-}
-#########################################################################################################################################
 
 EDIT_LOADER_POINTER(){
 unset inputs
@@ -4331,7 +4186,6 @@ printf '     6) Colors      16               \n'
 printf '     7) Colors     256               \n'
                     fi
 SHOW_COLOR
-#printf '\033[19;45f'
 COLOR_PARSER ${old_themeldrs}
 SHOW_TEXT_FLAGS
 if [[ ${cl_bit} = 0 ]]; then  
@@ -4645,9 +4499,6 @@ var5=0
 UPDATE_PRESETS_LIST
 printf "\033['$currents';34f""*"
 while [[ $var5 = 0 ]]; do 
-
-
-
 printf '\n'
 unset inputs
 while [[ ! ${inputs} =~ ^[0-9nNrRzZxXlLsSdDqQ]+$ ]]; do 
@@ -4664,8 +4515,6 @@ printf '  Select from 1 to '$chn' (or N/R/Z/X/S/L/D/Q ):            '
                 fi
 printf "\033['$poscur';46f"
 printf "\033[?25h"
-
-
 
         inputs="±"
         if [[ ${chn} -le 9 ]]; then
@@ -4698,7 +4547,7 @@ printf "\033[?25h"
                             printf "%"80"s"'\n'"%"80"s"
                             printf "\033[3A"; printf "\033['$poscur';46f"'        '
                             inputs="A"
-fi
+        fi
     
 done
         if [[ $inputs = [dD] ]]; then
@@ -4883,9 +4732,6 @@ if [[ $inputs = [nN] ]]; then
                        
 fi
 
-
-
-
 if [[ ! $inputs = [qQnNrRzZxXlLsS]+$ ]] &&  [[ ! $inputs = "" ]]; then
                         old2lines=$lines; lines=20; swap_preset=0
                         clear && printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
@@ -4924,7 +4770,6 @@ if [[ ! $inputs = [qQnNrRzZxXlLsS]+$ ]] &&  [[ ! $inputs = "" ]]; then
                         printf "\033[?25l"
                         if [[ ${inputs} = "" ]]; then inputs="A" ;printf "\033[1A"; printf "\033[?25l"; fi
                         printf '\r'
-                        #CUSTOM_SET_EDITED_THEME
                    done
 
 if [[ $inputs = "" ]]; then inputs="A"; printf "\033[2A"; fi
@@ -4962,8 +4807,7 @@ if [[ $inputs = 1 ]]; then
                         if [[ ${#demo} -gt 28 ]]; then demo="${demo:0:28}"; fi
                         current_preset="$editing_preset"
                         if [[ "$current_preset" = "$old_preset" ]]; then swap_preset=0; fi
-fi 
-                        
+                        fi 
 fi
 
 if [[ $inputs = 2 ]]; then 
@@ -4993,9 +4837,6 @@ if [[ $inputs = 3 ]]; then
 fi
 
 if [[ $inputs = 4 ]]; then
-                          #unset new_fontname
-                         
-                          
                           UPDATE_FONTS_LIST
                           
                          if [[ $loc = "ru" ]]; then
@@ -5013,9 +4854,8 @@ if [[ $inputs = 4 ]]; then
                          EDIT_PRESET_UPDATE_SCREEN
 fi
 
-
 if [[ $inputs = 5 ]]; then 
-                        #unset new_fontsize
+                        
                          printf "\033[10;36f""["; printf "\033[10;39f""]"; printf "\033[14;0f"
                          if [[ $loc = "ru" ]]; then
                         printf '\r  Изменяйте размер шрифта клавишами C-V:                            \n\n'
@@ -5034,13 +4874,9 @@ if [[ $inputs = 5 ]]; then
         
                         if [[ ! $inputs = [cCvVeEqQ5] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; fi 
-                        
-                        
                         fi
                         printf '\r'
-
-                
-                    done 
+                done 
                     
                         printf "\033[10;39f""]"'                                       '
                         if [[ $inputs = [cC] ]] && [[ $current_fontsize -ge 2 ]]; then  
@@ -5050,9 +4886,6 @@ if [[ $inputs = 5 ]]; then
                         if [[ $inputs = [vV] ]]; then let "current_fontsize++";    printf "\033[10;36f""["$current_fontsize"]";  fi
                         fi 
 
-                        
-
-                        
                         printf "\033[10;39f""]"'                                       '
 
                         if [[ $inputs = [cCvV] ]] && [[ $current_fontsize -lt 49 ]] && [[ $current_fontsize -gt 0 ]];  then set_font "$current_fontname" $current_fontsize; fi &
@@ -5073,9 +4906,7 @@ fi
     clear
     lines=$old2lines
     UPDATE_PRESETS_LIST
-    #printf "\033['$currents';34f""*"
 fi
-
 
 printf "\033['$currents';34f""*"
 done
@@ -5190,7 +5021,6 @@ echo '                if ! echo $mypassword | sudo -Sk printf '"''"' 2>/dev/null
 echo '                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
 echo '                    mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo '                    SET_LOCALE' >> ${HOME}/.MountEFIa.sh
-echo '                    SET_TITLE' >> ${HOME}/.MountEFIa.sh
 echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '                        SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ УДАЛЁН ИЗ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFIa.sh
 echo '                        else' >> ${HOME}/.MountEFIa.sh
@@ -5301,18 +5131,13 @@ echo >> ${HOME}/.MountEFIa.sh
 echo 'exit' >> ${HOME}/.MountEFIa.sh
 
 chmod u+x ${HOME}/.MountEFIa.sh
-
-
 }
 
 REMOVE_SYS_AUTOMOUNT_SERVICE(){
-
 if [[ $(launchctl list | grep "MountEFIa.job" | cut -f3 | grep -x "MountEFIa.job") ]]; then launchctl unload -w ~/Library/LaunchAgents/MountEFIa.plist; fi
 if [[ -f ~/Library/LaunchAgents/MountEFIa.plist ]]; then rm ~/Library/LaunchAgents/MountEFIa.plist; fi
 if [[ -f ~/.MountEFIa.sh ]]; then rm ~/.MountEFIa.sh; fi
-
 }
-
 
 SETUP_SYS_AUTOMOUNT(){
 REMOVE_SYS_AUTOMOUNT_SERVICE
@@ -5329,8 +5154,6 @@ printf '\r  Serice automount EFI installed ... '
 sleep 1
 fi
 }
-
-
 
 SET_SYSTEM_THEME(){
 profile=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -5418,12 +5241,6 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
 fi
 }
 
-CHECK_USER_PASSWORD(){
-mypassword=""
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-fi
-}
 
 ###############################################################################
 ################### MAIN ######################################################
