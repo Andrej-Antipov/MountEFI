@@ -1,30 +1,57 @@
 #!/bin/bash
 
+#  Created by Андрей Антипов on 27.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8"
 edit_vers="000"
 ##################################################################################################################################################################################################################
 
+SPIN_VER(){
+printf '\r'
+printf "\033[49C"
+spin='-\|/'
+i=0
+while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
+trap "kill $!" EXIT
+unset latest_release
+latest_release=$(curl -s https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+if [[ ${#latest_release} = 2 ]]; then latest_release+="0"; fi
+if [[ ! $latest_release = "" ]]; then printf '\e[40m\033[23;'$v5corr'f\e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'\e[0m\n'; fi
+kill $!
+wait $! 2>/dev/null
+trap " " EXIT
+}
 
 SHOW_VERSION(){
-clear && printf "\e[3J" 
+clear && printf '\e[8;24;'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
 GET_LOADERS
 var=${lines} 
 while [[ ! $var = 0 ]]; do
-if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88}; vcorr=32; v2corr=24; v3corr=25; else printf '\e[40m %.0s\e[0m' {1..80}; vcorr=28; v2corr=20; v3corr=21; fi
+if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88}; vcorr=32; v2corr=24; v3corr=25; v4corr=28; v5corr=45; else printf '\e[40m %.0s\e[0m' {1..80}; vcorr=28; v2corr=20; v3corr=21; v4corr=24; v5corr=41; fi
 let "var--"; done
 printf "\033[H"
 
-printf "\033[10;'$v3corr'f"
+printf "\033[8;'$v3corr'f"
 printf '\e[40m\e[1;33m________________________________________\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
-printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m®\e[0m''\n'   
+printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n' 
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    if [[ $loc = "ru" ]]; then
+    printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mПоследний релиз: \e[0m'
+    else
+    printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mLatest release : \e[0m'
+    fi
+    SPIN_VER &
+fi 
 read -n 1 
+cpid=$(ps -xa -o pid,command |  grep curl  | grep MountEFI | grep -v grep | cut -f1 -d " " | tr -d '\n')
+kill ${cpid}
 clear && printf "\e[3J"
 } 
 
@@ -32,7 +59,7 @@ clear && printf "\e[3J"
 clear  && printf '\e[3J'
 printf "\033[?25l"
 
-cd $(dirname $0)
+cd "$(dirname "$0")"
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f ${HOME}/.MountEFIconf.plist ]]; then rm ${HOME}/.MountEFIconf.plist; fi
@@ -682,23 +709,27 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 
 if [ "$parm" = "-help" ] || [ "$parm" = "-h" ]  || [ "$parm" = "-H" ]  || [ "$parm" = "-HELP" ]
 then
-    printf '\e[8;25;96t'
+    printf '\e[8;31;96t'
     clear && printf '\e[3J'
 	if [ $loc = "ru" ]; then
     printf '\n\n************     Программа монтирует EFI разделы в Mac OS (X.11 - X.15)    *************\n'
 
     printf '\n\n Эта программа предназначена для быстрого обнаружения и подключения разделов EFI / ESP\n'
     printf ' Программа различает версию операционной системы, и если потребуется запрашивает пароль\n'
-    printf ' Поскольку в High Sierra и Mojave для подключения разделов требуются права администратора\n'
+    printf ' Поскольку в High Sierra и новее для подключения разделов требуются права администратора\n'
     printf ' Если пароль не требуется он не будет запрошен. Алгоритм работы программы следующий:\n'
     printf ' Обнаружив один раздел EFI программа сразу подключает его. Если разделов два или более,\n'
     printf ' когда в систему установлены несколько дисков с разметкой GUID, программа выведет запрос\n'
     printf ' чтобы пользователь мог выбрать какой раздел он хочет подключить.\n'
-    printf ' Программа может иметь один аргумент командной строки. Аргумент -h [ -help, -HELP, -H ]\n'
-    printf ' выводит эту справочную инфрмацию. Программа поставляется как есть. Она может свободно копи-\n'
-    printf ' роваться, передаваться другим лицам и изменяться без ограничений. Вы используете её без каких\n'
-    printf ' либо гарантий, на своё усмотрение и под свою ответственность.\n'
-    printf '\n Март 2019 год.\n\n\n\n\n\n\n'
+    printf ' Программа может иметь один аргумент командной строки.                                    \n\n'
+    printf '    -h [ -help, -HELP, -H ]       выводит эту справочную информацию.                       \n'
+    printf '    -m [ -M, -menue, -MENUE ]     форсирует показ меню даже для систем с одним разделом EFI.\n'
+    printf '    -r [ -R, -reset, -RESET ]     удаляет пароль сохранённый в связке ключей.               \n'
+    printf '    -d [ -D, -default, -DEFAULT ] программа стартует с файлом конфигурации по умолчанию.  \n\n'
+    printf ' Программа поставляется как есть. Она может свободно копироваться, передаваться другим    \n'
+    printf ' лицам и изменяться без ограничений. Вы используете её без каких либо гарантий, на своё   \n'
+    printf ' усмотрение и под свою ответственность.                                                   \n\n'
+    printf '\n Copyright © Андрей Антипов. (Gosvamih) Сентябрь 2019 год.\n\n\n\n'
     
 			else
 
@@ -706,16 +737,21 @@ then
 
     printf '\n\n This program is designed to quickly detect and mount EFI / ESP partitions\n'
     printf ' The program checks the version of the operating system, and if necessary, requests a password\n'
-    printf ' Because High Sierra and Mojave require administrator privileges to connect partitions\n'
-    printf ' If a password is not required, it will not be requested. The algorithm of the program is as follows:\n'
-    printf ' Having found one EFI partition, the program immediately connects it. If there are two or more partitions,\n'
-    printf ' when multiple disks with GUIDs are installed in the system, the program will prompt\n'
-    printf ' so that the user can choose which partition he wants to mount\n'
-    printf ' The program can has one command line arguments. Argument -h [-help, -HELP, -H]\n'
+    printf ' Because High Sierra and newer require administrator privileges to connect partitions\n'
+    printf ' If a password is not required, it will not be requested. \n'
+    printf ' The algorithm of the program is as follows:\n'
+    printf ' Having found one EFI partition, the program immediately connects it. If there are two or more\n'
+    printf ' partitions, when multiple disks with GUIDs are installed in the system, the program will \n'
+    printf ' prompt so that the user can choose which partition he wants to mount\n'
+    printf ' The program can has one command line arguments.                                         \n\n'
+    printf '    -h [ -help, -HELP, -H ]       Shows this help information.                              \n'
+    printf '    -m [ -M, -menue, -MENUE ]     display the menu even for systems with one EFI partition. \n'
+    printf '    -r [ -R, -reset, -RESET ]     removes the password stored in the keychain.              \n'
+    printf '    -d [ -D, -default, -DEFAULT ] the program starts with the default configuration file. \n\n'
     printf ' prints this help information. The program is delivered as is.It can be freely copied,\n'
     printf ' transferred to other persons and changed without restrictions. You use it without any\n'
-    printf ' either warranties from the developer, at your discretion and under your responsibility.\n'
-    printf '\n March 2019\n\n\n\n\n\n\n'
+    printf ' either warranties from the developer, at your discretion and under your responsibility.\n\n'
+    printf '\n Copyright © Andrew Antipov (Gosvamih) Septembre 2019\n\n\n\n'
     
 	fi
     exit 
@@ -771,7 +807,7 @@ if [[ ${TTYcount} = 0  ]]; then   osascript -e 'tell application "Terminal" to c
 fi
 }
 
-if [ "$par" = "-s" ]; then par=""; cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 ##########################################################################################################################
 ########################## обратный отсчёт для автомонтирования ##########################################################
 COUNTDOWN(){ 
@@ -2055,7 +2091,7 @@ case ${layout_name} in
  esac
 
 if [[ $xkbs = 2 ]]; then 
-cd $(dirname $0)
+cd "$(dirname "$0")"
     if [[ -f "./xkbswitch" ]]; then 
 declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
@@ -2211,7 +2247,7 @@ printf "\033[?25l\033[1D"
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsS]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
@@ -2219,7 +2255,7 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd $(dirname $0); if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi

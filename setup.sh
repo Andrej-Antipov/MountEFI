@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#  Created by Андрей Антипов on 27.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7"
 s_edit_vers="000"
@@ -54,7 +56,7 @@ fi
 
 ##########################################################################################################################################
 
-cd $(dirname $0)
+cd "$(dirname "$0")"
 
 if [[ ! -d ~/Library/LaunchAgents ]]; then mkdir ~/Library/LaunchAgents; fi
 
@@ -867,7 +869,7 @@ case ${layout_name} in
  esac
 
 if [[ $xkbs = 2 ]]; then 
-cd $(dirname $0)
+cd "$(dirname "$0")"
     if [[ -f "./xkbswitch" ]]; then 
 declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
@@ -1478,7 +1480,7 @@ printf '\n                  D)  Удалить сохранение из арх�
 printf '\n                  С)  Удалить все сохранения                    '
 printf '\n                  M)  Максимальное количество резервных копий   <'$Maximum'>'
 printf '\n                  P)  Поделиться настройками через iCloud       '
-printf '\n                  Q)  Выйти в главное меню                      '
+printf '\n                  Q)  Вернуться в меню настроек                 '
                     else
 printf '\n\n                  S)  Save current settings to archive          '
 printf '\n                  S)  Preview data in archives                  '
@@ -1487,7 +1489,7 @@ printf '\n                  D)  Delete backup from archive                '
 printf '\n                  С)  Delete ALL backups                        '
 printf '\n                  M)  Maximum number of backups                 <'$Maximum'>'
 printf '\n                  P)  Share settings via iCloud                 '
-printf '\n                  Q)  Exit to the main menu                     '
+printf '\n                  Q)  Quit to the setup menu                    '
                    fi
 else
                   if [[ $loc = "ru" ]]; then
@@ -2926,7 +2928,7 @@ fi
         printf '               Z)    Откатить изменения (из истории)                           \n'
         printf '               X)    Возвратить изменения (из истории)                         \n'
         printf '               R)    Удалить всю базу псевдонимов!                             \n'
-        printf '               Q)    Вернуться в главное меню                                  \n\n' 
+        printf '               Q)    Вернуться в меню настроек                                 \n\n' 
 
                     else
         if [[ $vid = 0 ]]; then
@@ -2940,7 +2942,7 @@ fi
         printf '               Z)    Roll back changes (from history)                          \n'
         printf '               X)    Revert changes (from history)                             \n'
         printf '               R)    Delete the entire alias database!                         \n'
-        printf '               Q)    Quit to the main menu                                     \n\n' 
+        printf '               Q)    Quit to the setup menu                                    \n\n' 
 
                     fi
 
@@ -3917,7 +3919,7 @@ done
         printf '                       L)    Указатели загрузчиков для встроенных тем          \n'
         printf '                       S)    Указатели загрузчиков для системных тем           \n'
         printf '                       D)    Удалить всю базу кастомных указателей             \n'
-        printf '                       Q)    Вернуться в главное меню                          \n' 
+        printf '                       Q)    Выход из редактора                                \n' 
 
                 else    
         
@@ -3929,7 +3931,7 @@ done
         printf '                       L)    Edit bootloaders pointer for built-in themes      \n'
         printf '                       S)    Bootloader pointers for system themes             \n'
         printf '                       D)    Delete all database custom bootloader pointers    \n'
-        printf '                       Q)    Quit to the main menu                             \n' 
+        printf '                       Q)    Quit to the setup menu                            \n' 
 
                     fi
 let "chn--";
@@ -5202,7 +5204,7 @@ echo '</plist>' >> ${HOME}/.MountEFIr.plist
 
 echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'sleep 0.5'             >> ${HOME}/.MountEFIr.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_path")'"''' >> ${HOME}/.MountEFIr.sh

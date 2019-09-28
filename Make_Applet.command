@@ -28,6 +28,6 @@ MyTTY=`tty | tr -d " dev/\n"`
 term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
 ##############################################################################################################################
 
-cd $(dirname $0)
+cd "$(dirname "$0")"
 sh appyfi/appify.command
 EXIT_PROGRAM
