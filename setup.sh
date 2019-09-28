@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7"
-s_edit_vers="000"
+s_edit_vers="003"
 ############################################################################################################################################################################################################
 clear
 
@@ -31,6 +31,7 @@ read -n 1
 clear && printf "\e[3J"
 } 
 
+setup_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash" | grep setup |  grep -v grep  | cut -f1 -d " " | sort -u | wc -l )
 
 par="$1"
 
@@ -53,6 +54,8 @@ if [[ ${TTYc} = 0  ]]; then osascript -e 'tell application "Terminal" to close f
      osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 }
+
+if [ "${setup_count}" -gt "1" ]; then osascript -e 'tell application "Terminal" to activate'; EXIT_PROG; fi
 
 ##########################################################################################################################################
 
@@ -5180,9 +5183,11 @@ UPDATE_CACHE
 
 START_RELOAD_SERVICE(){
 if [[ ! $par = "-r" ]]; then
-MEFI_path=$(ps xao tty,command | grep -w "setup.sh" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
+MEFI_PATH="$(ps o command | grep -i "setup.sh" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
+if [[ "$MEFI_PATH" = "" ]]; then
+    MEFI_PATH="$(ps o command | grep -i "setup" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"; fi
 else
-MEFI_path=$(ps xao tty,command | grep -w "MountEFI" | grep -v grep | cut -f4 -d " " | sort -u | xargs )
+MEFI_PATH="$(ps o command | grep -i "MountEFI" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
 fi
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
@@ -5207,8 +5212,8 @@ echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
-echo 'ProgPath=''"'$(echo "$MEFI_path")'"''' >> ${HOME}/.MountEFIr.sh
-echo '            open ${ProgPath}'             >> ${HOME}/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
+echo '            open "${ProgPath}"'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'exit'             >> ${HOME}/.MountEFIr.sh
 

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8"
-edit_vers="000"
+edit_vers="003"
 ##################################################################################################################################################################################################################
 
 SPIN_VER(){
@@ -785,6 +785,8 @@ GET_THEME_LOADERS
 }
 ##########################################################################################################################
 
+MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep MountEFI | wc -l)
+setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
 # Возвращает в переменной TTYcount 0 если наш терминал один
 CHECK_TTY_COUNT(){
 term=`ps`
@@ -806,6 +808,9 @@ if [[ ${TTYcount} = 0  ]]; then   osascript -e 'tell application "Terminal" to c
      osascript -e 'tell application "Terminal" to close first window' & exit
 fi
 }
+if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
+if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
+
 
 if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 ##########################################################################################################################
