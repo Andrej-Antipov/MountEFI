@@ -21,12 +21,15 @@ if [[ -f ../setup.sh ]]; then
             cp setup.app/Contents/MacOS/setup .
             rm -R setup.app
 fi
-            if [[ ../Extra ]]; then rm -R -f ../Extra; fi
+
+            if [[ -d ../Extra ]]; then rm -R -f ../Extra; fi
             mkdir ../Extra
             if [[ -f MountEFI ]]; then cp MountEFI ../Extra; fi
             if [[ -f setup ]]; then cp setup ../Extra; fi
 
-if [[ ! -d ../MountEFI.app ]] && [[ -f ../MountEFI.zip ]]; then unzip  -o -qq ../MountEFI.zip -d ../. ; rm -R -f ../*MACOSX ; fi
+if [[ ! -d ../MountEFI.app ]]; then
+    if  [[ -f ../MountEFI.zip ]]; then unzip  -o -qq ../MountEFI.zip -d ../. ; rm -R -f ../*MACOSX ; fi
+fi
 
 if [[ -d ../MountEFI.app ]]; then 
             if [[ -f MountEFI ]]; then 
@@ -51,7 +54,6 @@ fi
 
 if [[ -f xkbswitch ]]; then 
         if [[ ! -f MountEFI.app/Contents/Resources/xkbswitch ]]; then cp xkbswitch MountEFI.app/Contents/Resources ; fi
-        
 fi
 
 
@@ -59,6 +61,20 @@ if [[ -d MountEFI.app ]]; then
 ditto -c -k --sequesterRsrc --keepParent MountEFI.app  newMountEFI.zip
 mv -f newMountEFI.zip MountEFI.zip
 fi
+
+if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
+            if [[ ! -d Updates ]]; then mkdir Updates; fi
+            current_vers=$(echo "$prog_vers" | tr -d ".")
+            if [[ ${#current_vers} = 2 ]]; then current_vers+="0"; fi
+            if [[ ! -d Updates/$current_vers ]]; then mkdir Updates/$current_vers; else rm -Rf Updates/$current_vers/*; fi
+            mkdir Updates/$current_vers/$edit_vers
+            if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
+            if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
+            if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then 
+                ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
+            fi
+            rm -Rf Updates/$current_vers/$edit_vers
+fi             
  
 cat  ~/.bash_history | sed -n '/appify/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
 #osascript -e 'quit app "terminal.app"' & exit
