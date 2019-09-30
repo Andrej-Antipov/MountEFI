@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
-prog_vers="1.8"
-edit_vers="003"
+prog_vers="1.8.0"
+edit_vers="005"
 ##################################################################################################################################################################################################################
 
 SPIN_VER(){
@@ -14,7 +14,7 @@ spin='-\|/'
 i=0
 while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
 trap "kill $!" EXIT
-unset latest_release
+latest_release=""
 latest_release=$(curl -s https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
 if [[ ${#latest_release} = 2 ]]; then latest_release+="0"; fi
 if [[ ! $latest_release = "" ]]; then printf '\e[40m\033[23;'$v5corr'f\e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'\e[0m\n'; fi
@@ -41,17 +41,28 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
 printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n' 
-if ping -c 1 google.com >> /dev/null 2>&1; then
+        if [[ $loc = "ru" ]]; then
+    let "v6corr=v4corr-1"
+    printf "\033[23;'$v6corr'f"; printf '\e[40m\e[33mПроверить обновление на github? (y/N) \e[0m'
+    else
+    let "v6corr=v4corr-2"
+    printf "\033[23;'$v6corr'f"; printf '\e[40m\e[33mCheck updates from github? (y/N) \e[0m'
+    fi
+    read -s -n 1 
+    if [[ $REPLY =~ ^[yY]$ ]]; then
+    printf "\033[23;'$v6corr'f"'\e[40m                                        \e[0m'
+  if ping -c 1 google.com >> /dev/null 2>&1; then
     if [[ $loc = "ru" ]]; then
     printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mПоследний релиз: \e[0m'
     else
     printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mLatest release : \e[0m'
     fi
     SPIN_VER &
-fi 
+  fi 
 read -n 1 
 cpid=$(ps -xa -o pid,command |  grep curl  | grep MountEFI | grep -v grep | cut -f1 -d " " | tr -d '\n')
 kill ${cpid}
+fi
 clear && printf "\e[3J"
 } 
 
@@ -1781,18 +1792,20 @@ fi
 
 if [[ $ShowKeys = 1 ]]; then
 
-	if [[ $loc = "ru" ]]; then
-	printf '\n      E  -   подключить EFI диска этой системы \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
+	 if [[ $loc = "ru" ]]; then
+	printf '\n      E  -   подключить EFI диска этой системы     \n'
+	printf '      U  -   отключить ВСЕ подключенные разделы  EFI \n'
+    printf '      A  -   настроить авто-подключение EFI          \n'
     printf '      I  -   дополнительное меню                     \n'
-	printf '      Q  -   закрыть окно и выход из программы\n' 
-    printf '                                                    \n'
+	printf '      Q  -   закрыть окно и выход из программы     \n\n'
+    #printf '                                                    \n' 
 			else
 	printf '\n      E  -   mount the EFI of current system drive \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions \n'
-    printf '      I  -   extra menu                      \n'
-	printf '      Q  -   close terminal and exit from the program\n'
-    printf '                                                    \n' 
+	printf '      U  -   unmount ALL mounted  EFI partitions     \n'
+    printf '      A  -   set up EFI'"'"'s auto-mount             \n'
+    printf '      I  -   extra menu                              \n'
+	printf '      Q  -   close terminal and exit from the program\n\n'
+    #printf '                                                    \n' 
 	     fi
 else 
         printf '\n'
@@ -1911,17 +1924,19 @@ if [[ $ShowKeys = 1 ]]; then
 
 if [[ ! $order = 3 ]]; then
 	     if [[ $loc = "ru" ]]; then
-	printf '\n      E  -   подключить EFI диска этой системы \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы  EFI\n'
+	printf '\n      E  -   подключить EFI диска этой системы     \n'
+	printf '      U  -   отключить ВСЕ подключенные разделы  EFI \n'
+    printf '      A  -   настроить авто-подключение EFI          \n'
     printf '      I  -   дополнительное меню                     \n'
 	printf '      Q  -   закрыть окно и выход из программы\n\n'
-    printf '                                                    \n' 
+    #printf '                                                    \n' 
 			else
 	printf '\n      E  -   mount the EFI of current system drive \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions \n'
-    printf '      I  -   extra menu                      \n'
+	printf '      U  -   unmount ALL mounted  EFI partitions     \n'
+    printf '      A  -   set up EFI'"'"'s auto-mount                \n'
+    printf '      I  -   extra menu                              \n'
 	printf '      Q  -   close terminal and exit from the program\n\n'
-    printf '                                                    \n' 
+    #printf '                                                    \n' 
 	     fi
 	else
         if [[ $loc = "ru" ]]; then
@@ -1951,9 +1966,9 @@ if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
 
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):  '; printf '                            '
+printf '  Введите число от 0 до '$schs'   ( U,E,A,S,I или Q ):  '; printf '                            '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):  ';  printf '                         '
+printf '  Enter a number from 0 to '$schs'  ( U,E,A,S,I or Q ):  ';  printf '                         '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -2154,7 +2169,7 @@ if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         if [[ ! $order = 3 ]]; then
-            if [[ $choice1 = [uUqQeEiIvVsSoO] ]]; then choice=${choice1}; break; fi
+            if [[ $choice1 = [uUqQeEiIvVsSoOaA] ]]; then choice=${choice1}; break; fi
                     else
              if [[ $choice1 = [qQcCoOsSiIvVoO] ]]; then choice=${choice1}; break; fi
         fi
@@ -2214,16 +2229,16 @@ printf "\r\n\033[1A"
 if [[ $order = 3 ]]; then 
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  C, O, S, I, Q ):   ' ; printf '                           '
+printf '  Введите число от 0 до '$schs'   ( O,C,S,I  или  Q ):   ' ; printf '                           '
 			else
-printf '  Enter a number from 0 to '$schs' (or C, O, S, I, Q ):   ' ; printf '                          '
+printf '  Enter a number from 0 to '$schs'  ( O,C,S,I  or  Q ):   ' ; printf '                          '
     fi
         else
             let "schs=$ch-1"
             if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs' (или  U, E, S, I, Q ):      ' ; printf '                        '
+printf '  Введите число от 0 до '$schs'   ( U,E,A,S,I или Q ):      ' ; printf '                        '
 			else
-printf '  Enter a number from 0 to '$schs' (or  U, E, S, I, Q ):      ' ; printf '                      '
+printf '  Enter a number from 0 to '$schs'  ( U,E,A,S,I or Q ):      ' ; printf '                      '
     fi
 fi
 printf '\n\n'
@@ -2251,12 +2266,13 @@ fi
 printf "\033[?25l\033[1D"
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
-if [[ ! $choice =~ ^[0-9uUqQeEiIvVsS]$ ]]; then  unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
+if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a; else bash ./setup.sh -a; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi

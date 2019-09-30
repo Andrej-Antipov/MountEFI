@@ -1,15 +1,12 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ################################################################################## MountEFI SETUP ##########################################################################################################
-s_prog_vers="1.7"
-s_edit_vers="003"
+s_prog_vers="1.7.0"
+s_edit_vers="004"
 ############################################################################################################################################################################################################
 clear
-
-
-
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
@@ -34,6 +31,8 @@ clear && printf "\e[3J"
 setup_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash" | grep setup |  grep -v grep  | cut -f1 -d " " | sort -u | wc -l )
 
 par="$1"
+quick_am=0
+if [[ "$par" = "-a" ]]; then par="-r"; quick_am=1; fi 
 
 MyTTY1=`tty | tr -d " dev/\n"`
 term=`ps`;  MyTTYc=`echo $term | grep -Eo $MyTTY1 | wc -l | tr - " \t\n"`
@@ -5252,17 +5251,20 @@ fi
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
+
 SET_INPUT
 theme="system"
 var4=0
+
 while [ $var4 != 1 ] 
 do
 lines=31; col=80
+if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
 UPDATE_SCREEN
 GET_INPUT
-
+else SET_LOCALE; inputs="9"; fi
 # УСТАНОВКИ ПО УМОЛЧАНИЮ   #####################################################
 if [[ $inputs = 0 ]]; then
                         if [[ $loc = "ru" ]]; then
@@ -5379,6 +5381,43 @@ fi
 ###############################################################################
 
 # Подключение разделов при запуске системы  ################################
+if [[ $inputs = 9 ]] && [[ "$quick_am" = "1" ]]; then
+    if [[ $sys_autom_enabled = 1 ]]; then 
+        plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+        UPDATE_CACHE
+        REMOVE_SYS_AUTOMOUNT_SERVICE
+    else
+        display=1
+        SET_SYS_AUTOMOUNT
+        if [[ ! $apos = 0 ]]; then
+                GET_SYSTEM_FLAG
+                if [[ $flag = 0 ]]; then SETUP_SYS_AUTOMOUNT
+                else
+                    FORCE_CHECK_PASSWORD
+                    if [[ "$mypassword" = "" ]]; then SET_USER_PASSWORD; fi
+                    FORCE_CHECK_PASSWORD
+                    if [[ "$mypassword" = "" ]]; then 
+                    plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
+                            if [[ $loc = "ru" ]]; then
+                            printf '\n  Авто-подключение EFI отменено. Установите верный пароль '
+                            else
+                            printf '\n  EFI automounter disabled. You should enter a valid password  '
+                            fi
+                            read -n 1 -s -t 2
+                    else
+                        SETUP_SYS_AUTOMOUNT
+                    fi
+                fi
+                    UPDATE_CACHE
+        fi
+            clear
+      fi
+
+   exit 1
+fi
+
+
+
 if [[ $inputs = 9 ]]; then 
    if [[ $sys_autom_enabled = 1 ]]; then 
   plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
@@ -5389,9 +5428,7 @@ if [[ $inputs = 9 ]]; then
     else
     printf '\n\n  Serice automount EFI stopped ... '
     fi
-    
-
- else 
+else 
   display=1
   SET_SYS_AUTOMOUNT
   if [[ ! $apos = 0 ]]; then
