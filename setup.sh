@@ -1,10 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 30.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 01.10.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
+# https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="004"
+s_edit_vers="005"
 ############################################################################################################################################################################################################
 clear
 
@@ -23,7 +24,8 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
-printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n'   
+printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n' 
+printf "\033[23;15f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'  
 read -n 1 
 clear && printf "\e[3J"
 } 
@@ -2487,7 +2489,7 @@ fi
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPR]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuU]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2587,6 +2589,9 @@ sbuf+=$(printf ' B) Резервное сохранение и восстано�
 sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n')
 sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
 sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
+if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then 
+sbuf+=$(printf ' U) Обновление программы ( экспериментально )                                   \n')
+fi
             else
 sbuf=$(printf ' 0) Setup all parameters to defaults                                            \n')
 sbuf+=$(printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n')
@@ -2610,12 +2615,13 @@ sbuf+=$(printf ' B) Backup and restore configuration settings                   
 sbuf+=$(printf ' I) Import config from file (zip or plist)                                      \n')
 sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
 sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
-
+if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then
+sbuf+=$(printf ' U) Update program ( experimental )                                             \n')
+fi
 
             fi
-                    Lit="C"
-             if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
-                    Lit="D"
+                    Lit="R"
+            if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
                if [[ $loc = "ru" ]]; then
 sbuf+=$(printf ' D) Загрузить бэкапы настроек из iCloud                                         \n')
                 else
@@ -5247,6 +5253,176 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
 fi
 }
 
+START_UPDATE_SERVICE(){
+MEFI_PATH="$(ps o command | grep -i "MountEFI" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
+echo '<dict>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <array>' >> ${HOME}/.MountEFIu.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
+echo '  </array>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <true/>' >> ${HOME}/.MountEFIu.plist
+echo '</dict>' >> ${HOME}/.MountEFIu.plist
+echo '</plist>' >> ${HOME}/.MountEFIu.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
+echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
+echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'latest_release=''"'$(echo $latest_release)'"''' >> ${HOME}/.MountEFIu.sh
+echo 'latest_edit=''"'$(echo $latest_edit)'"''' >> ${HOME}/.MountEFIu.sh
+echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
+echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
+echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
+echo 'fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'rm -Rf ~/.MountEFIupdates' >> ${HOME}/.MountEFIu.sh
+echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
+echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
+echo ''  >> ${HOME}/.MountEFIu.sh
+echo 'exit'             >> ${HOME}/.MountEFIu.sh
+chmod u+x ${HOME}/.MountEFIu.sh
+
+if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+}
+
+
+
+ASK_UPDATE(){
+if [[ $loc = "ru" ]]; then
+printf '\e[40m\e[1;33m   Загрузить обновления и обновить программу? (y/N) \e[0m'
+else
+printf '\e[40m\e[1;33m   Download updates and update the program?   (y/N) \e[0m'
+fi
+read -s -n 1 
+if [[ $REPLY =~ ^[yY]$ ]]; then
+printf '\r\e[40m\e[1;33m                                                   \e[0m'
+            if [[ $loc = "ru" ]]; then
+            printf '\r\e[40m\e[1;33m   Загрузка файлов: \e[0m'
+            else
+            printf '\r\e[40m\e[1;33m   Download files: \e[0m'
+            fi
+    #i=0
+   # while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
+   # trap "kill $!" EXIT
+    if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
+    success=0
+    sleep 5
+#if curl -L -# -o ~/.MountEFIupdates/${latest_edit}".zip" https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip"; then
+   # kill $!
+   # wait $! 2>/dev/null
+   # trap " " EXIT
+    printf "\e[40m\e[1;33m\r\033[20C"
+    if curl https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip" -L -o ~/.MountEFIupdates/${latest_edit}".zip" --progress-bar 2>&1 | while IFS= read -d $'\r' -r p; do p=${p:(-6)}; p=${p%'%'*}; p=${p/,/}; p=$(expr $p / 10 2>/dev/null); let "s=p/3"; echo -ne "[ $p% ] [ $(eval 'printf =%.0s {1..'${s}'}')> ]\r\033[20C"; done ; printf '\e[0m'; then
+   printf '\r\e[40m                                                                                 '
+    unzip  -o -qq ~/.MountEFIupdates/${latest_edit}".zip" -d ~/.MountEFIupdates 2>/dev/null
+    if [[ -f ~/.MountEFIupdates/${latest_edit}/MountEFI ]]; then 
+            if [[ $loc = "ru" ]]; then
+            printf '\r\033[1A\e[40m\e[1;33m   Файлы получены. Перезапуск программы для обновления ...        \e[0m'
+            else
+            printf '\r\033[1A\e[40m\e[1;33m   Files downloaded. Restarting the program to update it ...      \e[0m'
+            fi
+            sleep 2
+            printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
+            START_UPDATE_SERVICE
+            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
+            success=1
+            
+    fi
+fi
+fi
+}
+
+UPDATE_PROGRAM(){
+clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
+printf "\033[?25l"
+printf "\033[H"
+for (( i=0; i<24; i++ )); do printf '\e[40m %.0s\e[0m' {1..80}; done
+printf "\033[H"
+            edit_vers=$(cat MountEFI | grep "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n')
+            prog_vers=$(cat MountEFI | grep "prog_vers=" | sed s'/prog_vers=//' | tr -d '" \n')
+            vers="$prog_vers"".""$edit_vers"
+printf '\033[0;25f''\e[40m\e[1;35m   '; printf '\e[40m\e[1;35mMountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m© \e[0m''\n\n'
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    if [[ $loc = "ru" ]]; then
+    printf '\e[40m\e[1;33m   Проверяем доступную версию программы на github  \e[0m'
+    else
+    printf '\e[40m\e[1;33m   Checking the available version of the program on github  \e[0m'
+    fi
+    spin='-\|/'
+    i=0
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
+    trap "kill $!" EXIT
+    latest_release=""
+    latest_release=$(curl -s https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+    if [[ ${#latest_release} = 2 ]]; then latest_release+="0"; fi
+    if [[ $loc = "ru" ]]; then
+    if [[ ! $latest_release = "" ]]; then printf '\r\e[40m\e[1;33m   Последний релиз: \e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'                       \e[0m\n\n'; fi
+    else
+    if [[ ! $latest_release = "" ]]; then printf '\r\e[40m\e[1;33m   Latest Release: \e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'                         \e[0m\n\n'; fi
+    fi
+    kill $!
+    wait $! 2>/dev/null
+    trap " " EXIT
+
+    if [[ $loc = "ru" ]]; then
+    printf '\e[40m\e[1;33m   Проверяем доступную редакцию программы на github  \e[0m'
+    else
+    printf '\e[40m\e[1;33m   Checking the available edition of the program on github  \e[0m'
+    fi
+    i=0
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
+    trap "kill $!" EXIT
+    latest_edit=$(curl -s https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/180 | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+    kill $!
+    wait $! 2>/dev/null
+    trap " " EXIT
+    if [[ "${latest_edit}" = "" ]]; then latest_edit="000"; fi
+    if [[ $loc = "ru" ]]; then
+    printf '\r\e[40m\e[1;33m   Последняя редакция: \e[1;32m'"${latest_edit}"'                                \e[0m\n\n'
+    else
+    printf '\r\e[40m\e[1;33m   Latest edition: \e[1;32m'"${latest_edit}"'                                        \e[0m\n\n'
+    fi
+    current_vers=$(echo "$prog_vers" | tr -d ".")
+    if [[ "${current_vers}" -ge "${latest_release}" ]] && [[ ${latest_edit} -le ${edit_vers} ]]; then
+        if [[ $loc = "ru" ]]; then
+        printf '\e[40m\e[1;33m   Версия и редакция программы новейшие. \e[0m'
+        else
+        printf '\e[40m\e[1;33m   The version of the program and its edition are the latest. \e[0m'
+        fi
+        else 
+            ASK_UPDATE
+            if [[ $loc = "ru" ]]; then
+            if [[ $success = 0 ]]; then printf '\e[40m\e[1;33m   Не удалось получить файлы обновления. \e[0m\n\n'; else break; fi
+            else
+            if [[ $success = 0 ]]; then printf '\e[40m\e[1;33m   Failed to get update files for the program. \e[0m\n\n'; else break; fi
+            fi
+    fi
+else
+   if [[ $loc = "ru" ]]; then
+   printf '\e[40m\e[1;33m   Не удаётся получить доступ к сети  \e[0m'
+   else
+   printf '\e[40m\e[1;33m   Unable to connect to the network.  \e[0m'
+   fi
+fi
+read -s -n 1 -t 6
+printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
+unset inputs
+clear
+}
 
 ###############################################################################
 ################### MAIN ######################################################
@@ -5255,10 +5431,11 @@ fi
 SET_INPUT
 theme="system"
 var4=0
-
+cd "$(dirname "$0")"
 while [ $var4 != 1 ] 
 do
 lines=31; col=80
+if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
@@ -5586,6 +5763,11 @@ if [[ $inputs = [pP] ]]; then THEME_EDITOR;  fi
 ##############################################################################
 
 if [[ $inputs = [eE] ]]; then UPLOAD_CONFIG_TO_FILE;  fi
+
+##############################################################################
+if [[ $inputs = [uU] ]] && [[ "${par}" = "-r" ]]  && [[ -f MountEFI ]]; then UPDATE_PROGRAM
+    if [[ $success = 1 ]]; then exit; fi
+fi
 
 ##############################################################################
 

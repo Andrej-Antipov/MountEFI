@@ -1,36 +1,22 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 30.09.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 01.10.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
 edit_vers="005"
 ##################################################################################################################################################################################################################
-
-SPIN_VER(){
-printf '\r'
-printf "\033[49C"
-spin='-\|/'
-i=0
-while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
-trap "kill $!" EXIT
-latest_release=""
-latest_release=$(curl -s https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
-if [[ ${#latest_release} = 2 ]]; then latest_release+="0"; fi
-if [[ ! $latest_release = "" ]]; then printf '\e[40m\033[23;'$v5corr'f\e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'\e[0m\n'; fi
-kill $!
-wait $! 2>/dev/null
-trap " " EXIT
-}
+# https://github.com/Andrej-Antipov/MountEFI/releases
 
 SHOW_VERSION(){
 clear && printf '\e[8;24;'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
-GET_LOADERS
-var=${lines} 
+if [[ ! "$1" = "-u" ]]; then GET_LOADERS; else CheckLoaders=0; fi
+var=24
 while [[ ! $var = 0 ]]; do
-if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88}; vcorr=32; v2corr=24; v3corr=25; v4corr=28; v5corr=45; else printf '\e[40m %.0s\e[0m' {1..80}; vcorr=28; v2corr=20; v3corr=21; v4corr=24; v5corr=41; fi
+if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88};  else printf '\e[40m %.0s\e[0m' {1..80}; fi
 let "var--"; done
+if [[ ! $CheckLoaders = 0 ]]; then vcorr=32; v2corr=24; v3corr=25; v4corr=19; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
 printf "\033[H"
 
 printf "\033[8;'$v3corr'f"
@@ -40,28 +26,19 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
-printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n' 
-        if [[ $loc = "ru" ]]; then
-    let "v6corr=v4corr-1"
-    printf "\033[23;'$v6corr'f"; printf '\e[40m\e[33mПроверить обновление на github? (y/N) \e[0m'
-    else
-    let "v6corr=v4corr-2"
-    printf "\033[23;'$v6corr'f"; printf '\e[40m\e[33mCheck updates from github? (y/N) \e[0m'
-    fi
-    read -s -n 1 
-    if [[ $REPLY =~ ^[yY]$ ]]; then
-    printf "\033[23;'$v6corr'f"'\e[40m                                        \e[0m'
-  if ping -c 1 google.com >> /dev/null 2>&1; then
-    if [[ $loc = "ru" ]]; then
-    printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mПоследний релиз: \e[0m'
-    else
-    printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mLatest release : \e[0m'
-    fi
-    SPIN_VER &
-  fi 
+printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n'
+printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'
+    if [[ "$1" = "-u" ]]; then 
+                           if [[ $loc = "ru" ]]; then
+                           let "v5corr=v4corr+7"
+                           printf "\033[21;'$v5corr'f"; printf '\e[40m\e[33mОбновление выполнено! \e[0m'
+                           else
+                           let "v5corr=v4corr+8"
+                           printf "\033[21;'$v5corr'f"; printf '\e[40m\e[33m  Update completed! \e[0m'
+                           fi
+                           read -s -n 1 -t 5
+      else      
 read -n 1 
-cpid=$(ps -xa -o pid,command |  grep curl  | grep MountEFI | grep -v grep | cut -f1 -d " " | tr -d '\n')
-kill ${cpid}
 fi
 clear && printf "\e[3J"
 } 
@@ -238,6 +215,18 @@ UPDATE_CACHE
 reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
 if [[ $reload_check = "Reload" ]]; then par="-s"; fi
 
+upd=0
+update_check=`echo "$MountEFIconf"| grep -o "Updating"`
+if [[ $update_check = "Updating" ]]; then
+        if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
+                launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+        if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
+        if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
+        plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
+        upd=1
+fi
+
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
@@ -357,6 +346,11 @@ fi
 CHECK_RELOAD(){
 reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ $reload_check = "Reload" ]]; then rel=1; else rel=0; fi
+}
+
+CHECK_UPDATE(){
+update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ $update_check = "Updating" ]]; then rel=1; else rel=0; fi
 }
 
 SET_TITLE(){
@@ -823,7 +817,7 @@ if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/
 if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
 
 
-if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; CHECK_UPDATE; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 ##########################################################################################################################
 ########################## обратный отсчёт для автомонтирования ##########################################################
 COUNTDOWN(){ 
@@ -2267,16 +2261,16 @@ printf "\033[?25l\033[1D"
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; CHECK_UPDATE; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
-if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a; else bash ./setup.sh -a; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a; else bash ./setup.sh -a; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; CHECK_UPDATE; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; CHECK_UPDATE; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
@@ -2360,6 +2354,8 @@ chs=0
 nogetlist=0
 
 SET_INPUT
+
+if [[ $upd = 1 ]]; then col=80; SHOW_VERSION -u; fi
 
 while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
