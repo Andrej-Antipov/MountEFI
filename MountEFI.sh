@@ -27,13 +27,13 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
 printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n'
-printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'
+if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'; fi
     if [[ "$1" = "-u" ]]; then 
                            if [[ $loc = "ru" ]]; then
-                           let "v5corr=v4corr+7"
+                           let "v5corr=v4corr+16"
                            printf "\033[21;'$v5corr'f"; printf '\e[40m\e[33mОбновление выполнено! \e[0m'
                            else
-                           let "v5corr=v4corr+8"
+                           let "v5corr=v4corr+17"
                            printf "\033[21;'$v5corr'f"; printf '\e[40m\e[33m  Update completed! \e[0m'
                            fi
                            read -s -n 1 -t 5
@@ -2267,7 +2267,7 @@ if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a; else bash ./setup.sh -a; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; CHECK_UPDATE; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
-if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
+if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; CHECK_UPDATE; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
@@ -2275,7 +2275,7 @@ if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
-if [[ ${choice} = [vV] ]]; then SHOW_VERSION; order=4; UPDATELIST; fi
+if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 fi
 else
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
