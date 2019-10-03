@@ -31,7 +31,8 @@ if [[ ! -d ../MountEFI.app ]]; then
     if  [[ -f ../MountEFI.zip ]]; then unzip  -o -qq ../MountEFI.zip -d ../. ; rm -R -f ../*MACOSX ; fi
 fi
 
-if [[ -d ../MountEFI.app ]]; then 
+if [[ -d ../MountEFI.app ]]; then
+            touch ../MountEFI.app
             if [[ -f MountEFI ]]; then 
                 mv -f MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
