@@ -1,12 +1,17 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 01.10.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.10.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="005"
+s_edit_vers="007"
 ############################################################################################################################################################################################################
+# 004 - исправлены все определения пути для поддержки путей с пробелами
+# 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
+# 006 - добавлено обновление версии программы с github через сеть
+# 007 - в предпросмотр бэкапов архивов добавлены пункты меню
+
 clear
 
 SHOW_VERSION(){
@@ -1417,7 +1422,7 @@ echo "$screen_buffer3"
 
 printf '\n     '
 	printf '.%.0s' {1..68}
-printf '\n'
+printf q'\n'
 
 }
 
@@ -1425,86 +1430,86 @@ SHOW_BACKUPS(){
 
 Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
 if [[ $Now -lt 5 ]]; then lncorr=0; else let "lncorr=Now-9"; fi
-let "lines2=lines+lncorr"
+let "lines2=lines+lncorr+2"
+if [[ "$1" = "double" ]]; then GET_MAX_BACKUPS_LINES; if [[ "${b_lines}" -gt "${lines2}" ]]; then lines2=${b_lines}; fi; fi
 if [[ "$1" = "double" ]]; then MM=160; else MM=80; fi
 clear && printf '\e[8;'${lines2}';'$MM't' && printf '\e[3J' && printf "\033[0;0H" 
-                    if [[ $loc = "ru" ]]; then
-        printf '                      Настройка бэкапов и восстановление                        '
-			else
-        printf '                         Backup and restore settings                            '
-	                 fi
-        printf '\n   '
-	    printf '.%.0s' {1..74}
-                                    if [[ $loc = "ru" ]]; then
-                        printf '\n                                Имеются бэкапы:                            '
-                        printf '\n     '
-	                    printf '.%.0s' {1..34}
+                            if [[ $loc = "ru" ]]; then
+                         bbuf+=$(printf '\033[1;0f''                      Настройка бэкапов и восстановление                        ')
+			                else
+                         bbuf+=$(printf '\033[1;0f''                         Backup and restore settings                            ')
+	                        fi
+                        bbuf+=$(printf '\033[2;0f''   ')
+	                    bbuf+=$(printf '.%.0s' {1..74})
+
+                           if [[ $loc = "ru" ]]; then
+                        bbuf+=$(printf '\033[3;0f''                                Имеются бэкапы:                                 ')
+                        bbuf+=$(printf '\033[4;0f''     ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
                         
-                        printf '   '
-	                    printf '.%.0s' {1..34}
-                        printf '\n'
+                        bbuf+=$(printf '\033[4;35f''   ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
 			               else
-                        printf '\n                                Backups database                            '
-                        printf '\n     '
-	                    printf '.%.0s' {1..34}
+                        bbuf+=$(printf '\033[3;0f''                                Backups database                            ')
+                        bbuf+=$(printf '\033[4;0f''     ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
                         
-                        printf '   '
-	                    printf '.%.0s' {1..34}
-                        printf '\n'
-	                         fi
-                        printf '\r                                                                                \n\r'
+                        bbuf+=$(printf '\033[4;35f''   ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
+                            fi
+                        
 GET_BACKUPS
 if [[ ! $Now = 0 ]]; then
-var6=$Maximum; chn=1
+var6=$Maximum; chn=1; bb=6
 if [[ $Now -lt $Maximum ]]; then var6=$Now; fi
 while [[ ! $var6 = 0 ]] 
 do
 if [[ -d ${HOME}/.MountEFIconfBackups/$chn ]]; then
         backtime=$(stat -f %m $F ${HOME}/.MountEFIconfBackups/$chn/.MountEFIconf.plist)
             if [[ $chn -le 9 ]]; then
-            printf '               '$chn')    '
+            bbuf+=$(printf '\033['$bb';0f''               '$chn')    ')
             else
-            printf '              '$chn')    '
+            bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
             fi
-                date -r "$backtime" 
+            bbuf+=$(date -r "$backtime")
+            
 fi
-let "chn++"; let "var6--"
+let "chn++"; let "bb++"; let "var6--"
 done
 let "chn--"
 fi
-                        printf '\n   '
-	                    printf '.%.0s' {1..74}
+let "bb++"
+
+                       bbuf+=$(printf '\033['$bb';0f''   ')
+	                   bbuf+=$(printf '.%.0s' {1..74})
+let "bb++"
 if [[ ! "$1" = "double" ]]; then
                 if [[ $loc = "ru" ]]; then
 
-printf '\n\n                  S)  Сохранить текущие настройки в архив       '
-printf '\n                  V)  Предпросмотр данных в архивах             '
-printf '\n                  R)  Восстановить настройки из архива          '
-printf '\n                  D)  Удалить сохранение из архива              '
-printf '\n                  С)  Удалить все сохранения                    '
-printf '\n                  M)  Максимальное количество резервных копий   <'$Maximum'>'
-printf '\n                  P)  Поделиться настройками через iCloud       '
-printf '\n                  Q)  Вернуться в меню настроек                 '
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Сохранить текущие настройки в архив       ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  V)  Предпросмотр данных в архивах             ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Восстановить настройки из архива          ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Удалить сохранение из архива              ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  С)  Удалить все сохранения                    ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  M)  Максимальное количество резервных копий   <'$Maximum'>')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  P)  Поделиться настройками через iCloud       ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Вернуться в меню настроек                 ')
                     else
-printf '\n\n                  S)  Save current settings to archive          '
-printf '\n                  S)  Preview data in archives                  '
-printf '\n                  R)  Restore settings from archive             '
-printf '\n                  D)  Delete backup from archive                '
-printf '\n                  С)  Delete ALL backups                        '
-printf '\n                  M)  Maximum number of backups                 <'$Maximum'>'
-printf '\n                  P)  Share settings via iCloud                 '
-printf '\n                  Q)  Quit to the setup menu                    '
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Save current settings to archive          ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Preview data in archives                  ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Restore settings from archive             ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Delete backup from archive                ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  С)  Delete ALL backups                        ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  M)  Maximum number of backups                 <'$Maximum'>')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  P)  Share settings via iCloud                 ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Quit to the setup menu                    ')
                    fi
 else
                   if [[ $loc = "ru" ]]; then
-printf '\n\n\r  Z/X - для выбора, Q - выход из просмотра :   ' ; printf '                             '
+let "bb++"; bbuf+=$(printf '\033['$bb';0f'' Z/X - для выбора, Q/V - выход из просмотра :   ''                             ')
 			else
-printf '\n\n\r  Z/X - for choice, Q - exit from preview :   ' ; printf '                           '
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''  Z/X - for choice, Q/V - exit from preview :   ''                           ')
                 fi
-printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
-printf "\033[3A"
-printf "\r\033[45C"
-printf "\033[?25h"
 fi
 
 }
@@ -1653,26 +1658,26 @@ SHOW_BACKUP_ALIASES(){
                       
                         
                                             if [[ $loc = "ru" ]]; then
-                        printf '\033['$lc';84f''                                База псевдонимов                            '
-                        let "lc=lc+2"
-	                    printf '\033['$lc';84f'
-                        printf '.%.0s' {1..74}
+                        sbuf+=$(printf '\033['$lc';84f''                                База псевдонимов                            ')
+                        let "lc++"
+	                    sbuf+=$(printf '\033['$lc';84f')
+                        sbuf+=$(printf '.%.0s' {1..74})
                         let 'lc++'
-                        printf '\033['$lc';84f''                Носитель               |              Псевдоним           '
+                        sbuf+=$(printf '\033['$lc';84f''                Носитель               |              Псевдоним           ')
                         let 'lc++'
-	                    printf '\033['$lc';84f'
-                        printf '.%.0s' {1..74} 
+	                    sbuf+=$(printf '\033['$lc';84f')
+                        sbuf+=$(printf '.%.0s' {1..74}) 
                         let 'lc++'
 			               else
-                        printf '\033['$lc';84f''                                Aliases database                            '
-                        let "lc=lc+2"
-                        printf '\033['$lc';84f'
-	                    printf '.%.0s' {1..74}
+                        sbuf+=$(printf '\033['$lc';84f''                               Aliases database                             ')
+                        let "lc++"
+                        sbuf+=$(printf '\033['$lc';84f')
+	                    sbuf+=$(printf '.%.0s' {1..74})
                         let 'lc++'
-                        printf '\033['$lc';84f''                  Media                |              Alias               '
+                        sbuf+=$(printf '\033['$lc';84f''                  Media                |              Alias               ')
                         let 'lc++'
-                        printf '\033['$lc';84f'
-	                    printf '.%.0s' {1..74}
+                        sbuf+=$(printf '\033['$lc';84f')
+	                    sbuf+=$(printf '.%.0s' {1..74}) 
                         let 'lc++'
 	                         fi
                                 
@@ -1685,72 +1690,172 @@ SHOW_BACKUP_ALIASES(){
                         do
                         hdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`                       
                         sdrive=`echo "${rlist[$posr]}" | cut -f2 -d"="`
-                        printf '\033['$lc';84f''\033[7C'"$hdrive"
-                        printf '\033['$lc';84f''\033[44C'"$sdrive"
+                        sbuf+=$(printf '\033['$lc';84f'); sbuf+=$(printf ' %.0s' {1..74});
+                        sbuf+=$(printf '\033['$lc';84f''\033[7C'"$hdrive")
+                        sbuf+=$(printf '\033['$lc';84f''\033[44C'"$sdrive")
                         let "var11--"
                         let "posr++"
                         let "lc++"
                         done
                         fi
-                       
 }
 
 SHOW_BACKUP_PRESETS(){
-MountEFIconf="$MountEFIback"
 GET_PRESETS_NAMES
-UPDATE_CACHE
- if [[ $loc = "ru" ]]; then
-                        printf '\033['$lc';84f''                                Список пресетов                            '
-                        let "lc=lc+2"
-	                    printf '\033['$lc';84f'
-                        printf '.%.0s' {1..74}
+                        if [[ $loc = "ru" ]]; then
+                        sbuf+=$(printf '\033['$lc';84f''                               Список пресетов                             ')
+                        let "lc++"
+	                    sbuf+=$(printf '\033['$lc';84f')
+                        sbuf+=$(printf '.%.0s' {1..74})
                         let 'lc++'
 			               else
-                        printf '\033['$lc';84f''                                Presets list                            '
-                        let "lc=lc+2"
-                        printf '\033['$lc';84f'
-	                    printf '.%.0s' {1..74}
+                        sbuf+=$(printf '\033['$lc';84f''                                Presets list                            ')
+                        let "lc++"
+                        sbuf+=$(printf '\033['$lc';84f')
+	                    sbuf+=$(printf '.%.0s' {1..74})
                         let 'lc++'
 	                         fi
+
 for (( i=0; i<$pcount; i++ )); do
-printf '\033['$lc';94f'"${plist[i]}"; let "i++" ; printf '\033['$lc';124f'"${plist[i]}"
+sbuf+=$(printf '\033['$lc';84f'); sbuf+=$(printf ' %.0s' {1..74}); sbuf+=$(printf '\033['$lc';94f'"${plist[i]}"); let "i++" ; sbuf+=$(printf '\033['$lc';124f'"${plist[i]}")
 let "lc++"
 done
-printf '\033['$lc';84f'
-printf '.%.0s' {1..74}
+sbuf+=$(printf '\033['$lc';84f')
+sbuf+=$(printf '.%.0s' {1..74})
 let 'lc++'
 }
 
+SET_BSCR(){
+
+            if [[ $loc = "ru" ]]; then
+sbuf+=$(printf '\033[1;84f''                               Параметры меню                             ')
+sbuf+=$(printf '\033[2;84f')
+sbuf+=$(printf '.%.0s' {1..74})
+sbuf+=$(printf '\033[3;84f'' 1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(авто, англ, рус) \n')
+sbuf+=$(printf '\033[4;84f'' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(авто, всегда)        \n')
+sbuf+=$(printf '\033[5;84f'' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n')
+if [[ ! $theme = "system" ]]; then
+sbuf+=$(printf '\033[6;84f'' 5) Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"'(выключена)           \n')
+sbuf+=$(printf '\033[7;84f'' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'* (включен)'"%"$btspc_corr"s"'     \n')
+else
+sbuf+=$(printf '\033[6;84f'' 5) Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"' * (включена)            \n')
+sbuf+=$(printf '\033[7;84f'' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'  (выключен)'"%"$btspc_corr"s"'    \n')
+fi
+sbuf+=$(printf '\033[8;84f'' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
+            else
+sbuf+=$(printf '\033[1;84f''                                 Menu List                              ')
+sbuf+=$(printf '\033[2;84f')
+sbuf+=$(printf '.%.0s' {1..74})
+sbuf+=$(printf '\033[3;84f'' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n')
+sbuf+=$(printf '\033[4;84f'' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)           \n')
+sbuf+=$(printf '\033[5;84f'' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n')
+if [[ ! $theme = "system" ]]; then
+sbuf+=$(printf '\033[6;84f'' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"'   (disabled)               \n')
+sbuf+=$(printf '\033[7;84f'' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'  * (enabled)                \n')
+else
+sbuf+=$(printf '\033[6;84f'' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"' * (enabled)                \n')
+sbuf+=$(printf '\033[7;84f'' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'    (disabled)               \n')
+fi
+sbuf+=$(printf '\033[8;84f'' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[9;84f'' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[10;84f'' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[11;84f'' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[12;84f'' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
+            fi
+sbuf+=$(printf '\033[13;84f')
+sbuf+=$(printf '.%.0s' {1..74})
+sbuf+=$(printf '\033[14;84f''                  \e[1;33mMD5: '$b_md5'\e[0m                 ')
+sbuf+=$(printf '\033[15;84f')
+sbuf+=$(printf '.%.0s' {1..74})
+}
+
+SHOW_BACKUP_MENU(){
+        b_loc=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $b_loc = "ru" ]] && [[ ! $b_loc = "en" ]]; then b_loc="auto"; fi
+        if [[ $loc = "ru" ]]; then
+        if [[ $b_loc = "ru" ]]; then loc_set="русский"; loc_corr=17; fi
+        if [[ $b_loc = "en" ]]; then loc_set="английский"; loc_corr=14; fi
+        if [[ $b_loc = "auto" ]]; then loc_set="автовыбор"; loc_corr=15; fi
+            else
+        if [[ $b_loc = "ru" ]]; then loc_set="russian"; loc_corr=23; fi
+        if [[ $b_loc = "en" ]]; then loc_set="english"; loc_corr=23; fi
+        if [[ $b_loc = "auto" ]]; then loc_set="auto"; loc_corr=26; fi
+            fi
+        GET_MENUE
+        GET_USER_PASSWORD
+        GET_OPENFINDER
+        GET_THEME
+        GET_SHOWKEYS
+        GET_AUTOMOUNT
+        CHECK_SYS_AUTOMOUNT_SERVICE
+        GET_LOADERS
+        GET_AUTOBACKUP
+                
+        SET_BSCR
+
+}
+
 CLEAR_SPACE(){
-for (( i=0; i<(($lines2+8)); i++ )); do
+if [[ ${lc} -lt ${lines2} ]]; then 
+for (( i=${lc}; i<${lines2}; i++ )); do
 printf '\033['$i';83f'
 printf ' %.0s' {1..78}
-done 
+done
+fi 
 }
 
 
 SHOW_BACKUP_DATA(){
 MountEFIback=$( cat ~/.MountEFIconfBackups/$bptr/.MountEFIconf.plist )
+b_md5=$(md5 -qq ~/.MountEFIconfBackups/$bptr/.MountEFIconf.plist)
 if [[ ! $MountEFIback = "" ]]; then
-lc=0
-CLEAR_SPACE
+lc=16; unset sbuf
+MountEFIconf="$MountEFIback"
+SHOW_BACKUP_MENU
 SHOW_BACKUP_PRESETS
+UPDATE_CACHE
 SHOW_BACKUP_ALIASES
+echo "${sbuf}"
+CLEAR_SPACE
 fi
+}
+
+GET_MAX_BACKUPS_LINES(){
+b_lines=0; bn=0
+for ((i=1;i<$((${Now}+1));i++)); do
+MountEFIback=$( cat ~/.MountEFIconfBackups/$i/.MountEFIconf.plist )
+strng=`echo "$MountEFIback" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        IFS=';'; rlist=($strng); unset IFS
+                        rcount=${#rlist[@]}
+pcount=0
+pcount=$(echo "$MountEFIback" | grep  -e "<key>BackgroundColor</key>" | wc -l | xargs)
+let "bn=rcount+(pcount/2)+1"; if [[ "${bn}" -gt "${b_lines}" ]]; then b_lines=${bn}; fi
+done
+let "b_lines=b_lines+23"
 }
 
 ##############################################################################################################
 
 SET_BACKUPS(){
+clear && printf '\e[3J' && printf "\033[0;0H"
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 unzip  -o -qq ${HOME}/.MountEFIconfBackups.zip -d ~/.temp
 mv ~/.temp/*/*/.MountEFIconfBackups ~/.MountEFIconfBackups
 rm -r ~/.temp
 
 var5=0
-while [[ $var5 = 0 ]]; do 
+while [[ $var5 = 0 ]]; do
+unset bbuf
 SHOW_BACKUPS
-
+clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s""%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[7A"
+printf "\r\033[45C"
+printf "\033[?25h"
 printf '\n\n'
 unset inputs
 while [[ ! ${inputs} =~ ^[sSdDcCmMqQrRpPvV]+$ ]]; do 
@@ -1810,35 +1915,41 @@ if [[ $inputs = [sS] ]]; then printf "\r\033"
 fi
 
 if [[ ${inputs} = [vV] ]]; then
-                SHOW_BACKUPS "double"
+                unset bbuf; unset inputs
                 printf "\033[?25l"
+                SHOW_BACKUPS "double"
+                clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+                echo "$bbuf"
                 vart=0; plines=6; bptr=1; let "ilines=Now+9"
                 printf '\033['$plines';10f''*'
                 SHOW_BACKUP_DATA
                 while [[ $vart = 0 ]]; do
-                while [[ ! ${inputs} =~ ^[zZxXqQ]+$ ]]; do
-                printf '\033['$ilines';46f'
+                while [[ ! ${inputs} =~ ^[zZxXqQvV]+$ ]]; do
+                printf '\033['$ilines';47f'
                 printf "\033[?25h"
                 read -s -n 1 inputs
                 printf "\033[?25l"
                 done
                 if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A";  fi 
-                if [[ ${inputs} = [qQ] ]]; then unset inputs; break;  fi
+                if [[ ${inputs} = [qQvV] ]]; then unset inputs; break;  fi
                 if [[ ${inputs} = [zZ] ]]; then
                                printf '\033['$plines';10f''   '
                                if [[ "${bptr}" -gt "1" ]]; then let "bptr--"; else let "bptr=Now"; fi
                                let "plines=bptr+5"
+                               #clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+                               printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
                                printf '\033['$plines';10f''*  '
                                printf '\033['$ilines';46f'
-                               SHOW_BACKUP_DATA
+                               SHOW_BACKUP_DATA &
                 fi
                 if [[ ${inputs} = [xX] ]]; then
                                printf '\033['$plines';10f''   '
                                if [[ "${bptr}" -lt "$Now" ]]; then let "bptr++"; else let "bptr=1"; fi
                                let "plines=bptr+5"
+                               #clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
                                printf '\033['$plines';10f''*  '
                                printf '\033['$ilines';46f'
-                               SHOW_BACKUP_DATA
+                               SHOW_BACKUP_DATA &
                 fi
                 read -s -n 1 inputs
                 done 
@@ -3291,7 +3402,7 @@ if [[ ${inputs} = [vV] ]]; then
                         let "posr++"
                         done
                         fi
-read -n 1
+read -s -n 1
 clear
 fi 
 
@@ -3333,7 +3444,7 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
                         if [[ $cancel = 0 ]]; then
                             if [[ ! "${demo}" = "${drive}" ]]; then
                         if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
@@ -3866,16 +3977,16 @@ printf '\n\n  '
 EDIT_PRESET_NAME(){
 
                         unset demo
+                        
                                 if [[ $loc = "ru" ]]; then
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "Имя нового пресета:" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "Имя нового пресета:" buttons {"Отменить", "OK"} default button "OK" default answer "'"${editing_preset}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "New preset name:" buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "New preset name:" buttons {"Cancel", "OK"} default button "OK" default answer "'"${editing_preset}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
                                 fi
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=`echo "$demo" | tr -d " \t"`
-                        demo=$(echo "${demo}" | sed 's/^[0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
                         editing_preset="$demo"
 
 }
@@ -4033,7 +4144,8 @@ unset demo
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        
                         
 
 }
@@ -4723,6 +4835,7 @@ if [[ $inputs = [rR] ]]; then
 fi
 
 if [[ $inputs = [nN] ]]; then
+                        editing_preset=" "
                         EDIT_PRESET_NAME
                         if [[ ! $demo = "" ]]; then
                         if [[ ${#demo} -gt 28 ]]; then demo="${demo:0:28}"; fi
@@ -4812,6 +4925,7 @@ if [[ $inputs = "" ]]; then inputs="A"; printf "\033[2A"; fi
 
 if [[ $inputs = 1 ]]; then 
                         unset demo
+                        editing_preset="$current_preset"
                         EDIT_PRESET_NAME
                         if [[ ! $demo = "" ]]; then
                         if [[ ${#demo} -gt 28 ]]; then demo="${demo:0:28}"; fi
@@ -5315,16 +5429,10 @@ printf '\r\e[40m\e[1;33m                                                   \e[0m
             else
             printf '\r\e[40m\e[1;33m   Download files: \e[0m'
             fi
-    #i=0
-   # while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
-   # trap "kill $!" EXIT
+   
     if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
     success=0
     sleep 5
-#if curl -L -# -o ~/.MountEFIupdates/${latest_edit}".zip" https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip"; then
-   # kill $!
-   # wait $! 2>/dev/null
-   # trap " " EXIT
     printf "\e[40m\e[1;33m\r\033[20C"
     if curl https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip" -L -o ~/.MountEFIupdates/${latest_edit}".zip" --progress-bar 2>&1 | while IFS= read -d $'\r' -r p; do p=${p:(-6)}; p=${p%'%'*}; p=${p/,/}; p=$(expr $p / 10 2>/dev/null); let "s=p/3"; echo -ne "[ $p% ] [ $(eval 'printf =%.0s {1..'${s}'}')> ]\r\033[20C"; done ; printf '\e[0m'; then
    printf '\r\e[40m                                                                                 '
@@ -5386,7 +5494,7 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     i=0
     while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
     trap "kill $!" EXIT
-    latest_edit=$(curl -s https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/180 | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+    latest_edit=$(curl -s https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
     kill $!
     wait $! 2>/dev/null
     trap " " EXIT
