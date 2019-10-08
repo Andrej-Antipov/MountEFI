@@ -11,6 +11,7 @@ s_edit_vers="008"
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
 # 006 - добавлено обновление версии программы с github через сеть
 # 007 - в предпросмотр бэкапов архивов добавлены пункты меню
+# 008 - пофиксены баги автозапуска 8 для старых ОС b и баг обновления
 
 clear
 
@@ -5437,7 +5438,6 @@ printf '\r\e[40m\e[1;33m                                                   \e[0m
    
     if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
     success=0
-    sleep 5
     printf "\e[40m\e[1;33m\r\033[20C"
     if curl https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip" -L -o ~/.MountEFIupdates/${latest_edit}".zip" --progress-bar 2>&1 | while IFS= read -d $'\r' -r p; do p=${p:(-6)}; p=${p%'%'*}; p=${p/,/}; p=$(expr $p / 10 2>/dev/null); let "s=p/3"; echo -ne "[ $p% ] [ $(eval 'printf =%.0s {1..'${s}'}')> ]\r\033[20C"; done ; printf '\e[0m'; then
    printf '\r\e[40m                                                                                 '
@@ -5509,8 +5509,10 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     else
     printf '\r\e[40m\e[1;33m   Latest edition: \e[1;32m'"${latest_edit}"'                                        \e[0m\n\n'
     fi
-    current_vers=$(echo "$prog_vers" | tr -d ".")
-    if [[ "${current_vers}" -ge "${latest_release}" ]] && [[ ${latest_edit} -le ${edit_vers} ]]; then
+    current_vers=$(echo "$prog_vers" | tr -d "." )
+    if [[ "$latest_edit" = "0071" ]]; then last_e=8; else last_e=$(echo $latest_edit | bc); fi
+    vers_e=$(echo $edit_vers | bc)
+    if [[ "${current_vers}" -ge "${latest_release}" ]] && [[ "${last_e}" -le "${vers_e}" ]]; then
         if [[ $loc = "ru" ]]; then
         printf '\e[40m\e[1;33m   Версия и редакция программы новейшие. \e[0m'
         else
