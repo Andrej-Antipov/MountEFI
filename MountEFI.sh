@@ -4,9 +4,10 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="007"
+edit_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
+
 
 SHOW_VERSION(){
 clear && printf '\e[8;24;'$col't' && printf '\e[3J' && printf "\033[H"
@@ -489,8 +490,6 @@ if [[ ! $apos = 0 ]]; then
 
 ENTER_PASSWORD
 
-if [[ $flag = 1 ]] && [[ ! $mypassword = "0" ]]; then
-
 autom_open=0
 strng3=`echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
 if [[ $strng3 = "true" ]]; then autom_open=1; fi
@@ -503,19 +502,16 @@ var9=$apos
 posa=0
 while [[ ! $var9 = 0 ]]
 do
-	if [[ $flag = 1 ]]; then
+    if [[ "${flag}" = "0" ]]; then diskutil quiet mount ${alist[$posa]} >&- 2>&-
+
+        else
       
         if [[ ! $mypassword = "0" ]]; then
-               echo $mypassword | sudo -S diskutil quiet mount  ${alist[$posa]} >&- 2>&-
-	    
-                    else
-                       sudo printf ' '
-                        sudo diskutil quiet mount  ${alist[$posa]} >&- 2>&-
+               echo $mypassword | sudo -S diskutil quiet mount ${alist[$posa]} >&- 2>&-
 		               
          fi
-		else
-			diskutil quiet mount  ${alist[$posa]} >&- 2>&-
-fi
+	
+    fi
 
 if  [[ $autom_open = 1 ]]; then 
 
@@ -531,7 +527,6 @@ done
     
   fi
 
-fi
 ################################################ конец функции автомонтирования ########################################################## 
 
  ################################# обработка параметра Menue или аргумента -m  ############################################################
@@ -2299,35 +2294,19 @@ string=`echo ${dlist[$pnum]}`
 strng0=${string}
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
-wasmounted=0
 if [[ ! $mcheck = "Yes" ]]; then
-        ENTER_PASSWORD
-    if [[ ! $mypassword = "0" ]]; then
-
+    wasmounted=0
     DO_MOUNT
     MOUNTED_CHECK
     order=0; UPDATELIST
-    fi
     else 
     wasmounted=1
 fi
 
 string=${strng0}
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-if [[ $OpenFinder = 0 ]] ; then 
-        
-        if [[ $wasmounted = 1 ]]; then open "$vname"; fi
-        
-    else 
-        if [[ ! $mypassword = "0" ]]; then open "$vname"
-            else
-       if [[ ! $wasmounted = 0 ]] &&  [[ $mypassword = "0" ]]; then
-        open "$vname"
-       fi
-    fi
-fi
-
-nogetlist=1
+if [[ "${OpenFinder}" = "1" ]]|| [[ "${wasmounted}" = "1" ]]; then open "$vname"; fi
+ nogetlist=1
 
 }
 # Конец определения MOUNTS #################################################################

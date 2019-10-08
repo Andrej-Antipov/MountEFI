@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="007"
+s_edit_vers="008"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -2218,16 +2218,18 @@ fi
 
 if [[  ${inputs}  = [qQ] ]]; then
 			GET_AUTOMOUNTED
-			if [[ ! $apos = 0 ]]; then 
-				plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+	if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+                else
+                plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
                 GET_SYSTEM_FLAG
+                if [[ "$flag" = "1" ]]; then
                 FORCE_CHECK_PASSWORD;
                 if [[ $mypassword = "" ]]; then ENTER_PASSWORD;  osascript -e 'tell application "Terminal" to activate'; fi
                 FORCE_CHECK_PASSWORD;
                 if [[ $mypassword = "" ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; fi
-                    else
-                plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-            fi
+    
+                fi
+     fi
                 UPDATE_CACHE
 	  var5=1
 fi
@@ -3366,8 +3368,14 @@ if [[ ${inputs} = [dD] ]]; then
                         inputs=0
 fi
 
-if [[ ${inputs} = [vV] ]]; then  
-                        clear  && printf '\e[3J' && printf "\033[0;0H"
+if [[ ${inputs} = [vV] ]]; then
+                        strng=`echo "$MountEFIconf" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+                        IFS=';'; rlist=($strng); unset IFS
+                        rcount=${#rlist[@]}
+                        let "lcount=rcount+10"  
+                        if [[ "${lcount}" -gt "${lines}" ]]; then new_lines=$lcount; else new_lines=$lines; fi
+                        clear && printf '\e[8;'${new_lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
+                        #clear  && printf '\e[3J' && printf "\033[0;0H"
                         if [[ $loc = "ru" ]]; then
                         printf '                                База псевдонимов                            \n'
                         printf '\n   '
@@ -3386,9 +3394,6 @@ if [[ ${inputs} = [vV] ]]; then
                         printf '\n'
 	                         fi
 
-                        strng=`echo "$MountEFIconf" | grep -A 1 "<key>RenamedHD</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-                        IFS=';'; rlist=($strng); unset IFS
-                        rcount=${#rlist[@]}
                         if [[ ! $rcount = 0 ]]; then
                         var11=$rcount; posr=0
                         while [[ ! $var11 = 0 ]]
@@ -3444,7 +3449,7 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[ \t]*//')
                         if [[ $cancel = 0 ]]; then
                             if [[ ! "${demo}" = "${drive}" ]]; then
                         if [[ ${#demo} -gt 30 ]]; then demo="${demo:0:30}"; fi
@@ -4144,7 +4149,7 @@ unset demo
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
                         demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[ \t0-9]*//')
+                        demo=$(echo "${demo}" | sed 's/^[ \t]*//')
                         
                         
 
