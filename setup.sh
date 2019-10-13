@@ -5,13 +5,14 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="008"
+s_edit_vers="009"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
 # 006 - добавлено обновление версии программы с github через сеть
 # 007 - в предпросмотр бэкапов архивов добавлены пункты меню
-# 008 - пофиксены баги автозапуска 8 для старых ОС b и баг обновления
+# 008 - пофиксены баги автозапуска 8 для старых ОС и баг обновления
+# 009 - поддержка иконки в системных уведомлениях
 
 clear
 
@@ -66,8 +67,8 @@ if [ "${setup_count}" -gt "1" ]; then osascript -e 'tell application "Terminal" 
 
 ##########################################################################################################################################
 
-cd "$(dirname "$0")"
-
+if [[ ! $par = "-r" ]]; then ROOT="$(dirname "$0")"; else ROOT="$2"; fi 
+cd "${ROOT}"
 if [[ ! -d ~/Library/LaunchAgents ]]; then mkdir ~/Library/LaunchAgents; fi
 
 SET_LOCALE(){
@@ -732,7 +733,12 @@ function set_font {
 }
 ##################################################################################################################################################
 
-
+GET_APP_ICON(){
+icon_string=""
+if [[ -f AppIcon.icns ]]; then 
+   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
+fi 
+}
 
 SET_TITLE(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
@@ -742,7 +748,11 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 }
 
 DISPLAY_NOTIFICATION(){
+if [[ -d terminal-notifier.app ]]; then
+echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
+else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
+fi
 echo ' exit' >> ${HOME}/.MountEFInoty.sh
 chmod u+x ${HOME}/.MountEFInoty.sh
 sh ${HOME}/.MountEFInoty.sh
@@ -754,10 +764,11 @@ ENTER_PASSWORD(){
 
 TRY=3
         while [[ ! $TRY = 0 ]]; do
+        GET_APP_ICON
         if [[ $loc = "ru" ]]; then
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
                 mypassword=$PASSWORD
@@ -812,21 +823,23 @@ SET_USER_PASSWORD(){
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then 
                 printf '\r'; printf "%"80"s"
                 printf '\r'
-                if [[ $loc = "ru" ]]; then
-                echo "  удалить сохранённый пароль из программы?"
-                        else
-                echo "  delete saved password from this programm?"
-                    fi
-                read -p "  (y/N) " -n 1 -r -s
-                if [[ $REPLY =~ ^[yY]$ ]]; then
+                GET_APP_ICON
+                                if [[ $loc = "ru" ]]; then
+                                if answer=$(osascript -e 'display dialog "Удалить пароль из связки ключей?" '"${icon_string}"''); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+                                if answer=$(osascript -e 'display dialog "Remove password from keychain?" '"${icon_string}"''); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+                               
+                                if [[ $cancel = 0 ]]; then 
                 security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
-                if [[ $loc = "ru" ]]; then
-                echo "  пароль удалён. "
+                SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                         else
-                echo "  password removed. "
-                    fi
-                read -n 1 -s -t 1
-                fi
+                        echo 'SUBTITLE="PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
+                        fi
         else
                 
             ENTER_PASSWORD
@@ -879,7 +892,7 @@ case ${layout_name} in
  esac
 
 if [[ $xkbs = 2 ]]; then 
-cd "$(dirname "$0")"
+cd "${ROOT}"
     if [[ -f "./xkbswitch" ]]; then 
 declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
@@ -3442,10 +3455,11 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
                         GET_DRIVE
                         GET_RENAMEHD
                         if [[ $adrive = "±" ]]; then  adrive="${drive}"; fi
+                        GET_APP_ICON
                         if [[ $loc = "ru" ]]; then
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "< Редактировать псевдоним >|<- 30 знаков !" buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "< Редактировать псевдоним >|<- 30 знаков !" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
                         else
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "<-------- Edit aliases -------->|<- 30 characters !" buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "<-------- Edit aliases -------->|<- 30 characters !" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
                         fi
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
@@ -3983,11 +3997,11 @@ printf '\n\n  '
 EDIT_PRESET_NAME(){
 
                         unset demo
-                        
+                                GET_APP_ICON
                                 if [[ $loc = "ru" ]]; then
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "Имя нового пресета:" buttons {"Отменить", "OK"} default button "OK" default answer "'"${editing_preset}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "Имя нового пресета:" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${editing_preset}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "New preset name:" buttons {"Cancel", "OK"} default button "OK" default answer "'"${editing_preset}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "New preset name:" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${editing_preset}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
                                 fi
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
@@ -4141,11 +4155,12 @@ done
 }
 
 EDIT_LODERS_NAMES(){
-unset demo
+                                unset demo
+                        GET_APP_ICON
                                 if [[ $loc = "ru" ]]; then
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "Псевдоним загрузчика (максимум 8 символов):" buttons {"Отменить", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "Псевдоним загрузчика (максимум 8 символов):" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "BootLoader alias (max 8 characters):" buttons {"Cancel", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+                        if demo=$(osascript -e 'set T to text returned of (display dialog "BootLoader alias (max 8 characters):" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
                                 fi
                         demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
                         demo=`echo "$demo" | tr -cd "[:print:]\n"`
@@ -4679,10 +4694,11 @@ printf "\033[?25h"
     
 done
         if [[ $inputs = [dD] ]]; then
+                                GET_APP_ICON
                                 if [[ $loc = "ru" ]]; then
-                                if answer=$(osascript -e 'display dialog "Удалить всю базу кастомных указателей загрузчиков?"'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                if answer=$(osascript -e 'display dialog "Удалить всю базу кастомных указателей загрузчиков?" '"${icon_string}"''); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
-                                if answer=$(osascript -e 'display dialog "Delete all database of custom bootloader pointers?"'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                if answer=$(osascript -e 'display dialog "Delete all database of custom bootloader pointers?" '"${icon_string}"''); then cancel=0; else cancel=1; fi 2>/dev/null
                                 fi
                                
                                 if [[ $cancel = 0 ]]; then 
@@ -4690,15 +4706,14 @@ done
                                         plutil -replace ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
                                         plutil -replace ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
                                         UPDATE_CACHE
+                        SET_TITLE
                                         if [[ $loc = "ru" ]]; then
-                        SUBTITLE="БАЗА ОЧИЩЕНА !"
+                        echo 'SUBTITLE="БАЗА УКАЗАТЕЛЕЙ ОЧИЩЕНА !"' >> ${HOME}/.MountEFInoty.sh
                         else
-                        SUBTITLE="THE DATABASE WAS REMOVED !" 
+                        echo 'SUBTITLE="THE DATABASE WAS REMOVED !"' >> ${HOME}/.MountEFInoty.sh
                         fi
-                        TITLE="MountEFI" 
-                        COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""
-                        MESSAGE=" "
-                        osascript -e "${COMMAND}"
+                        echo 'MESSAGE=" "' >> ${HOME}/.MountEFInoty.sh
+                        DISPLAY_NOTIFICATION
                                 fi
                                 unset inputs 
                                             
@@ -5072,7 +5087,16 @@ FILL_SYS_AUTOMOUNT_EXEC(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
 echo 'DISPLAY_NOTIFICATION(){' >> ${HOME}/.MountEFIa.sh
+if [[ -d ${HOME}/.MountEFInotifyService/terminal-notifier.app ]]; then
+echo '${HOME}/.MountEFInotifyService/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFIa.sh
+else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFIa.sh
+fi
+echo '}' >> ${HOME}/.MountEFIa.sh
+echo                >> ${HOME}/.MountEFIa.sh
+echo 'GET_APP_ICON(){' >> ${HOME}/.MountEFIa.sh
+echo 'icon_string=""' >> ${HOME}/.MountEFIa.sh
+echo "if [[ -f ${HOME}/.MountEFInotifyService/AppIcon.icns ]]; then icon_string=' with icon file ((path to home folder as text) & "'".MountEFInotifyService:AppIcon.icns"'")'; fi" >> ${HOME}/.MountEFIa.sh
 echo '}' >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
 echo 'TITLE="MountEFI"' >> ${HOME}/.MountEFIa.sh
@@ -5170,12 +5194,12 @@ echo '        else' >> ${HOME}/.MountEFIa.sh
 echo '        SUBTITLE="PASSWORD NOT FOUND IN KEYCHAIN !"; MESSAGE="EFI auto-mount canceled"' >> ${HOME}/.MountEFIa.sh
 echo '        fi' >> ${HOME}/.MountEFIa.sh
 echo '        DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
-echo '        TRY=3' >> ${HOME}/.MountEFIa.sh
+echo '        TRY=3 ; GET_APP_ICON' >> ${HOME}/.MountEFIa.sh
 echo '        while [[ ! $TRY = 0 ]]; do' >> ${HOME}/.MountEFIa.sh
 echo '        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Введите пароль для подключения EFI разделов: "'" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Пароль для подключения EFI разделов: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        else' >> ${HOME}/.MountEFIa.sh
-echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        fi' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $cansel = 1 ]]; then break; fi ' >> ${HOME}/.MountEFIa.sh
 echo '                mypassword=$PASSWORD' >> ${HOME}/.MountEFIa.sh
@@ -5267,10 +5291,14 @@ REMOVE_SYS_AUTOMOUNT_SERVICE(){
 if [[ $(launchctl list | grep "MountEFIa.job" | cut -f3 | grep -x "MountEFIa.job") ]]; then launchctl unload -w ~/Library/LaunchAgents/MountEFIa.plist; fi
 if [[ -f ~/Library/LaunchAgents/MountEFIa.plist ]]; then rm ~/Library/LaunchAgents/MountEFIa.plist; fi
 if [[ -f ~/.MountEFIa.sh ]]; then rm ~/.MountEFIa.sh; fi
+if [[ -d ~/.MountEFInotifyService ]]; then rm -R ~/.MountEFInotifyService; fi
 }
+
 
 SETUP_SYS_AUTOMOUNT(){
 REMOVE_SYS_AUTOMOUNT_SERVICE
+if [[ -d terminal-notifier.app ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp -R terminal-notifier.app ~/.MountEFInotifyService; fi
+if [[ -f AppIcon.icns ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp AppIcon.icns ~/.MountEFInotifyService; fi
 FILL_SYS_AUTOMOUNT_PLIST
 FILL_SYS_AUTOMOUNT_EXEC
 mv ${HOME}/.MountEFIa.plist ~/Library/LaunchAgents/MountEFIa.plist
@@ -5546,7 +5574,7 @@ clear
 SET_INPUT
 theme="system"
 var4=0
-cd "$(dirname "$0")"
+cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
 lines=31; col=80

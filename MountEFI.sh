@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="008"
+edit_vers="009"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -48,7 +48,8 @@ clear && printf "\e[3J"
 clear  && printf '\e[3J'
 printf "\033[?25l"
 
-cd "$(dirname "$0")"
+
+cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f ${HOME}/.MountEFIconf.plist ]]; then rm ${HOME}/.MountEFIconf.plist; fi
@@ -224,7 +225,10 @@ if [[ $update_check = "Updating" ]]; then
         if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
         if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
         plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
+        if [[ -d ~/.MountEFIupdates ]]; then 
+                if [[ -d ~/.MountEFIupdates/terminal-notifier.app ]]; then mv -f ~/.MountEFIupdates/terminal-notifier.app "$ROOT"; fi
+                rm -Rf ~/.MountEFIupdates 
+        fi
         upd=1
 fi
 
@@ -350,6 +354,12 @@ update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | s
 if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]]; then rel=1; else rel=0; fi
 }
 
+GET_APP_ICON(){
+icon_string=""
+if [[ -f AppIcon.icns ]]; then 
+   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
+fi 
+}
 
 SET_TITLE(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
@@ -359,7 +369,11 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 }
 
 DISPLAY_NOTIFICATION(){
+if [[ -d terminal-notifier.app ]]; then
+echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
+else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
+fi
 echo ' exit' >> ${HOME}/.MountEFInoty.sh
 chmod u+x ${HOME}/.MountEFInoty.sh
 sh ${HOME}/.MountEFInoty.sh
@@ -392,12 +406,12 @@ fi
 if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
   if [[ $flag = 1 ]]; then 
         
-        TRY=3
+        TRY=3; GET_APP_ICON
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль для подключения разделов EFI: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Пароль для подключения разделов EFI: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
                 mypassword=$PASSWORD
@@ -809,7 +823,7 @@ if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/
 if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
 
 
-if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 ##########################################################################################################################
 ########################## обратный отсчёт для автомонтирования ##########################################################
 COUNTDOWN(){ 
@@ -1477,10 +1491,11 @@ if [[ $mypassword = "0" ]]; then
             printf '\r'
             printf ' %.0s' {1..68}; printf ' %.0s' {1..68}
             printf '\r\033[1A'
+            GET_APP_ICON
             if [[ $loc = "ru" ]]; then
-            osascript -e 'display dialog "Без правильного пароля EFI не подключить. Выходим....." buttons {"OK"} default button "OK"'
+            osascript -e 'display dialog "Без правильного пароля EFI не подключить. Выходим....." '"${icon_string}"' buttons {"OK"} default button "OK"'
             else
-            osascript -e 'display dialog "You have to input valid password to mount EFI. Exiting...." buttons {"OK"} default button "OK"'
+            osascript -e 'display dialog "You have to input valid password to mount EFI. Exiting...." '"${icon_string}"' buttons {"OK"} default button "OK"'
             fi
             EXIT_PROGRAM
 fi
@@ -2253,16 +2268,16 @@ printf "\033[?25l\033[1D"
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
-if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a; else bash ./setup.sh -a; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD;  if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD;  if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r; else bash ./setup.sh -r; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
