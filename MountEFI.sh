@@ -225,9 +225,13 @@ if [[ $update_check = "Updating" ]]; then
         if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
         if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
         plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        if [[ -d ~/.MountEFIupdates ]]; then 
-                if [[ -d ~/.MountEFIupdates/terminal-notifier.app ]]; then mv -f ~/.MountEFIupdates/terminal-notifier.app "$ROOT"; fi
-                rm -Rf ~/.MountEFIupdates 
+        if [[ "${edit_vers}" = "009" ]]; then 
+                if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
+                curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
+                unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
+                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}"
+        fi
+        if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates 
         fi
         upd=1
 fi
@@ -1099,7 +1103,7 @@ DO_MOUNT(){
 
 		if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${string}
                 else
-                    if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; fi
+                    #if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; fi
                     if ! echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null; then
                         if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
                                 ENTER_PASSWORD "force"
@@ -1143,7 +1147,7 @@ MOUNTED_CHECK(){
  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then
 
-    	SET_TITLE
+    SET_TITLE
     if [[ $loc = "ru" ]]; then
     echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения ..."' >> ${HOME}/.MountEFInoty.sh
     else
@@ -2313,14 +2317,15 @@ if [[ ! $mcheck = "Yes" ]]; then
     wasmounted=0
     DO_MOUNT
     MOUNTED_CHECK
-    order=0; UPDATELIST
+    if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi
     else 
     wasmounted=1
 fi
 
 string=${strng0}
+mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-if [[ "${OpenFinder}" = "1" ]]|| [[ "${wasmounted}" = "1" ]]; then open "$vname"; fi
+if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then open "$vname"; fi; fi
  nogetlist=1
 
 }

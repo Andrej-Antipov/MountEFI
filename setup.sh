@@ -5436,7 +5436,7 @@ echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
-echo 'rm -Rf ~/.MountEFIupdates' >> ${HOME}/.MountEFIu.sh
+#echo 'rm -Rf ~/.MountEFIupdates' >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
 echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
 echo ''  >> ${HOME}/.MountEFIu.sh
