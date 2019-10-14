@@ -2396,7 +2396,6 @@ printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
 printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
 	fi
 
-	rm -f ~/.MountEFItemp.txt
 
 EXIT_PROGRAM
 fi

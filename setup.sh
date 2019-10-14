@@ -895,7 +895,8 @@ case ${layout_name} in
  esac
 
 if [[ $xkbs = 2 ]]; then 
-cd "${ROOT}"
+cd "${ROOT}"; 
+
     if [[ -f "./xkbswitch" ]]; then 
 declare -a layouts_names
 layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
@@ -5343,12 +5344,12 @@ UPDATE_CACHE
 }
 
 START_RELOAD_SERVICE(){
-if [[ ! $par = "-r" ]]; then
+if [[ ! $par = "-r" ]]; then 
 MEFI_PATH="$(ps o command | grep -i "setup.sh" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
 if [[ "$MEFI_PATH" = "" ]]; then
     MEFI_PATH="$(ps o command | grep -i "setup" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"; fi
 else
-MEFI_PATH="$(ps o command | grep -i "MountEFI" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
+MEFI_PATH="${ROOT}""/MountEFI"
 fi
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
@@ -5410,7 +5411,8 @@ fi
 }
 
 START_UPDATE_SERVICE(){
-MEFI_PATH="$(ps o command | grep -i "MountEFI" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
+#MEFI_PATH="$(ps o command | grep -i "MountEFI" | grep -v grep |  sed -e 's/^[^ ]*\(.*\)$/\1/' |  sort -u | xargs)"
+MEFI_PATH="${ROOT}""/MountEFI"
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
 echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
