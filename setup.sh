@@ -750,6 +750,7 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 DISPLAY_NOTIFICATION(){
 if [[ -d terminal-notifier.app ]]; then
 echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
+sleep 1
 else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
 fi
@@ -798,6 +799,7 @@ TRY=3
                         echo 'SUBTITLE="INCORRECT PASSWORD. LEFT '$TRY' '$ATTEMPT' !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                             fi
                 DISPLAY_NOTIFICATION
+                        
                 fi
                 fi
             done
@@ -840,6 +842,7 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
                         fi
                         DISPLAY_NOTIFICATION
                         fi
+                        
         else
                 
             ENTER_PASSWORD
@@ -5304,12 +5307,17 @@ FILL_SYS_AUTOMOUNT_EXEC
 mv ${HOME}/.MountEFIa.plist ~/Library/LaunchAgents/MountEFIa.plist
 launchctl load -w ~/Library/LaunchAgents/MountEFIa.plist
 if [[ $display = 1 ]]; then
-    if [[ $loc = "ru" ]]; then
-printf '\r  Сервис автоподключения EFI установлен ...'
-    else
-printf '\r  Serice automount EFI installed ... '
-    fi
-sleep 1
+                        
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="СЕРВИС АВТО-ПОДКЛЮЧЕНИЯ EFI РАБОТАЕТ !"; MESSAGE="Разделы подключаются при входе в систему"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="EFI AUTO-MOUNT SERVICE STARTED !"; MESSAGE="Selected partitions are connected at login"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
+                        
+        
+               
 fi
 }
 
@@ -5718,12 +5726,14 @@ if [[ $inputs = 9 ]] && [[ "$quick_am" = "1" ]]; then
                     FORCE_CHECK_PASSWORD
                     if [[ "$mypassword" = "" ]]; then 
                     plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
-                            if [[ $loc = "ru" ]]; then
-                            printf '\n  Авто-подключение EFI отменено. Установите верный пароль '
-                            else
-                            printf '\n  EFI automounter disabled. You should enter a valid password  '
-                            fi
-                            read -n 1 -s -t 2
+
+                             SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="АВТО-ПОДКЛЮЧЕНИЕ EFI ОТМЕНЕНО."; MESSAGE="Необходимо ввести верный пароль!"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="EFI AUTO-MOUNT AT LOGIN SERVICE DISABLED."; MESSAGE="You should enter a valid password!"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
                     else
                         SETUP_SYS_AUTOMOUNT
                     fi
@@ -5743,11 +5753,13 @@ if [[ $inputs = 9 ]]; then
   plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
     UPDATE_CACHE
     REMOVE_SYS_AUTOMOUNT_SERVICE
-    if [[ $loc = "ru" ]]; then
-    printf '\n\n  Сервис автоподключения EFI остановлен ...'
-    else
-    printf '\n\n  Serice automount EFI stopped ... '
-    fi
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="СЕРВИС АВТО-ПОДКЛЮЧЕНИЯ EFI УДАЛЁН !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="EFI AUTO-MOUNT AT LOGIN SERVICE REMOVED !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
 else 
   display=1
   SET_SYS_AUTOMOUNT
@@ -5760,12 +5772,13 @@ else
   FORCE_CHECK_PASSWORD
   if [[ "$mypassword" = "" ]]; then 
     plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
-    if [[ $loc = "ru" ]]; then
-    printf '\n  Авто-подключение EFI отменено. Установите верный пароль '
-    else
-    printf '\n  EFI automounter disabled. You should enter a valid password  '
-    fi
-    read -n 1 -s -t 2
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="АВТО-ПОДКЛЮЧЕНИЕ EFI ОТМЕНЕНО."; MESSAGE="Необходимо ввести верный пароль!"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="EFI AUTO-MOUNT AT LOGIN SERVICE DISABLED."; MESSAGE="You should enter a valid password!"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
     else
         SETUP_SYS_AUTOMOUNT
   fi

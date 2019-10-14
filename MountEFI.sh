@@ -375,6 +375,7 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 DISPLAY_NOTIFICATION(){
 if [[ -d terminal-notifier.app ]]; then
 echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
+sleep 1.5
 else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
 fi
@@ -1103,11 +1104,14 @@ DO_MOUNT(){
 
 		if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${string}
                 else
-                    #if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; fi
-                    if ! echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null; then
-                        if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                                ENTER_PASSWORD "force"
+                    password_was_entered=0
+                    if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; password_was_entered=1; fi
+                    if [[ ! $mypassword = "0" ]]; then 
+                    if ! echo $mypassword | sudo -S diskutil quiet mount  /dev/${string}  2>/dev/null; then
+                        #if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+                                if [[ $password_was_entered = "0" ]]; then ENTER_PASSWORD "force"; password_was_entered=1; fi
                                 echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
+                        #fi
                         fi
                     fi
         fi
