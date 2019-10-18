@@ -5,11 +5,11 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 
 * Runs like an applet from a dock or any other place
 * Two language interface: English and Russian with autodetect
-* Has separate view for PCI-E and USD devices
-* Shows physical names of media
-* Hotplug devices auto update list of drives
-* Easy auto-mount option as service while login system
-* Haqs alias editor for device names to easy recognize drives
+* Has separate view for PCI-E and USB devices
+* Show physical names of media
+* Hotplug media detector update list of drives
+* Easy set up auto-mount EFI as service while login system
+* Has alias editor for device names to easy recognize drives
 * Has theme and theme editor.System therminal themes supported
 * Clover and OpenCore bootloaders autodetect
 * Backup and restore self settings. Also via iCloud
