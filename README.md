@@ -3,7 +3,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 
 **Basic program features**
 
-* Runs as applet from dock or any else place
+* Runs like an applet from a dock or any other place
 * Two language interface: English and Russian with autodetect
 * Has separate view for PCI-E and USD devices
 * Shows physical names of media
@@ -13,6 +13,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Has theme and theme editor.System therminal themes supported
 * Clover and OpenCore bootloaders autodetect
 * Backup and restore self settings. Also via iCloud
+* Password for mount stored in keychain
 * Some other futures 
 
 ![Theme customizable GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/008.png)
