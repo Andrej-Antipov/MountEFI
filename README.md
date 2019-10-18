@@ -14,7 +14,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Clover and OpenCore bootloaders autodetect
 * Backup and restore self settings. Also via iCloud
 * Password for mount stored in keychain
-* Some other futures 
+* Some other features
 
 ![Theme customizable GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/008.png)
 
