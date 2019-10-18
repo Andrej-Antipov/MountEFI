@@ -10,7 +10,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Hotplug media detector update list of drives
 * Easy set up auto-mount EFI as service while login system
 * Has alias editor for device names to easy recognize drives
-* Has theme and theme editor.System therminal themes supported
+* Has built-in themes and theme editor. Terminal system theme usage also supported
 * Clover and OpenCore bootloaders autodetect
 * Backup and restore self settings. Also via iCloud
 * Password for mount stored in keychain
