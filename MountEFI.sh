@@ -225,11 +225,11 @@ if [[ $update_check = "Updating" ]]; then
         if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
         if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
         plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        if [[ "${edit_vers}" = "009" ]]; then 
+        if [[ ! -d "${ROOT}"/terminal-notifier.app  ]]; then 
                 if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
                 curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
-                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 2>/dev/null >/dev/null
+                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates 
         fi
