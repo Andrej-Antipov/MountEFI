@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 01.10.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="009"
+edit_vers="010"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -229,7 +229,7 @@ if [[ $update_check = "Updating" ]]; then
                 if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
                 curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
-                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}"
+                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 2>/dev/null >/dev/null
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates 
         fi
@@ -810,14 +810,15 @@ AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`
 let "TTYcount=AllTTYcount-MyTTYcount"
 }
 
-CLEAR_BASH_HISTORY(){
-                 cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history 
+CLEAR_HISTORY(){
+if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
+if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
 }
 
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
-CLEAR_BASH_HISTORY 
+CLEAR_HISTORY 
 
 #####################################################################################################################
 CHECK_TTY_COUNT	
@@ -872,7 +873,7 @@ fi
 ######################################################################################################################
 
 ############################################ очистка истории bash при запуске ##################################################
-CLEAR_BASH_HISTORY &
+CLEAR_HISTORY &
 ################################################################################################################################
 
 ################################## функция автодетекта подключения ##############################################################################################

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.10.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="009"
+s_edit_vers="010"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -13,6 +13,7 @@ s_edit_vers="009"
 # 007 - в предпросмотр бэкапов архивов добавлены пункты меню
 # 008 - пофиксены баги автозапуска 8 для старых ОС и баг обновления
 # 009 - поддержка иконки в системных уведомлениях
+# 010 - очистка истории zsh
 
 clear
 
@@ -53,9 +54,19 @@ AllTTYc=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`
 let "TTYc=AllTTYc-MyTTYc"
 }
 
+CLEAR_HISTORY(){
+if [[ ! $par = "-r" ]]; then 
+if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
+if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
+else
+if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/setup/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
+if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/setup/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
+fi
+}
+
 # Выход из программы с проверкой - выгружать терминал из трея или нет
 EXIT_PROG(){
-cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
+CLEAR_HISTORY
 CHECK_TTY_C	
 if [[ ${TTYc} = 0  ]]; then osascript -e 'tell application "Terminal" to close first window' && osascript -e 'quit app "terminal.app"' & exit
 	else
