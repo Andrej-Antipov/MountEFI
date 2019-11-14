@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="010"
+edit_vers="011"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -231,8 +231,11 @@ if [[ $update_check = "Updating" ]]; then
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
                 mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
         fi
-        if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates 
+        if [[ -f ~/.MountEFIupdates/011.zip ]]; then rm -Rf ~/.MountEFIupdates/011; unzip  -o -qq ~/.MountEFIupdates/011.zip -d ~/.MountEFIupdates 2>/dev/null
+        if [[ -f ~/.MountEFIupdates/011/document.wflow ]]; then mv -f ~/.MountEFIupdates/*/document.wflow "${ROOT}"/../document.wflow ; fi
+        if [[ -f ~/.MountEFIupdates/011/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/*/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
         fi
+        if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
 fi
 
