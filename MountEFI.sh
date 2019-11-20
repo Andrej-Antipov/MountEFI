@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="011"
+edit_vers="012"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -231,9 +231,9 @@ if [[ $update_check = "Updating" ]]; then
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
                 mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
         fi
-        if [[ -f ~/.MountEFIupdates/011.zip ]]; then rm -Rf ~/.MountEFIupdates/011; unzip  -o -qq ~/.MountEFIupdates/011.zip -d ~/.MountEFIupdates 2>/dev/null
-        if [[ -f ~/.MountEFIupdates/011/document.wflow ]]; then mv -f ~/.MountEFIupdates/*/document.wflow "${ROOT}"/../document.wflow ; fi
-        if [[ -f ~/.MountEFIupdates/011/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/*/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
+        if [[ -f ~/.MountEFIupdates/012.zip ]]; then rm -Rf ~/.MountEFIupdates/012; unzip  -o -qq ~/.MountEFIupdates/012.zip -d ~/.MountEFIupdates 2>/dev/null
+        if [[ -f ~/.MountEFIupdates/012/document.wflow ]]; then mv -f ~/.MountEFIupdates/012/document.wflow "${ROOT}"/../document.wflow ; fi
+        if [[ -f ~/.MountEFIupdates/012/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/012/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
@@ -821,8 +821,9 @@ if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> 
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
-CLEAR_HISTORY 
+CLEAR_HISTORY
 
+sleep 0.3
 #####################################################################################################################
 CHECK_TTY_COUNT	
 if [[ ${TTYcount} = 0  ]]; then   osascript -e 'tell application "Terminal" to close first window' && osascript -e 'quit app "terminal.app"' & exit
