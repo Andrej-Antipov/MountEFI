@@ -822,10 +822,10 @@ if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> 
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
 CLEAR_HISTORY
-
-sleep 0.3
 #####################################################################################################################
 CHECK_TTY_COUNT	
+sleep 0.3
+
 if [[ ${TTYcount} = 0  ]]; then   osascript -e 'tell application "Terminal" to close first window' && osascript -e 'quit app "terminal.app"' & exit
 	else
      osascript -e 'tell application "Terminal" to close first window' & exit
