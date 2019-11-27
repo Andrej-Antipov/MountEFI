@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="010"
+s_edit_vers="011"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -14,6 +14,7 @@ s_edit_vers="010"
 # 008 - пофиксены баги автозапуска 8 для старых ОС и баг обновления
 # 009 - поддержка иконки в системных уведомлениях
 # 010 - очистка истории zsh
+# 011 - переделана функция SET_INPUT
 
 clear
 
@@ -890,50 +891,33 @@ else
 fi
 }
 
-
 SET_INPUT(){
 
-layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
-xkbs=1
+if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
+    declare -a layouts_names
+    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
+    IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
+    keyboard="0"
 
-case ${layout_name} in
- "Russian"          ) xkbs=2 ;;
- "RussianWin"       ) xkbs=2 ;;
- "Russian-Phonetic" ) xkbs=2 ;;
- "Ukrainian"        ) xkbs=2 ;;
- "Ukrainian-PC"     ) xkbs=2 ;;
- "Byelorussian"     ) xkbs=2 ;;
- esac
+    for ((i=0;i<$num;i++)); do
+        case ${layouts_names[i]} in
+    "ABC"                ) keyboard=${layouts_names[i]}; break ;;
+    "US Extended"        ) keyboard="USExtended"; break ;;
+    "USInternational-PC" ) keyboard=${layouts_names[i]}; break ;;
+    "U.S."               ) keyboard="US"; break ;;
+    "British"            ) keyboard=${layouts_names[i]}; break ;;
+    "British-PC"         ) keyboard=${layouts_names[i]}; break ;;
+    esac 
+    done
 
-if [[ $xkbs = 2 ]]; then 
-cd "${ROOT}"; 
-
-    if [[ -f "./xkbswitch" ]]; then 
-declare -a layouts_names
-layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
-IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
-keyboard="0"
-
-while [ $num != 0 ]; do 
-case ${layouts_names[$num]} in
- "ABC"                ) keyboard=${layouts_names[$num]} ;;
- "US Extended"        ) keyboard="USExtended" ;;
- "USInternational-PC" ) keyboard=${layouts_names[$num]} ;;
- "U.S."               ) keyboard="US" ;;
- "British"            ) keyboard=${layouts_names[$num]} ;;
- "British-PC"         ) keyboard=${layouts_names[$num]} ;;
-esac
-
-        if [[ ! $keyboard = "0" ]]; then num=1; fi
-let "num--"
-done
-
-if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; change_layout=1; fi
-   else
-        change_layout=0
-
-	 fi
+    if [[ ! $i = 0 ]]; then 
+       cd "$(dirname "$0")"
+        if [[ ! $keyboard = "0" ]] && [[ -f "./xkbswitch" ]]; then ./xkbswitch -se $keyboard; fi
+            
+    fi
+     
 fi
+
 }
 
 REM_ABSENT(){
@@ -2642,6 +2626,7 @@ printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 printf "\r\033[45C"
 printf "\033[?25h"
+SET_INPUT
 IFS="±"; read -n 1 inputs ; unset IFS 
 if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
 printf "\r"
@@ -4550,7 +4535,7 @@ ASK_SYSTEM_THEME(){
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
 tell application "System Events"    activate
-set ThemeList to {"Basic", "Grass", "Homebrew", "Man Page", "Novel", "Ocean", "Pro", "Red Sands", "Silver Aerogel", "Solid Colors"}set FavoriteThemeAnswer to choose from list ThemeList with title "Выбор темы" with prompt "Для какой темы редактировать указатели?" default items "Basic"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
+set ThemeList to {"Basic", "Grass", "Homebrew", "Man Page", "Novel", "Ocean", "Pro", "Red Sands", "Silver Aerogel", "Solid Colors"}set FavoriteThemeAnswer to choose from list ThemeList with title "Выбор темы" with prompt "Для какой темы редактировать указатели?" default items "Basic" set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
 end tell
 EOD
 else

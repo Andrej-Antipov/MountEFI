@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="012"
+edit_vers="013"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -231,9 +231,9 @@ if [[ $update_check = "Updating" ]]; then
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
                 mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
         fi
-        if [[ -f ~/.MountEFIupdates/012.zip ]]; then rm -Rf ~/.MountEFIupdates/012; unzip  -o -qq ~/.MountEFIupdates/012.zip -d ~/.MountEFIupdates 2>/dev/null
-        if [[ -f ~/.MountEFIupdates/012/document.wflow ]]; then mv -f ~/.MountEFIupdates/012/document.wflow "${ROOT}"/../document.wflow ; fi
-        if [[ -f ~/.MountEFIupdates/012/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/012/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
+        if [[ -f ~/.MountEFIupdates/013.zip ]]; then rm -Rf ~/.MountEFIupdates/013; unzip  -o -qq ~/.MountEFIupdates/013.zip -d ~/.MountEFIupdates 2>/dev/null
+        if [[ -f ~/.MountEFIupdates/013/document.wflow ]]; then mv -f ~/.MountEFIupdates/013/document.wflow "${ROOT}"/../document.wflow ; fi
+        if [[ -f ~/.MountEFIupdates/013/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/013/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
@@ -2111,61 +2111,47 @@ ADVANCED_MENUE(){
 
     order=3; UPDATELIST; GETKEYS
 }
-##################### Детект раскладки  и адаптация ввода для двухбайтовых UTF-8  ####################################################################################################
+##################### Детект раскладки  и переключение на латиницу  ####################################################################################################
+
 SET_INPUT(){
 
-layout_name=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr -d "\n"`
-xkbs=1
+if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
+    declare -a layouts_names
+    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
+    IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
+    keyboard="0"
 
-case ${layout_name} in
- "Russian"          ) xkbs=2 ;;
- "RussianWin"       ) xkbs=2 ;;
- "Russian-Phonetic" ) xkbs=2 ;;
- "Ukrainian"        ) xkbs=2 ;;
- "Ukrainian-PC"     ) xkbs=2 ;;
- "Byelorussian"     ) xkbs=2 ;;
- esac
+    for ((i=0;i<$num;i++)); do
+        case ${layouts_names[i]} in
+    "ABC"                ) keyboard=${layouts_names[i]}; break ;;
+    "US Extended"        ) keyboard="USExtended"; break ;;
+    "USInternational-PC" ) keyboard=${layouts_names[i]}; break ;;
+    "U.S."               ) keyboard="US"; break ;;
+    "British"            ) keyboard=${layouts_names[i]}; break ;;
+    "British-PC"         ) keyboard=${layouts_names[i]}; break ;;
+    esac 
+    done
 
-if [[ $xkbs = 2 ]]; then 
-cd "$(dirname "$0")"
-    if [[ -f "./xkbswitch" ]]; then 
-declare -a layouts_names
-layouts=`defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';'`
-IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
-keyboard="0"
-
-while [ $num != 0 ]; do 
-case ${layouts_names[$num]} in
- "ABC"                ) keyboard=${layouts_names[$num]} ;;
- "US Extended"        ) keyboard="USExtended" ;;
- "USInternational-PC" ) keyboard=${layouts_names[$num]} ;;
- "U.S."               ) keyboard="US" ;;
- "British"            ) keyboard=${layouts_names[$num]} ;;
- "British-PC"         ) keyboard=${layouts_names[$num]} ;;
-esac
-
-        if [[ ! $keyboard = "0" ]]; then num=1; fi
-let "num--"
-done
-
-if [[ ! $keyboard = "0" ]]; then ./xkbswitch -se $keyboard; fi
-   else
-        if [[ $loc = "ru" ]]; then
-printf '\n\n                         ! Смените раскладку на латиницу !'
+    if [[ ! $i = 0 ]]; then 
+#       cd "$(dirname "$0")"
+        if [[ ! $keyboard = "0" ]] && [[ -f "./xkbswitch" ]]; then ./xkbswitch -se $keyboard
             else
-printf '\n\n                          ! Change layout to UTF-8 ABC, US or EN !'
+            if [[ $loc = "ru" ]]; then
+            printf '\n\n                         ! Смените раскладку на латиницу !'
+                else
+            printf '\n\n                         ! Change layout to UTF-8 ABC, US or EN !'
+            fi
+            read -t 2 -n 2 -s
+            printf '\r                                                                               \r'
+            printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
         fi
-read -t 2 -n 2 -s
-printf '\r                                                                               \r'
- printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi   fi
-
+     fi
+     
 fi
+
 }
 
-
 ##################################################################################################################################################################
-
-
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
