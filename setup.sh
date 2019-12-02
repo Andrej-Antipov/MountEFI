@@ -2736,7 +2736,7 @@ sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или 
 sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
 sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then 
-sbuf+=$(printf ' U) Обновление программы ( экспериментально )                                   \n')
+sbuf+=$(printf ' U) Обновление программы                                                        \n')
 fi
             else
 sbuf=$(printf ' 0) Setup all parameters to defaults                                            \n')
@@ -2762,7 +2762,7 @@ sbuf+=$(printf ' I) Import config from file (zip or plist)                      
 sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
 sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then
-sbuf+=$(printf ' U) Update program ( experimental )                                             \n')
+sbuf+=$(printf ' U) Update program                                                              \n')
 fi
 
             fi
