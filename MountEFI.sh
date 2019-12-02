@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="013"
+edit_vers="014"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -61,6 +61,14 @@ if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RES
     fi
 fi
 
+GET_INITCONF_FROM_ICLOUD(){
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+    if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+        if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ]]; then 
+            cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ${HOME}/
+        fi
+    fi
+}
 
 
 GET_BACKUPS_FROM_ICLOUD(){
@@ -209,6 +217,8 @@ unset MountEFIconf; cache=0
 fi
 }
 ##########################################################################################################################################
+
+if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then GET_INITCONF_FROM_ICLOUD; fi
 
 UPDATE_CACHE
 

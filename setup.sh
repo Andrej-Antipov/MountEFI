@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="011"
+s_edit_vers="012"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -15,6 +15,7 @@ s_edit_vers="011"
 # 009 - поддержка иконки в системных уведомлениях
 # 010 - очистка истории zsh
 # 011 - переделана функция SET_INPUT
+# 012 - сохранение текущего конфига в iCloud
 
 clear
 
@@ -1622,13 +1623,31 @@ fi
 }
 
 CHECK_ICLOUD_BACKUPS(){
-cloud_archive=0
-shared_archive=0
+cloud_archive=0; shared_archive=0
 hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
         if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
             if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then cloud_archive=1; fi
             if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then shared_archive=1; fi
         fi
+}
+
+PUT_INITCONF_IN_ICLOUD(){
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+        if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+            if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup ]]; then 
+                mkdir -p ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup; fi
+            if [[ ! -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ]]; then
+                    cp ${HOME}/.MountEFIconf.plist ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup
+            else
+                    old_init_v=$( md5 -qq ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist )
+                    new_init_v=$( md5 -qq ${HOME}/.MountEFIconf.plist )
+                    if [[ ! ${old_init_v} = ${new_init_v} ]]; then 
+                        cp ${HOME}/.MountEFIconf.plist ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup
+                    fi
+            fi
+            
+
+        fi        
 }
 
 PUT_SHARE_IN_ICLOUD(){
@@ -5824,6 +5843,7 @@ if [[ $inputs = [vV] ]]; then SHOW_VERSION;  fi
 ########################################################################################################################
            
 if [[ $inputs = [qQ] ]]; then 
+    PUT_INITCONF_IN_ICLOUD
     var4=1; printf '\n' 
             strng=`echo "$MountEFIconf" | grep Backups -A 3 | grep -A 1 -e "Auto</key>" | grep true | tr -d "<>/"'\n\t'`
      if [[ $strng = "true" ]]; then 
