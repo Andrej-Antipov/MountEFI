@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="014"
+edit_vers="015"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -39,7 +39,7 @@ if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mht
                            fi
                            read -s -n 1 -t 5
       else      
-read -n 1 
+while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]]; then break; fi; done 
 fi
 clear && printf "\e[3J"
 } 
@@ -241,9 +241,9 @@ if [[ $update_check = "Updating" ]]; then
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
                 mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
         fi
-        if [[ -f ~/.MountEFIupdates/014.zip ]]; then rm -Rf ~/.MountEFIupdates/014; unzip  -o -qq ~/.MountEFIupdates/014.zip -d ~/.MountEFIupdates 2>/dev/null
-        if [[ -f ~/.MountEFIupdates/014/document.wflow ]]; then mv -f ~/.MountEFIupdates/014/document.wflow "${ROOT}"/../document.wflow ; fi
-        if [[ -f ~/.MountEFIupdates/014/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/014/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
+        if [[ -f ~/.MountEFIupdates/015.zip ]]; then rm -Rf ~/.MountEFIupdates/015; unzip  -o -qq ~/.MountEFIupdates/015.zip -d ~/.MountEFIupdates 2>/dev/null
+        if [[ -f ~/.MountEFIupdates/015/document.wflow ]]; then mv -f ~/.MountEFIupdates/015/document.wflow "${ROOT}"/../document.wflow ; fi
+        if [[ -f ~/.MountEFIupdates/015/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/015/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
@@ -834,13 +834,14 @@ EXIT_PROGRAM(){
 CLEAR_HISTORY
 #####################################################################################################################
 CHECK_TTY_COUNT	
-sleep 0.3
 
-if [[ ${TTYcount} = 0  ]]; then   osascript -e 'tell application "Terminal" to close first window' && osascript -e 'quit app "terminal.app"' & exit
-	else
-     osascript -e 'tell application "Terminal" to close first window' & exit
-fi
+kill $(ps  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev) 2>/dev/null &
+if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
+else
+   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
+ fi
 }
+
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
 if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
 
@@ -977,10 +978,39 @@ if [[ ! $posrm = 0 ]]; then
             fi
 }
 
+GET_USB_NAMES(){
+IFS=';'; usb_iolist=( $(IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs) ); unset IFS
+pusb=${#usb_iolist[@]}
+if [[ ! $pusb = 0 ]]; then
+usbnames=(); 
+for (( i=0; i<$pusb; i++ )); do
+usbname="$(echo ${usb_iolist[i]} | cut -f3 -d=)";  usbnames+=( "${usbname}" )
+done
+fi
+}
+
+ADD_USB_DRIVES(){
+
+GET_USB_NAMES
+if [[ ! $pusb = 0 ]]; then
+    whole_drives=`echo "$drives_iomedia" | grep -v "Statistics = " | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' '\n' | sort -u | tr '\n' ';'`
+    IFS=';'; wlist=($whole_drives); unset IFS; wpos=${#wlist[@]}
+    ulist=()
+    for ((i=0;i<$wpos;i++)); do
+    wname=`echo "$drives_iomedia" | grep -B 10 ${wlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+   for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$wname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then ulist+=( "${wlist[i]}" ); break; fi; done
+    done
+upos=${#ulist[@]}; 
+       for ((i=0;i<$wpos;i++)); do
+          if [[ "$( echo ${tmlist[@]} | grep "${ulist[i]}" )" = "" ]]; then tmlist+=("${ulist[i]}"); fi
+       done
+fi
+
+}
+
 GET_EFI_S(){
 
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-#usb_iomedia=`ioreg -c IOUSB | tr -d '"|+{}\t' | grep  "<class IOUSBHostDevice,"`
 usb_iomedia=`ioreg -p IOUSB | tr -d '"|+{}\t'`
 
 string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
@@ -998,20 +1028,20 @@ dmname=`echo "$drives_iomedia" | grep -B 10 ${dmlist[$i]} | grep -m 1 -w "IOMedi
 if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
 usbname=`echo "$usb_iomedia" | grep -m 1 -wo "$dmname"`
 if [[ "$usbname" = "$dmname" ]]; then 
-usb_string+=`echo "$drives_iomedia" | grep -A 5 -B 5  "Whole = No" | grep  "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
 removables+="${dmlist[$i]}"";"
 else
 dmname=`echo "$dmname" | tr ' ' '|'`
 usbname=""
 usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t'  | egrep -m 1 "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
 if [[ ! $usbname = "" ]]; then
-usb_string+=`echo "$drives_iomedia"  | grep -A 5 -B 5  "Whole = No" | grep -m 1 "${dmlist[$i]}" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`";"
 removables+="${dmlist[$i]}"";" 
 fi
 fi
-done 
+done
 
 IFS=';'; tmlist=($removables); unset IFS; posrm=${#tmlist[@]}
+
+ADD_USB_DRIVES; posrm=${#tmlist[@]}
 
 if [[ ! $posi = 0 ]]; then
         if [[ ! $posrm = 0 ]]; then
@@ -2276,6 +2306,7 @@ if [[ $CheckLoaders = 1 ]]; then printf '\033[1B' ; fi
 READ_TWO_SYMBOLS; sym=2
 fi
 printf "\033[?25l\033[1D"
+if [[ ${choice} = $ch ]]; then choice="V"; fi
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
