@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 20.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1009,61 +1009,57 @@ fi
 }
 
 GET_EFI_S(){
+ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
+usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
+drives_iomedia=$( echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia," )
+string=$( diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
+disk_images=$( echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';' )
+syspart=$( df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n' )
+ 
+IFS=';'; dlist=($string); ilist=($disk_images); usb_iolist=($usb_iomedia); unset IFS; pos=${#dlist[@]}; posi=${#ilist[@]}; pusb=${#usb_iolist[@]}
+dmlist=(); for (( i=0; i<$pos; i++ )) do dmlist+=( $( echo ${dlist[i]} | rev | cut -f2-3 -d"s" | rev ) ); done; posd=${#dmlist[@]}
 
-ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-usb_iomedia=`ioreg -p IOUSB | tr -d '"|+{}\t'`
-
-string=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
-disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
-syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
-drives_iomedia=`echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia,"`
-removables=`echo "$drives_iomedia" | grep -A 10 -B 10 "Removable = Yes" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | cut -f2 -d "=" | tr -d " " | tr "\n" ";"`
-drives_string=`echo "$drives_iomedia" | grep -v "Statistics = "  | grep -A 10 -B 10 "Removable = No" | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' '\n' | sort -u | tr '\n' ';'`
-IFS=';'; dlist=($string); dmlist=($drives_string); ilist=($disk_images); unset IFS; pos=${#dlist[@]}; posd=${#dmlist[@]}; posi=${#ilist[@]}; posrm=${#tmlist[@]}
-
-usb_string=""
-for (( i=0; i<$posd; i++ )); do
-dmname=`echo "$drives_iomedia" | grep -B 10 ${dmlist[$i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
-
-if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
-usbname=`echo "$usb_iomedia" | grep -m 1 -wo "$dmname"`
-if [[ "$usbname" = "$dmname" ]]; then 
-removables+="${dmlist[$i]}"";"
-else
-dmname=`echo "$dmname" | tr ' ' '|'`
-usbname=""
-usbname=`echo "$usb_iomedia" | tr -d '"|+{}\t'  | egrep -m 1 "$dmname"  | cut -f1 -d "<" | sed -e s'/-o //' | cut -f1 -d "@"  | xargs | tr -d "\n"`
-if [[ ! $usbname = "" ]]; then
-removables+="${dmlist[$i]}"";" 
-fi
-fi
-done
-
-IFS=';'; tmlist=($removables); unset IFS; posrm=${#tmlist[@]}
-
-ADD_USB_DRIVES; posrm=${#tmlist[@]}
-
+# exclude disk images
 if [[ ! $posi = 0 ]]; then
-        if [[ ! $posrm = 0 ]]; then
-            unset rmlist
-                for (( i=0; i<$posrm; i++ )); do
-                    match=0
-                        for (( n=0; n<$posi; n++ )); do
-                            if [[ "${ilist[$n]}" = "${tmlist[$i]}" ]]; then match=1;  break; fi
-                        done
-                        if [[ $match = 0 ]]; then rmlist+=( ${tmlist[$i]} );  fi
-                done
-            posrm=${#rmlist[@]}
-        fi
-    else
-        if [[ $posrm != 0 ]]; then
-            rmlist=( ${tmlist[@]} )
-        fi
+tmlist=()
+for ((i=0;i<$pos;i++)); do 
+        match=0
+        for ((n=0;n<$posi;n++)); do
+             if [[ $( echo ${dlist[i]} | rev | cut -f2-3 -d"s" | rev ) = ${ilist[n]} ]]; then match=1; break; fi
+        done
+            if [[ $match = 0 ]]; then tmlist+=( ${dlist[i]} ); fi
+done
+if [[ ! ${#tmlist[@]} = 0 ]]; then dlist=( ${tmlist[@]} ); pos=${#dlist[@]}; fi
 fi
+
+# make list of disks
+dmlist=(); for (( i=0; i<$pos; i++ )) do dmlist+=( $( echo ${dlist[i]} | rev | cut -f2-3 -d"s" | rev ) ); done
+dmlist=( $(echo "${dmlist[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') ); posd=${#dmlist[@]}
+
+# get list of usb drives
+rmlist=(); posrm=0
+if [[ ! $pusb = 0 ]]; then
+
+usbnames=(); for (( i=0; i<$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]} | cut -f3 -d=)"; usbnames+=( "${usbname}" ); done
+
+for (( i=0; i<$posd; i++ ))
+ do
+    dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
+    if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
+        match=0
+        for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then match=1; break; fi; done 
+        if [[ $match = 1 ]]; then rmlist+=( ${dmlist[i]} ); fi
+ done                            
+fi
+
+posrm=${#rmlist[@]}
 
 if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
+
+# подготовка данных для вычисления размеров
 sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
 
+# подготовка данных для вычисления hotplug
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
         if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
 
