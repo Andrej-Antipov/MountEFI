@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="015"
+edit_vers="016"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -252,10 +252,10 @@ fi
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
-        mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        mypassword="$(echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')"
         if [[ ! $mypassword = "" ]]; then
             if ! (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+                security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
             fi
             plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
         fi
@@ -427,16 +427,16 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         TRY=3; GET_APP_ICON
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Пароль для подключения разделов EFI: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Пароль для подключения разделов EFI: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
                 mypassword=$PASSWORD
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
                 if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI теперь работает"' >> ${HOME}/.MountEFInoty.sh
@@ -1046,9 +1046,7 @@ for (( i=0; i<$posd; i++ ))
  do
     dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
     if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
-        match=0
-        for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then match=1; break; fi; done 
-        if [[ $match = 1 ]]; then rmlist+=( ${dmlist[i]} ); fi
+        for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then rmlist+=( ${dmlist[i]} ); fi; done
  done                            
 fi
 

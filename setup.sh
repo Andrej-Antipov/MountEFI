@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="012"
+s_edit_vers="013"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -16,6 +16,7 @@ s_edit_vers="012"
 # 010 - очистка истории zsh
 # 011 - переделана функция SET_INPUT
 # 012 - сохранение текущего конфига в iCloud
+# 013 - пробелы в паролях
 
 clear
 
@@ -480,10 +481,10 @@ fi
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
-        mypassword=`echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        mypassword="$( echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' )"
         if [[ ! $mypassword = "" ]]; then
             if ! (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+                security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
             fi
             plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
         fi
@@ -780,9 +781,9 @@ TRY=3
         while [[ ! $TRY = 0 ]]; do
         GET_APP_ICON
         if [[ $loc = "ru" ]]; then
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD=$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result'); then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
                 mypassword=$PASSWORD
