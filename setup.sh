@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="013"
+s_edit_vers="014"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -17,6 +17,7 @@ s_edit_vers="013"
 # 011 - переделана функция SET_INPUT
 # 012 - сохранение текущего конфига в iCloud
 # 013 - пробелы в паролях
+# 014 - несколько пробелов в середине пароля
 
 clear
 
@@ -786,10 +787,10 @@ TRY=3
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
-                mypassword=$( echo $PASSWORD | xargs )
+                mypassword="${PASSWORD}"
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
-                if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+                if echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
                     security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -874,8 +875,8 @@ mypassword="0"
 
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
                 mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-                passl=`echo ${#mypassword}`
-                mypassword_set=$(echo $mypassword | tr -c '\n' "*")
+                passl=${#mypassword}
+                mypassword_set=$( echo "${mypassword}" | tr -c '\n' "*")
                 if [[ $loc = "ru" ]]; then
                 let "pass_corr=30-passl"
                 else
@@ -5191,7 +5192,7 @@ echo >> ${HOME}/.MountEFIa.sh
 echo 'mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
 echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)' >> ${HOME}/.MountEFIa.sh
-echo '                if ! echo $mypassword | sudo -Sk printf '"''"' 2>/dev/null; then ' >> ${HOME}/.MountEFIa.sh
+echo '                if ! echo "${mypassword}" | sudo -Sk printf '"''"' 2>/dev/null; then ' >> ${HOME}/.MountEFIa.sh
 echo '                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
 echo '                    mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo '                    SET_LOCALE' >> ${HOME}/.MountEFIa.sh
@@ -5222,9 +5223,9 @@ echo '        else' >> ${HOME}/.MountEFIa.sh
 echo '        if PASSWORD="$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        fi' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $cansel = 1 ]]; then break; fi ' >> ${HOME}/.MountEFIa.sh
-echo '                mypassword=$( echo $PASSWORD | xargs )' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$PASSWORD' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $mypassword = "" ]]; then mypassword="?"; fi' >> ${HOME}/.MountEFIa.sh
-echo '                if echo $mypassword | sudo -Sk printf '"''"' 2>/dev/null; then' >> ${HOME}/.MountEFIa.sh
+echo '                if echo "${mypassword}" | sudo -Sk printf '"''"' 2>/dev/null; then' >> ${HOME}/.MountEFIa.sh
 echo '                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
 echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '                        SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Авто-монтирование EFI работает"' >> ${HOME}/.MountEFIa.sh
@@ -5280,7 +5281,7 @@ echo 'while [[ ! $var9 = 0 ]]' >> ${HOME}/.MountEFIa.sh
 echo 'do' >> ${HOME}/.MountEFIa.sh
 echo '	if [[ $flag = 1 ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '        if [[ ! $mypassword = "0" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo '               echo $mypassword | sudo -S diskutil quiet mount  ${alist[$posa]} >&- 2>&-' >> ${HOME}/.MountEFIa.sh
+echo '               echo "${mypassword}" | sudo -S diskutil quiet mount  ${alist[$posa]} >&- 2>&-' >> ${HOME}/.MountEFIa.sh
 echo '                    else' >> ${HOME}/.MountEFIa.sh
 echo '                       sudo printf '"' '"'' >> ${HOME}/.MountEFIa.sh
 echo '                        sudo diskutil quiet mount  ${alist[$posa]} >&- 2>&-' >> ${HOME}/.MountEFIa.sh
@@ -5412,7 +5413,7 @@ FORCE_CHECK_PASSWORD(){
 mypassword=""
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
              mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-             if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then 
+             if ! echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then 
                     security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
                     mypassword=""
                     SET_TITLE

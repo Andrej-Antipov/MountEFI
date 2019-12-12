@@ -432,10 +432,10 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
-                mypassword=$( echo $PASSWORD | xargs )
+                mypassword="${PASSWORD}" 
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
-                if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+                if echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
                     security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -539,7 +539,7 @@ do
         else
       
         if [[ ! $mypassword = "0" ]]; then
-               echo $mypassword | sudo -S diskutil quiet mount ${alist[$posa]} >&- 2>&-
+               echo "${mypassword}" | sudo -S diskutil quiet mount ${alist[$posa]} >&- 2>&-
 		               
          fi
 	
@@ -1148,10 +1148,10 @@ DO_MOUNT(){
                     password_was_entered=0
                     if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; password_was_entered=1; fi
                     if [[ ! $mypassword = "0" ]]; then 
-                    if ! echo $mypassword | sudo -S diskutil quiet mount  /dev/${string}  2>/dev/null; then
+                    if ! echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string}  2>/dev/null; then
                         #if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
                                 if [[ $password_was_entered = "0" ]]; then ENTER_PASSWORD "force"; password_was_entered=1; fi
-                                echo $mypassword | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
+                                echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
                         #fi
                         fi
                     fi
@@ -1221,7 +1221,7 @@ UNMOUNTED_CHECK(){
 
                 if [[ ! $mypassword = "0" ]]; then
 
-                echo $mypassword | sudo -S diskutil quiet umount force  /dev/${string} 2>/dev/null
+                echo "${mypassword}" | sudo -S diskutil quiet umount force  /dev/${string} 2>/dev/null
             
                     else
             
