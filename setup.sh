@@ -786,11 +786,11 @@ TRY=3
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
-                mypassword=$PASSWORD
+                mypassword=$( echo $PASSWORD | xargs )
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
                 if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
-                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1
+                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
@@ -5217,15 +5217,15 @@ echo '        DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
 echo '        TRY=3 ; GET_APP_ICON' >> ${HOME}/.MountEFIa.sh
 echo '        while [[ ! $TRY = 0 ]]; do' >> ${HOME}/.MountEFIa.sh
 echo '        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Пароль для подключения EFI разделов: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD="$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Пароль для подключения EFI разделов: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        else' >> ${HOME}/.MountEFIa.sh
-echo '        if PASSWORD=$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"'); then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD="$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        fi' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $cansel = 1 ]]; then break; fi ' >> ${HOME}/.MountEFIa.sh
-echo '                mypassword=$PASSWORD' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$( echo $PASSWORD | xargs )' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $mypassword = "" ]]; then mypassword="?"; fi' >> ${HOME}/.MountEFIa.sh
 echo '                if echo $mypassword | sudo -Sk printf '"''"' 2>/dev/null; then' >> ${HOME}/.MountEFIa.sh
-echo '                    security add-generic-password -a ${USER} -s efimounter -w ${mypassword} >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
+echo '                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
 echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '                        SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Авто-монтирование EFI работает"' >> ${HOME}/.MountEFIa.sh
 echo '                        else' >> ${HOME}/.MountEFIa.sh

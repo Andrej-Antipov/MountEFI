@@ -432,7 +432,7 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
-                mypassword=$PASSWORD
+                mypassword=$( echo $PASSWORD | xargs )
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
                 if echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
