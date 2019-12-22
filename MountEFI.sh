@@ -1613,6 +1613,31 @@ fi
 }
 ##############################################################################################
 
+GET_OC_VERS(){
+ocr="$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )"
+
+                   case "$ocr" in
+7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=050;;
+eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=051;;
+1ca142bf009ed537d84c980196c36d72 ) oc_revision=052;;
+97f744526c733aa2e6505f01f37de6d7 ) oc_revision=053;;
+91ea6c185c31a25c791da956c79808f9 ) oc_revision=004;;
+303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=003;;
+7805dc51bd280055d85775c512a832b0 ) oc_revision=002;;
+297e30883f3db26a30e48f6b757fd968 ) oc_revision=001;;
+e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=001d;;
+bb222980e4823798202b3a9cff63b604 ) oc_revision=002d;;
+52195547d645623036effeadd31e21a9 ) oc_revision=003d;;
+5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=004d;;
+c221f59769bd185857b2c30858fe3aa2 ) oc_revision=005d;;
+c31035549f86156ff5e79b9d87240ec5 ) oc_revision=051d;;
+eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=052d;;
+b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=053d;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=054d;;
+                                *)     oc_revision=""
+                    esac
+}
+
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
@@ -1631,7 +1656,7 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                         if [[ ${check_loader} = "Clover" ]]; then loader="Clover"; revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                         else
                              check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
-                					if [[ ${check_loader} = "OpenCore" ]]; then loader="OpenCore"; fi   
+                					if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; fi   
 	         fi
         fi
 
@@ -1658,7 +1683,7 @@ printf "\033[H"
                         fi
                         if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
                                 else
-                                    printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"'\e[0m' 
+                                    printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:12}" = "" ]]; then printf "${ldlist[$pointer]:8:12}"" "; fi; printf '\e[0m'
                         fi 
                         let "pointer++"
                         let "var99--"
@@ -1776,7 +1801,8 @@ do
         spinny
 
         FIND_LOADERS 
-        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi      
+        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi 
+        if [[ $loader = "OpenCore" ]]; then loader+="${oc_revision}"; fi          
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch); fi
 
     spinny
@@ -2064,7 +2090,8 @@ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
 
         FIND_LOADERS
-        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi        
+        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi
+        if [[ $loader = "OpenCore" ]]; then loader+="${oc_revision}"; fi        
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
         
            
