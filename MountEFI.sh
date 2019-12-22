@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 20.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="016"
+edit_vers="018"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -15,7 +15,7 @@ printf "\033[?25l"
 if [[ ! "$1" = "-u" ]]; then GET_LOADERS; else CheckLoaders=0; fi
 var=24
 while [[ ! $var = 0 ]]; do
-if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..88};  else printf '\e[40m %.0s\e[0m' {1..80}; fi
+if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..94};  else printf '\e[40m %.0s\e[0m' {1..80}; fi
 let "var--"; done
 if [[ ! $CheckLoaders = 0 ]]; then vcorr=32; v2corr=24; v3corr=25; v4corr=19; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
 printf "\033[H"
@@ -828,6 +828,15 @@ if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/MountEFI/!p' >
 if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
 }
 
+TERMINATE(){
+kill $(ps  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev) 2>/dev/null
+sleep 1
+if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
+else
+   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
+ fi 
+}
+
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
@@ -835,11 +844,11 @@ CLEAR_HISTORY
 #####################################################################################################################
 CHECK_TTY_COUNT	
 
-kill $(ps  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev) 2>/dev/null &
+TERMINATE &
 if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
 else
    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
- fi
+ fi 
 }
 
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
@@ -1619,7 +1628,7 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
         if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
-                        if [[ ${check_loader} = "Clover" ]]; then loader="Clover"
+                        if [[ ${check_loader} = "Clover" ]]; then loader="Clover"; revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                         else
                              check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
                 					if [[ ${check_loader} = "OpenCore" ]]; then loader="OpenCore"; fi   
@@ -1647,7 +1656,7 @@ printf "\033[H"
                         else
                         let "line=ldnlist[pointer]+11"
                         fi
-                        if [[ ${ldlist[$pointer]} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"'\e[0m'
+                        if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
                                 else
                                     printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"'\e[0m' 
                         fi 
@@ -1670,11 +1679,11 @@ spinny(){
 GETLIST(){
 
 GET_LOADERS
-if [[ ! $CheckLoaders = 0 ]]; then col=88; ldcorr=8; else col=80; ldcorr=2;  fi 
+if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2;  fi 
 
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J'
 
-unset ldlist; unset ldnlist
+ldlist=(); ldnlist=(); rvlist=()
 var0=$pos
 num=0
 ch=0
@@ -1766,9 +1775,9 @@ do
 
         spinny
 
-        FIND_LOADERS        
+        FIND_LOADERS 
+        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi      
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch); fi
-      
 
     spinny
 	let "num++"
@@ -1783,16 +1792,16 @@ printf "\r\033[3A"
             if [[ $CheckLoaders = 0 ]]; then
                 printf '\n\n\n      0)  повторить поиск разделов                     "+" - подключенные  \n\n'
 	            printf '     '
-	            printf '.%.0s' {1..32} 
+	            printf '.%.0s' {1..31} 
                 printf ' SATA '
-                printf '.%.0s' {1..30}
+                printf '.%.0s' {1..31}
                 printf '\n'
                 else
                 printf '\n\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n'
 	            printf '     '
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..38}
                 printf ' SATA '
-                printf '.%.0s' {1..34}
+                printf '.%.0s' {1..38}
                 printf '\n'
                 fi 
 		else
@@ -1806,9 +1815,9 @@ printf "\r\033[3A"
                 else
                 printf '\n\n\n      0)  update EFI partitions list                              "+" - mounted \n\n' 
 	            printf '     '
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..38}
                 printf ' SATA '
-                printf '.%.0s' {1..34}
+                printf '.%.0s' {1..38}
                 printf '\n'
                 fi
         fi
@@ -1822,9 +1831,9 @@ if [[ ! $usb_lines = 0 ]]; then
                 printf ' USB '
                 printf '.%.0s' {1..31}
                 else
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..39}
                 printf ' USB '
-                printf '.%.0s' {1..35}
+                printf '.%.0s' {1..38}
                 fi
                 printf '\n     '
 
@@ -1837,7 +1846,7 @@ fi
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..68} 
                 else
-                printf '.%.0s' {1..76}
+                printf '.%.0s' {1..82}
                 fi
 
 if [[ $ShowKeys = 1 ]]; then
@@ -1907,17 +1916,17 @@ fi
         	    printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
                 printf '\n\n      0)  повторить поиск разделов                     "+" - подключенные  \n\n' 
 	            printf '     '
-	            printf '.%.0s' {1..32} 
+	            printf '.%.0s' {1..31} 
                 printf ' SATA '
-                printf '.%.0s' {1..30}
+                printf '.%.0s' {1..31}
                 printf '\n'
                 else
                 printf '\n*********        Программа монтирует EFI разделы в Mac OS (X.11 - X.15)        *********\n'
                 printf '\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n' 
 	            printf '     '
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..38}
                 printf ' SATA '
-                printf '.%.0s' {1..34}
+                printf '.%.0s' {1..38}
                 printf '\n'
                 fi
 
@@ -1927,16 +1936,16 @@ fi
              if [[ $CheckLoaders = 0 ]]; then
                 printf '\n\n      0)  update EFI partitions list                        "+" - mounted \n\n'  
 	            printf '     '
-	            printf '.%.0s' {1..32} 
+	            printf '.%.0s' {1..31} 
                 printf ' SATA '
-                printf '.%.0s' {1..30}
+                printf '.%.0s' {1..31}
                 printf '\n'
                 else
                 printf '\n\n      0)  update EFI partitions list                              "+" - mounted \n\n'  
 	            printf '     '
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..38}
                 printf ' SATA '
-                printf '.%.0s' {1..34}
+                printf '.%.0s' {1..38}
                 printf '\n'
                 fi
         fi
@@ -1951,9 +1960,9 @@ if [[ ! $usb_lines = 0 ]]; then
                 printf ' USB '
                 printf '.%.0s' {1..31}
                 else
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..39}
                 printf ' USB '
-                printf '.%.0s' {1..35}
+                printf '.%.0s' {1..38}
                 fi
                 printf '\n     '
 
@@ -1967,7 +1976,7 @@ fi
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..68} 
                 else
-                printf '.%.0s' {1..76}
+                printf '.%.0s' {1..82}
                 fi
 
 if [[ $ShowKeys = 1 ]]; then
@@ -2043,7 +2052,7 @@ fi
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
-unset ldlist; unset ldnlist
+ldlist=(); ldnlist=(); rvlist=()
 var0=$pos; num=0; ch1=0
 unset string
 while [ $var0 != 0 ] 
@@ -2054,8 +2063,11 @@ string=`echo ${dlist[$pnum]}`
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
 
-        FIND_LOADERS        
+        FIND_LOADERS
+        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi        
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
+        
+           
 
     if [[ $ch1 -le $sata_lines ]]; then
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
@@ -2108,9 +2120,9 @@ if [[ ! $usb_lines = 0 ]]; then
                 printf ' USB '
                 printf '.%.0s' {1..31}
                 else
-                printf '.%.0s' {1..36}
+                printf '.%.0s' {1..39}
                 printf ' USB '
-                printf '.%.0s' {1..35}
+                printf '.%.0s' {1..38}
                 fi
                 printf '\n     '
 
@@ -2389,7 +2401,7 @@ while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
         clear && printf '\e[3J'
         GET_LOADERS
-        if [[ ! $CheckLoaders = 0 ]]; then col=88; ldcorr=8; else col=80; ldcorr=2;  fi 
+        if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2;  fi 
         clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 
 	if [[ $loc = "ru" ]]; then
