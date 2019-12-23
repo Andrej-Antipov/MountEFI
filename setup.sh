@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.11.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 23.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="014"
+s_edit_vers="015"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -18,6 +18,7 @@ s_edit_vers="014"
 # 012 - сохранение текущего конфига в iCloud
 # 013 - пробелы в паролях
 # 014 - несколько пробелов в середине пароля
+# 015 - проверка последних версий Clover и OC
 
 clear
 
@@ -37,10 +38,23 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
 printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n' 
-printf "\033[23;15f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'  
+GET_LOADERS
+printf "\033[23;15f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'
+if [[ ! $CheckLoaders = 0 ]]; then CHECK_UPDATE_LOADERS $
+sleep 0.5
+if [[ ! ${oc_vrs} = "" ]]; then printf "\033[3;5f"'\e[40m\e[1;33m'"Latest OpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m'; fi  
+if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clover  :  "'\e[1;32m'${clov_vrs}'\e[0m'; fi
+fi       
 read -n 1 
 clear && printf "\e[3J"
 } 
+
+CHECK_UPDATE_LOADERS(){
+if ping -c 1 google.com >> /dev/null 2>&1; then
+clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
+oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+fi
+}
 
 setup_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash" | grep setup |  grep -v grep  | cut -f1 -d " " | sort -u | wc -l )
 
