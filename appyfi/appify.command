@@ -22,6 +22,8 @@ if [[ -f ../setup.sh ]]; then
             rm -R setup.app
 fi
 
+
+
             if [[ -d ../Extra ]]; then rm -R -f ../Extra; fi
             mkdir ../Extra
             if [[ -f MountEFI ]]; then cp MountEFI ../Extra; fi
@@ -32,7 +34,6 @@ if [[ ! -d ../MountEFI.app ]]; then
 fi
 
 if [[ -d ../MountEFI.app ]]; then
-            touch ../MountEFI.app
             if [[ -f MountEFI ]]; then 
                 mv -f MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
@@ -41,13 +42,17 @@ if [[ -d ../MountEFI.app ]]; then
                 
                 mv -f setup ../MountEFI.app/Contents/Resources/setup
             fi
+            if [[ -f ../Notifiers/AppIcon.icns ]]; then rm -f ../MountEFI.app/Contents/Resources/AppIcon.icns; cp ../Notifiers/AppIcon.icns ../MountEFI.app/Contents/Resources/AppIcon.icns; fi
+            touch ../MountEFI.app
 fi
 
 cd ..
+
 if [[ -f DefaultConf.plist ]]; then 
         if [[ -f MountEFI.app/Contents/Resources/DefaultConf.plist ]]; then rm MountEFI.app/Contents/Resources/DefaultConf.plist; fi
         cp DefaultConf.plist MountEFI.app/Contents/Resources/
 fi
+
 
 if [[ -f colors.csv ]]; then 
         if [[ ! -f MountEFI.app/Contents/Resources/colors.csv ]]; then cp colors.csv MountEFI.app/Contents/Resources ; fi
@@ -71,6 +76,7 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             mkdir Updates/$current_vers/$edit_vers
             if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
             if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
+            if [[ -d MountEFI.app ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; cp -a MountEFI.app/Contents/MacOS/"Application Stub" Updates/$current_vers/$edit_vers; fi
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then 
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
             fi
