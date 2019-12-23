@@ -27,7 +27,7 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
-printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n'
+printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n' 
 if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'; fi
     if [[ "$1" = "-u" ]]; then 
                            if [[ $loc = "ru" ]]; then
@@ -41,8 +41,8 @@ if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mht
       else
 if [[ ! $CheckLoaders = 0 ]]; then CHECK_UPDATE_LOADERS $
 sleep 0.5
-if [[ ! ${oc_vrs} = "" ]]; then printf "\033[3;5f"'\e[40m\e[1;33m'"Latest OpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m'; fi  
-if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clover  :  "'\e[1;32m'${clov_vrs}'\e[0m'; fi
+if [[ ! ${oc_vrs} = "" ]]; then printf "\033[18;5f"'\e[40m\e[1;33m'"Latest OpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m';  printf '\e[40m\e[33m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'; fi
+if [[ ! ${clov_vrs} = "" ]]; then printf "\033[20;5f"'\e[40m\e[1;33m'"Latest Clover  : "'\e[1;32m'${clov_vrs}'\e[0m'; printf '\e[40m\e[33m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
 fi      
 while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]]; then break; fi; done 
 fi
