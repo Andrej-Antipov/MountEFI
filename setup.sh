@@ -5534,7 +5534,7 @@ printf "\033[?25l"
 printf "\033[H"
 for (( i=0; i<24; i++ )); do printf '\e[40m %.0s\e[0m' {1..80}; done
 printf "\033[H"
-            edit_vers=$(cat MountEFI | grep "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n')
+            edit_vers=$(cat MountEFI | grep -m1 "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n')
             prog_vers=$(cat MountEFI | grep "prog_vers=" | sed s'/prog_vers=//' | tr -d '" \n')
             vers="$prog_vers"".""$edit_vers"
 printf '\033[0;25f''\e[40m\e[1;35m   '; printf '\e[40m\e[1;35mMountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m© \e[0m''\n\n'
