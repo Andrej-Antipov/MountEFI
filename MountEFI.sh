@@ -17,7 +17,7 @@ var=24
 while [[ ! $var = 0 ]]; do
 if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..94};  else printf '\e[40m %.0s\e[0m' {1..80}; fi
 let "var--"; done
-if [[ ! $CheckLoaders = 0 ]]; then vcorr=32; v2corr=24; v3corr=25; v4corr=19; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
+if [[ ! $CheckLoaders = 0 ]]; then vcorr=35; v2corr=27; v3corr=28; v4corr=23; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
 printf "\033[H"
 
 printf "\033[8;'$v3corr'f"
@@ -28,7 +28,7 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033['$v2corr'C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
 printf '\r\033[3A\033['$vcorr'C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n' 
-if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'; fi
+if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[1;33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'; fi
     if [[ "$1" = "-u" ]]; then 
                            if [[ $loc = "ru" ]]; then
                            let "v5corr=v4corr+16"
@@ -41,8 +41,10 @@ if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[33mht
       else
 if [[ ! $CheckLoaders = 0 ]]; then CHECK_UPDATE_LOADERS $
 sleep 0.5
-if [[ ! ${oc_vrs} = "" ]]; then printf "\033[18;5f"'\e[40m\e[1;33m'"Latest OpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m';  printf '\e[40m\e[33m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'; fi
-if [[ ! ${clov_vrs} = "" ]]; then printf "\033[20;5f"'\e[40m\e[1;33m'"Latest Clover  : "'\e[1;32m'${clov_vrs}'\e[0m'; printf '\e[40m\e[33m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
+if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e[1;35mOpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m'
+                                printf "\033[18;17f"'\e[40m\e[36m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'; fi
+if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs}'\e[0m'; 
+                                printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
 fi      
 while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]]; then break; fi; done 
 fi
@@ -1629,23 +1631,30 @@ GET_OC_VERS(){
 ocr="$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )"
 
                    case "$ocr" in
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=0.50;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=0.51;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=0.52;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=0.53;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=0.04;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=0.03;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=0.02;;
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=0.01;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=0.01∂;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=0.02∂;;
-52195547d645623036effeadd31e21a9 ) oc_revision=0.03∂;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=0.04∂;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=0.05∂;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=0.51∂;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=0.52∂;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=0.53∂;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=0.54∂;;
+############## oc_hashes_strings 16 #################
+7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
+eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
+1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
+91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
+303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
+7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
+297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
+e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
+bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
+52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
+5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
+c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.05d;;
+c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
+eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
+97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
+b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
+                                *)     oc_revision=""
+                    esac
+################ no_release_hashes ##################
+if [[ ${oc_revision} = "" ]]; then nrhs="$ocr"; fi
+            
+                 case "$nrhs" in
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54d;;
                                 *)     oc_revision=""
                     esac
 }
