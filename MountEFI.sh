@@ -255,9 +255,10 @@ if [[ $update_check = "Updating" ]]; then
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
                 mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
         fi
-        if [[ -f ~/.MountEFIupdates/019.zip ]]; then rm -Rf ~/.MountEFIupdates/019; unzip  -o -qq ~/.MountEFIupdates/019.zip -d ~/.MountEFIupdates 2>/dev/null
-        if [[ -f ~/.MountEFIupdates/019/document.wflow ]]; then mv -f ~/.MountEFIupdates/019/document.wflow "${ROOT}"/../document.wflow ; fi
-        if [[ -f ~/.MountEFIupdates/019/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/019/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
+        edit_vers=$( cat MountEFI | grep -m1 "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n' )
+        if [[ -f ~/.MountEFIupdates/${edit_vers}.zip ]]; then rm -Rf ~/.MountEFIupdates/${edit_vers}; unzip  -o -qq ~/.MountEFIupdates/${edit_vers}.zip -d ~/.MountEFIupdates 2>/dev/null
+        if [[ -f ~/.MountEFIupdates/${edit_vers}/document.wflow ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/document.wflow "${ROOT}"/../document.wflow ; fi
+        if [[ -f ~/.MountEFIupdates/${edit_vers}/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
@@ -1654,7 +1655,12 @@ b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
 if [[ ${oc_revision} = "" ]]; then nrhs="$ocr"; fi
             
                  case "$nrhs" in
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54d;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®;;
+f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð;;
+96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®;;
+2f674084287ebc38bd8d214f7c9f26f3 ) oc_revision=.53ð;;
+c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n;;
                                 *)     oc_revision=""
                     esac
 }
