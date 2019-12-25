@@ -772,7 +772,7 @@ then
     printf ' Программа поставляется как есть. Она может свободно копироваться, передаваться другим    \n'
     printf ' лицам и изменяться без ограничений. Вы используете её без каких либо гарантий, на своё   \n'
     printf ' усмотрение и под свою ответственность.                                                   \n\n'
-    printf '\n Copyright © Андрей Антипов. (Gosvamih) Декабрь 2019 год.\n\n\n\n'
+    printf '\n Copyright © Андрей Антипов. (Gosvamih) Сентябрь 2019 год.\n\n\n\n'
     
 			else
 
@@ -794,7 +794,7 @@ then
     printf ' prints this help information. The program is delivered as is.It can be freely copied,\n'
     printf ' transferred to other persons and changed without restrictions. You use it without any\n'
     printf ' either warranties from the developer, at your discretion and under your responsibility.\n\n'
-    printf '\n Copyright © Andrew Antipov (Gosvamih) December 2019\n\n\n\n'
+    printf '\n Copyright © Andrew Antipov (Gosvamih) Septembre 2019\n\n\n\n'
     
 	fi
     exit 
@@ -880,7 +880,7 @@ COUNTDOWN(){
                 if [[ $loc = "ru" ]]; then
             printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
                     else
-            printf '\rPress any key to break the countdown. Exit timeout: '"$remaining"' '
+            printf '\rPress any key to stop the countdown. Exit timeout: '"$remaining"' '
                 fi
             read -t 1 -n1 demo
                 if [[ ! $demo = "±" ]]; then  break; fi
@@ -888,7 +888,7 @@ COUNTDOWN(){
                 if [[ $loc = "ru" ]]; then
             printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
                     else
-            printf '\rPress any key to break the countdown. Exit timeout: '"$remaining"' '
+            printf '\rPress any key to stop the countdown. Exit timeout: '"$remaining"' '
                 fi
                 break;
             fi;
