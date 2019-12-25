@@ -61,10 +61,13 @@ else
 echo "server latest vertion didn't get"
 fi
 
-if [[ "${oc_vrs}" -eq "${latest}" ]]; then echo "no need to download new one"
+oc_vers=$( echo "${oc_vrs}" | bc )
+ls_vers=$( echo "${latest}" | bc )
+
+if [[ "${oc_vers}" -eq "${ls_vers}" ]]; then echo "no need to download new one"
     else
 
-  if [[ "${oc_vrs}" -gt "${latest}" ]]; then 
+  if [[ "${oc_vers}" -gt "${ls_vers}" ]]; then 
     echo "list of hashes needs to update. downloading OC release... "
     if ping -c 1 google.com >> /dev/null 2>&1; then
     latest_RELEASE=$( echo "$latest_OC" | grep RELEASE )
@@ -72,7 +75,7 @@ if [[ "${oc_vrs}" -eq "${latest}" ]]; then echo "no need to download new one"
     dbg_hash=0
     rls_hash=0
 
-    if [[ ! -d OC_latest/OC_latest/$oc_vrs/DEBUG ]]; then mkdir -p OC_latest/$oc_vrs/DEBUG; fi
+    if [[ ! -d OC_latest/$oc_vrs/DEBUG ]]; then mkdir -p OC_latest/$oc_vrs/DEBUG; fi
     if [[ ! -d OC_latest/$oc_vrs/RELEASE ]]; then mkdir -p OC_latest/$oc_vrs/RELEASE; fi
     while :;do printf '.' ;sleep 0.4;done &
     trap "kill $!" EXIT 
