@@ -16,8 +16,8 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Password for mount stored in keychain
 * Some other features
 
-![Theme customizable GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/008.png)
+![Theme customizable GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/100.png)
 
-![Russian and English GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/009.png)
+![Russian and English GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/101.png)
 
 
