@@ -72,7 +72,9 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             if [[ ! -d Updates ]]; then mkdir Updates; fi
             current_vers=$(echo "$prog_vers" | tr -d ".")
             if [[ ${#current_vers} = 2 ]]; then current_vers+="0"; fi
-            if [[ ! -d Updates/$current_vers ]]; then mkdir Updates/$current_vers; else rm -Rf Updates/$current_vers/*; fi
+            if [[ ! -d Updates/$current_vers ]]; then mkdir Updates/$current_vers; fi
+            if [[ -d Updates/$current_vers/$edit_vers ]]; then rm -Rf Updates/$current_vers/$edit_vers; fi
+            if [[ -f Updates/$current_vers/"$edit_vers".zip ]]; then rm -f Updates/$current_vers/"$edit_vers".zip; fi
             mkdir Updates/$current_vers/$edit_vers
             if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
             if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
