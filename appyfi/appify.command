@@ -7,7 +7,7 @@ clear
 rm -f MountEFI; rm -f setup
 
 if [[ -f ../MountEFI.sh ]]; then 
-            edit_vers=$(cat ../MountEFI.sh | grep "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n')
+            edit_vers=$(cat ../MountEFI.sh | grep -m1 "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n')
             prog_vers=$(cat ../MountEFI.sh | grep "prog_vers=" | sed s'/prog_vers=//' | tr -d '" \n')
             vers="$prog_vers"".""$edit_vers"
             
