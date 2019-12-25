@@ -1632,22 +1632,7 @@ ocr="$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )"
 
                    case "$ocr" in
 ############## oc_hashes_strings 16 #################
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
-52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.05d;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
+297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
                                 *)     oc_revision=""
                     esac
 ################ no_release_hashes ##################
