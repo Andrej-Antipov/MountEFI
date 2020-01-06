@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -939,12 +939,11 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
                                 
                         done
                                      
-                                     if [[ ! $match = 1 ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; fi
+                                     if [[ ! $match = 1 ]]; then UPDATE_SCREEN; fi
                         done
 
                         else
-                                    
-                                     UPDATE_SCREEN_BUFFER; UPDATE_SCREEN
+                                    UPDATE_SCREEN
 
                     fi
             
@@ -1167,6 +1166,22 @@ EXIT_PROGRAM
 	fi
 }
 
+MOUNTED_CHECK(){
+
+ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+	if [[ ! $mcheck = "Yes" ]]; then
+
+    SET_TITLE
+    if [[ $loc = "ru" ]]; then
+    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения ..."' >> ${HOME}/.MountEFInoty.sh
+    else
+    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting ..."' >> ${HOME}/.MountEFInoty.sh
+    fi
+    DISPLAY_NOTIFICATION 
+
+    fi
+}
+
 DO_MOUNT(){
 
 		if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${string}
@@ -1182,6 +1197,8 @@ DO_MOUNT(){
                     fi
                 fi
         fi
+
+MOUNTED_CHECK
         
 }
 
@@ -1212,24 +1229,6 @@ let "var2--"
 done
 lists_updated=0
 fi
-}
-
-
-
-MOUNTED_CHECK(){
-
- mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-	if [[ ! $mcheck = "Yes" ]]; then
-
-    SET_TITLE
-    if [[ $loc = "ru" ]]; then
-    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения ..."' >> ${HOME}/.MountEFInoty.sh
-    else
-    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting ..."' >> ${HOME}/.MountEFInoty.sh
-    fi
-    DISPLAY_NOTIFICATION 
-
-    fi
 }
 
 UNMOUNTED_CHECK(){
@@ -1317,10 +1316,7 @@ do
 
 	was_mounted=0
 
-       	
-	DO_MOUNT	
-
-	MOUNTED_CHECK
+  	DO_MOUNT	
 
 	else
 		was_mounted=1
@@ -1391,10 +1387,7 @@ do
 
 	was_mounted=0
 
-       	
-	DO_MOUNT	
-
-	MOUNTED_CHECK
+  	DO_MOUNT	
 
 	else
 		was_mounted=1
@@ -1582,7 +1575,6 @@ fi
 
 DO_MOUNT
 
-MOUNTED_CHECK
 else
 wasmounted=1
 	fi
@@ -2125,7 +2117,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${pr_string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                 if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; break; fi
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then UPDATE_SCREEN; break; fi
             fi
         done
     else
@@ -2191,6 +2183,9 @@ done
 
 ###################################### обновление на экране списка подключенных ###########################################
 UPDATE_SCREEN(){
+
+UPDATE_SCREEN_BUFFER
+
 printf "\033[H"
 printf "\r\033[8f"
 echo  "$screen_buffer"
@@ -2442,7 +2437,6 @@ mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ ! $mcheck = "Yes" ]]; then
     wasmounted=0
     DO_MOUNT
-    MOUNTED_CHECK
     if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi
     else 
     wasmounted=1
