@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 23.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="019"
+edit_vers="020"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -855,6 +855,7 @@ else
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
 CLEAR_HISTORY
+
 #####################################################################################################################
 CHECK_TTY_COUNT	
 
@@ -954,6 +955,9 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
 }
 
 CHECK_HOTPLUG_DISKS(){
+
+RECHECK_LOADERS 
+
 hotplug=0
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
         if [[ ! $old_uuid_count = $uuid_count ]]; then
@@ -1172,15 +1176,16 @@ DO_MOUNT(){
                     if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; password_was_entered=1; fi
                     if [[ ! $mypassword = "0" ]]; then 
                     if ! echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string}  2>/dev/null; then
-                        #if ! echo $mypassword | sudo -Sk printf '' 2>/dev/null; then
+
                                 if [[ $password_was_entered = "0" ]]; then ENTER_PASSWORD "force"; password_was_entered=1; fi
                                 echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
-                        #fi
-                        fi
+
                     fi
+                fi
         fi
         
 }
+
 # Определение функции получения информаци о системном разделе EFI
 GET_SYSTEM_EFI(){
 
@@ -1209,6 +1214,8 @@ done
 lists_updated=0
 fi
 }
+
+
 
 MOUNTED_CHECK(){
 
@@ -1497,6 +1504,8 @@ cpu_family=1
 
 GETARR
 
+mounted_loaders_list=()
+
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
 
@@ -1628,17 +1637,20 @@ fi
 ##############################################################################################
 
 GET_OC_VERS(){
-ocr="$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )"
 
-                   case "$ocr" in
+                   case "$md5_loader" in
 ############## oc_hashes_strings 16 #################
 297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
                                 *)     oc_revision=""
                     esac
+
 ################ no_release_hashes ##################
-if [[ ${oc_revision} = "" ]]; then nrhs="$ocr"; fi
+if [[ ${oc_revision} = "" ]]; then 
             
-                 case "$nrhs" in
+                 case "$md5_loader" in
+8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®;;
+5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n;;
+01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð;;
 d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®;;
 f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð;;
 96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n;;
@@ -1647,6 +1659,7 @@ d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®;;
 c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n;;
                                 *)     oc_revision=""
                     esac
+fi
 }
 
 ##################### проверка на загрузчик после монтирования ##################################################################################
@@ -1658,19 +1671,19 @@ if [[ ! $CheckLoaders = 0 ]]; then
     unset loader
     if [[ $mcheck = "Yes" ]]; then 
 
-
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
-        if [[ -d "$vname"/EFI/BOOT ]]; then
-			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+                unique_loader=$( wc -c <"$vname"/EFI/BOOT/BOOTx64.efi | xargs )
+                mounted_loaders_list[$pnum]=${unique_loader} 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
                         if [[ ${check_loader} = "Clover" ]]; then loader="Clover"; revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                         else
                              check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
-                					if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; fi   
+                					if [[ ${check_loader} = "OpenCore" ]]; then md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi ); GET_OC_VERS; loader="OpenCore"; fi
+             else
+                  mounted_loaders_list[$pnum]=0
 	         fi
-        fi
-
     fi
 fi
 
@@ -2085,7 +2098,30 @@ fi
 }
 # Конец определения функции UPDATELIST ######################################################
 
-
+RECHECK_LOADERS(){
+if [[ ! $CheckLoaders = 0 ]]; then
+  if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
+    let "pauser=3"
+    unset pstring; need_update_screen=0
+    for ((num=0;num<$pos;num++)); do
+    pnum=${nlist[num]}; pr_string=`echo ${dlist[$pnum]}`
+    mounted_check=`df | grep ${pr_string}` 
+        if [[ ! $mounted_check = "" ]]; then
+        vname=`df | egrep ${pr_string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+            if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+            loader_sum=$( wc -c <"$vname"/EFI/BOOT/BOOTx64.efi | xargs )
+                else
+            loader_sum=0
+            fi 
+                if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then UPDATE_SCREEN_BUFFER; UPDATE_SCREEN;  break; fi
+        fi
+    done
+ 
+  else
+    let "pauser=pauser-1"
+  fi
+fi
+}
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
@@ -2106,7 +2142,6 @@ if [[ $mcheck = "Yes" ]]; then
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
         
            
-
     if [[ $ch1 -le $sata_lines ]]; then
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
@@ -2140,10 +2175,7 @@ let "num++"
 let "var0--"
 done
 
-
-
 }
-
 
 ###################################### обновление на экране списка подключенных ###########################################
 UPDATE_SCREEN(){
@@ -2263,7 +2295,6 @@ if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
 fi
  choice1="±"
 
-
 CHECK_HOTPLUG_DISKS
 if [[ $hotplug = 1 ]]; then break; fi
 CHECK_HOTPLUG_PARTS
@@ -2283,6 +2314,7 @@ printf '\n  ! Press the second digit or press <Enter>  '
 fi
 printf "\r\n\033[4A\033['$pos_corr'C"$choice
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
+
 CHECK_HOTPLUG_DISKS
 if [[ $hotplug = 1 ]]; then break; fi
 CHECK_HOTPLUG_PARTS
