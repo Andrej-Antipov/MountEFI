@@ -1647,6 +1647,9 @@ GET_OC_VERS(){
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "$md5_loader" in
+31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®;;
+6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n;;
+992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð;;
 8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®;;
 5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n;;
 01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð;;
@@ -1661,6 +1664,15 @@ c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n;;
 fi
 }
 
+GET_CLOVER_VERS(){
+
+                case "$md5_loader" in
+############## clover_hashes_strings 1 #################
+a3b156fd314ef1061015c2250d851f49 ) revision=5102;;
+                                *)     revision=""
+
+                esac
+}
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
@@ -1676,7 +1688,10 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
                 mounted_loaders_list[$pnum]=${md5_loader} 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
-                        if [[ ${check_loader} = "Clover" ]]; then loader="Clover"; revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
+                        if [[ ${check_loader} = "Clover" ]]; then 
+                                                    loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
+                                                    if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
+                                                    #if [[ ${revision} = "" ]]; then GET_CLOVER_VERS; fi
                         else
                              check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
                 					if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; fi
