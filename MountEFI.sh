@@ -855,7 +855,6 @@ else
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
 CLEAR_HISTORY
-
 #####################################################################################################################
 CHECK_TTY_COUNT	
 
@@ -956,7 +955,7 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
 
 CHECK_HOTPLUG_DISKS(){
 
-RECHECK_LOADERS 
+RECHECK_LOADERS
 
 hotplug=0
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
@@ -1674,13 +1673,13 @@ if [[ ! $CheckLoaders = 0 ]]; then
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
 			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-                unique_loader=$( wc -c <"$vname"/EFI/BOOT/BOOTx64.efi | xargs )
-                mounted_loaders_list[$pnum]=${unique_loader} 
+                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
+                mounted_loaders_list[$pnum]=${md5_loader} 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
                         if [[ ${check_loader} = "Clover" ]]; then loader="Clover"; revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                         else
                              check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
-                					if [[ ${check_loader} = "OpenCore" ]]; then md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi ); GET_OC_VERS; loader="OpenCore"; fi
+                					if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; fi
              else
                   mounted_loaders_list[$pnum]=0
 	         fi
@@ -2098,30 +2097,28 @@ fi
 }
 # Конец определения функции UPDATELIST ######################################################
 
+# Oпределение функции обновления экрана в случае замены файла загрузчика ####################################################
 RECHECK_LOADERS(){
 if [[ ! $CheckLoaders = 0 ]]; then
-  if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
-    let "pauser=3"
-    unset pstring; need_update_screen=0
-    for ((num=0;num<$pos;num++)); do
-    pnum=${nlist[num]}; pr_string=`echo ${dlist[$pnum]}`
-    mounted_check=`df | grep ${pr_string}` 
-        if [[ ! $mounted_check = "" ]]; then
-        vname=`df | egrep ${pr_string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-            if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-            loader_sum=$( wc -c <"$vname"/EFI/BOOT/BOOTx64.efi | xargs )
-                else
-            loader_sum=0
-            fi 
-                if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then UPDATE_SCREEN_BUFFER; UPDATE_SCREEN;  break; fi
-        fi
-    done
- 
-  else
-    let "pauser=pauser-1"
-  fi
+    if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
+        let "pauser=3"
+        unset pstring
+        for ((num=0;num<$pos;num++))
+       do
+        pnum=${nlist[num]}; pr_string=`echo ${dlist[$pnum]}`
+        mounted_check=`df | grep ${pr_string}`    
+            if [[ ! $mounted_check = "" ]]; then 
+            vname=`df | egrep ${pr_string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+                if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then  UPDATE_SCREEN_BUFFER; UPDATE_SCREEN; break; fi
+            fi
+        done
+    else
+        let "pauser=pauser-1"
+    fi
 fi
 }
+#################################################################################################################################
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
