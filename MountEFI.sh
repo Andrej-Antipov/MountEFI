@@ -1,13 +1,12 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 07.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
 edit_vers="020"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
-
 
 SHOW_VERSION(){
 clear && printf '\e[8;24;'$col't' && printf '\e[3J' && printf "\033[H"
@@ -129,7 +128,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>always</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
@@ -908,8 +907,52 @@ if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then
         fi
     fi
 fi
-######################################################################################################################
 
+##################### Детект раскладки  и переключение на латиницу  ####################################################################################################
+
+SET_INPUT(){
+
+msg=$1
+
+if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
+    declare -a layouts_names
+    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
+    IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
+    keyboard="0"
+
+    for ((i=0;i<$num;i++)); do
+        case ${layouts_names[i]} in
+    "ABC"                ) keyboard=${layouts_names[i]}; break ;;
+    "US Extended"        ) keyboard="USExtended"; break ;;
+    "USInternational-PC" ) keyboard=${layouts_names[i]}; break ;;
+    "U.S."               ) keyboard="US"; break ;;
+    "British"            ) keyboard=${layouts_names[i]}; break ;;
+    "British-PC"         ) keyboard=${layouts_names[i]}; break ;;
+    esac 
+    done
+
+    if [[ ! $i = 0 ]]; then 
+#       cd "$(dirname "$0")"
+        if [[ ! $keyboard = "0" ]] && [[ -f "./xkbswitch" ]]; then ./xkbswitch -se $keyboard
+            elif [[ ! "${msg}" = "silent" ]]; then
+                if [[ $loc = "ru" ]]; then
+            printf '\n\n                         ! Смените раскладку на латиницу !'
+                else
+            printf '\n\n                         ! Change layout to UTF-8 ABC, US or EN !'
+            fi
+            read -t 2 -n 2 -s
+            printf '\r                                                                               \r'
+            printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
+        fi
+     fi
+fi
+}
+
+##################################################################################################################################################################
+
+
+######################################################################################################################
+SET_INPUT "silent"
 ############################################ очистка истории bash при запуске ##################################################
 CLEAR_HISTORY &
 ################################################################################################################################
@@ -1358,7 +1401,6 @@ nogetlist=1
 
 }
 
-
 FIND_OPENCORE(){
 
 printf '\r\n\n'
@@ -1491,6 +1533,8 @@ if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]
         vmacos="Total Size:"
         flag=0
 fi
+
+osascript -e 'tell application "Terminal" to activate' &
 
 cpu_family=1
 
@@ -2234,47 +2278,6 @@ ADVANCED_MENUE(){
 
     order=3; UPDATELIST; GETKEYS
 }
-##################### Детект раскладки  и переключение на латиницу  ####################################################################################################
-
-SET_INPUT(){
-
-if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
-    declare -a layouts_names
-    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
-    IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
-    keyboard="0"
-
-    for ((i=0;i<$num;i++)); do
-        case ${layouts_names[i]} in
-    "ABC"                ) keyboard=${layouts_names[i]}; break ;;
-    "US Extended"        ) keyboard="USExtended"; break ;;
-    "USInternational-PC" ) keyboard=${layouts_names[i]}; break ;;
-    "U.S."               ) keyboard="US"; break ;;
-    "British"            ) keyboard=${layouts_names[i]}; break ;;
-    "British-PC"         ) keyboard=${layouts_names[i]}; break ;;
-    esac 
-    done
-
-    if [[ ! $i = 0 ]]; then 
-#       cd "$(dirname "$0")"
-        if [[ ! $keyboard = "0" ]] && [[ -f "./xkbswitch" ]]; then ./xkbswitch -se $keyboard
-            else
-            if [[ $loc = "ru" ]]; then
-            printf '\n\n                         ! Смените раскладку на латиницу !'
-                else
-            printf '\n\n                         ! Change layout to UTF-8 ABC, US or EN !'
-            fi
-            read -t 2 -n 2 -s
-            printf '\r                                                                               \r'
-            printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
-        fi
-     fi
-     
-fi
-
-}
-
-##################################################################################################################################################################
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
@@ -2383,7 +2386,7 @@ if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; fi
 CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
 done
-SET_INPUT
+SET_INPUT "message"
 else
 if [[ $CheckLoaders = 1 ]]; then printf '\033[1B' ; fi
 READ_TWO_SYMBOLS; sym=2
@@ -2452,7 +2455,7 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 # Конец определения MOUNTS #################################################################
 
 
-osascript -e 'tell application "Terminal" to activate' &
+#osascript -e 'tell application "Terminal" to activate' &
 
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
@@ -2464,12 +2467,11 @@ if [[ $cpu_family = "" ]]; then cpu_family=0
     cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f2 -d"-" | cut -c1)
 fi
 
-
 chs=0
 
 nogetlist=0
 
-SET_INPUT
+#SET_INPUT "message"
 
 if [[ $upd = 1 ]]; then col=80; SHOW_VERSION -u; fi
 
