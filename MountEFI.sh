@@ -369,6 +369,15 @@ if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
 
+GET_LOADERS(){
+CheckLoaders=1
+strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then CheckLoaders=0
+fi
+}
+
+if [[ ! $upd = 0 ]]; then col=80; SHOW_VERSION -u; fi
+
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
 if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
             if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
@@ -2454,9 +2463,6 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 }
 # Конец определения MOUNTS #################################################################
 
-
-#osascript -e 'tell application "Terminal" to activate' &
-
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
 GET_USER_PASSWORD
@@ -2470,10 +2476,6 @@ fi
 chs=0
 
 nogetlist=0
-
-#SET_INPUT "message"
-
-if [[ $upd = 1 ]]; then col=80; SHOW_VERSION -u; fi
 
 while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
