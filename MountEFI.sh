@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="020"
+edit_vers="021"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1733,13 +1733,22 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
                 mounted_loaders_list[$pnum]=${md5_loader} 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
-                        if [[ ${check_loader} = "Clover" ]]; then 
+                   if [[ ${check_loader} = "Clover" ]]; then 
                                                     loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                                                     if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
                                                     #if [[ ${revision} = "" ]]; then GET_CLOVER_VERS; fi
-                        else
-                             check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`; fi
-                					if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; fi
+                                                    loader+="${revision:0:4}"
+  
+                    else
+                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
+                    if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
+                    else
+                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo microsoft )
+                    if [[ ! ${check_loader} = "" ]]; then loader="Windows"; loader+="® "
+                    fi
+                    fi   
+                    fi
+                        
              else
                   mounted_loaders_list[$pnum]=0
 	         fi
@@ -1765,8 +1774,11 @@ printf "\033[H"
                         let "line=ldnlist[pointer]+11"
                         fi
                         if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
-                                else
-                                    printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
+                                elif [[ ${ldlist[$pointer]:0:7} = "Windows" ]]; then
+                                     Windows="Windows"; c_win=47
+                                     printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[55C${ldlist[$pointer]:7:9}"" MS ";  printf '\e[0m'
+                                        else
+                                            printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
                         fi 
                         let "pointer++"
                         let "var99--"
@@ -1883,9 +1895,7 @@ do
 
         spinny
 
-        FIND_LOADERS 
-        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi 
-        if [[ $loader = "OpenCore" ]]; then loader+="${oc_revision}"; fi          
+        FIND_LOADERS      
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch); fi
 
     spinny
@@ -2193,9 +2203,7 @@ string=`echo ${dlist[$pnum]}`
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
 
-        FIND_LOADERS
-        if [[ $loader = "Clover" ]]; then loader+="${revision:0:4}"; fi
-        if [[ $loader = "OpenCore" ]]; then loader+="${oc_revision}"; fi        
+        FIND_LOADERS   
         if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
         
            
