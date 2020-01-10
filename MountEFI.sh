@@ -1746,8 +1746,8 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo GNU/Linux )
                     if [[ ${check_loader} = "GNU/Linux" ]]; then loader="GNU/Linux"; loader+=" "
                     else
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo RefindPkg )
-                    if [[ ${check_loader} = "RefindPkg" ]]; then loader="refind"; loader+=" "
+                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -o Refind )
+                    if [[ ${check_loader} = "Refind" ]]; then loader="refind"; loader+=" "
                     else
                 check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo microsoft )
                     if [[ ! ${check_loader} = "" ]]; then loader="Windows"; loader+="® "
