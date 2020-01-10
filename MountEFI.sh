@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 07.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="023"
+edit_vers="024"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1692,6 +1692,9 @@ GET_OC_VERS(){
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "$md5_loader" in
+
+aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n;;
+f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð;;
 31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®;;
 6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n;;
 992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð;;
@@ -1732,33 +1735,24 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
 			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
                 mounted_loaders_list[$pnum]=${md5_loader} 
-                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
-                   if [[ ${check_loader} = "Clover" ]]; then 
-                                                    loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
-                                                    if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
-                                                    #if [[ ${revision} = "" ]]; then GET_CLOVER_VERS; fi
-                                                    loader+="${revision:0:4}"
+                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft|Refind" )
+                    if [[ ${md5_loader} = "" ]]; then loader=""; else
+                    case "${check_loader}" in
+                    "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
+                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
+                                 #if [[ ${revision} = "" ]]; then GET_CLOVER_VERS; fi
+                                loader+="${revision:0:4}"
+                                ;;
   
-                    else
-                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
-                    if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
-                    else
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo GNU/Linux )
-                    if [[ ${check_loader} = "GNU/Linux" ]]; then loader="GNU/Linux"; loader+=" "
-                    else
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -o Refind )
-                    if [[ ${check_loader} = "Refind" ]]; then loader="refind"; loader+=" "
-                    else
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo microsoft )
-                    if [[ ! ${check_loader} = "" ]]; then loader="Windows"; loader+="® "
+                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}" ;;
+                    "GNU/Linux" ) loader="GNU/Linux"                                       ;;
+                    "Refind"    ) loader="refind"                                          ;;
+                    "Microsoft" ) loader="Windows"; loader+="® "                           ;;
+                               *) loader="unrecognized"                                    ;;
+                    esac
                     fi
-                    fi   
-                    fi
-                    fi
-                    fi
-                        
              else
-                  mounted_loaders_list[$pnum]=0
+                    mounted_loaders_list[$pnum]=0
 	         fi
     fi
 fi
@@ -1782,6 +1776,10 @@ printf "\033[H"
                         let "line=ldnlist[pointer]+11"
                         fi
                         if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
+                                elif [[ ${ldlist[$pointer]:0:12} = "unrecognized" ]]; then
+                                     c_unr=47
+                                     if [[ $loc = "ru" ]]; then Unrec="Не распознан"; else Unrec="Unrecognized"; fi
+                                     printf "\033[$line;f\033['$c_unr'C"'\e['$themeldrs'm'"${Unrec}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:9} = "GNU/Linux" ]]; then
                                      Linux="GNU/Linux"; c_lin=49
                                      printf "\033[$line;f\033['$c_lin'C"'\e['$themeldrs'm'"${Linux}"" "; printf '\e[0m'
