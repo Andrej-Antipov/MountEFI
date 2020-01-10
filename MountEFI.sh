@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="021"
+edit_vers="022"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1743,10 +1743,14 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
                     if [[ ${check_loader} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
                     else
+                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo GNU/Linux )
+                    if [[ ${check_loader} = "GNU/Linux" ]]; then loader="GNU/Linux"; loader+=" "
+                    else
                 check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -i -m1 -wo microsoft )
                     if [[ ! ${check_loader} = "" ]]; then loader="Windows"; loader+="® "
                     fi
                     fi   
+                    fi
                     fi
                         
              else
@@ -1774,6 +1778,9 @@ printf "\033[H"
                         let "line=ldnlist[pointer]+11"
                         fi
                         if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
+                                elif [[ ${ldlist[$pointer]:0:9} = "GNU/Linux" ]]; then
+                                     Linux="GNU/Linux"; c_lin=49
+                                     printf "\033[$line;f\033['$c_lin'C"'\e['$themeldrs'm'"${Linux}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:7} = "Windows" ]]; then
                                      Windows="Windows"; c_win=47
                                      printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[55C${ldlist[$pointer]:7:9}"" MS ";  printf '\e[0m'
