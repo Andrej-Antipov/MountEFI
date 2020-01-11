@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="024"
+edit_vers="025"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1681,32 +1681,75 @@ fi
 ##############################################################################################
 
 GET_OC_VERS(){
-
-                   case "$md5_loader" in
-############## oc_hashes_strings 16 #################
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
+case "${md5_loader}" in
+############## oc_hashes_strings 16 ################# 
+297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r
+;; 
+e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d
+;; 
+7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r
+;; 
+bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d
+;; 
+303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r
+;; 
+52195547d645623036effeadd31e21a9 ) oc_revision=.03d
+;; 
+91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r
+;; 
+5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d
+;; 
+7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r
+;; 
+c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d
+;; 
+eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r
+;; 
+c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d
+;; 
+1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r
+;; 
+eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d
+;; 
+97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r
+;; 
+b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d
+;; 
                                 *)     oc_revision=""
-                    esac
-
+esac
 ################ no_release_hashes ##################
 if [[ ${oc_revision} = "" ]]; then 
             
-                 case "$md5_loader" in
+                 case "${md5_loader}" in
 
-aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n;;
-f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð;;
-31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®;;
-6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n;;
-992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð;;
-8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®;;
-5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n;;
-01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®;;
-f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð;;
-96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®;;
-2f674084287ebc38bd8d214f7c9f26f3 ) oc_revision=.53ð;;
-c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n;;
+aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n
+;;
+f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð
+;;
+31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®
+;;
+6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n
+;;
+992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð
+;;
+8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®
+;;
+5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n
+;;
+01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð
+;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®
+;;
+f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð
+;;
+96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n
+;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®
+;;
+2f674084287ebc38bd8d214f7c9f26f3 ) oc_revision=.53ð
+;;
+c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
+;;
                                 *)     oc_revision=""
                     esac
 fi
@@ -1716,7 +1759,8 @@ GET_CLOVER_VERS(){
 
                 case "$md5_loader" in
 ############## clover_hashes_strings 1 #################
-a3b156fd314ef1061015c2250d851f49 ) revision=5102;;
+a3b156fd314ef1061015c2250d851f49 ) revision=5102
+;;
                                 *)     revision=""
 
                 esac
@@ -1744,11 +1788,16 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                                 loader+="${revision:0:4}"
                                 ;;
   
-                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}" ;;
-                    "GNU/Linux" ) loader="GNU/Linux"                                       ;;
-                    "Refind"    ) loader="refind"                                          ;;
-                    "Microsoft" ) loader="Windows"; loader+="® "                           ;;
-                               *) loader="unrecognized"                                    ;;
+                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}" 
+                        ;;
+                    "GNU/Linux" ) loader="GNU/Linux"                                       
+                        ;;
+                    "Refind"    ) loader="refind"                                          
+                        ;;
+                    "Microsoft" ) loader="Windows"; loader+="® "                           
+                        ;;
+                               *) loader="unrecognized"                                    
+                        ;;
                     esac
                     fi
              else
