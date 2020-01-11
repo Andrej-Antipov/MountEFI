@@ -1721,7 +1721,14 @@ esac
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "${md5_loader}" in
-
+4500e9f6f0d3d3fa9e4378931418b1f7 ) oc_revision=.54n
+;;
+3edc7635655663fdb9cf6979f7ef20f3 ) oc_revision=.54ð
+;;
+181e452d5aa32e168159aafbe8353d10 ) oc_revision=.54n
+;;
+005807d0d8ae2b8c0eed2822ab82ea5b ) oc_revision=.54ð
+;;
 aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n
 ;;
 f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð
