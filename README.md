@@ -11,7 +11,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Easy set up auto-mount EFI as service while login system
 * Has alias editor for device names to easy recognize drives
 * Has built-in themes and theme editor. Terminal system theme usage also supported
-* Defines EFI/BOOT/BOOTX64.efi of Clover and OpenCore bootloaders
+* Defines EFI/BOOT/BOOTX64.efi of Clover,OpenCore,Windows,Refind,Grub bootloaders
 * Backup and restore self settings. Also via iCloud
 * Password for mount stored in keychain
 * Some other features
