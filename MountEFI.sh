@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="026"
+edit_vers="027"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1707,6 +1707,12 @@ b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "${md5_loader}" in
+5e8fe9b3c1398f50c4bd126dade630ac ) oc_revision=.55®
+;;
+7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.54ð
+;;
+8e8fb33c3f0409bfc1d0e24a6340dc8a ) oc_revision=.54n
+;;
 4500e9f6f0d3d3fa9e4378931418b1f7 ) oc_revision=.54n
 ;;
 3edc7635655663fdb9cf6979f7ef20f3 ) oc_revision=.54ð
@@ -1771,9 +1777,12 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
 
 			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
-                mounted_loaders_list[$pnum]=${md5_loader} 
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft|Refind" )
+                mounted_loaders_list[$pnum]=${md5_loader}                    
                     if [[ ${md5_loader} = "" ]]; then loader=""; else
+                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore" )
+                    if [[ ${check_loader} = "" ]]; then
+                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "GNU/Linux|Microsoft|Refind" )
+                    fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                                 if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
