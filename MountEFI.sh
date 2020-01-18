@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 19.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="027"
+edit_vers="028"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1709,9 +1709,9 @@ if [[ ${oc_revision} = "" ]]; then
                  case "${md5_loader}" in
 5e8fe9b3c1398f50c4bd126dade630ac ) oc_revision=.55®
 ;;
-7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.54ð
+7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.55ð
 ;;
-8e8fb33c3f0409bfc1d0e24a6340dc8a ) oc_revision=.54n
+8e8fb33c3f0409bfc1d0e24a6340dc8a ) oc_revision=.55n
 ;;
 4500e9f6f0d3d3fa9e4378931418b1f7 ) oc_revision=.54n
 ;;
@@ -1779,9 +1779,10 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
                 mounted_loaders_list[$pnum]=${md5_loader}                    
                     if [[ ${md5_loader} = "" ]]; then loader=""; else
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore" )
+                f_check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -o  "Clover|OpenCore|GNU/Linux|Microsoft|Refind" )
+                check_loader=$( echo "${f_check_loader}" | egrep -om1  "Clover|OpenCore")
                     if [[ ${check_loader} = "" ]]; then
-                check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "GNU/Linux|Microsoft|Refind" )
+                check_loader=$( echo "${f_check_loader}" | egrep -om1  "GNU/Linux|Microsoft|Refind")
                     fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
