@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="028"
+edit_vers="029"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1092,9 +1092,7 @@ drives_iomedia=$( echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia," )
 string=$( diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
 disk_images=$( echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';' )
 syspart=$( df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n' )
- 
 IFS=';'; dlist=($string); ilist=($disk_images); usb_iolist=($usb_iomedia); unset IFS; pos=${#dlist[@]}; posi=${#ilist[@]}; pusb=${#usb_iolist[@]}
-dmlist=(); for (( i=0; i<$pos; i++ )) do dmlist+=( $( echo ${dlist[i]} | rev | cut -f2-3 -d"s" | rev ) ); done; posd=${#dmlist[@]}
 
 # exclude disk images
 if [[ ! $posi = 0 ]]; then
@@ -1132,13 +1130,13 @@ posrm=${#rmlist[@]}
 if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
 
 # подготовка данных для вычисления размеров
-sizes_iomedia=`echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//'`
+sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
 
 # подготовка данных для вычисления hotplug
-ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
         if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
 
-pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
 }
@@ -1152,34 +1150,28 @@ fi
 GET_EFI_S
 
 if [[ ! $pos = 0 ]]; then 
-		var0=$pos
-		num=0
-		dnum=0; 
-        unset nlist
-        unset rnlist
+		var0=$pos; num=0; dnum=0; unset nlist; unset rnlist
 	while [[ ! $var0 = 0 ]] 
 		do
-		string=`echo ${dlist[$num]}`
-if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
+		string=$( echo ${dlist[$num]} )
+    if [[ $string = $syspart ]]; then unset dlist[$num]; let "pos--"
             else
-		dstring=`echo $string | rev | cut -f2-3 -d"s" | rev `
-		dlenth=`echo ${#dstring}`
+		dstring=$( echo $string | rev | cut -f2-3 -d"s" | rev )
+		dlenth=$( echo ${#dstring} )
 
-		
 		var10=$posi; numi=0; out=0
         while [[ ! $var10 = 0 ]] 
 		do
-
-		if [[ ${dstring} = ${ilist[$numi]} ]]; then
-        unset dlist[$num]; let "pos--"; out=1
-        fi 
-        if [[ $out = 1 ]]; then break; fi
-        let "var10--"; let "numi++"
+            if [[ ${dstring} = ${ilist[$numi]} ]]; then
+            unset dlist[$num]; let "pos--"; out=1
+            fi 
+            if [[ $out = 1 ]]; then break; fi
+            let "var10--"; let "numi++"
         done
   
 		if [[ $var10 = 0 ]]; then nlist+=( $num ); fi
             
-	fi	
+    fi	
 		let "var0--"
 		let "num++"
 	done
@@ -1549,7 +1541,7 @@ cpu_family=1
 
 GETARR
 
-mounted_loaders_list=()
+mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
@@ -1764,26 +1756,11 @@ a3b156fd314ef1061015c2250d851f49 ) revision=5102
 
                 esac
 }
-##################### проверка на загрузчик после монтирования ##################################################################################
-FIND_LOADERS(){
 
-GET_LOADERS
-if [[ ! $CheckLoaders = 0 ]]; then 
+##################### получение имени и версии загрузчика ######################################################################################
 
-    unset loader
-    if [[ $mcheck = "Yes" ]]; then 
-
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-
-			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )
-                mounted_loaders_list[$pnum]=${md5_loader}                    
-                    if [[ ${md5_loader} = "" ]]; then loader=""; else
-                f_check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -o  "Clover|OpenCore|GNU/Linux|Microsoft|Refind" )
-                check_loader=$( echo "${f_check_loader}" | egrep -om1  "Clover|OpenCore")
-                    if [[ ${check_loader} = "" ]]; then
-                check_loader=$( echo "${f_check_loader}" | egrep -om1  "GNU/Linux|Microsoft|Refind")
-                    fi
+GET_LOADER_STRING(){
+                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
                                 if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
@@ -1797,18 +1774,42 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                         ;;
                     "Refind"    ) loader="refind"                                          
                         ;;
-                    "Microsoft" ) loader="Windows"; loader+="® "                           
+                    "Microsoft C" ) loader="Windows"; loader+="®"                           
                         ;;
                                *) loader="unrecognized"                                    
                         ;;
                     esac
-                    fi
+
+}
+
+##################################################################################################################################################
+
+##################### проверка на загрузчик после монтирования ##################################################################################
+FIND_LOADERS(){
+
+lflag=0
+
+GET_LOADERS
+if [[ ! $CheckLoaders = 0 ]]; then 
+
+    unset loader
+    if [[ $mcheck = "Yes" ]]; then 
+
+vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
+			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )                 
+                if [[ ${md5_loader} = "" ]]; then loader=""; else
+                   if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
+                    mounted_loaders_list[$pnum]=${md5_loader}; lflag=1 
+                    GET_LOADER_STRING
+                  fi
+                fi
              else
                     mounted_loaders_list[$pnum]=0
-	         fi
+             fi
     fi
 fi
-
 }
 #######################################################################################################################################################
 
@@ -1817,7 +1818,7 @@ SHOW_LOADERS(){
 
 if [[ $CheckLoaders = 1 ]]; then
 printf "\033[H"
-        posl=${#ldlist[@]}
+        posl=${lpntr}
             if [[ ! $posl = 0 ]]; then
             var99=$posl; pointer=0
                 while [ $var99 != 0 ] 
@@ -1827,6 +1828,7 @@ printf "\033[H"
                         else
                         let "line=ldnlist[pointer]+11"
                         fi
+
                         if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:12} = "unrecognized" ]]; then
                                      c_unr=47
@@ -1840,9 +1842,9 @@ printf "\033[H"
                                      printf "\033[$line;f\033['$c_ref'C"'\e['$themeldrs'm'"${Refind}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:7} = "Windows" ]]; then
                                      Windows="Windows"; c_win=47
-                                     printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[55C${ldlist[$pointer]:7:9}"" MS ";  printf '\e[0m'
-                                        else
-                                            printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[54C${ldlist[$pointer]:7:9}""  MS ";  printf '\e[0m'
+                                elif [[ ${ldlist[$pointer]:0:8} = "OpenCore" ]]; then
+                                     printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
                         fi 
                         let "pointer++"
                         let "var99--"
@@ -1863,11 +1865,11 @@ spinny(){
 GETLIST(){
 
 GET_LOADERS
-if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2;  fi 
+if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2; fi 
 
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J'
 
-ldlist=(); ldnlist=(); rvlist=()
+#ldlist=(); ldnlist=(); lpntr=0
 var0=$pos
 num=0
 ch=0
@@ -1959,8 +1961,8 @@ do
 
         spinny
 
-        FIND_LOADERS      
-        if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch); fi
+        FIND_LOADERS   
+        if [[ ! $loader = "" ]]; then let "lpntr++"; ldnlist+=($ch); ldlist+=($loader); fi
 
     spinny
 	let "num++"
@@ -2244,7 +2246,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${pr_string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                 if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then UPDATE_SCREEN; break; fi
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then let "chs=pnum+1"; UPDATE_SCREEN; break; fi
             fi
         done
     else
@@ -2256,7 +2258,7 @@ fi
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
-ldlist=(); ldnlist=(); rvlist=()
+#ldlist=(); ldnlist=()
 var0=$pos; num=0; ch1=0
 unset string
 while [ $var0 != 0 ] 
@@ -2267,8 +2269,13 @@ string=`echo ${dlist[$pnum]}`
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
 
-        FIND_LOADERS   
-        if [[ ! $loader = "" ]]; then ldlist+=($loader); ldnlist+=($ch1); fi
+        FIND_LOADERS
+
+        if [[ ${lflag} = 1 ]]; then
+                match=0                
+                for ((s=0;s<${lpntr};s++)); do if [[ ${ldnlist[s]} = ${chs} ]]; then ldlist[s]="$loader"; match=1; break; fi; done; if [[ ${match} = 0 ]]; then let "lpntr++"; match=1; ldnlist+=($chs); ldlist+=($loader); fi
+
+        fi
         
            
     if [[ $ch1 -le $sata_lines ]]; then
@@ -2500,8 +2507,6 @@ done
 
 chs=$choice
 if [[ $chs = 0 ]]; then nogetlist=0; fi
-
-
 
 }
 # Конец определения GETKEYS #######################################
