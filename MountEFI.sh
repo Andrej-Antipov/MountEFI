@@ -1152,10 +1152,6 @@ pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pst
 
 GETARR(){
 
-if [[ $hotplug = 1 ]]; then
-    if [[ $cpu_family = 0 ]]; then sleep 2; fi
-fi
-
 GET_EFI_S
 
 if [[ ! $pos = 0 ]]; then 
