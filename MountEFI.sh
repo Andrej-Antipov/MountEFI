@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 19.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -824,6 +824,15 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
 fi
 }
 
+############################# корректировка списка разделов с загрузчиками ######################################### 
+CORRECT_LOADERS_LIST(){
+temp_ldnlist=(); temp_ldlist=()
+for z in ${!dlist[@]}; do for x in ${ldnlist[@]}; do if [[ $((z+1)) = $x ]]; then temp_ldnlist+=( $x ); temp_ldlist+=( ${ldlist[$x]} ); fi; done; done
+ldnlist=( ${temp_ldnlist[@]} ); ldlist=( ${temp_ldlist[@]} )
+synchro=0
+}
+######################################################################################################################
+
 ############## обновление даных после выхода из скрипта настроек #########################################################
 
 REFRESH_SETUP(){
@@ -833,6 +842,8 @@ strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr 
 if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
+GET_LOADERS
+if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0; fi
 }
 ##########################################################################################################################
 
@@ -862,6 +873,7 @@ else
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
 ################################## очистка на выходе #############################################################
+rm -f  ~/.disk_list.txt
 CLEAR_HISTORY
 #####################################################################################################################
 CHECK_TTY_COUNT	
@@ -971,15 +983,16 @@ CHECK_HOTPLUG_PARTS(){
 pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then
                 
-               if [[  $old_puid_count -lt $puid_count ]]; then 
-                       
+               if [[  $old_puid_count -lt $puid_count ]]; then                        
                     ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
                     disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
+                    synchro=2
                fi
                     
                     diff_list=()
                     IFS=';'; diff_list=(`echo ${puid_list[@]} ${old_puid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posdi=${#diff_list[@]}
+                    if [[ ${synchro} = 2 ]]; then latest_hotplugs_parts=( ${diff_list[@]} ); fi
                     if [[ ! $posi = 0 ]] && [[ ! $posdi = 0 ]]; then 
                             
                         for (( i=0; i<$posdi; i++ )); do
@@ -991,11 +1004,11 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
                                 
                         done
                                      
-                                     if [[ ! $match = 1 ]]; then UPDATE_SCREEN; fi
+                                     if [[ ! $match = 1 ]]; then  UPDATE_SCREEN; fi
                         done
 
                         else
-                                    UPDATE_SCREEN
+                                     UPDATE_SCREEN
 
                     fi
             
@@ -1011,10 +1024,13 @@ RECHECK_LOADERS
 hotplug=0
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
         if [[ ! $old_uuid_count = $uuid_count ]]; then
+            synchro=1
             if [[  $old_uuid_count -lt $uuid_count ]]; then 
                ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
                     disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
+                else
+                    synchro=3
             fi
                 diff_uuid=()
                 IFS=';'; diff_uuid=(`echo ${uuid_list[@]} ${old_uuid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posui=${#diff_uuid[@]}
@@ -1036,13 +1052,6 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
         fi
 }
 ###################################################################################################################################################################
-
-GET_LOADERS(){
-CheckLoaders=1
-strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then CheckLoaders=0
-fi
-}
 
 CHECK_USB(){
 
@@ -1112,7 +1121,7 @@ dmlist=(); for (( i=0; i<$pos; i++ )) do dmlist+=( $( echo ${dlist[i]} | rev | c
 dmlist=( $(echo "${dmlist[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') ); posd=${#dmlist[@]}
 
 # get list of usb drives
-rmlist=(); posrm=0
+past_rmlist=( ${rmlist[@]} ); rmlist=(); posrm=0
 if [[ ! $pusb = 0 ]]; then
 
 usbnames=(); for (( i=0; i<$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]} | cut -f3 -d=)"; usbnames+=( "${usbname}" ); done
@@ -1190,8 +1199,6 @@ done
 if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
 lists_updated=1
 fi
-
-
 
 	if [[ $pos = 0 ]]; then
 clear
@@ -1537,7 +1544,7 @@ fi
 
 osascript -e 'tell application "Terminal" to activate' &
 
-cpu_family=1
+cpu_family=1; rmlist=(); posrm=0
 
 GETARR
 
@@ -1811,12 +1818,16 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
     fi
 fi
 }
+
+
+
 #######################################################################################################################################################
 
 ########################### вывод признаков наличия загрузчика #########################################
 SHOW_LOADERS(){
 
 if [[ $CheckLoaders = 1 ]]; then
+
 printf "\033[H"
         posl=${lpntr}
             if [[ ! $posl = 0 ]]; then
@@ -1961,8 +1972,9 @@ do
 
         spinny
 
-        FIND_LOADERS   
+        if [[ ! $CheckLoaders = 0 ]]; then FIND_LOADERS   
         if [[ ! $loader = "" ]]; then let "lpntr++"; ldnlist+=($ch); ldlist+=($loader); fi
+        fi
 
     spinny
 	let "num++"
@@ -2269,15 +2281,15 @@ string=`echo ${dlist[$pnum]}`
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
 
+        if [[ ${synchro} = 2 ]]; then for x in ${!dlist[@]}; do if [[ ${dlist[x]} = ${latest_hotplugs_parts[0]} ]]; then  let "chs=x+1"; fi; done; synchro=0; fi
         FIND_LOADERS
 
         if [[ ${lflag} = 1 ]]; then
-                match=0                
+                match=0 ; if [[ $chs = 0 ]]; then past=${#ldnlist[@]}; let "chs=past+1"; fi          
                 for ((s=0;s<${lpntr};s++)); do if [[ ${ldnlist[s]} = ${chs} ]]; then ldlist[s]="$loader"; match=1; break; fi; done; if [[ ${match} = 0 ]]; then let "lpntr++"; match=1; ldnlist+=($chs); ldlist+=($loader); fi
 
         fi
-        
-           
+
     if [[ $ch1 -le $sata_lines ]]; then
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
@@ -2433,6 +2445,10 @@ printf "\033[?25l"
   }
 ########################################################################################
 
+SAVE_EFIes_STATE(){
+rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
+}
+
 
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
@@ -2484,16 +2500,16 @@ if [[ ${choice} = $ch ]]; then choice="V"; fi
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
-if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD;  if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD;  if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
@@ -2540,6 +2556,30 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 }
 # Конец определения MOUNTS #################################################################
 
+################### ожидание завершения монтирования разделов при хотплаге #################
+WAIT_SYNCHRO(){
+new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
+if [[ ! ${#new_rmlist[@]} = 0 ]]; then
+    init_time="$(date +%s)"; usblist=() 
+    for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); fi; done; done
+
+    if [[ ! ${#usblist[@]} = 0 ]]; then
+        while true; do
+            mounted_list=$( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ')
+            usb_mounted_list=()
+            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ $z = $y ]]; then usb_mounted_list+=( $z ); fi; done; done
+            diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
+            if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
+            exec_time="$(($(date +%s)-init_time))"
+            if [[ ${exec_time} -ge 3 ]]; then break; fi
+            sleep 0.25
+        done        
+    fi
+fi
+synchro=0
+
+}
+#############################################################################################
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
 GET_USER_PASSWORD
@@ -2578,9 +2618,8 @@ fi
         unset nlist
         declare -a nlist
         GETARR
-
-
- if [[ ! $nogetlist = 1  ]]; then  GETLIST; fi
+ if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0; fi; fi
+ if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]]; then WAIT_SYNCHRO; elif [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi; GETLIST; fi
 
 	GETKEYS	
 
