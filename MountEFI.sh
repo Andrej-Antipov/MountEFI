@@ -2283,7 +2283,11 @@ if [[ ! $CheckLoaders = 0 ]]; then
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                 if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then let "chs=pnum+1"; UPDATE_SCREEN; break; fi
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then 
+                    mounted_loaders_list[$pnum]=${loader_sum}
+                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; GET_LOADER_STRING; fi
+                    ldlist[pnum]=$loader
+                    let "chs=pnum+1"; UPDATE_SCREEN; break; fi
             fi
         done
     else
