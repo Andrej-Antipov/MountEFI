@@ -1721,6 +1721,14 @@ b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "${md5_loader}" in
+c86b5936d2548f14b47624e4d977ffad ) oc_revision=.55ð
+;;
+40f14c9668ff248a3a955704582588e1 ) oc_revision=.55ð
+;;
+4efd447f5ae3bc0070c325210e1405f5 ) oc_revision=.55ð
+;;
+13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
+;;
 5e8fe9b3c1398f50c4bd126dade630ac ) oc_revision=.55®
 ;;
 7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.55ð
