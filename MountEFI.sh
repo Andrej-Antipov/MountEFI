@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 24.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 25.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1355,6 +1355,88 @@ trap " " EXIT
 }
 #####################################################################################################
 
+SPIN_FLOADERS(){
+printf '\r\n'
+printf "\033[57C"
+spin='-\|/'
+i=0
+while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
+trap "kill $!" EXIT 
+FIND_ALL_LOADERS
+kill $!
+wait $! 2>/dev/null
+trap " " EXIT
+}
+
+################################### поиск всех загрузчиков #########################################
+FIND_ALL_LOADERS(){
+printf '\r\n\n'
+if [[ $loc = "ru" ]]; then
+printf '  Подождите. Ищем загрузочные разделы с BOOTx64.efi ...  '
+else
+printf '  Wait. Looking for partitions with BOOTx64.efi loaders ... '
+fi
+
+was_mounted=0
+var1=$pos
+num=0
+spin='-\|/'
+i=0
+noefi=1
+while [ $var1 != 0 ] 
+do 
+
+	pnum=${nlist[num]}
+	string=`echo ${dlist[$pnum]}`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+	if [[ ! $mcheck = "Yes" ]]; then 
+
+	was_mounted=0
+
+  	DO_MOUNT	
+
+	else
+		was_mounted=1
+
+	fi
+
+vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
+	if [[ -d "$vname"/EFI/BOOT ]]; then
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+
+					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
+                
+            FIND_LOADERS   
+            
+            
+            if [[ ! ${loader} = "" ]];then
+            if [[ ! ${lddlist[pnum]} = "" ]]; then
+                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+                     for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
+            fi
+             ldlist[pnum]=$loader; lddlist[pnum]=${dlist[pnum]}
+            fi             					   
+	   fi
+	fi
+    
+		if [[ "$was_mounted" = 0 ]]; then
+
+	diskutil quiet  umount  force /dev/${string}; mounted=0
+		
+		UNMOUNTED_CHECK		
+
+		fi
+		
+let "num++"
+let "var1--"
+
+done
+
+nogetlist=1
+}
+###################################################################################################
+
 # Определение функции розыска Clover в виде проверки бинарика EFI/BOOT/bootx64.efi 
 ##############################################################################
 FIND_CLOVER(){
@@ -2530,7 +2612,7 @@ if [[ $CheckLoaders = 1 ]]; then printf '\033[1B' ; fi
 READ_TWO_SYMBOLS; sym=2
 fi
 printf "\033[?25l\033[1D"
-if [[ ${choice} = $ch ]]; then choice="V"; fi
+if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; UPDATELIST; choice=0; else choice="V"; fi; fi
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
