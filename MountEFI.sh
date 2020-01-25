@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 21.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 24.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -826,10 +826,46 @@ fi
 
 ############################# корректировка списка разделов с загрузчиками ######################################### 
 CORRECT_LOADERS_LIST(){
-temp_ldnlist=(); temp_ldlist=()
-for z in ${!dlist[@]}; do for x in ${ldnlist[@]}; do if [[ $((z+1)) = $x ]]; then temp_ldnlist+=( $x ); temp_ldlist+=( ${ldlist[$x]} ); fi; done; done
-ldnlist=( ${temp_ldnlist[@]} ); ldlist=( ${temp_ldlist[@]} )
+echo "______________________ CORRECT_LOADERS_LIST _______________________" >> ~/Desktop/temp.txt
+echo "                  dlist :  "${!dlist[@]} >> ~/Desktop/temp.txt
+echo "                 before :  ........................................" >> ~/Desktop/temp.txt
+echo "                   ldlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldlist[@]}; do echo $l") "${ldlist[l]} >> ~/Desktop/temp.txt; done
+echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+echo "mounted_loader_list_ALL :  " >> ~/Desktop/temp.txt ; for l in ${!mounted_loaders_list[@]}; do echo $l") "${mounted_loaders_list[l]} >> ~/Desktop/temp.txt; done
+if [[ ! ${lddlist[@]} = 0 ]]; then
+    temp_lddlist=()
+    temp_lddlist=( $( echo ${dlist[@]} ${lddlist[@]} | tr ' ' '\n' | sort | uniq -u ) )
+
+echo "               meanwhile :  ........................................" >> ~/Desktop/temp.txt
+echo "             temp_lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!temp_lddlist[@]}; do echo $l") "${temp_lddlist[l]} >> ~/Desktop/temp.txt; done    
+    for x in ${temp_lddlist[@]}; do
+        for y in ${!lddlist[@]}; do
+            if [[ ${x} = ${lddlist[y]} ]]; then            
+            unset 'mounted_loaders_list[y]'; unset 'lddlist[y]'; unset 'ldlist[y]'
+            max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
+echo "           max :  "${max} >> ~/Desktop/temp.txt
+                if [[ ${y} -lt ${max} ]]; then
+                    for ((z=${y};z<=${max};z++)); do
+                        echo "           y :  "${y} >> ~/Desktop/temp.txt
+                        echo -n "         y+1 :  "$((y+1)) >> ~/Desktop/temp.txt
+                        echo "" >> ~/Desktop/temp.txt
+                        lddlist[z]=${lddlist[$((z+1))]}; ldlist[z]=${ldlist[$((z+1))]}; mounted_loaders_list[z]=${mounted_loaders_list[$((z+1))]}; done
+                        echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+                    unset 'lddlist[max]'; unset 'ldlist[max]'; unset 'mounted_loaders_list[max]'
+                fi
+            fi
+            done
+    done
+fi
 synchro=0
+echo "                 after  :  ........................................" >> ~/Desktop/temp.txt
+max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
+echo "           max :  "${max} >> ~/Desktop/temp.txt
+echo "                  ldnlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldnlist[@]}; do echo $l") "${ldnlist[l]} >> ~/Desktop/temp.txt; done
+echo "                   ldlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldlist[@]}; do echo $l") "${ldlist[l]} >> ~/Desktop/temp.txt; done
+echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+echo "mounted_loader_list_ALL :  " >> ~/Desktop/temp.txt ; for l in ${!mounted_loaders_list[@]}; do echo $l") "${mounted_loaders_list[l]} >> ~/Desktop/temp.txt; done
+echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
 }
 ######################################################################################################################
 
@@ -843,7 +879,7 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
-if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0; fi
+if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); pnum_max=0; ldlist=(); lddlist=(); fi
 }
 ##########################################################################################################################
 
@@ -987,12 +1023,15 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
                     ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
                     disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
-                    synchro=2
+                    if [[ ${synchro} = 0 ]]; then synchro=2; fi
                fi
                     
                     diff_list=()
                     IFS=';'; diff_list=(`echo ${puid_list[@]} ${old_puid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posdi=${#diff_list[@]}
                     if [[ ${synchro} = 2 ]]; then latest_hotplugs_parts=( ${diff_list[@]} ); fi
+                    echo "__________________________ HOTPLUG_PARTS __________________________" >> ~/Desktop/temp.txt
+                    echo "              diff_list :  "${diff_list[@]} >> ~/Desktop/temp.txt
+                    echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
                     if [[ ! $posi = 0 ]] && [[ ! $posdi = 0 ]]; then 
                             
                         for (( i=0; i<$posdi; i++ )); do
@@ -1024,8 +1063,8 @@ RECHECK_LOADERS
 hotplug=0
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
         if [[ ! $old_uuid_count = $uuid_count ]]; then
-            synchro=1
             if [[  $old_uuid_count -lt $uuid_count ]]; then 
+                synchro=1
                ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
                     disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
@@ -1148,9 +1187,20 @@ ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Y
 pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
+echo "_________________________ get_EFI_S _______________________________" >> ~/Desktop/temp.txt
+echo "                   dlist:  "${dlist[@]} >> ~/Desktop/temp.txt
+echo "                  rmlist:  "${rmlist[@]} >> ~/Desktop/temp.txt
+echo "             past_rmlist:  "${past_rmlist[@]} >> ~/Desktop/temp.txt
+echo "                   ilist:  "${ilist[@]} >> ~/Desktop/temp.txt
+echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
+
 }
 
 GETARR(){
+
+if [[ $hotplug = 1 ]]; then
+    if [[ $cpu_family = 0 ]]; then sleep 2; fi
+fi
 
 GET_EFI_S
 
@@ -1195,6 +1245,11 @@ done
 if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
 lists_updated=1
 fi
+
+echo "____________________________ GETARR _______________________________" >> ~/Desktop/temp.txt
+echo "                   dlist:  "${dlist[@]} >> ~/Desktop/temp.txt
+echo "                   nlist:  "${nlist[@]} >> ~/Desktop/temp.txt
+echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
 
 	if [[ $pos = 0 ]]; then
 clear
@@ -1544,7 +1599,7 @@ cpu_family=1; rmlist=(); posrm=0
 
 GETARR
 
-mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0
+mounted_loaders_list=(); ldlist=(); pnum_max=0; lddlist=()
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
@@ -1790,12 +1845,10 @@ GET_LOADER_STRING(){
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
-lflag=0
-
 GET_LOADERS
 if [[ ! $CheckLoaders = 0 ]]; then 
 
-    unset loader
+    unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
 
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
@@ -1804,17 +1857,36 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )                 
                 if [[ ${md5_loader} = "" ]]; then loader=""; else
                    if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
-                    mounted_loaders_list[$pnum]=${md5_loader}; lflag=1 
+                    if [[ ! ${lddlist[pnum]} = "" ]]; then
+                     max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+                     for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
+                    fi
+                    mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1 
                     GET_LOADER_STRING
                   fi
                 fi
-             else
-                    mounted_loaders_list[$pnum]=0
-             fi
+            else
+                   echo "_____________________ FIND LOADERS EMPTY _______________________________" >> ~/Desktop/temp.txt
+                   if [[ ${mounted_loaders_list[pnum]} = "" ]]; then ldlist[pnum]="empty"; lddlist[pnum]=${dlist[pnum]}; mounted_loaders_list[pnum]=0; echo "mounted_loaders_list["$pnum"] = UNSET" >> ~/Desktop/temp.txt
+                    elif [[ ${mounted_loaders_list[pnum]} = 0 ]]; then echo "mounted_loaders_list["$pnum"] = ZERO" >> ~/Desktop/temp.txt
+                        else 
+                            mounted_loaders_list[pnum]=0; ldlist[pnum]="empty";  echo "mounted_loaders_list["$pnum"] = MD5 NUMBER" >> ~/Desktop/temp.txt         
+                   fi
+            fi
     fi
 fi
-}
 
+
+echo "_____________________ FIND LOADERS 0 _______________________________" >> ~/Desktop/temp.txt
+echo "mounted_loader_list_pnum:  "${mounted_loaders_list[$pnum]} >> ~/Desktop/temp.txt
+echo "                    pnum:  "$pnum >> ~/Desktop/temp.txt
+echo "mounted_loader_list_ALL :  " >> ~/Desktop/temp.txt ; for l in ${!mounted_loaders_list[@]}; do echo $l") "${mounted_loaders_list[l]} >> ~/Desktop/temp.txt; done
+echo "                  loader:  ""${loader}" >> ~/Desktop/temp.txt
+echo "                   ldlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldlist[@]}; do echo $l") "${ldlist[l]} >> ~/Desktop/temp.txt; done
+echo "                  ldnlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldnlist[@]}; do echo $l") "${ldnlist[l]} >> ~/Desktop/temp.txt; done
+echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
+}
 
 
 #######################################################################################################################################################
@@ -1823,12 +1895,19 @@ fi
 SHOW_LOADERS(){
 
 if [[ $CheckLoaders = 1 ]]; then
-
+echo "" >> ~/Desktop/temp.txt
+echo "" >> ~/Desktop/temp.txt
+echo "" >> ~/Desktop/temp.txt
+echo "" >> ~/Desktop/temp.txt
+echo "" >> ~/Desktop/temp.txt
 printf "\033[H"
-        posl=${lpntr}
+        ldnlist=(); for zz in ${!dlist[@]}; do for xx in ${!lddlist[@]}; do if [[ ${dlist[zz]} = ${lddlist[xx]} ]]; then ldnlist[zz]=$((zz+1)); break; fi; done; done
+        echo "____________________________ SHOW LOADERS __________________________" >> ~/Desktop/temp.txt
+        echo "                  ldnlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldnlist[@]}; do echo $l") "${ldnlist[l]} >> ~/Desktop/temp.txt; done
+        posl=${#ldnlist[@]}
             if [[ ! $posl = 0 ]]; then
             var99=$posl; pointer=0
-                while [ $var99 != 0 ] 
+                for pointer in ${!ldnlist[@]}
                     do 
                         if [[ ${ldnlist[pointer]} -le $sata_lines ]]; then
                         let "line=ldnlist[pointer]+8" 
@@ -1853,8 +1932,6 @@ printf "\033[H"
                                 elif [[ ${ldlist[$pointer]:0:8} = "OpenCore" ]]; then
                                      printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
                         fi 
-                        let "pointer++"
-                        let "var99--"
                     done
     fi                       
 fi
@@ -1875,6 +1952,10 @@ GET_LOADERS
 if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2; fi 
 
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J'
+
+echo "____________________________ GETLIST ______________________________" >> ~/Desktop/temp.txt
+echo -n "                 df list:  " >> ~/Desktop/temp.txt; echo -n $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') >> ~/Desktop/temp.txt; echo "" >> ~/Desktop/temp.txt
+echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
 
 #ldlist=(); ldnlist=(); lpntr=0
 var0=$pos
@@ -1968,9 +2049,32 @@ do
 
         spinny
 
-        if [[ ! $CheckLoaders = 0 ]]; then FIND_LOADERS   
-        if [[ ! $loader = "" ]]; then let "lpntr++"; ldnlist+=($ch); ldlist+=($loader); fi
+        if [[ ! $CheckLoaders = 0 ]]; then  echo "____________________________ FROM GETLIST _____________________________" >> ~/Desktop/temp.txt ; FIND_LOADERS 
+        if [[ ! ${loader} = "" ]];then
+            if [[ ! ${lddlist[pnum]} = "" ]]; then
+                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+                     for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
+            fi
+             ldlist[pnum]=$loader; lddlist[pnum]=${dlist[pnum]}
+      
+                          
+        echo "_____________________ FIND loaders 1 _____________________________" >> ~/Desktop/temp.txt
+        echo "                    lpntr:  "$lpntr >> ~/Desktop/temp.txt
+        echo "                  ldlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldlist[@]}; do echo $l") "${ldlist[l]} >> ~/Desktop/temp.txt; done
+        echo "                 pnum_max:  " >> ~/Desktop/temp.txt ; for l in ${pnum_max}; do echo $l") "${ldnlist[l]} >> ~/Desktop/temp.txt; done
+        echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+        echo "mounted_loader_list_ALL :  " >> ~/Desktop/temp.txt ; for l in ${!mounted_loaders_list[@]}; do echo $l") "${mounted_loaders_list[l]} >> ~/Desktop/temp.txt; done
+        echo "__________________________________________________________________" >> ~/Desktop/temp.txt
         fi
+        fi
+                
+        echo "_____________________ FIND loaders 2 _____________________________" >> ~/Desktop/temp.txt
+        echo "                    lpntr:  "$lpntr >> ~/Desktop/temp.txt
+        echo "                  ldlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldlist[@]}; do echo $l") "${ldlist[l]} >> ~/Desktop/temp.txt; done
+        echo "                 pnum_max:  " >> ~/Desktop/temp.txt ; for l in ${pnum_max}; do echo $l") "${ldnlist[l]} >> ~/Desktop/temp.txt; done
+        echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+        echo "mounted_loader_list_ALL :  " >> ~/Desktop/temp.txt ; for l in ${!mounted_loaders_list[@]}; do echo $l") "${mounted_loaders_list[l]} >> ~/Desktop/temp.txt; done
+        echo "__________________________________________________________________" >> ~/Desktop/temp.txt
 
     spinny
 	let "num++"
@@ -2246,13 +2350,11 @@ RECHECK_LOADERS(){
 if [[ ! $CheckLoaders = 0 ]]; then
     if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
         let "pauser=3"
-        unset pstring
-        for ((num=0;num<$pos;num++))
-       do
-        pnum=${nlist[num]}; pr_string=`echo ${dlist[$pnum]}`
-        mounted_check=`df | grep ${pr_string}`    
+        for pnum in ${!dlist[@]}
+        do
+        mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then 
-            vname=`df | egrep ${pr_string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                 if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then let "chs=pnum+1"; UPDATE_SCREEN; break; fi
             fi
@@ -2277,15 +2379,31 @@ string=`echo ${dlist[$pnum]}`
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 if [[ $mcheck = "Yes" ]]; then
 
-        if [[ ${synchro} = 2 ]]; then for x in ${!dlist[@]}; do if [[ ${dlist[x]} = ${latest_hotplugs_parts[0]} ]]; then  let "chs=x+1"; fi; done; synchro=0; fi
-        FIND_LOADERS
-
-        if [[ ${lflag} = 1 ]]; then
-                match=0 ; if [[ $chs = 0 ]]; then past=${#ldnlist[@]}; let "chs=past+1"; fi          
-                for ((s=0;s<${lpntr};s++)); do if [[ ${ldnlist[s]} = ${chs} ]]; then ldlist[s]="$loader"; match=1; break; fi; done; if [[ ${match} = 0 ]]; then let "lpntr++"; match=1; ldnlist+=($chs); ldlist+=($loader); fi
-
+        if [[ ${synchro} = 2 ]]; then for x in ${!dlist[@]}; do if [[ ${dlist[x]} = ${latest_hotplugs_parts[0]} ]]; then  let "chs=x+1"; fi; done; synchro=0
+        echo "_____________________ find loaders define CHS ____________________" >> ~/Desktop/temp.txt
+        echo "                     chs :  "${chs} >> ~/Desktop/temp.txt
+        echo "    latest_hotplugs_parts:  "${latest_hotplugs_parts[0]} >> ~/Desktop/temp.txt
+        echo "__________________________________________________________________" >> ~/Desktop/temp.txt
         fi
-
+        echo "____________________________ FROM UPDATELIST _____________________________" >> ~/Desktop/temp.txt
+        FIND_LOADERS
+        echo "_____________________ FIND loaders 3 _____________________________" >> ~/Desktop/temp.txt
+        if [[ ! ${lflag} = 0 ]]; then 
+        echo "                     chs :  "${chs} >> ~/Desktop/temp.txt
+            if [[ ! ${lddlist[$((chs-1))]} = "" ]]; then 
+                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+                     for ((y=$((max+1));y>$((chs-1));y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
+            fi
+             ldlist[$((chs-1))]=$loader; lddlist[$((chs-1))]=${dlist[$((chs-1))]}
+               
+        echo "                    lpntr:  "$lpntr >> ~/Desktop/temp.txt
+        echo "                   ldlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldlist[@]}; do echo $l") "${ldlist[l]} >> ~/Desktop/temp.txt; done
+        echo "                  ldnlist:  " >> ~/Desktop/temp.txt ; for l in ${!ldnlist[@]}; do echo $l") "${ldnlist[l]} >> ~/Desktop/temp.txt; done
+        echo "                  lddlist:  " >> ~/Desktop/temp.txt ; for l in ${!lddlist[@]}; do echo $l") "${lddlist[l]} >> ~/Desktop/temp.txt; done
+        echo "mounted_loader_list_ALL :  " >> ~/Desktop/temp.txt ; for l in ${!mounted_loaders_list[@]}; do echo $l") "${mounted_loaders_list[l]} >> ~/Desktop/temp.txt; done
+        echo "__________________________________________________________________" >> ~/Desktop/temp.txt
+        fi
+           
     if [[ $ch1 -le $sata_lines ]]; then
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
@@ -2554,31 +2672,45 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 
 ################### ожидание завершения монтирования разделов при хотплаге #################
 WAIT_SYNCHRO(){
+echo "_________________________ WAIT_SYNCHRO ____________________________" >> ~/Desktop/temp.txt
+if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
+echo "                 rmlist :  "${rmlist[@]} >> ~/Desktop/temp.txt
+echo "            past_rmlist :  "${past_rmlist[@]} >> ~/Desktop/temp.txt
+echo "             new_rmlist :  "${new_rmlist[@]} >> ~/Desktop/temp.txt
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     init_time="$(date +%s)"; usblist=() 
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); fi; done; done
-
+    echo "           usb_list :  "${usblist[@]} >> ~/Desktop/temp.txt
     if [[ ! ${#usblist[@]} = 0 ]]; then
         while true; do
-            mounted_list=$( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ')
+            mounted_list=( $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
+            echo "           mounted_list :  "${mounted_list[@]} >> ~/Desktop/temp.txt
             usb_mounted_list=()
-            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ $z = $y ]]; then usb_mounted_list+=( $z ); fi; done; done
+            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ ${z} = ${y} ]]; then usb_mounted_list+=( ${z} ); echo "       usb_mounted_list :  "${usb_mounted_list[@]} >> ~/Desktop/temp.txt; fi; done; done
+            echo "   usb_mounted_list_ALL :  "${usb_mounted_list[@]} >> ~/Desktop/temp.txt
             diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
+            echo "               diff_usb :  "${diff_usb} >> ~/Desktop/temp.txt
             if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
             exec_time="$(($(date +%s)-init_time))"
-            if [[ ${exec_time} -ge 3 ]]; then break; fi
+            if [[ ${exec_time} -ge 4 ]]; then break; fi
             sleep 0.25
         done        
     fi
 fi
+echo "              exec_time :  "${exec_time} >> ~/Desktop/temp.txt
+echo "                synchro :  "${synchro} >> ~/Desktop/temp.txt
+echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
+fi
+if [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi
 synchro=0
-
 }
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
 GET_USER_PASSWORD
+
+osascript -e 'tell application "Terminal" to do script "tail -f ~/Desktop/temp.txt"'
 
 cpu_family=$(sysctl -n machdep.cpu.brand_string | grep -)
 if [[ $cpu_family = "" ]]; then cpu_family=0
@@ -2614,8 +2746,13 @@ fi
         unset nlist
         declare -a nlist
         GETARR
- if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0; fi; fi
- if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]]; then WAIT_SYNCHRO; elif [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi; GETLIST; fi
+ #if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0; fi; fi
+    if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then CORRECT_LOADERS_LIST; fi; fi
+    echo "___________________________ REFRESH_SETUP _________________________" >> ~/Desktop/temp.txt
+    echo "                 temp_dlist :  "${temp_dlist[@]} >> ~/Desktop/temp.txt
+    echo "                      dlist :  "${dlist[@]} >> ~/Desktop/temp.txt
+    echo "___________________________________________________________________"  >> ~/Desktop/temp.txt
+ if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]] || [[ ${synchro} = 3 ]]; then WAIT_SYNCHRO; fi; GETLIST; fi
 
 	GETKEYS	
 
