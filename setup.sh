@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="015"
+s_edit_vers="016"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -19,6 +19,7 @@ s_edit_vers="015"
 # 013 - пробелы в паролях
 # 014 - несколько пробелов в середине пароля
 # 015 - проверка последних версий Clover и OC
+# 016 - работа с хэшами загрузчиков в конфиге
 
 clear
 
@@ -377,7 +378,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>always</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
@@ -462,6 +463,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>XHashes</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>CLOVER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>OC_DEV_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>OC_REL_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
 
@@ -592,6 +602,15 @@ fi
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeProfile" ]]; then
             plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "XHashes" ]]; then 
+			plutil -insert XHashes -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+			plutil -insert XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
+			plutil -insert XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
+            plutil -insert XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
 
@@ -2650,7 +2669,7 @@ fi
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuU]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHh]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2750,6 +2769,7 @@ sbuf+=$(printf ' A) Создать или править псевдонимы ф
 sbuf+=$(printf ' B) Резервное сохранение и восстановление настроек                              \n')
 sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n')
 sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
+sbuf+=$(printf ' H) Редактор хэшей загрузчиков                                                  \n')
 sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then 
 sbuf+=$(printf ' U) Обновление программы                                                        \n')
@@ -2776,6 +2796,7 @@ sbuf+=$(printf ' A) Create or edit aliases physical device/media                
 sbuf+=$(printf ' B) Backup and restore configuration settings                                   \n')
 sbuf+=$(printf ' I) Import config from file (zip or plist)                                      \n')
 sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
+sbuf+=$(printf ' H) Hashes of EFI loaders editor                                                \n')
 sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then
 sbuf+=$(printf ' U) Update program                                                              \n')
@@ -5608,6 +5629,612 @@ unset inputs
 clear
 }
 
+WRONG_ANSWER(){
+if [[ $loc = "ru" ]]; then
+osascript -e 'display dialog "Введёно не верное значение:  '"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10'
+else
+osascript -e 'display dialog "you entered the invalid value:  '"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10'
+fi
+}
+
+SHOW_HASHES_SCREEN(){
+IFS=';'
+ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+unset IFS
+lines2=$(( ${#ocr_list[@]}+${#ocd_list[@]}+${#clv_list[@]}+24 ))
+if [[ ${lines2} -lt 33 ]]; then lines2=33; fi
+clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H"
+unset bbuf; chn=1; bb=6
+                            if [[ $loc = "ru" ]]; then
+                         bbuf+=$(printf '\033[1;0f''                    Добавление или удаление хэшей загрузчиков                   ')
+			                else
+                         bbuf+=$(printf '\033[1;0f''                        Adding or removing loaders hashes                       ')
+	                        fi
+                        bbuf+=$(printf '\033[2;0f''   ')
+	                    bbuf+=$(printf '.%.0s' {1..74})
+
+                           if [[ $loc = "ru" ]]; then
+                        bbuf+=$(printf '\033[3;0f''                           База хэшей в файле конфигурации:                      ')
+                        bbuf+=$(printf '\033[4;0f''     ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
+                        
+                        bbuf+=$(printf '\033[4;35f''   ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
+			               else
+                        bbuf+=$(printf '\033[3;0f''                             Hashes database in config file                      ')
+                        bbuf+=$(printf '\033[4;0f''     ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
+                        
+                        bbuf+=$(printf '\033[4;35f''   ')
+	                    bbuf+=$(printf '.%.0s' {1..34})
+                            fi
+    
+    if [[ ${ocr_list[0]} = " " ]]; then ocr_list=(); fi
+        if [[ ! ${#ocr_list[@]} = 0 ]]; then
+            for i in ${!ocr_list[@]}; do
+            
+            some_hash=$( echo "${ocr_list[$i]}" | cut -f1 -d"=" )
+            revision=$( echo "${ocr_list[$i]}" | rev | cut -f1 -d"=" | rev )            
+
+            if [[ $chn -le 9 ]]; then
+            bbuf+=$(printf '\033['$bb';0f''               '$chn')    ')
+            else
+            bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
+            fi
+            bbuf+=$( echo ${some_hash}"   "${revision})
+            let "bb++"
+            let "chn++"
+            done
+    fi
+    
+        
+   if [[ ${ocd_list[0]} = " " ]]; then ocr_list=(); fi
+        if [[ ! ${#ocd_list[@]} = 0 ]]; then
+            for i in ${!ocd_list[@]}; do
+            
+            some_hash=$( echo "${ocd_list[$i]}" | cut -f1 -d"=" )
+            revision=$( echo "${ocd_list[$i]}" | rev | cut -f1 -d"=" | rev )            
+
+            if [[ $chn -le 9 ]]; then
+            bbuf+=$(printf '\033['$bb';0f''               '$chn')    ')
+            else
+            bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
+            fi
+            bbuf+=$( echo ${some_hash}"   "${revision})
+            let "bb++"
+            let "chn++"
+            done
+    fi
+
+   if [[ ${clv_list[0]} = " " ]]; then clv_list=(); fi
+        if [[ ! ${#clv_list[@]} = 0 ]]; then
+            for i in ${!clv_list[@]}; do
+            
+            some_hash=$( echo "${clv_list[$i]}" | cut -f1 -d"=" )
+            revision=$( echo "${clv_list[$i]}" | rev | cut -f1 -d"=" | rev )            
+
+            if [[ $chn -le 9 ]]; then
+            bbuf+=$(printf '\033['$bb';0f''               '$chn')    ')
+            else
+            bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
+            fi
+            bbuf+=$( echo ${some_hash}"   "${revision})
+            let "bb++"
+            let "chn++"
+            done
+    fi
+
+    let "bb++"
+
+    bbuf+=$(printf '\033['$bb';0f''   ')
+	bbuf+=$(printf '.%.0s' {1..74})
+
+    let "bb++"
+
+ if [[ $loc = "ru" ]]; then
+
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  A)  Добавить хэши для Clover                  ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Добавить хэши релизов Open Core           ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  С)  Добавить хэши разработки Open Core        ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Добавить хэши из файла со списком         ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Удалить хэш из файла конфигурации         ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Очистить ВСЮ базу хэшей                   ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  U)  Отменить последние изменения хэшей        ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Вернуться в меню настроек                 ')
+                    else
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  A)  Add hashes for Clover                     ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Add Open Core relases hashes              ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  C)  Add Open Core develop hashes              ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Add hashes from file with list            ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Delete hash from config file              ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Remove ALL hash database                  ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  U)  Undo last hashes changes                  ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Quit to the setup menu                    ')
+                   fi
+clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s""%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[7A"
+printf "\r\033[45C"
+printf "\033[?25h"
+printf '\n\n'
+
+}
+
+GET_HASHES(){
+IFS=';'
+ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+unset IFS
+}
+
+BACKUP_LAST_HASHES(){
+IFS=';'
+ocr_list_back=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+ocd_list_back=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+clv_list_back=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+unset IFS
+}
+
+ADD_HASH_IN_PLIST(){ 
+IFS=';'; loader_list=( $( echo "$MountEFIconf" | grep XHashes  -A ${AA} | grep -A 1 -e "${LNAME}" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+
+         tlist=(); unset strng
+
+        for y in ${!loader_list[@]}; do
+            if [[ "$( echo "${loader_list[y]}" | grep -o "${hash_string}" )" = "" ]]; then tlist+=("${loader_list[y]}"); fi
+         done
+
+        tlist+=("${hash_string}")
+        for y in ${!tlist[@]}; do
+        strng+="${tlist[y]}"";"
+        done
+ 
+        plutil -replace XHashes.${L2NAME} -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+}
+
+DUPLICATE_FOUND(){
+if [[ $loc = "ru" ]]; then
+if answer=$( osascript -e 'display dialog "Хэш '"${hash_value}"' уже есть в списках хэшей ! "  with icon caution buttons { "Удалить из списков", "Отмена добавления" } default button "Отмена добавления" ' ); then cancel=0; else cancel=1; fi 2>/dev/null
+else
+if answer=$( osascript -e 'display dialog "Hash value: '"${hash_value}"' found in previously saved! "  with icon caution buttons { "Delete previously saved", "Cancel saving" }  default button "Cancel saving" ' ); then cancel=0; else cancel=1; fi 2>/dev/null
+fi
+
+answer=$(echo "${answer}"  | cut -f2 -d':' ); if [[ ${answer} = "Отмена добавления" ]] || [[ ${answer} = "Cancel saving" ]]; then cancel=1; fi 
+
+}
+
+CHECK_DUPLICATE_HASHES(){
+GET_HASHES
+hash_value=${hash_string}; if [[ ! $( echo "${hash_value}" | grep -o "=" ) = "" ]]; then hash_value=$( echo "${hash_value}" | cut -f1 -d= ); fi
+match=0
+for ((i=0;i<3;i++)); do
+    case "${i}" in
+        "0" ) loader_list=( ${ocr_list[@]} ); AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES" ;;
+        "1" ) loader_list=( ${ocd_list[@]} ); AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+        "2" ) loader_list=( ${clv_list[@]} ); AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES" ;;
+    esac
+    IFS=';'; loader_list=( $( echo "$MountEFIconf" | grep XHashes  -A ${AA} | grep -A 1 -e "${LNAME}" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+
+if [[ ! ${#loader_list[@]} = 0 ]]; then
+
+         for y in ${!loader_list[@]}; do
+            if [[ ! "$( echo "${loader_list[y]}" | grep -o "${hash_value}" )" = "" ]]; then match=1; break; fi
+         done
+fi
+
+if [[ ${match} = 1 ]]; then
+
+DUPLICATE_FOUND
+
+    if [[ $cancel = 1 ]]; then break
+        else
+        
+        if [[ ! ${#loader_list[@]} = 0 ]]; then
+         tlist=(); unset strng
+
+        for y in ${!loader_list[@]}; do
+            if [[ "$( echo "${loader_list[y]}" | grep -o "${hash_value}" )" = "" ]]; then tlist+=("${loader_list[y]}"); fi
+         done
+      if [[ ! ${#tlist[@]} = 0 ]]; then 
+        for y in ${!tlist[@]}; do
+        strng+="${tlist[y]}"";"
+        done
+        plutil -replace XHashes.${L2NAME} -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        else
+        plutil -replace XHashes.${L2NAME} -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+      fi
+    fi
+      
+        match=0 
+
+        SHOW_HASHES_SCREEN
+
+        break
+    fi
+fi
+ 
+done
+}
+
+ADD_HASHES(){
+loader_type=$1
+
+    case ${loader_type} in
+
+"Clover" ) loader="Clover"; pattern="\n   5101    4998   2546"; AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES";;
+
+   "OCR" ) loader="Open Core Release"; pattern="\n   .54r   .53d   1.3r   13.d   001r"; AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES";;
+
+   "OCD" ) loader="Open Core Develop"; pattern="\n   .54®   .53ð   .55n   1.2n   11.ð   011®"; AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+
+   esac
+
+while true; do
+
+            GET_APP_ICON
+
+
+                                if [[ $loc = "ru" ]]; then
+             if answer=$(osascript -e 'display dialog "Как указать хэш файла?" '"${icon_string}"' buttons {"Вручную", "Выбрать файл", "Отмена" } default button "Вручную" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+             if answer=$(osascript -e 'display dialog "Choose the way to add a hash?" '"${icon_string}"' buttons {"Manually", "File Path", "Cancel" } default button "Manually" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+             answer=$(echo "${answer}"  | cut -f2 -d':' )
+
+             if [[ ${answer} = "Отмена" ]]; then cancel=1; fi 
+
+             if [[ $cancel = 1 ]]; then break; fi
+        
+      if [[ "${answer}" = "Вручную" ]] || [[ "${answer}" = "Manually" ]]; then
+
+           while true; do
+                while true; do
+             demo=""
+             if [[ $loc = "ru" ]]; then
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Укажите 32 байта значения хэша md5 для '"${loader}"':" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Set 32 byles of the md5 hash for '"${loader}"':" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+             invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
+             demo=$( echo "${demo}" | xargs )
+             demo=$( echo "${demo}" | grep [0-9a-f] )
+              if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]] || [[ ! ${#demo} = 32 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
+                done
+             if [[ $cancel = 1 ]]; then break; else
+                while true; do
+             demo2=""
+             if [[ $loc = "ru" ]]; then
+             if demo2=$(osascript -e 'set T to text returned of (display dialog "Укажите 4 байта ревизии по примерам:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             if demo2=$(osascript -e 'set T to text returned of (display dialog "Set 4 byles revision as example:  '"${pattern}"'" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+             demo2=$( echo "${demo2}" | xargs )
+             invalid_value=$( echo "${demo2}" | tr -cd "[:print:]\n" )
+             if [[ "${loader_type}" = "Clover" ]]; then demo2=$( echo $demo2 | grep [0-9][0-9][0-9][0-9] )
+                elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | grep [.0-9]*[rd] )
+                    else demo2=$( echo $demo2 | grep [.0-9]*[®ðn] )
+             fi
+             if [[ $cancel = 1 ]]; then break; elif [[ ${#demo2} = 0 ]] || [[ ! ${#demo2} = 4 ]]; then WRONG_ANSWER; else hash_string=""; hash_string="${demo}""=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST;  SHOW_HASHES_SCREEN; break; fi
+
+                   done
+             fi
+        done
+
+            elif 
+                [[ "${answer}" = "Выбрать файл" ]] || [[ "${answer}" = "File Path" ]]; then
+                                    
+                  while true; do
+                
+                  from_list=0
+                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ЗАГРУЗЧИКА ДЛЯ ЗАПОМИНАНИЯ ЕГО ХЭША MD5:"'; else prompt='"SELECT FILE TO STORE ITS MD5 HASH :"'; fi
+                  alias_string='"'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"':Volumes"'
+                  if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias '"${alias_string}"' with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
+                  if [[ $answer = "" ]]; then cancel=1; break; else 
+                            cancel=0;  hash_string=$( md5 -qq "${answer}" )
+                            CHECK_DUPLICATE_HASHES
+                            if [[ $cancel = 1 ]]; then break; fi
+                            
+             if [[ $loc = "ru" ]]; then
+             if demo2=$(osascript -e 'set T to text returned of (display dialog "Укажите 4 байта ревизии по примерам:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             if demo2=$(osascript -e 'set T to text returned of (display dialog "Set 4 byles revision as example:  '"${pattern}"'" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+             if [[ "${loader_type}" = "Clover" ]]; then demo2=$( echo $demo2 | grep [0-9][0-9][0-9][0-9] )
+                elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | grep [.0-9]*[rd] )
+                    else demo2=$( echo $demo2 | grep [.0-9]*[®ðn] )
+             fi
+             if [[ $cancel = 1 ]]; then break; elif [[ ${#demo2} = 0 ]] || [[ ! ${#demo2} = 4 ]]; then WRONG_ANSWER; else hash_string+="=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST; SHOW_HASHES_SCREEN; break; fi
+    
+             fi  
+            done
+             
+
+      fi
+done
+
+}
+
+ASK_HASHES_TO_DELETE(){
+if [[ $loc = "ru" ]]; then
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$file_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title "Удалить хэши из файла конфигурации"  with prompt "Выберите один или несколько"  with multiple selections allowed 
+end tell
+EOD
+else
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$file_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title "Delete installed files" with prompt "Select one or more files"  with multiple selections allowed
+end tell
+EOD
+fi
+}
+
+ASK_HASHES_LIST_TO_ADD(){
+if [[ $loc = "ru" ]]; then
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$file_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title "Сохранить хэши в файле конфигурации MountEFI"  with prompt "Выберите один или несколько"  with multiple selections allowed 
+end tell
+EOD
+else
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$file_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title "Save Hashes in MountEFI Configuration File" with prompt "Select one or more files"  with multiple selections allowed
+end tell
+EOD
+fi
+}
+
+DEL_HASHES_IN_PLIST(){
+
+IFS=';'; loader_list=( $( echo "$MountEFIconf" | grep XHashes  -A ${AA} | grep -A 1 -e "${LNAME}" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+
+if [[ ! ${#loader_list[@]} = 0 ]]; then
+         tlist=(); unset strng
+
+        for y in ${!loader_list[@]}; do
+            if [[ "$( echo "${loader_list[y]}" | grep -o "${hash_string}" )" = "" ]]; then tlist+=("${loader_list[y]}"); fi
+         done
+      if [[ ! ${#tlist[@]} = 0 ]]; then 
+        for y in ${!tlist[@]}; do
+        strng+="${tlist[y]}"";"
+        done
+        plutil -replace XHashes.${L2NAME} -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        else
+        plutil -replace XHashes.${L2NAME} -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+      fi
+fi
+
+}
+
+DEL_HASHES(){
+
+while true; do
+
+  GET_HASHES
+
+    file_list=""
+
+
+    if [[ ! ${#ocr_list[@]} = 0 ]]; then
+    for i in ${!ocr_list[@]}; do file_list+='"'${ocr_list[i]}'"'; if [[ ! $i = $(( ${#ocr_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    fi
+
+    if [[ ! ${#ocd_list[@]} = 0 ]]; then
+    file_list+=","
+    for i in ${!ocd_list[@]}; do file_list+='"'${ocd_list[i]}'"'; if [[ ! $i = $(( ${#ocd_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    fi
+
+    if [[ ! ${#clv_list[@]} = 0 ]]; then
+    file_list+=","
+    for i in ${!clv_list[@]}; do file_list+='"'${clv_list[i]}'"'; if [[ ! $i = $(( ${#clv_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    fi
+
+    if [[ ! ${file_list} = "" ]]; then 
+        
+            IFS=','; result=( $( ASK_HASHES_TO_DELETE ) ); unset IFS
+
+        if [[ ! ${result[0]} = "false" ]]; then
+
+            BACKUP_LAST_HASHES
+    
+            for hash_string in ${result[@]}; do
+
+            AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES"; DEL_HASHES_IN_PLIST
+
+            AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES"; DEL_HASHES_IN_PLIST
+
+            AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES"; DEL_HASHES_IN_PLIST
+
+            DEL_HASHES_IN_PLIST
+
+            done
+            
+            SHOW_HASHES_SCREEN
+
+        else
+
+            break
+    
+        fi
+    else
+        break
+    fi
+
+done
+
+}
+
+ADD_HASHES_LIST(){
+ while true; do
+                  from_list=0
+                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ХЭШЕЙ MD5 ЗАГРУЗЧИКОВ ДЛЯ СОХРАНЕНИЯ СПИСКА В ФАЙЛЕ КОНФИГУРАЦИИ MOUNTEFI:"'; else prompt='"SELECT THE LOADERS MD5 HASH FILE TO SAVE THE LIST IN THE MOUNTEFI CONFIGURATION FILE :"'; fi
+                  if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias ((path to home folder as text)) with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
+                  if [[ $answer = "" ]]; then cancel=1; break; else 
+                            cancel=0
+                            hashes_array=( $( cat "${answer}" | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9][\.0-9rdn®ð]\b' | tr '\n' ' ' ) )
+                            if [[ ${#hashes_array[@]} = 0 ]]; then 
+                                       if [[ $loc = "ru" ]]; then
+                                     osascript -e 'display dialog "В файле не обнаружено верных записей! "   with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null 
+                                    else
+                                    osascript -e 'display dialog "The File does not contain valid values! " with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null 
+                                    fi
+                             else
+
+                                 for i in ${!hashes_array[@]}; do file_list+='"'${hashes_array[i]}'"'; if [[ ! $i = $(( ${#hashes_array[@]}-1 )) ]]; then file_list+=","; fi ; done
+                                 IFS=','; result=( $( ASK_HASHES_LIST_TO_ADD ) ); unset IFSq
+                                  if [[ ! ${result[0]} = "false" ]]; then
+
+                                        BACKUP_LAST_HASHES
+
+                                        for hash_string in ${result[@]}; do
+
+                                        CHECK_DUPLICATE_HASHES
+
+                                     if [[ ! $cancel = 1 ]]; then 
+
+                                        case ${hash_string:36} in
+
+                                        [nð®] ) AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+
+                                         [rd] ) AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES" ;;
+
+                                     [0-9a-f] ) AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES" ;;
+
+                                         esac
+
+                                         ADD_HASH_IN_PLIST
+
+                                      else
+                                          cancel=0
+                                      fi
+
+                                        done
+            
+                                        SHOW_HASHES_SCREEN
+
+                                        break
+                                    
+                                  else
+
+                                        break
+
+                                 fi
+                             fi
+                    fi
+done
+}
+
+UNDO_LAST_HASHES_CHANGES(){
+IFS=';'
+ocr_list_back2=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+ocd_list_back2=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+clv_list_back2=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+unset IFS
+
+hashes_string=""
+for i in ${ocr_list_back[@]}; do hashes_string+="${i}"";"; done
+AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES"
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+hashes_string=""
+for i in ${ocd_list_back[@]}; do hashes_string+="${i}"";"; done
+AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES"
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+hashes_string=""
+for i in ${clv_list_back[@]}; do hashes_string+="${i}"";"; done
+AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES"
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+
+UPDATE_CACHE
+
+ocr_list_back=( ${ocr_list_back2[@]} )
+ocd_list_back=( ${ocd_list_back2[@]} )
+clv_list_back=( ${clv_list_back2[@]} )
+
+}
+
+REM_HASHES(){
+
+            GET_APP_ICON
+
+
+                                if [[ $loc = "ru" ]]; then
+             if answer=$(osascript -e 'display dialog "Удалить ВСЕ сохранённые в файле конфигурации хэши загрузчиков? " '"${icon_string}"' buttons {"Удалить немедленно", "Отмена" } default button "Отмена" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+             if answer=$(osascript -e 'display dialog "Delete ALL bootloader hashes stored in the configuration file?" '"${icon_string}"' buttons {"Delete immediately", "Cancel" } default button "Cancel" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+             answer=$(echo "${answer}"  | cut -f2 -d':' )
+
+             if [[ ${answer} = "Отмена" ]] || [[ ${answer} = "Cancel" ]]; then cancel=1; fi 
+
+             if [[ ! $cancel = 1 ]]; then 
+
+            BACKUP_LAST_HASHES
+
+			 plutil -replace XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
+			 plutil -replace XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
+             plutil -replace XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
+
+            UPDATE_CACHE
+
+            fi
+}
+
+HASHES_EDITOR(){
+
+while true; do
+
+SHOW_HASHES_SCREEN
+
+unset inputs
+while [[ ! ${inputs} =~ ^[aAbBcCdDrRqQlLuU]+$ ]]; do 
+printf "\r"
+
+                if [[ $loc = "ru" ]]; then
+printf '  Выберите A, B, C, D, R, L, U или Q :   ' ; printf '                             '
+			else
+printf '  Enter A, B, C, D, R, L, U or Q :   ' ; printf '                           '
+                fi
+printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
+printf "\033[4A"
+printf "\r\033[42C"
+printf "\033[?25h"
+
+read -n 1 inputs 
+if [[ $inputs = "" ]]; then printf "\033[1A"; fi
+done
+
+if [[  ${inputs}  = [qQ] ]]; then clear && printf '\e[3J' && printf "\033[0;0H"; break; fi
+
+if [[  ${inputs}  = [aA] ]]; then  ADD_HASHES "Clover" ; fi
+
+if [[  ${inputs}  = [bB] ]]; then ADD_HASHES "OCR"; fi
+
+if [[  ${inputs}  = [cC] ]]; then ADD_HASHES "OCD"; fi
+
+if [[  ${inputs}  = [dD] ]]; then DEL_HASHES; fi
+
+if [[  ${inputs}  = [rR] ]]; then REM_HASHES; fi
+
+if [[  ${inputs}  = [lL] ]]; then ADD_HASHES_LIST; fi
+
+if [[  ${inputs}  = [uU] ]]; then UNDO_LAST_HASHES_CHANGES; fi
+   
+unset inputs
+
+done
+
+}
+
+
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
@@ -5618,7 +6245,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=31; col=80
+lines=32; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -5933,6 +6560,13 @@ if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; CORRECT_CURRENT_PRESET
 fi
 
 ##############################################################################
+
+########################################################################################################################
+
+if [[ $inputs = [Hh] ]]; then HASHES_EDITOR; fi
+
+##############################################################################
+
 
 ########################################################################################################################
 

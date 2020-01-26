@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="029"
+edit_vers="030"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -213,6 +213,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '	<key>XHashes</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>CLOVER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>OC_DEV_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>OC_REL_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
 
@@ -362,6 +371,15 @@ fi
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeProfile" ]]; then
             plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
+            cache=0
+fi
+
+strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "XHashes" ]]; then 
+			plutil -insert XHashes -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
+			plutil -insert XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
+			plutil -insert XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
+            plutil -insert XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
 
@@ -1760,23 +1778,22 @@ if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 
 ################################ получение имени диска для переименования #####################
 GET_RENAMEHD(){
-strng=`echo "$MountEFIconf" | grep -A 1 "RenamedHD" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-IFS=';'; rlist=($strng); unset IFS
+
+IFS=';'; rlist=( $(echo "$MountEFIconf" | grep -A 1 "RenamedHD" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n') ); unset IFS
 rcount=${#rlist[@]}
 if [[ ! $rcount = 0 ]]; then
-        var=$rcount; posr=0
-            while [[ ! $var = 0 ]]
-         do
-            rdrive=`echo "${rlist[$posr]}" | cut -f1 -d"="`
-            if [[ "$rdrive" = "$drive" ]]; then drive=`echo "${rlist[posr]}" | rev | cut -f1 -d"=" | rev`; break; fi
-            let "var--"
-            let "posr++"
+      for posr in ${!rlist[@]}; do
+            rdrive=$( echo "${rlist[$posr]}" | cut -f1 -d"=" )
+            if [[ "$rdrive" = "$drive" ]]; then drive=$( echo "${rlist[posr]}" | rev | cut -f1 -d"=" | rev ); break; fi
          done
 fi
+
 }
 ##############################################################################################
 
+################################ получение имени диска для переименования #####################
 GET_OC_VERS(){
+
 case "${md5_loader}" in
 ############## oc_hashes_strings 18 #################
 297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
@@ -1856,18 +1873,32 @@ c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
                                 *)     oc_revision=""
                     esac
 fi
+
+if [[ ${oc_revision} = "" ]]; then 
+IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | grep -o "${md5_loader}"=[.0-9]*[rd] | cut -f2 -d= ); fi
+fi
+
+if [[ ${oc_revision} = "" ]]; then 
+IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS    
+if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | grep -o "${md5_loader}"=[.0-9]*[®ðn] | cut -f2 -d= ); fi
+fi
+
 }
+##############################################################################################
 
 GET_CLOVER_VERS(){
-
-                case "$md5_loader" in
-############## clover_hashes_strings 1 #################
-a3b156fd314ef1061015c2250d851f49 ) revision=5102
-;;
-                                *)     revision=""
-
-                esac
+revision=""
+IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+if [[ ! ${#ocr_list[@]} = 0 ]]; then
+    for h in ${!ocr_list[@]}; do
+            some_hash=$( echo "${ocr_list[$h]}" | cut -f1 -d"=" )
+            if [[ "${some_hash}" = "${md5_loader}" ]]; then revision=$( echo "${ocr_list[$h]}" | rev | cut -f1 -d"=" | rev ); break; fi
+         done
+fi
 }
+
+###############################################################################################
 
 ##################### получение имени и версии загрузчика ######################################################################################
 
