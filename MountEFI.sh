@@ -1874,6 +1874,10 @@ fi
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "${md5_loader}" in
+b3c22c4a30c3d6ee9dd8c9e202d62f1f ) oc_revision=.55ð
+;;
+e7d387c1e60de4a6264b65f0939fa58d ) oc_revision=.55n
+;;
 0b717fd908ae278a0b0de7c2ba21a5b3 ) oc_revision=.55ð
 ;;
 bbce97ad42c5ce36ef1b00dd2d35cf41 ) oc_revision=.55ð
@@ -2466,7 +2470,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
                 if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
-                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; GET_LOADER_STRING; fi
+                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""; GET_LOADER_STRING; fi
                     ldlist[pnum]=$loader
                     let "chs=pnum+1"; UPDATE_SCREEN; break; fi
             fi
