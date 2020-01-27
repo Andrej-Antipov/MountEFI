@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 25.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 27.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1874,27 +1874,41 @@ c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
                     esac
 fi
 
-if [[ ${oc_revision} = "" ]]; then 
-IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
-if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | grep -o "${md5_loader}"=[.0-9]*[rd] | cut -f2 -d= ); fi
-fi
-
-if [[ ${oc_revision} = "" ]]; then 
-IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS    
-if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | grep -o "${md5_loader}"=[.0-9]*[®ðn] | cut -f2 -d= ); fi
-fi
+if [[ ${oc_revision} = "" ]]; then GET_CONFIG_VERS "OpenCore"; fi
 
 }
-##############################################################################################
 
-GET_CLOVER_VERS(){
-revision=""
-IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
-if [[ ! ${#ocr_list[@]} = 0 ]]; then
-    for h in ${!ocr_list[@]}; do
-            some_hash=$( echo "${ocr_list[$h]}" | cut -f1 -d"=" )
-            if [[ "${some_hash}" = "${md5_loader}" ]]; then revision=$( echo "${ocr_list[$h]}" | rev | cut -f1 -d"=" | rev ); break; fi
-         done
+
+GET_CONFIG_VERS(){
+
+target=$1
+
+if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
+
+    IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+    if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]\b" | cut -f2 -d= ); fi
+
+
+    if [[ ${oc_revision} = "" ]]; then 
+    IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS    
+    if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn]\b" | cut -f2 -d= ); fi
+    fi
+
+fi
+
+if [[ ${target} = "ALL" ]] && [[ ! ${oc_revision} = "" ]]; then loader="OpenCore"; loader+="${oc_revision}"
+
+else
+
+    if [[ ${target} = "Clover" ]] || [[ ${target} = "ALL" ]]  ; then 
+
+    revision=""
+    IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
+    if [[ ! ${#ocr_list[@]} = 0 ]]; then revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}\b" | cut -f2 -d= ); fi
+
+    if [[ ${target} = "ALL" ]] && [[ ! ${revision} = "" ]]; then loader="Clover"; loader+="${revision}"; fi
+
+    fi
 fi
 }
 
@@ -1905,9 +1919,9 @@ fi
 GET_LOADER_STRING(){
                     check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
-                    "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: )
-                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | grep -o  'revision:[0-9]*' | cut -f2 -d: ); fi
-                                 #if [[ ${revision} = "" ]]; then GET_CLOVER_VERS; fi
+                    "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
+                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                if [[ ${revision} = "" ]]; then GET_CONFIG_VERS "Clover"; fi
                                 loader+="${revision:0:4}"
                                 ;;
   
@@ -1922,6 +1936,8 @@ GET_LOADER_STRING(){
                                *) loader="unrecognized"                                    
                         ;;
                     esac
+    
+                    if [[ ${loader} = "unrecognized" ]]; then GET_CONFIG_VERS "ALL"; fi
 
 }
 
