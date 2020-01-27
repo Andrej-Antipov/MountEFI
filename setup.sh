@@ -5872,7 +5872,7 @@ loader_type=$1
 
    "OCR" ) loader="OpenCore Release"; pattern="\n   .54r   .53d   1.3r   13.d   001r"; AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES";;
 
-   "OCD" ) loader="OpenCore Develop"; pattern="\n   .54®   .53ð   .55n   1.2n   11.ð   011®"; AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+   "OCD" ) loader="OpenCore Develop"; pattern="\n   .54®   .53ð   .55n   1.2∂   11.ð   011®"; AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
    esac
 
 while true; do
