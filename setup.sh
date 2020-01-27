@@ -471,6 +471,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <key>OC_REL_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>OTHER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
@@ -611,6 +613,7 @@ if [[ ! $strng = "XHashes" ]]; then
 			plutil -insert XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
 			plutil -insert XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
             plutil -insert XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
+            plutil -insert XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
 
@@ -6221,7 +6224,7 @@ unset inputs
 
 SHOW_HASHES_SCREEN
 
-osascript -e 'tell application "Terminal" to activate'
+osascript -e 'tell application "Terminal" to activate' &
 
 done
 

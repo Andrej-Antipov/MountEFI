@@ -221,6 +221,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <key>OC_REL_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <key>OTHER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
+	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
             echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '</plist>' >> ${HOME}/.MountEFIconf.plist
@@ -380,6 +382,7 @@ if [[ ! $strng = "XHashes" ]]; then
 			plutil -insert XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
 			plutil -insert XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
             plutil -insert XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
+            plutil -insert XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
 
@@ -842,30 +845,81 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
 fi
 }
 
+########################### коррекция списка определённых загрузчиков с уменьшением ###############################
+
+REMOVE_LOADERS_FROM_LIST(){
+
+for x in ${temp_lddlist[@]}; do
+            for y in ${!lddlist[@]}; do
+                if [[ ${x} = ${lddlist[y]} ]]; then            
+                unset 'mounted_loaders_list[y]'; unset 'lddlist[y]'; unset 'ldlist[y]'
+                max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
+                    if [[ ${y} -lt ${max} ]]; then
+                        for ((z=${y};z<=${max};z++)); do
+                            lddlist[z]=${lddlist[$((z+1))]}; ldlist[z]=${ldlist[$((z+1))]}; mounted_loaders_list[z]=${mounted_loaders_list[$((z+1))]}; done
+                        unset 'lddlist[max]'; unset 'ldlist[max]'; unset 'mounted_loaders_list[max]'
+                    fi
+                fi
+            done
+        done
+
+}
+
 ############################# корректировка списка разделов с загрузчиками ######################################### 
 CORRECT_LOADERS_LIST(){
 
 if [[ ! ${lddlist[@]} = 0 ]]; then
     temp_lddlist=()
     temp_lddlist=( $( echo ${dlist[@]} ${lddlist[@]} | tr ' ' '\n' | sort | uniq -u ) )
-    for x in ${temp_lddlist[@]}; do
-        for y in ${!lddlist[@]}; do
-            if [[ ${x} = ${lddlist[y]} ]]; then            
-            unset 'mounted_loaders_list[y]'; unset 'lddlist[y]'; unset 'ldlist[y]'
-            max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
-                if [[ ${y} -lt ${max} ]]; then
-                    for ((z=${y};z<=${max};z++)); do
-                        lddlist[z]=${lddlist[$((z+1))]}; ldlist[z]=${ldlist[$((z+1))]}; mounted_loaders_list[z]=${mounted_loaders_list[$((z+1))]}; done
-                    unset 'lddlist[max]'; unset 'ldlist[max]'; unset 'mounted_loaders_list[max]'
-                fi
-            fi
-            done
-    done
+
+    REMOVE_LOADERS_FROM_LIST
 fi
 synchro=0
 
 }
+
+############################### получение хэшей из конфига ##########################################################
+
+GET_CONFIG_HASHES(){
+IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+         ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )   
+         clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+unset IFS
+}
+
 ######################################################################################################################
+
+CORRECT_LOADERS_HASH_LINKS(){
+
+    GET_CONFIG_HASHES
+
+    old_config_hashes=(); temp_lddlist=()
+
+    if [[ -f ~/.hashes_list.txt ]]; then old_config_hashes=( $( cat ~/.hashes_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.hashes_list.txt
+
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
+    for i in ${!mounted_loaders_list[@]}; do
+        if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
+                loader=""; oc_revision=""; revision=""
+                md5_loader=${mounted_loaders_list[i]}; GET_CONFIG_VERS "ALL"                            
+                            if [[ ! ${loader} = "" ]]; then ldlist[i]=$loader
+                            
+                            elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
+                                    for hh in ${old_config_hashes[@]}; do
+                                        if [[ ${hh} = ${md5_loader} ]]; then
+                                                temp_lddlist+=( ${lddlist[i]} ); break
+                                        fi
+                                    done                  
+                            fi
+         fi
+    done 
+
+    if [[ ! ${#temp_lddlist[@]} = 0 ]]; then
+
+        REMOVE_LOADERS_FROM_LIST
+    fi       
+fi
+}
 
 ############## обновление даных после выхода из скрипта настроек #########################################################
 
@@ -877,7 +931,7 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
-if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); pnum_max=0; ldlist=(); lddlist=(); fi
+if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); pnum_max=0; ldlist=(); lddlist=(); else CORRECT_LOADERS_HASH_LINKS; fi
 }
 ##########################################################################################################################
 
@@ -1794,6 +1848,10 @@ fi
 ################################ получение имени диска для переименования #####################
 GET_OC_VERS(){
 
+GET_CONFIG_VERS "OpenCore"
+
+if [[ ${oc_revision} = "" ]]; then
+
 case "${md5_loader}" in
 ############## oc_hashes_strings 18 #################
 297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
@@ -1816,6 +1874,7 @@ b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
 5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
                                 *)     oc_revision=""
                     esac
+fi
 ################ no_release_hashes ##################
 if [[ ${oc_revision} = "" ]]; then 
             
@@ -1874,10 +1933,7 @@ c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
                     esac
 fi
 
-if [[ ${oc_revision} = "" ]]; then GET_CONFIG_VERS "OpenCore"; fi
-
 }
-
 
 GET_CONFIG_VERS(){
 
@@ -1885,13 +1941,10 @@ target=$1
 
 if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
 
-    IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
     if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]\b" | cut -f2 -d= ); fi
-
-
+ 
     if [[ ${oc_revision} = "" ]]; then 
-    IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS    
-    if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn]\b" | cut -f2 -d= ); fi
+    if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn]\b" | cut -f2 -d= ); fi
     fi
 
 fi
@@ -1903,13 +1956,14 @@ else
     if [[ ${target} = "Clover" ]] || [[ ${target} = "ALL" ]]  ; then 
 
     revision=""
-    IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
-    if [[ ! ${#ocr_list[@]} = 0 ]]; then revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}\b" | cut -f2 -d= ); fi
+    if [[ ! ${#clv_list[@]} = 0 ]]; then revision=$( echo "${clv_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}\b" | cut -f2 -d= ); fi
+
 
     if [[ ${target} = "ALL" ]] && [[ ! ${revision} = "" ]]; then loader="Clover"; loader+="${revision}"; fi
 
     fi
 fi
+
 }
 
 ###############################################################################################
@@ -1919,9 +1973,10 @@ fi
 GET_LOADER_STRING(){
                     check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
-                    "Clover"    ) loader="Clover"; revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
+                    "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
+                                if [[ ${revision} = "" ]]; then
+                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
                                 if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
-                                if [[ ${revision} = "" ]]; then GET_CONFIG_VERS "Clover"; fi
                                 loader+="${revision:0:4}"
                                 ;;
   
@@ -2610,6 +2665,18 @@ printf "\033[?25l"
 
 SAVE_EFIes_STATE(){
 rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
+rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
+        if [[ ! ${#lddlist[@]} = 0 ]]; then
+        for h in ${!lddlist[@]}; do 
+            if [[ ! ${mounted_loaders_list[h]} = 0 ]]; then
+                loader=""; oc_revision=""; revision=""
+                md5_loader=${mounted_loaders_list[h]}; GET_CONFIG_VERS "ALL"                            
+                            if [[ ! ${loader} = "" ]]; then
+                            echo "${mounted_loaders_list[h]}" >> ~/.hashes_list.txt
+                            fi
+            fi
+        done
+        fi
 }
 
 
@@ -2748,6 +2815,8 @@ synchro=0
 ############################ MAIN MAIN MAIN ################################################
 GET_USER_PASSWORD
 
+GET_CONFIG_HASHES
+
 cpu_family=$(sysctl -n machdep.cpu.brand_string | grep -)
 if [[ $cpu_family = "" ]]; then cpu_family=0
  else
@@ -2782,8 +2851,8 @@ fi
         unset nlist
         declare -a nlist
         GETARR
- #if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then mounted_loaders_list=(); ldlist=(); ldnlist=(); lpntr=0; fi; fi
-    if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then CORRECT_LOADERS_LIST; fi; fi
+
+ if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then CORRECT_LOADERS_LIST; fi; fi
 
  if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]] || [[ ${synchro} = 3 ]]; then WAIT_SYNCHRO; fi; GETLIST; fi
 
