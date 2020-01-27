@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 28.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -5902,8 +5902,8 @@ while true; do
              else
              if demo=$(osascript -e 'set T to text returned of (display dialog "Set 32 byles of the md5 hash for '"${loader}"':" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
              fi
-             invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
              demo=$( echo "${demo}" | xargs )
+             invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
              demo=$( echo "${demo}" | egrep -o '^[0-9a-f]{32}\b' )
               if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
                 done
@@ -5920,7 +5920,7 @@ while true; do
              invalid_value=$( echo "${demo2}" | tr -cd "[:print:]\n" )
              if [[ "${loader_type}" = "Clover" ]]; then demo2=$( echo $demo2 | egrep -o '^[0-9]{4}\b' )
                 elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[rd]\b' )
-                    else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn]\b' )
+                    else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn∂]\b' )
              fi
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER
@@ -5953,9 +5953,11 @@ while true; do
              else
              if demo2=$(osascript -e 'set T to text returned of (display dialog "Set 4 byles revision as example:  '"${pattern}"'" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
              fi
+              demo2=$( echo "${demo2}" | xargs )
+              invalid_value=$( echo "${demo2}" | tr -cd "[:print:]\n" )
               if [[ "${loader_type}" = "Clover" ]]; then demo2=$( echo $demo2 | egrep -o '^[0-9]{4}\b' )
                 elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[rd]\b' )
-                    else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn]\b' )
+                    else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn∂]\b' )
              fi
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER;
@@ -6082,7 +6084,7 @@ ADD_HASHES_LIST(){
                   if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias ((path to home folder as text)) with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
                   if [[ ! $answer = "" ]]; then 
                             cancel=0
-                            hashes_array=( $( cat "${answer}" | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9][\.0-9rdn®ð]\b' ) )
+                            hashes_array=( $( cat "${answer}" | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9][\.0-9rdn®ð∂]\b' ) )
                             if [[ ${#hashes_array[@]} = 0 ]]; then 
                                        if [[ $loc = "ru" ]]; then
                                      osascript -e 'display dialog "В файле не обнаружено верных записей! "   with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null 

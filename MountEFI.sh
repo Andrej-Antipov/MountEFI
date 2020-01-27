@@ -1944,7 +1944,7 @@ if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then
     if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]\b" | cut -f2 -d= ); fi
  
     if [[ ${oc_revision} = "" ]]; then 
-    if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn]\b" | cut -f2 -d= ); fi
+    if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn∂]\b" | cut -f2 -d= ); fi
     fi
 
 fi
