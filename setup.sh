@@ -5922,10 +5922,12 @@ while true; do
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER
                 ########### запись хэша в конфиг #################################################
-            else hash_string=""; hash_string="${demo}""=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST;  SHOW_HASHES_SCREEN; break
+            else hash_string=""; hash_string="${demo}""=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST;  cancel=2; break
             fi
-
                    done
+
+                if [[ $cancel = 2 ]]; then break; fi
+
              fi
         done
 
@@ -5955,7 +5957,7 @@ while true; do
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER;
 ########### запись хэша в конфиг #################################################
-             else hash_string+="=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST; SHOW_HASHES_SCREEN; break
+             else hash_string+="=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST; cancel=2; break
              fi
     
              fi  
@@ -5963,6 +5965,8 @@ while true; do
              
 
       fi
+
+        if [[ $cancel = 2 ]]; then break; fi
 done
 
 }
