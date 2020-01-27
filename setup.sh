@@ -5947,7 +5947,8 @@ while true; do
                             cancel=0;  hash_string=$( md5 -qq "${answer}" )
                             CHECK_DUPLICATE_HASHES
                             if [[ $cancel = 1 ]]; then break; fi
- ########### диалог ввода версии загрузчика ######################################                           
+ ########### диалог ввода версии загрузчика ######################################
+             demo2=""                           
              if [[ $loc = "ru" ]]; then
              if demo2=$(osascript -e 'set T to text returned of (display dialog "Укажите 4 байта ревизии по примерам:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
              else

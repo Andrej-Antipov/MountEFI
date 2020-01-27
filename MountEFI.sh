@@ -907,17 +907,12 @@ if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
                             elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
                                     for hh in ${old_config_hashes[@]}; do
                                         if [[ ${hh} = ${md5_loader} ]]; then
-                                                temp_lddlist+=( ${lddlist[i]} ); break
+                                                unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
                                         fi
                                     done                  
                             fi
          fi
     done 
-
-    if [[ ! ${#temp_lddlist[@]} = 0 ]]; then
-
-        REMOVE_LOADERS_FROM_LIST
-    fi       
 fi
 }
 
@@ -1879,6 +1874,8 @@ fi
 if [[ ${oc_revision} = "" ]]; then 
             
                  case "${md5_loader}" in
+0b717fd908ae278a0b0de7c2ba21a5b3 ) oc_revision=.55ð
+;;
 bbce97ad42c5ce36ef1b00dd2d35cf41 ) oc_revision=.55ð
 ;;
 ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
