@@ -7,7 +7,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Two language interface: English and Russian with autodetect
 * Has separate view for PCI-E and USB devices
 * Show physical names of media
-* Hotplug media detector update list of drives
+* Hotplug media detector update list of drives and loaders 
 * Easy set up auto-mount EFI as service while login system
 * Has alias editor for device names to easy recognize drives
 * Has built-in themes and theme editor. Terminal system theme usage also supported
