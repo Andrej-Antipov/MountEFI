@@ -6160,7 +6160,18 @@ REM_HASHES(){
 
             GET_APP_ICON
 
+            GET_HASHES
 
+ if [[ ${#ocr_list[@]} = 0 ]] && [[ ${#ocd_list[@]} = 0 ]] && [[ ${#clv_list[@]} = 0 ]]; then 
+
+
+             if [[ $loc = "ru" ]]; then
+            osascript -e 'display dialog " Нечего удалять ! " with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+            else
+            osascript -e 'display dialog " There is nothing to remove ! " with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+            fi
+
+            else
                                 if [[ $loc = "ru" ]]; then
              if answer=$(osascript -e 'display dialog "Удалить ВСЕ сохранённые в файле конфигурации хэши загрузчиков? " '"${icon_string}"' buttons {"Удалить немедленно", "Отмена" } default button "Отмена" '); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
@@ -6181,6 +6192,7 @@ REM_HASHES(){
             UPDATE_CACHE
 
             fi
+fi
 }
 
 HASHES_EDITOR(){
