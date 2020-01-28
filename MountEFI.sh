@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 28.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -833,7 +833,7 @@ fi
 declare -a nlist 
 declare -a dlist
 lists_updated=0
-
+synchro=0
 
 # Блок определения функций ########################################################
 
@@ -2471,7 +2471,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
                     if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""; GET_LOADER_STRING; fi
-                    ldlist[pnum]=$loader
+                    ldlist[pnum]=$loader; lddlist[pnum]=${dlist[$pnum]}
                     let "chs=pnum+1"; UPDATE_SCREEN; break; fi
             fi
         done
