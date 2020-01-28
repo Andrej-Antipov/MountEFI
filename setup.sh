@@ -5835,6 +5835,8 @@ DUPLICATE_FOUND
 
     if [[ $cancel = 1 ]]; then break
         else
+
+        BACKUP_LAST_HASHES
         
         if [[ ! ${#loader_list[@]} = 0 ]]; then
          tlist=(); unset strng
