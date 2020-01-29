@@ -2484,16 +2484,14 @@ fi
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
 UPDATE_SCREEN_BUFFER(){
-#ldlist=(); ldnlist=()
-var0=$pos; num=0; ch1=0
-unset string
-while [ $var0 != 0 ] 
-do 
-pnum=${nlist[num]}
-string=`echo ${dlist[$pnum]}`
+
+var0=$pos; num=0; ch1=0; unset string
+while [ $var0 != 0 ]; do 
+    pnum=${nlist[num]}
+    string=`echo ${dlist[$pnum]}`
 	let "ch1++"
-mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-if [[ $mcheck = "Yes" ]]; then
+  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+  if [[ $mcheck = "Yes" ]]; then
 
         if [[ ${synchro} = 2 ]]; then for x in ${!dlist[@]}; do if [[ ${dlist[x]} = ${latest_hotplugs_parts[0]} ]]; then  let "chs=x+1"; fi; done; synchro=0; fi
 
@@ -2523,9 +2521,9 @@ if [[ $mcheck = "Yes" ]]; then
             fi
     fi
 
-else
+  else
 
-     if [[ $ch1 -lt $sata_lines ]]; then   
+     if [[ $ch1 -le $sata_lines ]]; then   
             check=$( echo "${screen_buffer}" | grep "$ch1) ..." )
            if [[ ! "${check}" = "" ]]; then 
         screen_buffer=$( echo  "$screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
@@ -2537,7 +2535,7 @@ else
         usb_screen_buffer=$( echo  "$usb_screen_buffer" | sed "s/$ch1)   +  /$ch1) ...  /" )
             fi
      fi 
-fi
+  fi
 let "num++"
 let "var0--"
 done
