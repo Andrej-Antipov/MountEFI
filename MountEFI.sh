@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.01.2020.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 07.02.2020.#  Copyright © 2019 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="030"
+edit_vers="031"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1848,7 +1848,7 @@ GET_CONFIG_VERS "OpenCore"
 if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
-############## oc_hashes_strings 18 #################
+############## oc_hashes_strings 20 #################
 297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
 e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
 7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
@@ -1867,6 +1867,8 @@ eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
 b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
 91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54r;;
 5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
+f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
+07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
                                 *)     oc_revision=""
                     esac
 fi
