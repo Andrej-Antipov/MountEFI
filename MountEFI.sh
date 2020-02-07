@@ -1147,35 +1147,6 @@ if [[ ! $posrm = 0 ]]; then
             fi
 }
 
-#GET_USB_NAMES(){
-#IFS=';'; usb_iolist=( $(IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs) ); unset IFS
-#pusb=${#usb_iolist[@]}
-#if [[ ! $pusb = 0 ]]; then
-#usbnames=(); 
-#for (( i=0; i<$pusb; i++ )); do
-#usbname="$(echo ${usb_iolist[i]} | cut -f3 -d=)";  usbnames+=( "${usbname}" )
-#done
-#fi
-#}
-
-#ADD_USB_DRIVES(){
-
-#GET_USB_NAMES
-#if [[ ! $pusb = 0 ]]; then
-#    whole_drives=`echo "$drives_iomedia" | grep -v "Statistics = " | grep -A 5 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' '\n' | sort -u | tr '\n' ';'`
-#    IFS=';'; wlist=($whole_drives); unset IFS; wpos=${#wlist[@]}
-#    ulist=()
-#    for ((i=0;i<$wpos;i++)); do
-#    wname=`echo "$drives_iomedia" | grep -B 10 ${wlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
-#   for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$wname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then ulist+=( "${wlist[i]}" ); break; fi; done
-#    done
-#upos=${#ulist[@]}; 
-#       for ((i=0;i<$wpos;i++)); do
-#          if [[ "$( echo ${tmlist[@]} | grep "${ulist[i]}" )" = "" ]]; then tmlist+=("${ulist[i]}"); fi
-#       done
-#fi
-#}
-
 GET_EFI_S(){
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
@@ -1233,10 +1204,6 @@ pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pst
 }
 
 GETARR(){
-
-#if [[ $hotplug = 1 ]]; then
-#    if [[ $cpu_family = 0 ]]; then sleep 2; fi
-#fi
 
 GET_EFI_S
 
@@ -1707,7 +1674,6 @@ fi
 
 osascript -e 'tell application "Terminal" to activate' &
 
-#cpu_family=1
 rmlist=(); posrm=0
 
 GETARR
@@ -2817,12 +2783,6 @@ synchro=0
 GET_USER_PASSWORD
 
 GET_CONFIG_HASHES
-
-#cpu_family=$(sysctl -n machdep.cpu.brand_string | grep -)
-#if [[ $cpu_family = "" ]]; then cpu_family=0
-# else
-#    cpu_family=$(sysctl -n machdep.cpu.brand_string | cut -f2 -d"-" | cut -c1)
-#fi
 
 chs=0
 
