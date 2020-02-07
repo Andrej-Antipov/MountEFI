@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 28.12.2019.#  Copyright © 2019 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="016"
+s_edit_vers="017"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -20,6 +20,7 @@ s_edit_vers="016"
 # 014 - несколько пробелов в середине пароля
 # 015 - проверка последних версий Clover и OC
 # 016 - работа с хэшами загрузчиков в конфиге
+# 017 - фикс выхода из функции обновления в случае отмены обновления
 
 clear
 
@@ -5520,9 +5521,10 @@ printf '\e[40m\e[1;33m   Загрузить обновления и обнови
 else
 printf '\e[40m\e[1;33m   Download updates and update the program?   (y/N) \e[0m'
 fi
+success=2
 read -s -n 1 
 if [[ $REPLY =~ ^[yY]$ ]]; then
-printf '\r\e[40m\e[1;33m                                                   \e[0m'
+            printf '\r\e[40m\e[1;33m                                                   \e[0m'
             if [[ $loc = "ru" ]]; then
             printf '\r\e[40m\e[1;33m   Загрузка файлов: \e[0m'
             else
@@ -5533,9 +5535,9 @@ printf '\r\e[40m\e[1;33m                                                   \e[0m
     success=0
     printf "\e[40m\e[1;33m\r\033[20C"
     if curl https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip" -L -o ~/.MountEFIupdates/${latest_edit}".zip" --progress-bar 2>&1 | while IFS= read -d $'\r' -r p; do p=${p:(-6)}; p=${p%'%'*}; p=${p/,/}; p=$(expr $p / 10 2>/dev/null); let "s=p/3"; echo -ne "[ $p% ] [ $(eval 'printf =%.0s {1..'${s}'}')> ]\r\033[20C"; done ; printf '\e[0m'; then
-   printf '\r\e[40m                                                                                 '
-    unzip  -o -qq ~/.MountEFIupdates/${latest_edit}".zip" -d ~/.MountEFIupdates 2>/dev/null
-    if [[ -f ~/.MountEFIupdates/${latest_edit}/MountEFI ]]; then 
+        printf '\r\e[40m                                                                                 '
+        unzip  -o -qq ~/.MountEFIupdates/${latest_edit}".zip" -d ~/.MountEFIupdates 2>/dev/null
+        if [[ -f ~/.MountEFIupdates/${latest_edit}/MountEFI ]]; then 
             if [[ $loc = "ru" ]]; then
             printf '\r\033[1A\e[40m\e[1;33m   Файлы получены. Перезапуск программы для обновления ...        \e[0m'
             else
@@ -5547,8 +5549,8 @@ printf '\r\e[40m\e[1;33m                                                   \e[0m
             plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
             success=1
             
+        fi
     fi
-fi
 fi
 }
 
@@ -5613,10 +5615,12 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
         fi
         else 
             ASK_UPDATE
-            if [[ $loc = "ru" ]]; then
-            if [[ $success = 0 ]]; then printf '\e[40m\e[1;33m   Не удалось получить файлы обновления. \e[0m\n\n'; else break; fi
-            else
-            if [[ $success = 0 ]]; then printf '\e[40m\e[1;33m   Failed to get update files for the program. \e[0m\n\n'; else break; fi
+            if [[ ! $success = 2 ]]; then
+                if [[ $loc = "ru" ]]; then
+                if [[ $success = 0 ]]; then printf '\e[40m\e[1;33m   Не удалось получить файлы обновления. \e[0m\n\n'; else break; fi
+                else
+                if [[ $success = 0 ]]; then printf '\e[40m\e[1;33m   Failed to get update files for the program. \e[0m\n\n'; else break; fi
+                fi
             fi
     fi
 else
@@ -5626,7 +5630,7 @@ else
    printf '\e[40m\e[1;33m   Unable to connect to the network.  \e[0m'
    fi
 fi
-read -s -n 1 -t 6
+if [[ ! $success = 2 ]]; then read -s -n 1 -t 6; fi
 printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
 unset inputs
 clear
