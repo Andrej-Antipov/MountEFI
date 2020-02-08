@@ -2088,7 +2088,7 @@ printf "\033[H"
                                      Refind="rEFInd"; c_ref=51
                                      printf "\033[$line;f\033['$c_ref'C"'\e['$themeldrs'm'"${Refind}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:7} = "Windows" ]]; then
-                                     Windows="Windows"; c_win=48
+                                     Windows="Windows"; c_win=47
                                      printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[54C${ldlist[$pointer]:7:9}""  MS ";  printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:8} = "OpenCore" ]]; then
                                      printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
