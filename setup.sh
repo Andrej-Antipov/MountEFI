@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="017"
+s_edit_vers="018"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -21,6 +21,7 @@ s_edit_vers="017"
 # 015 - проверка последних версий Clover и OC
 # 016 - работа с хэшами загрузчиков в конфиге
 # 017 - фикс выхода из функции обновления в случае отмены обновления
+# 018 - хэши других загрузчиков через конфиг
 
 clear
 
@@ -5645,12 +5646,8 @@ fi
 }
 
 SHOW_HASHES_SCREEN(){
-IFS=';'
-ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
-ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
-clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
-unset IFS
-lines2=$(( ${#ocr_list[@]}+${#ocd_list[@]}+${#clv_list[@]}+24 ))
+GET_HASHES
+lines2=$(( ${#ocr_list[@]}+${#ocd_list[@]}+${#clv_list[@]}+${#oth_list[@]}+24 ))
 if [[ ${lines2} -lt 33 ]]; then lines2=33; fi
 clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H"
 unset bbuf; chn=1; bb=6
@@ -5733,6 +5730,24 @@ unset bbuf; chn=1; bb=6
             done
     fi
 
+    if [[ ${oth_list[0]} = " " ]]; then oth_list=(); fi
+        if [[ ! ${#oth_list[@]} = 0 ]]; then
+            for i in ${!oth_list[@]}; do
+            
+            some_hash=$( echo "${oth_list[$i]}" | cut -f1 -d"=" )
+            revision=$( echo "${oth_list[$i]}" | rev | cut -f1 -d"=" | rev )            
+
+            if [[ $chn -le 9 ]]; then
+            bbuf+=$(printf '\033['$bb';0f''               '$chn')    ')
+            else
+            bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
+            fi
+            bbuf+=$( echo ${some_hash}"   "${revision})
+            let "bb++"
+            let "chn++"
+            done
+    fi
+
     let "bb++"
 
     bbuf+=$(printf '\033['$bb';0f''   ')
@@ -5745,6 +5760,7 @@ unset bbuf; chn=1; bb=6
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  A)  Добавить хэши для Clover                  ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Добавить хэши релизов Open Core           ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  С)  Добавить хэши разработки Open Core        ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  O)  Добавить хэши других загрузчиков          ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Добавить хэши из файла со списком         ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Удалить хэш из файла конфигурации         ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Очистить ВСЮ базу хэшей                   ')
@@ -5754,6 +5770,7 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Вернуть�
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  A)  Add hashes for Clover                     ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Add Open Core relases hashes              ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  C)  Add Open Core develop hashes              ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  O)  Add another loaders hashes                ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Add hashes from file with list            ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Delete hash from config file              ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Remove ALL hash database                  ')
@@ -5770,7 +5787,9 @@ printf '\n\n'
 }
 
 GET_HASHES(){
+oth_list_string="$( echo "$MountEFIconf" | grep XHashes  -A 9 | grep -A 1 -e "OTHER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )"
 IFS=';'
+oth_list=($oth_list_string)
 ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
@@ -5778,7 +5797,9 @@ unset IFS
 }
 
 BACKUP_LAST_HASHES(){
+oth_list_string="$( echo "$MountEFIconf" | grep XHashes  -A 9 | grep -A 1 -e "OTHER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )"
 IFS=';'
+oth_list_back=($oth_list_string)
 ocr_list_back=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 ocd_list_back=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 clv_list_back=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
@@ -5818,11 +5839,12 @@ GET_HASHES
 hash_value=${hash_string}; if [[ ! $( echo "${hash_value}" | grep -o "=" ) = "" ]]; then hash_value=$( echo "${hash_value}" | cut -f1 -d= ); fi
 
 match=0
-for ((i=0;i<3;i++)); do
+for ((i=0;i<4;i++)); do
     case "${i}" in
         "0" ) loader_list=( ${ocr_list[@]} ); AAA=7; LNAME2="OC_REL_HASHES</key>"; L2NAME2="OC_REL_HASHES" ;;
         "1" ) loader_list=( ${ocd_list[@]} ); AAA=5; LNAME2="OC_DEV_HASHES</key>"; L2NAME2="OC_DEV_HASHES" ;;
         "2" ) loader_list=( ${clv_list[@]} ); AAA=3; LNAME2="CLOVER_HASHES</key>"; L2NAME2="CLOVER_HASHES" ;;
+        "3" ) loader_list=( ${oth_list[@]} ); AAA=9; LNAME2="OTHER_HASHES</key>"; L2NAME2="OTHER_HASHES" ;;
     esac
     IFS=';'; loader_list=( $( echo "$MountEFIconf" | grep XHashes  -A ${AAA} | grep -A 1 -e "${LNAME2}" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) ); unset IFS
 
@@ -5869,6 +5891,22 @@ fi
 done
 }
 
+ENTER_OTHER_NAME(){
+             if [[ $loc = "ru" ]]; then
+             if demo2="$(osascript -e 'set T to text returned of (display dialog "Укажите обозначение загрузчика:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")')"; then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             if demo2="$(osascript -e 'set T to text returned of (display dialog "Enter bootloader id:  '"${pattern}"'" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")')"; then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+              invalid_value=$( echo "${demo2}" | tr -cd "[:print:]\n" )
+                        demo2=`echo "$demo2" | tr -d \"\'\;\+\-\(\)`
+                        demo2=`echo "$demo2" | tr -cd "[:print:]\n"`
+                        demo2=`echo "$demo2" | tr -d "={}]><[&^$"`
+                        demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
+                        if [[ ${#demo2} -gt 12 ]]; then demo2="${demo2:0:11}"; fi
+            
+
+}
+
 ADD_HASHES(){
 loader_type=$1
 
@@ -5879,6 +5917,14 @@ loader_type=$1
    "OCR" ) loader="OpenCore Release"; pattern="\n   .54r   .53d   1.3r   13.d   001r"; AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES";;
 
    "OCD" ) loader="OpenCore Develop"; pattern="\n   .54®   .53ð   .55n   1.2∂   11.ð   011®"; AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+
+ "Other" ) if [[ $loc = "ru" ]]; then loader="загрузчика определямого пользователем"; pattern="\n   12 букв или цифр максимум"
+                else 
+                    loader="user defined loader"; pattern="\n   12 letters or numbers maximum"
+           fi
+           AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"
+           ;;
+
    esac
 
 while true; do
@@ -5914,9 +5960,10 @@ while true; do
               if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
                 done
              if [[ $cancel = 1 ]]; then break; else
-######### диалог ввода версии загрузчика ##################################
+######### диалог ввода версии Clover/OpenCore ##################################
                 while true; do
              demo2=""
+          if [[ ! ${loader_type} = "Other" ]]; then 
              if [[ $loc = "ru" ]]; then
              if demo2=$(osascript -e 'set T to text returned of (display dialog "Укажите 4 байта ревизии по примерам:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
              else
@@ -5928,6 +5975,9 @@ while true; do
                 elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[rd]\b' )
                     else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn∂]\b' )
              fi
+           else
+                ENTER_OTHER_NAME
+           fi
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER
                 ########### запись хэша в конфиг #################################################
@@ -5954,7 +6004,8 @@ while true; do
                             CHECK_DUPLICATE_HASHES
                             if [[ $cancel = 1 ]]; then break; fi
  ########### диалог ввода версии загрузчика ######################################
-             demo2=""                           
+             demo2="" 
+          if [[ ! ${loader_type} = "Other" ]]; then                           
              if [[ $loc = "ru" ]]; then
              if demo2=$(osascript -e 'set T to text returned of (display dialog "Укажите 4 байта ревизии по примерам:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
              else
@@ -5966,6 +6017,9 @@ while true; do
                 elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[rd]\b' )
                     else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn∂]\b' )
              fi
+           else
+               ENTER_OTHER_NAME
+           fi
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER;
 ########### запись хэша в конфиг #################################################
@@ -6025,10 +6079,10 @@ IFS=';'; loader_list=( $( echo "$MountEFIconf" | grep XHashes  -A ${AA} | grep -
 
 if [[ ! ${#loader_list[@]} = 0 ]]; then
          tlist=(); unset strng
-
         for y in ${!loader_list[@]}; do
             if [[ "$( echo "${loader_list[y]}" | grep -o "${hash_string}" )" = "" ]]; then tlist+=("${loader_list[y]}"); fi
          done
+
       if [[ ! ${#tlist[@]} = 0 ]]; then 
         for y in ${!tlist[@]}; do
         strng+="${tlist[y]}"";"
@@ -6047,6 +6101,9 @@ DEL_HASHES(){
 
     file_list=""
 
+    if [[ ! ${#oth_list[@]} = 0 ]]; then
+    for i in ${!oth_list[@]}; do file_list+='"'${oth_list[i]}'"'; if [[ ! $i = $(( ${#oth_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    fi
 
     if [[ ! ${#ocr_list[@]} = 0 ]]; then
     for i in ${!ocr_list[@]}; do file_list+='"'${ocr_list[i]}'"'; if [[ ! $i = $(( ${#ocr_list[@]}-1 )) ]]; then file_list+=","; fi ; done
@@ -6068,9 +6125,11 @@ DEL_HASHES(){
 
         if [[ ! ${result[0]} = "false" ]]; then
 
+            for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | xargs )"; done
+
             BACKUP_LAST_HASHES
     
-            for hash_string in ${result[@]}; do
+            for hash_string in "${result[@]}"; do
 
             AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES"; DEL_HASHES_IN_PLIST
 
@@ -6078,7 +6137,7 @@ DEL_HASHES(){
 
             AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES"; DEL_HASHES_IN_PLIST
 
-            DEL_HASHES_IN_PLIST
+            AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"; DEL_HASHES_IN_PLIST
 
             done                
         fi
@@ -6135,12 +6194,19 @@ ADD_HASHES_LIST(){
 }
 
 UNDO_LAST_HASHES_CHANGES(){
+oth_list_string=$( echo "$MountEFIconf" | grep XHashes  -A 9 | grep -A 1 -e "OTHER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
 IFS=';'
+oth_list_back2=($oth_list_string)
 ocr_list_back2=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 ocd_list_back2=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 clv_list_back2=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 unset IFS
 
+hashes_string=""
+for i in "${oth_list_back[@]}"; do hashes_string+="${i}"";"; done
+AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"
+
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
 hashes_string=""
 for i in ${ocr_list_back[@]}; do hashes_string+="${i}"";"; done
 AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES"
@@ -6159,6 +6225,7 @@ UPDATE_CACHE
 ocr_list_back=( ${ocr_list_back2[@]} )
 ocd_list_back=( ${ocd_list_back2[@]} )
 clv_list_back=( ${clv_list_back2[@]} )
+oth_list_back=("${oth_list_back2[@]}")
 
 }
 
@@ -6168,7 +6235,7 @@ REM_HASHES(){
 
             GET_HASHES
 
- if [[ ${#ocr_list[@]} = 0 ]] && [[ ${#ocd_list[@]} = 0 ]] && [[ ${#clv_list[@]} = 0 ]]; then 
+ if [[ ${#oth_list[@]} = 0 ]] && [[ ${#ocr_list[@]} = 0 ]] && [[ ${#ocd_list[@]} = 0 ]] && [[ ${#clv_list[@]} = 0 ]]; then 
 
 
              if [[ $loc = "ru" ]]; then
@@ -6194,6 +6261,7 @@ REM_HASHES(){
 			 plutil -replace XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
 			 plutil -replace XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
              plutil -replace XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
+             plutil -replace XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
 
             UPDATE_CACHE
 
@@ -6208,13 +6276,13 @@ SHOW_HASHES_SCREEN
 while true; do
 
 unset inputs
-while [[ ! ${inputs} =~ ^[aAbBcCdDrRqQlLuU]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[aAbBcCoOdDrRqQlLuU]+$ ]]; do 
 printf "\r"
 
                 if [[ $loc = "ru" ]]; then
-printf '  Выберите A, B, C, D, R, L, U или Q :   ' ; printf '                             '
+printf '  Выберите A, B, C, O, D, R, L, U или Q :   ' ; printf '                             '
 			else
-printf '  Enter A, B, C, D, R, L, U or Q :   ' ; printf '                           '
+printf '  Enter A, B, C, O, D, R, L, U or Q :   ' ; printf '                           '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
@@ -6232,6 +6300,8 @@ if [[  ${inputs}  = [aA] ]]; then  ADD_HASHES "Clover" ; fi
 if [[  ${inputs}  = [bB] ]]; then ADD_HASHES "OCR"; fi
 
 if [[  ${inputs}  = [cC] ]]; then ADD_HASHES "OCD"; fi
+
+if [[  ${inputs}  = [oO] ]]; then ADD_HASHES "Other"; fi
 
 if [[  ${inputs}  = [dD] ]]; then DEL_HASHES; fi
 

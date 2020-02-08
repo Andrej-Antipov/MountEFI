@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="032"
+edit_vers="033"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -881,7 +881,9 @@ synchro=0
 ############################### получение хэшей из конфига ##########################################################
 
 GET_CONFIG_HASHES(){
-IFS=';'; ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
+oth_list_string="$( echo "$MountEFIconf" | grep XHashes  -A 9 | grep -A 1 -e "OTHER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )"
+IFS=';'; oth_list=($oth_list_string)
+         ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
          ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )   
          clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 unset IFS
@@ -913,6 +915,44 @@ if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
                             fi
          fi
     done 
+
+old_other_loaders=(); deleted_other_loaders=()
+if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_loaders_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.other_loaders_list.txt
+     
+     if [[ ! ${#old_other_loaders[@]} = 0 ]] ; then
+                      for y in "${old_other_loaders[@]}"; do
+                                match=0
+                                    for z in "${oth_list[@]}"; do
+                                        if [[ ${y:0:32} = ${z:0:32} ]]; then match=1; break; fi
+                                    done
+                                if [[ ${match} = 0 ]]; then deleted_other_loaders+=( ${y} ); fi
+                      done
+     fi
+
+     if [[ ! ${#deleted_other_loaders[@]} = 0 ]] ; then
+                for i in ${!mounted_loaders_list[@]}; do
+                            md5_loader=${mounted_loaders_list[i]}
+                            for y in ${!deleted_other_loaders[@]}; do
+                               if [[ ${md5_loader} = ${deleted_other_loaders[y]:0:32} ]]; then 
+                                    unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                fi
+                            done
+                done
+    fi
+
+     if [[ ! ${#oth_list[@]} = 0 ]] ; then 
+        for i in ${!mounted_loaders_list[@]}; do
+            if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
+                md5_loader=${mounted_loaders_list[i]}
+                for x in ${!oth_list[@]}; do
+                    if [[ ${md5_loader} = ${oth_list[x]:0:32} ]]; then  
+                                ldlist[i]="Other""${oth_list[x]:33}"; break
+                    fi
+                done
+            fi
+        done
+    fi
+    
 fi
 }
 
@@ -1935,11 +1975,25 @@ fi
 
 }
 
+GET_OTHER_LOADERS_STRING(){
+if [[ ! ${#oth_list[@]} = 0 ]]; then 
+                    for y in ${!oth_list[@]}; do
+                    if [[ "${oth_list[y]:0:32}" = "${md5_loader}" ]]; then loader="Other"; loader+="${oth_list[y]:33}"; break; fi
+                    done
+               fi
+
+}
+
 ###############################################################################################
 
 ##################### получение имени и версии загрузчика ######################################################################################
 
 GET_LOADER_STRING(){
+                
+               GET_OTHER_LOADERS_STRING
+               
+               if [[ ! "${loader:0:5}" = "Other" ]]; then
+                
                     check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
@@ -1962,7 +2016,7 @@ GET_LOADER_STRING(){
                     esac
     
                     if [[ ${loader} = "unrecognized" ]]; then GET_CONFIG_VERS "ALL"; fi
-
+                fi
 }
 
 ##################################################################################################################################################
@@ -1986,7 +2040,7 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                      max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
                      for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
                     fi
-                    mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1 
+                    mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
                     GET_LOADER_STRING
                   fi
                 fi
@@ -2024,6 +2078,9 @@ printf "\033[H"
                                      c_unr=47
                                      if [[ $loc = "ru" ]]; then Unrec="Не распознан"; else Unrec="Unrecognized"; fi
                                      printf "\033[$line;f\033['$c_unr'C"'\e['$themeldrs'm'"${Unrec}"" "; printf '\e[0m'
+                                elif [[ ${ldlist[$pointer]:0:5} = "Other" ]]; then
+                                     Other="${ldlist[$pointer]:5}"; ooc=${#Other}; let "c_oth=(13-ooc)/2+47"; printf "\033[$line;f\033[47C""             "
+                                     printf "\033[$line;f\033['$c_oth'C"'\e['$themeldrs'm'"${Other}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:9} = "GNU/Linux" ]]; then
                                      Linux="GNU/Linux"; c_lin=49
                                      printf "\033[$line;f\033['$c_lin'C"'\e['$themeldrs'm'"${Linux}"" "; printf '\e[0m'
@@ -2031,7 +2088,7 @@ printf "\033[H"
                                      Refind="rEFInd"; c_ref=51
                                      printf "\033[$line;f\033['$c_ref'C"'\e['$themeldrs'm'"${Refind}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:7} = "Windows" ]]; then
-                                     Windows="Windows"; c_win=47
+                                     Windows="Windows"; c_win=48
                                      printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[54C${ldlist[$pointer]:7:9}""  MS ";  printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:8} = "OpenCore" ]]; then
                                      printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
@@ -2644,6 +2701,12 @@ rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
             fi
         done
         fi
+rm -f ~/.other_loaders_list.txt
+if [[ ! ${#oth_list[@]} = 0 ]]; then
+   touch ~/.other_loaders_list.txt
+   for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
+fi
+        
 }
 
 
