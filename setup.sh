@@ -6118,22 +6118,19 @@ DEL_HASHES(){
 
     echo "file_list oth_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
 
-    if [[ ! ${#ocr_list[@]} = 0 ]]; then
-    
+    if [[ ! ${#ocr_list[@]} = 0 ]]; then    
     for i in ${!ocr_list[@]}; do file_list+='"'${ocr_list[i]}'"'; file_list+=","; done 
     fi
 
     echo "file_list ocr_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
 
-    if [[ ! ${#ocd_list[@]} = 0 ]]; then
-    file_list+=","
+    if [[ ! ${#ocd_list[@]} = 0 ]]; then 
     for i in ${!ocd_list[@]}; do file_list+='"'${ocd_list[i]}'"'; file_list+=","; done 
     fi
 
     echo "file_list ocd_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
 
     if [[ ! ${#clv_list[@]} = 0 ]]; then
-    file_list+=","
     for i in ${!clv_list[@]}; do file_list+='"'${clv_list[i]}'"'; file_list+=","; done 
     fi
 
