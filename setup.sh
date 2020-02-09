@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 08.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 09.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="018"
+s_edit_vers="019"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -22,6 +22,7 @@ s_edit_vers="018"
 # 016 - работа с хэшами загрузчиков в конфиге
 # 017 - фикс выхода из функции обновления в случае отмены обновления
 # 018 - хэши других загрузчиков через конфиг
+# 019 - загрузка хэшей других загрузчиков через список в файле
 
 clear
 
@@ -5787,6 +5788,7 @@ printf '\n\n'
 }
 
 GET_HASHES(){
+echo "GET_HASHES .............................................." >> ~/Desktop/temp.txt
 oth_list_string="$( echo "$MountEFIconf" | grep XHashes  -A 9 | grep -A 1 -e "OTHER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )"
 IFS=';'
 oth_list=($oth_list_string)
@@ -5794,6 +5796,13 @@ ocr_list=( $( echo "$MountEFIconf" | grep XHashes  -A 7 | grep -A 1 -e "OC_REL_H
 ocd_list=( $( echo "$MountEFIconf" | grep XHashes  -A 5 | grep -A 1 -e "OC_DEV_HASHES" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 clv_list=( $( echo "$MountEFIconf" | grep XHashes  -A 3 | grep -A 1 -e "CLOVER_HASHES</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' ) )
 unset IFS
+echo "oth_list .............................................." >> ~/Desktop/temp.txt; for i in "${oth_list[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done    
+echo "ocr_list .............................................." >> ~/Desktop/temp.txt; for i in "${ocr_list[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done 
+echo "ocd_list .............................................." >> ~/Desktop/temp.txt; for i in "${ocd_list[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done    
+echo "clv_list .............................................." >> ~/Desktop/temp.txt; for i in "${clv_list[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done 
+echo "" >> ~/Desktop/temp.txt
+echo "" >> ~/Desktop/temp.txt
+echo "" >> ~/Desktop/temp.txt
 }
 
 BACKUP_LAST_HASHES(){
@@ -6101,25 +6110,43 @@ DEL_HASHES(){
 
     file_list=""
 
+    echo "FILE_LIST .............................................." >> ~/Desktop/temp.txt;
+
     if [[ ! ${#oth_list[@]} = 0 ]]; then
-    for i in ${!oth_list[@]}; do file_list+='"'${oth_list[i]}'"'; if [[ ! $i = $(( ${#oth_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    for i in ${!oth_list[@]}; do file_list+='"'${oth_list[i]}'"'; file_list+=","; done 
     fi
 
+    echo "file_list oth_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
+
     if [[ ! ${#ocr_list[@]} = 0 ]]; then
-    for i in ${!ocr_list[@]}; do file_list+='"'${ocr_list[i]}'"'; if [[ ! $i = $(( ${#ocr_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    
+    for i in ${!ocr_list[@]}; do file_list+='"'${ocr_list[i]}'"'; file_list+=","; done 
     fi
+
+    echo "file_list ocr_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
 
     if [[ ! ${#ocd_list[@]} = 0 ]]; then
     file_list+=","
-    for i in ${!ocd_list[@]}; do file_list+='"'${ocd_list[i]}'"'; if [[ ! $i = $(( ${#ocd_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    for i in ${!ocd_list[@]}; do file_list+='"'${ocd_list[i]}'"'; file_list+=","; done 
     fi
+
+    echo "file_list ocd_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
 
     if [[ ! ${#clv_list[@]} = 0 ]]; then
     file_list+=","
-    for i in ${!clv_list[@]}; do file_list+='"'${clv_list[i]}'"'; if [[ ! $i = $(( ${#clv_list[@]}-1 )) ]]; then file_list+=","; fi ; done
+    for i in ${!clv_list[@]}; do file_list+='"'${clv_list[i]}'"'; file_list+=","; done 
     fi
 
-    if [[ ! ${file_list} = "" ]]; then 
+    echo "file_list clv_list .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
+    
+    if [[ ! ${#file_list} = 0 ]]; then 
+
+            file_list="${file_list::${#file_list}-1}"
+
+            echo "file_list for RESULT .............................................." >> ~/Desktop/temp.txt;  echo "${file_list}" >> ~/Desktop/temp.txt
+            echo "" >> ~/Desktop/temp.txt
+            echo "" >> ~/Desktop/temp.txt
+            echo "" >> ~/Desktop/temp.txt
         
             IFS=','; result=( $( ASK_HASHES_TO_DELETE ) ); unset IFS
 
@@ -6146,11 +6173,24 @@ DEL_HASHES(){
 
 ADD_HASHES_LIST(){
  
-                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ХЭШЕЙ MD5 ЗАГРУЗЧИКОВ ДЛЯ СОХРАНЕНИЯ СПИСКА В ФАЙЛЕ КОНФИГУРАЦИИ MOUNTEFI:"'; else prompt='"SELECT THE LOADERS MD5 HASH FILE TO SAVE THE LIST IN THE MOUNTEFI CONFIGURATION FILE :"'; fi
+                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ХЭШЕЙ MD5 ЗАГРУЗЧИКОВ ДЛЯ СОХРАНЕНИЯ СПИСКА В ФАЙЛЕ КОНФИГУРАЦИИ MountEFI:"'; else prompt='"SELECT THE LOADERS MD5 HASH FILE TO SAVE THE LIST IN THE MountEFI CONFIGURATION FILE :"'; fi
                   if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias ((path to home folder as text)) with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
                   if [[ ! $answer = "" ]]; then 
                             cancel=0
                             hashes_array=( $( cat "${answer}" | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9][\.0-9rdn®ð∂]\b' ) )
+                            hashes_others_temp_string="$( cat  "${answer}" | egrep -o '^[0-9a-f]{32}\b=.{1,12}' | tr '\n' ';' )"
+                            IFS=';'; hashes_others_temp_array=(${hashes_others_temp_string}); unset IFS
+                            hashes_others_array=(); hashes_others_temp_string=""
+                            for i in "${hashes_others_temp_array[@]}"; do
+                                 match=0
+                                 for y in ${hashes_array[@]}; do
+                                    if [[ ${i:0:32} = ${y:0:32} ]]; then match=1; break; fi
+                                 done
+                                    if [[ ${match} = 0 ]]; then hashes_others_array+=("${i}"); hashes_array+=("${i}"); fi
+                            done
+                            
+                            echo "hashes_array.............................................." >> ~/Desktop/temp.txt; for i in "${hashes_array[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done    
+                            echo "hashes_others_array.............................................." >> ~/Desktop/temp.txt; for i in "${hashes_others_array[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done   
                             if [[ ${#hashes_array[@]} = 0 ]]; then 
                                        if [[ $loc = "ru" ]]; then
                                      osascript -e 'display dialog "В файле не обнаружено верных записей! "   with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null 
@@ -6160,17 +6200,30 @@ ADD_HASHES_LIST(){
                              else
                                  file_list=""
                                  for i in ${!hashes_array[@]}; do file_list+='"'${hashes_array[i]}'"'; if [[ ! $i = $(( ${#hashes_array[@]}-1 )) ]]; then file_list+=","; fi ; done
+                                 echo "file_list ""${file_list}" >> ~/Desktop/temp.txt
                                  IFS=','; result=( $( ASK_HASHES_LIST_TO_ADD ) ); unset IFS
                                   if [[ ! ${result[0]} = "false" ]]; then
 
+                                    for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | xargs )"; done
+
+                                        echo "RESULT .............................................." >> ~/Desktop/temp.txt; for i in "${result[@]}"; do echo "${i}" >> ~/Desktop/temp.txt; done 
+
                                         BACKUP_LAST_HASHES
 
-                                       for hash_string in ${result[@]}; do
+                                       for hash_string in "${result[@]}"; do
                                                                    
                                        CHECK_DUPLICATE_HASHES
 
                                      if [[ ! $cancel = 1 ]]; then 
-
+                                        match=0
+                                        if [[ ! ${#hashes_others_array[@]} = 0 ]]; then
+                                             for n in "${hashes_others_array[@]}"; do
+                                                if [[ ${hash_string:0:32} = ${n:0:32} ]]; then match=1; AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"; break; fi
+                                             done
+                                    
+                                        fi
+                                        
+                                        if [[ ${match} = 0 ]]; then 
                                         case ${hash_string:36} in
 
                                         [nð®] ) AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
@@ -6180,8 +6233,10 @@ ADD_HASHES_LIST(){
                                      [0-9a-f] ) AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES" ;;
 
                                          esac
-
+                                        fi
+                                  
                                          ADD_HASH_IN_PLIST
+                                        
 
                                       fi
 
