@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="019"
+s_edit_vers="020"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -23,6 +23,7 @@ s_edit_vers="019"
 # 017 - фикс выхода из функции обновления в случае отмены обновления
 # 018 - хэши других загрузчиков через конфиг
 # 019 - загрузка хэшей других загрузчиков через список в файле
+# 020 - сохранение базы хэшей в виде списка в файл
 
 clear
 
@@ -5649,7 +5650,7 @@ fi
 SHOW_HASHES_SCREEN(){
 GET_HASHES
 lines2=$(( ${#ocr_list[@]}+${#ocd_list[@]}+${#clv_list[@]}+${#oth_list[@]}+24 ))
-if [[ ${lines2} -lt 33 ]]; then lines2=33; fi
+if [[ ${lines2} -lt 34 ]]; then lines2=34; fi
 clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H"
 unset bbuf; chn=1; bb=6
                             if [[ $loc = "ru" ]]; then
@@ -5763,6 +5764,7 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Добавит�
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  С)  Добавить хэши разработки Open Core        ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  O)  Добавить хэши других загрузчиков          ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Добавить хэши из файла со списком         ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Сохранить хэши из конфига в файл          ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Удалить хэш из файла конфигурации         ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Очистить ВСЮ базу хэшей                   ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  U)  Отменить последние изменения хэшей        ')
@@ -5773,6 +5775,7 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Add Open Core r
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  C)  Add Open Core develop hashes              ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  O)  Add another loaders hashes                ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Add hashes from file with list            ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Save config hashes to file                ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Delete hash from config file              ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Remove ALL hash database                  ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  U)  Undo last hashes changes                  ')
@@ -5934,7 +5937,7 @@ while true; do
 
             GET_APP_ICON
             
-######### диалог задания хэша ################################
+######### диалог метода задания хэша ################################
                                 if [[ $loc = "ru" ]]; then
              if answer=$(osascript -e 'display dialog "Как указать хэш файла для '"${loader}"'?" '"${icon_string}"' buttons {"Вручную", "Выбрать файл", "Отмена" } default button "Вручную" '); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
@@ -6148,6 +6151,206 @@ DEL_HASHES(){
     fi
 }
 
+WRONG_FILE_TYPE(){
+if [[ $loc = "ru" ]]; then
+osascript -e 'display dialog "Тип файла не является файлом списка хэшей !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+else
+osascript -e 'display dialog "The file type is not a hash list file !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+fi
+}
+
+WRONG_PERMISSIONS(){
+if [[ $loc = "ru" ]]; then
+osascript -e 'display dialog "Нельзя создать (изменить) файл в указанном каталоге !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+else
+osascript -e 'display dialog "Cannot create (change) file in selected folder !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+fi
+}
+
+PLACE_HASHES_IN_FILE(){
+
+if [[ $1 = "Replace" ]]; then 
+    if [[ -f "${FilePath}"".back" ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
+    if ! mv -f "${FilePath}" "${FilePath}"".back"; then WRONG_PERMISSIONS; cancel=1; break; else mv -f "${FilePath}"".back" "${FilePath}"; fi
+fi
+
+if [[ $1 = "Create" ]]; then 
+    if ! touch "${FilePath}"; then WRONG_PERMISSIONS; cancel=1; break; else echo "############## oc_hashes_strings 0 #################" >> "${FilePath}"; fi
+fi
+
+file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9]{1,5} [#]*' )"
+                            if [[ "${file_header}" = "" ]]; then WRONG_FILE_TYPE; cancel=1; break
+                                else
+                                        file_lines="$(echo "${file_header}" | egrep -o '[0-9]{1,5}')"
+                                     if [[ ! "${file_lines}" = 0 ]]; then
+                                        hashes_array=( $( cat "${FilePath}" | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9][\.0-9rdn®ð∂]\b' ) )
+                                        demo2="$( cat "${FilePath}" | tr -d \"\'\;\+\-\(\)\\ )"
+                                        demo2=`echo "$demo2" | tr -cd "[:print:]\n"`
+                                        demo2=`echo "$demo2" | tr -d "{}]><[&^$"`
+                                        demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
+                                        hashes_others_temp_string="$( echo  "${demo2}" | egrep -o '^[0-9a-f]{32}\b=.{1,12}' | tr '\n' ';' )"
+                                        hashes_others_temp_string="$( echo  "${demo2}" | egrep -o '^[0-9a-f]{32}\b=.{1,12}' | tr '\n' ';' )"
+                                        IFS=';'; hashes_others_temp_array=(${hashes_others_temp_string}); unset IFS
+                                        hashes_others_array=(); hashes_others_temp_string=""
+                                        for i in "${hashes_others_temp_array[@]}"; do
+                                            match=0
+                                            for y in ${hashes_array[@]}; do
+                                                if [[ ${i:0:32} = ${y:0:32} ]]; then match=1; break; fi
+                                            done
+                                            if [[ ${match} = 0 ]]; then hashes_others_array+=("${i}"); hashes_array+=("${i}"); fi
+                                        done
+        
+                                    else
+                                        hashes_array=(); hashes_others_array=()
+                                    fi
+                                
+                            fi
+                            
+                            if [[ -f "${FilePath}"".back" ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
+                            if ! mv -f "${FilePath}" "${FilePath}"".back"; then WRONG_PERMISSIONS; cancel=1; break; fi
+
+                              hashes_array_new=()
+                                            if [[ ! ${#oth_list[@]} = 0 ]]; then for y in ${!oth_list[@]}; do hashes_array_new+="${oth_list[y]}"; done; fi
+                                            if [[ ! ${#ocr_list[@]} = 0 ]]; then for y in ${!ocr_list[@]}; do hashes_array_new+="${ocr_list[y]}"; done; fi
+                                            if [[ ! ${#ocd_list[@]} = 0 ]]; then for y in ${!ocd_list[@]}; do hashes_array_new+="${ocd_list[y]}"; done; fi
+                                            if [[ ! ${#clv_list[@]} = 0 ]]; then for y in ${!clv_list[@]}; do hashes_array_new+="${clv_list[y]}"; done; fi
+
+                                            file_list=""
+                                 for i in ${!hashes_array_new[@]}; do file_list+='"'${hashes_array_new[i]}'"'; if [[ ! $i = $(( ${#hashes_array_new[@]}-1 )) ]]; then file_list+=","; fi ; done
+
+                                 IFS=','; result=( $( ASK_HASHES_LIST_TO_ADD ) ); unset IFS
+                                  if [[ ${result[0]} = "false" ]]; then cancel=1; break; fi
+
+                                    for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | sed 's/^[ \t]*//' )"; done
+
+                                        echo "RESULT 1""${result[@]}" >> ~/temp.txt
+                
+                                        hashes_array_sum=()
+
+                                 if [[ ! ${#hashes_array[@]} = 0 ]]; then 
+                                            
+                                        for i in ${!hashes_array[@]}; do
+                                            for y in ${!result[@]}; do
+                                            if [[ ${hashes_array[i]::32} = ${result[y]::32} ]]; then unset hashes_array[i]; break; fi
+                                            done
+                                        done
+                                        for i in ${!hashes_array[@]}; do hashes_array_sum+=("${hashes_array[i]}"); done
+                                 fi
+                                        for i in ${!result[@]}; do hashes_array_sum+=("${result[i]}"); done 
+                                        
+                                        echo "RESULT 2"${result[@]} >> ~/temp.txt
+
+                                        echo "RESULT 3"${hashes_array_sum[@]} >> ~/temp.txt
+                                        
+                                        echo "############## oc_hashes_strings ${#hashes_array_sum[@]} #################" >> "${FilePath}"
+
+                                        for i in "${hashes_array_sum[@]}"; do echo "${i}" >> "${FilePath}"; done
+
+ 
+cancel=1
+}
+
+SAVE_HASHES_IN_FILE(){
+
+            GET_APP_ICON
+
+            GET_HASHES
+
+ if [[ ${#oth_list[@]} = 0 ]] && [[ ${#ocr_list[@]} = 0 ]] && [[ ${#ocd_list[@]} = 0 ]] && [[ ${#clv_list[@]} = 0 ]]; then 
+
+             if [[ $loc = "ru" ]]; then
+            osascript -e 'display dialog " Нет сохранённых хэшей в конфиге ! " with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+            else
+            osascript -e 'display dialog " There is nothing to save ! " with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+            fi
+else
+
+    while true; do
+    ######### диалог запроса файла ################################
+                                if [[ $loc = "ru" ]]; then
+             if answer=$(osascript -e 'display dialog "Создайте файл или выберите существующий: " '"${icon_string}"' buttons {"Создать файл", "Выбрать файл", "Отмена" } default button "Создать файл" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+             if answer=$(osascript -e 'display dialog "Create new file or select an existing one" '"${icon_string}"' buttons {"Create a file", "Choose the file", "Cancel" } default button "Create a file" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+             answer=$(echo "${answer}"  | cut -f2 -d':' )
+
+             if [[ ${answer} = "Отмена" ]]; then cancel=1; fi 
+
+             if [[ $cancel = 1 ]]; then break; fi
+        
+      if [[ "${answer}" = "Создать файл" ]] || [[ "${answer}" = "Create a file" ]]; then
+  ########## диалог создания имени файла ###########################
+           while true; do
+             demo=""
+             if [[ $loc = "ru" ]]; then
+             loader="имени файла"
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Напишите имя файла :" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             loader="the filename"
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Write a filename :" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+             demo=$( echo "${demo}" | xargs )
+             invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
+             if [[ $cancel = 1 ]]; then break; 
+                    elif [[ ${#demo} = 0 ]]; then 
+                            WRONG_ANSWER
+                    else 
+                        Filename_string="${demo}"; break 
+             fi
+           done
+             if [[ $cancel = 1 ]]; then break; fi 
+           while true; do
+                 if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ КАТАЛОГ ДЛЯ СОХРАНЕНИЯ СПИСКА ХЭШЕЙ В ФАЙЛЕ:"'; else prompt='"CHOOSE THE FOLDER TO SAVE THE HASHLIST IN FILE :"'; fi
+                 if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose folder default location alias ((path to home folder as text)) with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
+                 if [[ $cancel = 1 ]]; then break; fi
+                 if [[ ! $answer = "" ]]; then 
+                    cancel=0
+        
+                   FilePath="${answer}""${Filename_string}"
+        ############## если такой файл существует в выбранном каталоге ##########################
+                    if [[ -f "${FilePath}" ]]; then 
+                    
+                         if [[ $loc = "ru" ]]; then
+             if answer=$(osascript -e 'display dialog "Файл с таким именем уже существует: " '"${icon_string}"' buttons {"Заменить файл", "Выбрать другой каталог", "Отмена" } default button "Выбрать другой каталог" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+             if answer=$(osascript -e 'display dialog "Create new file or select an existing one" '"${icon_string}"' buttons {"Replace the file", "Choose another folder", "Cancel" } default button "Create a file" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+             answer=$(echo "${answer}"  | cut -f2 -d':' )
+
+                        if [[ ${answer} = "Отмена" ]]; then cancel=1; break; fi
+                        if [[ "${answer}" = "Заменить файл" ]] || [[ "${answer}" = "Replace the file" ]]; then PLACE_HASHES_IN_FILE "Replace"; break; fi
+
+                    else
+                        PLACE_HASHES_IN_FILE "Create"; break                                               
+                    fi
+                 fi
+            done     
+            if [[ $cancel = 1 ]]; then break; fi
+       elif 
+                [[ "${answer}" = "Выбрать файл" ]] || [[ "${answer}" = "Choose the file" ]]; then                                    
+########### диалог выбора файла для получения хэша ###############################
+                  while true; do
+                
+                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ДЛЯ СОХРАНЕНИЯ В НЁМ СПИСКА ХЭШЕЙ :"'; else prompt='"CHOOSE A FILE TO SAVE THE HASHLIST IN IT :"'; fi
+                  alias_string='"'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"':Volumes"'
+                  if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias '"${alias_string}"' with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
+                  if [[ $answer = "" ]]; then cancel=1; break
+                  else 
+                            cancel=0
+                            FilePath="${answer}"
+                            PLACE_HASHES_IN_FILE "Insert"
+                            
+                  fi        
+                            if [[ $cancel = 1 ]]; then break; fi
+                  done
+        
+      fi
+
+  done
+fi
+
+}
+
 ADD_HASHES_LIST(){
  
                   if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ХЭШЕЙ MD5 ЗАГРУЗЧИКОВ ДЛЯ СОХРАНЕНИЯ СПИСКА В ФАЙЛЕ КОНФИГУРАЦИИ MountEFI:"'; else prompt='"SELECT THE LOADERS MD5 HASH FILE TO SAVE THE LIST IN THE MountEFI CONFIGURATION FILE :"'; fi
@@ -6305,43 +6508,51 @@ HASHES_EDITOR(){
 
 SHOW_HASHES_SCREEN
 
+BACKUP_LAST_HASHES
+
 while true; do
 
 unset inputs
-while [[ ! ${inputs} =~ ^[aAbBcCoOdDrRqQlLuU]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[aAbBcCoOsSdDrRqQlLuU]+$ ]]; do 
 printf "\r"
 
                 if [[ $loc = "ru" ]]; then
-printf '  Выберите A, B, C, O, D, R, L, U или Q :   ' ; printf '                             '
+printf '  Выберите A, B, C, O, L, S, D, R, U или Q :   ' ; printf '                             '
 			else
-printf '  Enter A, B, C, O, D, R, L, U or Q :   ' ; printf '                           '
+printf '     Enter A, B, C, O, L, S, D, R, U or Q :   ' ; printf '                             '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
-printf "\r\033[42C"
+printf "\r\033[45C"
 printf "\033[?25h"
 
 read -n 1 inputs 
 if [[ $inputs = "" ]]; then printf "\033[1A"; fi
 done
 
-if [[  ${inputs}  = [qQ] ]]; then clear && printf '\e[3J' && printf "\033[0;0H"; break; fi
+                    case ${inputs} in
 
-if [[  ${inputs}  = [aA] ]]; then  ADD_HASHES "Clover" ; fi
+        [qQ] ) clear && printf '\e[3J' && printf "\033[0;0H"; break;;
 
-if [[  ${inputs}  = [bB] ]]; then ADD_HASHES "OCR"; fi
+        [aA] )  ADD_HASHES "Clover" ;;
 
-if [[  ${inputs}  = [cC] ]]; then ADD_HASHES "OCD"; fi
+        [bB] ) ADD_HASHES "OCR";;
 
-if [[  ${inputs}  = [oO] ]]; then ADD_HASHES "Other"; fi
+        [cC] ) ADD_HASHES "OCD";;
 
-if [[  ${inputs}  = [dD] ]]; then DEL_HASHES; fi
+        [oO] ) ADD_HASHES "Other";;
 
-if [[  ${inputs}  = [rR] ]]; then REM_HASHES; fi
+        [sS] ) SAVE_HASHES_IN_FILE;;
 
-if [[  ${inputs}  = [lL] ]]; then ADD_HASHES_LIST; fi
+        [dD] ) DEL_HASHES;;
 
-if [[  ${inputs}  = [uU] ]]; then UNDO_LAST_HASHES_CHANGES; fi
+        [rR] ) REM_HASHES;;
+
+        [lL] ) ADD_HASHES_LIST;;
+
+        [uU] ) UNDO_LAST_HASHES_CHANGES;;
+
+                   esac
    
 unset inputs
 
