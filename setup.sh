@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 09.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -5743,7 +5743,7 @@ unset bbuf; chn=1; bb=6
             else
             bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
             fi
-            bbuf+=$( echo ${some_hash}"   "${revision})
+            bbuf+=$( echo ${some_hash}"   ""${revision}")
             let "bb++"
             let "chn++"
             done
@@ -5894,17 +5894,18 @@ done
 }
 
 ENTER_OTHER_NAME(){
+             demo2=""
              if [[ $loc = "ru" ]]; then
              if demo2="$(osascript -e 'set T to text returned of (display dialog "Укажите обозначение загрузчика:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")')"; then cancel=0; else cancel=1; fi 2>/dev/null
              else
              if demo2="$(osascript -e 'set T to text returned of (display dialog "Enter bootloader id:  '"${pattern}"'" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")')"; then cancel=0; else cancel=1; fi 2>/dev/null 
              fi
               invalid_value=$( echo "${demo2}" | tr -cd "[:print:]\n" )
-                        demo2=`echo "$demo2" | tr -d \"\'\;\+\-\(\)`
+                        demo2="$( echo "$demo2" | tr -d \"\'\;\+\-\(\)\\ )"
                         demo2=`echo "$demo2" | tr -cd "[:print:]\n"`
                         demo2=`echo "$demo2" | tr -d "={}]><[&^$"`
                         demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
-                        if [[ ${#demo2} -gt 12 ]]; then demo2="${demo2:0:11}"; fi
+                        if [[ ${#demo2} -gt 12 ]]; then demo2="${demo2::12}"; fi
             
 
 }
@@ -5947,7 +5948,7 @@ while true; do
         
       if [[ "${answer}" = "Вручную" ]] || [[ "${answer}" = "Manually" ]]; then
 
-######### диалог ввода хэша вручную
+######### диалог ввода хэша вручную ##################################
            while true; do
                 while true; do
              demo=""
@@ -5962,7 +5963,7 @@ while true; do
               if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
                 done
              if [[ $cancel = 1 ]]; then break; else
-######### диалог ввода версии Clover/OpenCore ##################################
+######### диалог ввода идентификатора ##################################
                 while true; do
              demo2=""
           if [[ ! ${loader_type} = "Other" ]]; then 
@@ -6128,7 +6129,7 @@ DEL_HASHES(){
 
         if [[ ! ${result[0]} = "false" ]]; then
 
-            for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | xargs )"; done
+            for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | sed 's/^[ \t]*//' )"; done
 
             BACKUP_LAST_HASHES
     
@@ -6154,7 +6155,11 @@ ADD_HASHES_LIST(){
                   if [[ ! $answer = "" ]]; then 
                             cancel=0
                             hashes_array=( $( cat "${answer}" | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9][\.0-9rdn®ð∂]\b' ) )
-                            hashes_others_temp_string="$( cat  "${answer}" | egrep -o '^[0-9a-f]{32}\b=.{1,12}' | tr '\n' ';' )"
+                            demo2="$( cat  "${answer}" | tr -d \"\'\;\+\-\(\)\\ )"
+                            demo2=`echo "$demo2" | tr -cd "[:print:]\n"`
+                            demo2=`echo "$demo2" | tr -d "{}]><[&^$"`
+                            demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
+                            hashes_others_temp_string="$( echo  "${demo2}" | egrep -o '^[0-9a-f]{32}\b=.{1,12}' | tr '\n' ';' )"
                             IFS=';'; hashes_others_temp_array=(${hashes_others_temp_string}); unset IFS
                             hashes_others_array=(); hashes_others_temp_string=""
                             for i in "${hashes_others_temp_array[@]}"; do
@@ -6178,7 +6183,7 @@ ADD_HASHES_LIST(){
                                  IFS=','; result=( $( ASK_HASHES_LIST_TO_ADD ) ); unset IFS
                                   if [[ ! ${result[0]} = "false" ]]; then
 
-                                    for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | xargs )"; done
+                                    for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | sed 's/^[ \t]*//' )"; done
 
                                         BACKUP_LAST_HASHES
 
