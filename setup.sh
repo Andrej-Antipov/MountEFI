@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -6210,10 +6210,10 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                             if ! mv -f "${FilePath}" "${FilePath}"".back"; then WRONG_PERMISSIONS; cancel=1; break; fi
 
                               hashes_array_new=()
-                                            if [[ ! ${#oth_list[@]} = 0 ]]; then for y in ${!oth_list[@]}; do hashes_array_new+="${oth_list[y]}"; done; fi
-                                            if [[ ! ${#ocr_list[@]} = 0 ]]; then for y in ${!ocr_list[@]}; do hashes_array_new+="${ocr_list[y]}"; done; fi
-                                            if [[ ! ${#ocd_list[@]} = 0 ]]; then for y in ${!ocd_list[@]}; do hashes_array_new+="${ocd_list[y]}"; done; fi
-                                            if [[ ! ${#clv_list[@]} = 0 ]]; then for y in ${!clv_list[@]}; do hashes_array_new+="${clv_list[y]}"; done; fi
+                                            if [[ ! ${#oth_list[@]} = 0 ]]; then for y in ${!oth_list[@]}; do hashes_array_new+=("${oth_list[y]}"); done; fi
+                                            if [[ ! ${#ocr_list[@]} = 0 ]]; then for y in ${!ocr_list[@]}; do hashes_array_new+=("${ocr_list[y]}"); done; fi
+                                            if [[ ! ${#ocd_list[@]} = 0 ]]; then for y in ${!ocd_list[@]}; do hashes_array_new+=("${ocd_list[y]}"); done; fi
+                                            if [[ ! ${#clv_list[@]} = 0 ]]; then for y in ${!clv_list[@]}; do hashes_array_new+=("${clv_list[y]}"); done; fi
 
                                             file_list=""
                                  for i in ${!hashes_array_new[@]}; do file_list+='"'${hashes_array_new[i]}'"'; if [[ ! $i = $(( ${#hashes_array_new[@]}-1 )) ]]; then file_list+=","; fi ; done
@@ -6245,9 +6245,10 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                                         echo "############## oc_hashes_strings ${#hashes_array_sum[@]} #################" >> "${FilePath}"
 
                                         for i in "${hashes_array_sum[@]}"; do echo "${i}" >> "${FilePath}"; done
+                                        
+                                        if [[ "${file_lines}" = 0 ]] && [[ -f "${FilePath}"".back" ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
 
- 
-cancel=1
+                                        cancel=1; break
 }
 
 SAVE_HASHES_IN_FILE(){
@@ -6341,8 +6342,10 @@ else
                             PLACE_HASHES_IN_FILE "Insert"
                             
                   fi        
-                            if [[ $cancel = 1 ]]; then break; fi
+                            if [[ ! $cancel = 0 ]]; then break; fi
                   done
+
+                   if [[ ! $cancel = 2 ]]; then break; fi
         
       fi
 
