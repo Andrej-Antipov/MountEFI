@@ -5864,7 +5864,7 @@ if [[ ${match} = 1 ]]; then
 
 DUPLICATE_FOUND
 
-    if [[ $cancel = 1 ]]; then break
+    if [[ $cancel = 1 ]]; then  break
         else
 
         BACKUP_LAST_HASHES
@@ -6161,9 +6161,9 @@ fi
 
 WRONG_PERMISSIONS(){
 if [[ $loc = "ru" ]]; then
-osascript -e 'display dialog "Нельзя создать (изменить) файл в указанном каталоге !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+osascript -e 'display dialog "Нет доступа на запись. \nНельзя создать (изменить) файл в указанном каталоге !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
 else
-osascript -e 'display dialog "Cannot create (change) file in selected folder !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+osascript -e 'display dialog "Permission denied. \nCannot create (change) file in selected folder !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
 fi
 }
 
@@ -6171,11 +6171,11 @@ PLACE_HASHES_IN_FILE(){
 
 if [[ $1 = "Replace" ]]; then 
     if [[ -f "${FilePath}"".back" ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
-    if ! mv -f "${FilePath}" "${FilePath}"".back"; then WRONG_PERMISSIONS; cancel=1; break; else mv -f "${FilePath}"".back" "${FilePath}"; fi
+    if ! mv -f "${FilePath}" "${FilePath}"".back"; then WRONG_PERMISSIONS; cancel=1; break; else mv -f "${FilePath}"".back" "${FilePath}"; fi 2>/dev/null
 fi
 
 if [[ $1 = "Create" ]]; then 
-    if ! touch "${FilePath}"; then WRONG_PERMISSIONS; cancel=1; break; else echo "############## oc_hashes_strings 0 #################" >> "${FilePath}"; fi
+    if ! touch "${FilePath}"; then WRONG_PERMISSIONS; cancel=1; break; else echo "############## oc_hashes_strings 0 #################" >> "${FilePath}"; fi 2>/dev/null
 fi
 
 file_md5_ID=$( md5 -qq "${FilePath}")
