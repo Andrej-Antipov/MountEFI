@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="033"
+edit_vers="034"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1001,7 +1001,7 @@ CLEAR_HISTORY
 #####################################################################################################################
 CHECK_TTY_COUNT	
 
-TERMINATE &
+#TERMINATE &
 if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
 else
    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
