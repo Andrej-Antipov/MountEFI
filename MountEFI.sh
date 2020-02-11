@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="033"
+edit_vers="034"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -878,6 +878,146 @@ synchro=0
 
 }
 
+################################ получение имени диска для переименования #####################
+GET_OC_VERS(){
+
+GET_CONFIG_VERS "OpenCore"
+
+if [[ ${oc_revision} = "" ]]; then
+
+case "${md5_loader}" in
+############## oc_hashes_strings 20 #################
+297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
+e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
+7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
+bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
+303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
+52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
+91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
+5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
+7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
+c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;
+eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
+c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
+1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
+eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
+97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
+b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
+91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54r;;
+5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
+f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
+07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
+                                *)     oc_revision=""
+                    esac
+fi
+################ no_release_hashes ##################
+if [[ ${oc_revision} = "" ]]; then 
+            
+                 case "${md5_loader}" in
+b3c22c4a30c3d6ee9dd8c9e202d62f1f ) oc_revision=.55ð
+;;
+e7d387c1e60de4a6264b65f0939fa58d ) oc_revision=.55n
+;;
+0b717fd908ae278a0b0de7c2ba21a5b3 ) oc_revision=.55ð
+;;
+bbce97ad42c5ce36ef1b00dd2d35cf41 ) oc_revision=.55ð
+;;
+ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
+;;
+d3c0c19a82e9dbbf5e457ef85f8ad3b5 ) oc_revision=.55®
+;;
+13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
+;;
+5e8fe9b3c1398f50c4bd126dade630ac ) oc_revision=.55®
+;;
+7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.55ð
+;;
+8e8fb33c3f0409bfc1d0e24a6340dc8a ) oc_revision=.55n
+;;
+4500e9f6f0d3d3fa9e4378931418b1f7 ) oc_revision=.54n
+;;
+3edc7635655663fdb9cf6979f7ef20f3 ) oc_revision=.54ð
+;;
+181e452d5aa32e168159aafbe8353d10 ) oc_revision=.54n
+;;
+005807d0d8ae2b8c0eed2822ab82ea5b ) oc_revision=.54ð
+;;
+aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n
+;;
+f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð
+;;
+31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®
+;;
+6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n
+;;
+992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð
+;;
+8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®
+;;
+5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n
+;;
+01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð
+;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®
+;;
+f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð
+;;
+96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n
+;;
+d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®
+;;
+2f674084287ebc38bd8d214f7c9f26f3 ) oc_revision=.53ð
+;;
+c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
+;;
+                                *)     oc_revision=""
+                    esac
+fi
+
+}
+
+GET_CONFIG_VERS(){
+
+target=$1
+
+if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
+
+    if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]\b" | cut -f2 -d= ); fi
+ 
+    if [[ ${oc_revision} = "" ]]; then 
+    if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn∂]\b" | cut -f2 -d= ); fi
+    fi
+
+fi
+
+if [[ ${target} = "ALL" ]] && [[ ! ${oc_revision} = "" ]]; then loader="OpenCore"; loader+="${oc_revision}"
+
+else
+
+    if [[ ${target} = "Clover" ]] || [[ ${target} = "ALL" ]]  ; then 
+
+    revision=""
+    if [[ ! ${#clv_list[@]} = 0 ]]; then revision=$( echo "${clv_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}\b" | cut -f2 -d= ); fi
+
+
+    if [[ ${target} = "ALL" ]] && [[ ! ${revision} = "" ]]; then loader="Clover"; loader+="${revision}"; fi
+
+    fi
+fi
+
+}
+
+GET_OTHER_LOADERS_STRING(){
+if [[ ! ${#oth_list[@]} = 0 ]]; then 
+                    for y in ${!oth_list[@]}; do
+                    if [[ "${oth_list[y]:0:32}" = "${md5_loader}" ]]; then loader="Other"; loader+="${oth_list[y]:33}"; break; fi
+                    done
+               fi
+
+}
+
+###############################################################################################
+
 ############################### получение хэшей из конфига ##########################################################
 
 GET_CONFIG_HASHES(){
@@ -966,7 +1106,7 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
-if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); pnum_max=0; ldlist=(); lddlist=(); else CORRECT_LOADERS_HASH_LINKS; fi
+if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); else CORRECT_LOADERS_HASH_LINKS; fi
 }
 ##########################################################################################################################
 
@@ -1011,8 +1151,80 @@ else
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
 if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
 
+################ восстановить состояние после перезагрузки из схранения в файлах ##################################################
 
-if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+GET_MOUNTEFI_STACK(){
+
+if [[ -f ~/.MountEFIst/.mounted_loaders_list ]] && [[ -f ~/.MountEFIst/.ldlist ]] && [[ -f ~/.MountEFIst/.lddlist ]]; then
+mounted_loaders_list_string=$( cat ~/.MountEFIst/.mounted_loaders_list | tr '\n' ';' )
+ldlist_string=$( cat ~/.MountEFIst/.ldlist | tr '\n' ';' )
+lddlist_string=$( cat ~/.MountEFIst/.lddlist | tr '\n' ';' )
+IFS=';' mounted_loaders_list=(${mounted_loaders_list_string}); ldlist=(${ldlist_string}); lddlist=(${lddlist_string}); unset IFS
+fi
+
+rm -Rf ~/.MountEFIst
+
+if [[ -f ~/.hashes_list.txt.back ]]; then mv -f ~/.hashes_list.txt.back ~/.hashes_list.txt; fi
+if [[ -f ~/.other_loaders_list.txt.back ]]; then mv -f ~/.other_loaders_list.txt.back ~/.other_loaders_list.txt; fi
+if [[ -f ~/.disk_list.txt.back ]]; then mv -f ~/.disk_list.txt.back ~/.disk_list.txt; fi
+
+}
+######################## сохранение данных для перезагрузки ###################################################################
+
+SAVE_LOADERS_STACK(){
+
+if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
+mkdir ~/.MountEFIst
+
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
+            touch ~/.MountEFIst/.mounted_loaders_list
+            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> ~/.MountEFIst/.mounted_loaders_list; done
+fi
+
+if [[ ! ${#ldlist[@]} = 0 ]]; then 
+            touch ~/.MountEFIst/.ldlist
+            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${ldlist[h]} >> ~/.MountEFIst/.ldlist; done
+fi
+
+if [[ ! ${#lddlist[@]} = 0 ]]; then 
+            touch ~/.MountEFIst/.lddlist
+            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> ~/.MountEFIst/.lddlist; done
+fi
+
+}
+
+############################################# сохранене данных для коррекции после setup ##########################################
+SAVE_EFIes_STATE(){
+rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
+rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
+        if [[ ! ${#lddlist[@]} = 0 ]]; then
+        for h in ${!lddlist[@]}; do 
+            if [[ ! ${mounted_loaders_list[h]} = 0 ]]; then
+                loader=""; oc_revision=""; revision=""
+                md5_loader=${mounted_loaders_list[h]}; GET_CONFIG_VERS "ALL"                            
+                            if [[ ! ${loader} = "" ]]; then
+                            echo "${mounted_loaders_list[h]}" >> ~/.hashes_list.txt
+                            fi
+            fi
+        done
+        fi
+rm -f ~/.other_loaders_list.txt
+if [[ ! ${#oth_list[@]} = 0 ]]; then
+   touch ~/.other_loaders_list.txt
+   for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
+fi
+
+SAVE_LOADERS_STACK
+        
+}
+###################################################################################################################################
+
+############################### обработка условия после перезагрузки ###############################################################
+
+if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; GET_MOUNTEFI_STACK; upd=1; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then SAVE_LOADERS_STACK;  EXIT_PROGRAM; fi
 ##########################################################################################################################
 ########################## обратный отсчёт для автомонтирования ##########################################################
 COUNTDOWN(){ 
@@ -1488,7 +1700,7 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                      max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
                      for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
             fi
-             ldlist[pnum]=$loader; lddlist[pnum]=${dlist[pnum]}
+             ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
             fi             					   
 	   fi
 	fi
@@ -1718,7 +1930,7 @@ rmlist=(); posrm=0
 
 GETARR
 
-mounted_loaders_list=(); ldlist=(); pnum_max=0; lddlist=()
+if [[ ! $upd = 0 ]]; then GET_MOUNTEFI_STACK; CORRECT_LOADERS_HASH_LINKS; upd=0; else mounted_loaders_list=(); ldlist=(); lddlist=(); fi
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
@@ -1846,145 +2058,6 @@ fi
 }
 ##############################################################################################
 
-################################ получение имени диска для переименования #####################
-GET_OC_VERS(){
-
-GET_CONFIG_VERS "OpenCore"
-
-if [[ ${oc_revision} = "" ]]; then
-
-case "${md5_loader}" in
-############## oc_hashes_strings 20 #################
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
-52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
-91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54r;;
-5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
-f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
-07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
-                                *)     oc_revision=""
-                    esac
-fi
-################ no_release_hashes ##################
-if [[ ${oc_revision} = "" ]]; then 
-            
-                 case "${md5_loader}" in
-b3c22c4a30c3d6ee9dd8c9e202d62f1f ) oc_revision=.55ð
-;;
-e7d387c1e60de4a6264b65f0939fa58d ) oc_revision=.55n
-;;
-0b717fd908ae278a0b0de7c2ba21a5b3 ) oc_revision=.55ð
-;;
-bbce97ad42c5ce36ef1b00dd2d35cf41 ) oc_revision=.55ð
-;;
-ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
-;;
-d3c0c19a82e9dbbf5e457ef85f8ad3b5 ) oc_revision=.55®
-;;
-13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
-;;
-5e8fe9b3c1398f50c4bd126dade630ac ) oc_revision=.55®
-;;
-7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.55ð
-;;
-8e8fb33c3f0409bfc1d0e24a6340dc8a ) oc_revision=.55n
-;;
-4500e9f6f0d3d3fa9e4378931418b1f7 ) oc_revision=.54n
-;;
-3edc7635655663fdb9cf6979f7ef20f3 ) oc_revision=.54ð
-;;
-181e452d5aa32e168159aafbe8353d10 ) oc_revision=.54n
-;;
-005807d0d8ae2b8c0eed2822ab82ea5b ) oc_revision=.54ð
-;;
-aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n
-;;
-f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð
-;;
-31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®
-;;
-6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n
-;;
-992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð
-;;
-8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®
-;;
-5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n
-;;
-01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð
-;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®
-;;
-f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð
-;;
-96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n
-;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®
-;;
-2f674084287ebc38bd8d214f7c9f26f3 ) oc_revision=.53ð
-;;
-c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
-;;
-                                *)     oc_revision=""
-                    esac
-fi
-
-}
-
-GET_CONFIG_VERS(){
-
-target=$1
-
-if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
-
-    if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]\b" | cut -f2 -d= ); fi
- 
-    if [[ ${oc_revision} = "" ]]; then 
-    if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn∂]\b" | cut -f2 -d= ); fi
-    fi
-
-fi
-
-if [[ ${target} = "ALL" ]] && [[ ! ${oc_revision} = "" ]]; then loader="OpenCore"; loader+="${oc_revision}"
-
-else
-
-    if [[ ${target} = "Clover" ]] || [[ ${target} = "ALL" ]]  ; then 
-
-    revision=""
-    if [[ ! ${#clv_list[@]} = 0 ]]; then revision=$( echo "${clv_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}\b" | cut -f2 -d= ); fi
-
-
-    if [[ ${target} = "ALL" ]] && [[ ! ${revision} = "" ]]; then loader="Clover"; loader+="${revision}"; fi
-
-    fi
-fi
-
-}
-
-GET_OTHER_LOADERS_STRING(){
-if [[ ! ${#oth_list[@]} = 0 ]]; then 
-                    for y in ${!oth_list[@]}; do
-                    if [[ "${oth_list[y]:0:32}" = "${md5_loader}" ]]; then loader="Other"; loader+="${oth_list[y]:33}"; break; fi
-                    done
-               fi
-
-}
-
-###############################################################################################
 
 ##################### получение имени и версии загрузчика ######################################################################################
 
@@ -2687,29 +2760,6 @@ printf "\033[?25l"
   }
 ########################################################################################
 
-SAVE_EFIes_STATE(){
-rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
-rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
-        if [[ ! ${#lddlist[@]} = 0 ]]; then
-        for h in ${!lddlist[@]}; do 
-            if [[ ! ${mounted_loaders_list[h]} = 0 ]]; then
-                loader=""; oc_revision=""; revision=""
-                md5_loader=${mounted_loaders_list[h]}; GET_CONFIG_VERS "ALL"                            
-                            if [[ ! ${loader} = "" ]]; then
-                            echo "${mounted_loaders_list[h]}" >> ~/.hashes_list.txt
-                            fi
-            fi
-        done
-        fi
-rm -f ~/.other_loaders_list.txt
-if [[ ! ${#oth_list[@]} = 0 ]]; then
-   touch ~/.other_loaders_list.txt
-   for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
-fi
-        
-}
-
-
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
 unset choice
@@ -2760,16 +2810,16 @@ if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; U
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
-if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD;  if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD;  if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi

@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="020"
+s_edit_vers="021"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -24,6 +24,7 @@ s_edit_vers="020"
 # 018 - хэши других загрузчиков через конфиг
 # 019 - загрузка хэшей других загрузчиков через список в файле
 # 020 - сохранение базы хэшей в виде списка в файл
+# 021 - список загрузчиков сохраняется после рестарта из программы
 
 clear
 
@@ -5442,6 +5443,10 @@ chmod u+x ${HOME}/.MountEFIr.sh
 
 if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
 if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+
+if [[ -f ~/.hashes_list.txt ]]; then cp -f ~/.hashes_list.txt ~/.hashes_list.txt.back; fi
+if [[ -f ~/.other_loaders_list.txt ]]; then cp -f ~/.other_loaders_list.txt ~/.other_loaders_list.txt.back; fi
+if [[ -f ~/.disk_list.txt ]]; then cp -f ~/.disk_list.txt ~/.disk_list.txt.back; fi
 }
 
 GET_SYSTEM_FLAG(){
@@ -5514,6 +5519,10 @@ chmod u+x ${HOME}/.MountEFIu.sh
 
 if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
 if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+
+if [[ -f ~/.hashes_list.txt ]]; then cp -f ~/.hashes_list.txt ~/.hashes_list.txt.back; fi
+if [[ -f ~/.other_loaders_list.txt ]]; then cp -f ~/.other_loaders_list.txt ~/.other_loaders_list.txt.back; fi
+if [[ -f ~/.disk_list.txt ]]; then cp -f ~/.disk_list.txt ~/.disk_list.txt.back; fi
 }
 
 
@@ -5549,6 +5558,7 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
             sleep 2
             printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
             START_UPDATE_SERVICE
+
             plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
             success=1
             
