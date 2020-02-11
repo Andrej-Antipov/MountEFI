@@ -6153,17 +6153,17 @@ DEL_HASHES(){
 
 WRONG_FILE_TYPE(){
 if [[ $loc = "ru" ]]; then
-osascript -e 'display dialog "Тип файла не является файлом списка хэшей !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+osascript -e 'display dialog "Файл не является файлом списка хэшей !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
 else
-osascript -e 'display dialog "The file type is not a hash list file !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+osascript -e 'display dialog "The file is not a hash list file !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
 fi
 }
 
 WRONG_PERMISSIONS(){
 if [[ $loc = "ru" ]]; then
-osascript -e 'display dialog "Нельзя создать (изменить) файл в указанном каталоге !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+osascript -e 'display dialog "Нельзя создать (изменить) файл в указанном каталоге !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
 else
-osascript -e 'display dialog "Cannot create (change) file in selected folder !  \n'"${invalid_value}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
+osascript -e 'display dialog "Cannot create (change) file in selected folder !  \n'"${FilePath}"'"  with icon caution buttons { "OK"}  giving up after 10' >>/dev/null 2>/dev/null
 fi
 }
 
@@ -6177,6 +6177,8 @@ fi
 if [[ $1 = "Create" ]]; then 
     if ! touch "${FilePath}"; then WRONG_PERMISSIONS; cancel=1; break; else echo "############## oc_hashes_strings 0 #################" >> "${FilePath}"; fi
 fi
+
+file_md5_ID=$( md5 -qq "${FilePath}")
 
 file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9]{1,5} [#]*' )"
                             if [[ "${file_header}" = "" ]]; then WRONG_FILE_TYPE; cancel=1; break
@@ -6219,11 +6221,9 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                                  for i in ${!hashes_array_new[@]}; do file_list+='"'${hashes_array_new[i]}'"'; if [[ ! $i = $(( ${#hashes_array_new[@]}-1 )) ]]; then file_list+=","; fi ; done
 
                                  IFS=','; result=( $( ASK_HASHES_LIST_TO_ADD ) ); unset IFS
-                                  if [[ ${result[0]} = "false" ]]; then cancel=1; break; fi
+                                  if [[ ${result[0]} = "false" ]]; then  mv -f "${FilePath}"".back" "${FilePath}"; cancel=1; break; fi
 
                                     for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | sed 's/^[ \t]*//' )"; done
-
-                                        echo "RESULT 1""${result[@]}" >> ~/temp.txt
                 
                                         hashes_array_sum=()
 
@@ -6237,18 +6237,15 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                                         for i in ${!hashes_array[@]}; do hashes_array_sum+=("${hashes_array[i]}"); done
                                  fi
                                         for i in ${!result[@]}; do hashes_array_sum+=("${result[i]}"); done 
-                                        
-                                        echo "RESULT 2"${result[@]} >> ~/temp.txt
-
-                                        echo "RESULT 3"${hashes_array_sum[@]} >> ~/temp.txt
-                                        
+                                                                               
                                         echo "############## oc_hashes_strings ${#hashes_array_sum[@]} #################" >> "${FilePath}"
 
                                         for i in "${hashes_array_sum[@]}"; do echo "${i}" >> "${FilePath}"; done
                                         
                                         if [[ "${file_lines}" = 0 ]] && [[ -f "${FilePath}"".back" ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
+                                        if [[ ${file_md5_ID} = $( md5 -qq "${FilePath}"".back") ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
 
-                                        cancel=1; break
+                                        cancel=2; break
 }
 
 SAVE_HASHES_IN_FILE(){
@@ -6265,7 +6262,7 @@ SAVE_HASHES_IN_FILE(){
             osascript -e 'display dialog " There is nothing to save ! " with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
             fi
 else
-
+ 
     while true; do
     ######### диалог запроса файла ################################
                                 if [[ $loc = "ru" ]]; then
@@ -6282,13 +6279,13 @@ else
       if [[ "${answer}" = "Создать файл" ]] || [[ "${answer}" = "Create a file" ]]; then
   ########## диалог создания имени файла ###########################
            while true; do
-             demo=""
+             demo=""; Filename_string="MountEFIhashData.txt"
              if [[ $loc = "ru" ]]; then
              loader="имени файла"
-             if demo=$(osascript -e 'set T to text returned of (display dialog "Напишите имя файла :" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Напишите имя файла :" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${Filename_string}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
              else
              loader="the filename"
-             if demo=$(osascript -e 'set T to text returned of (display dialog "Write a filename :" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Write a filename :" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${Filename_string}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
              fi
              demo=$( echo "${demo}" | xargs )
              invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
@@ -6296,11 +6293,9 @@ else
                     elif [[ ${#demo} = 0 ]]; then 
                             WRONG_ANSWER
                     else 
-                        Filename_string="${demo}"; break 
+                        Filename_string="${demo}"
              fi
-           done
-             if [[ $cancel = 1 ]]; then break; fi 
-           while true; do
+
                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ КАТАЛОГ ДЛЯ СОХРАНЕНИЯ СПИСКА ХЭШЕЙ В ФАЙЛЕ:"'; else prompt='"CHOOSE THE FOLDER TO SAVE THE HASHLIST IN FILE :"'; fi
                  if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose folder default location alias ((path to home folder as text)) with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
                  if [[ $cancel = 1 ]]; then break; fi
@@ -6326,7 +6321,7 @@ else
                     fi
                  fi
             done     
-            if [[ $cancel = 1 ]]; then break; fi
+            
        elif 
                 [[ "${answer}" = "Выбрать файл" ]] || [[ "${answer}" = "Choose the file" ]]; then                                    
 ########### диалог выбора файла для получения хэша ###############################
@@ -6344,10 +6339,10 @@ else
                   fi        
                             if [[ ! $cancel = 0 ]]; then break; fi
                   done
-
-                   if [[ ! $cancel = 2 ]]; then break; fi
         
       fi
+
+        if [[ $cancel = 2 ]]; then break; fi
 
   done
 fi
