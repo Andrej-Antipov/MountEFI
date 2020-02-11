@@ -6404,19 +6404,20 @@ ADD_HASHES_LIST(){
                                         if [[ ${match} = 0 ]]; then 
                                         case ${hash_string:36} in
 
-                                        [nð®] ) AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+                                            [nð®] ) AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
 
-                                         [rd] ) AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES" ;;
+                                             [rd] ) AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES" ;;
 
-                                     [0-9a-f] ) AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES" ;;
+                                         [0-9a-f] ) AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES" ;;
 
                                          esac
                                         fi
                                   
                                          ADD_HASH_IN_PLIST
                                         
-
-                                      fi
+                                     else 
+                                         cancel=0
+                                     fi
 
                                         done
 
