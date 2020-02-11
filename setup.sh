@@ -6228,13 +6228,13 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                                         hashes_array_sum=()
 
                                  if [[ ! ${#hashes_array[@]} = 0 ]]; then 
-                                            
                                         for i in ${!hashes_array[@]}; do
+                                            match=0
                                             for y in ${!result[@]}; do
-                                            if [[ ${hashes_array[i]::32} = ${result[y]::32} ]]; then unset hashes_array[i]; break; fi
+                                            if [[ ${hashes_array[i]::32} = ${result[y]::32} ]]; then match=1; break; fi
                                             done
+                                            if [[ ${match} = 0 ]]; then hashes_array_sum+=("${hashes_array[i]}"); fi
                                         done
-                                        for i in ${!hashes_array[@]}; do hashes_array_sum+=("${hashes_array[i]}"); done
                                  fi
                                         for i in ${!result[@]}; do hashes_array_sum+=("${result[i]}"); done 
                                                                                
