@@ -6221,7 +6221,10 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                                  for i in ${!hashes_array_new[@]}; do file_list+='"'${hashes_array_new[i]}'"'; if [[ ! $i = $(( ${#hashes_array_new[@]}-1 )) ]]; then file_list+=","; fi ; done
 
                                  IFS=','; result=( $( ASK_HASHES_LIST_TO_ADD ) ); unset IFS
-                                  if [[ ${result[0]} = "false" ]]; then  mv -f "${FilePath}"".back" "${FilePath}"; cancel=1; break; fi
+                                  if [[ ${result[0]} = "false" ]]; then  
+                                        if [[ "${file_lines}" = 0 ]]; then rm -f "${FilePath}"".back"; else mv -f "${FilePath}"".back" "${FilePath}"; fi
+                                        cancel=1; break
+                                  fi
 
                                     for i in ${!result[@]}; do result[i]="$( echo "${result[i]}" | sed 's/^[ \t]*//' )"; done
                 
@@ -6246,6 +6249,7 @@ file_header="$( head -n 1 "${FilePath}" | egrep  -o '[#]* oc_hashes_strings [0-9
                                         if [[ ${file_md5_ID} = $( md5 -qq "${FilePath}"".back") ]]; then rm -f "${FilePath}"".back"; fi 2>/dev/null
 
                                         cancel=2; break
+
 }
 
 SAVE_HASHES_IN_FILE(){
@@ -6287,11 +6291,13 @@ else
              loader="the filename"
              if demo=$(osascript -e 'set T to text returned of (display dialog "Write a filename :" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${Filename_string}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
              fi
-             demo=$( echo "${demo}" | xargs )
+             demo=$( echo "${demo}" | xargs 2>/dev/null ) 
              invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
+             check_demo=$( echo "$demo" | egrep -o '[:"'"'"']')
+             demo=`echo "$demo" | tr -d \"\'\:\\`
              if [[ $cancel = 1 ]]; then break; 
-                    elif [[ ${#demo} = 0 ]]; then 
-                            WRONG_ANSWER
+                    elif [[ ${#demo} = 0 ]] || [[ ! ${#check_demo} = 0 ]]; then 
+                            WRONG_ANSWER; break
                     else 
                         Filename_string="${demo}"
              fi
