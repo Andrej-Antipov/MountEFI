@@ -862,7 +862,6 @@ for x in ${temp_lddlist[@]}; do
                 fi
             done
         done
-
 }
 
 ############################# корректировка списка разделов с загрузчиками ######################################### 
@@ -1094,6 +1093,7 @@ if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_
     fi
     
 fi
+
 }
 
 ############## обновление даных после выхода из скрипта настроек #########################################################
@@ -1684,26 +1684,18 @@ do
 		was_mounted=1
 
 	fi
-
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-
-	if [[ -d "$vname"/EFI/BOOT ]]; then
-			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
                 
             FIND_LOADERS   
             
             
             if [[ ! ${loader} = "" ]];then
-            if [[ ! ${lddlist[pnum]} = "" ]]; then
+                if [[ ! ${lddlist[pnum]} = "" ]]; then
                      max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
                      for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-            fi
+                fi
              ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
-            fi             					   
-	   fi
-	fi
+            fi
+
     
 		if [[ "$was_mounted" = 0 ]]; then
 
@@ -2094,6 +2086,14 @@ GET_LOADER_STRING(){
 
 ##################################################################################################################################################
 
+SHIFT_UP(){
+if [[ ! ${lddlist[pnum]} = "" ]]; then
+                     max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+                     for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
+fi
+}
+
+
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
@@ -2109,17 +2109,14 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )                 
                 if [[ ${md5_loader} = "" ]]; then loader=""; else
                    if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
-                    if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
-                    fi
+                    SHIFT_UP
                     mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
                     GET_LOADER_STRING
                   fi
                 fi
             else
-                   if [[ ${mounted_loaders_list[pnum]} = "" ]]; then ldlist[pnum]="empty"; lddlist[pnum]=${dlist[pnum]}; mounted_loaders_list[pnum]=0
-                    elif [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then mounted_loaders_list[pnum]=0; ldlist[pnum]="empty"; fi
+                   if [[ ${mounted_loaders_list[pnum]} = "" ]]; then SHIFT_UP; loader="empty"; mounted_loaders_list[pnum]=0
+                    elif [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then  SHIFT_UP; mounted_loaders_list[pnum]=0; loader="empty"; fi
             fi
     fi
 fi
@@ -2604,7 +2601,7 @@ while [ $var0 != 0 ]; do
              ldlist[$((chs-1))]=$loader; lddlist[$((chs-1))]=${dlist[$((chs-1))]}
 
         fi
-           
+
     if [[ $ch1 -le $sata_lines ]]; then
             check=$( echo "${screen_buffer}" | grep "$ch1)   +" )
             if [[ "${check}" = "" ]]; then
@@ -2810,7 +2807,7 @@ if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; U
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
@@ -2819,7 +2816,7 @@ if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then SAVE_EFIes_STATE; ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
