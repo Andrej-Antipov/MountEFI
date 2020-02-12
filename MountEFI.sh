@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="034"
+edit_vers="035"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -2115,8 +2115,7 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                   fi
                 fi
             else
-                   if [[ ${mounted_loaders_list[pnum]} = "" ]]; then SHIFT_UP; loader="empty"; mounted_loaders_list[pnum]=0
-                    elif [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then  SHIFT_UP; mounted_loaders_list[pnum]=0; loader="empty"; fi
+                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then SHIFT_UP; loader="empty"; mounted_loaders_list[pnum]=0; fi
             fi
     fi
 fi
