@@ -32,7 +32,8 @@ oc_versions=( 0.0.1 0.0.2 0.0.3 0.0.4 0.5.0 0.5.1 0.5.2 0.5.3 0.5.4 0.5.5 )
 
     echo "list of hashes needs to update. downloading OC releases... "
 if ping -c 1 google.com >> /dev/null 2>&1; then
-  for ((i=0;i<${#oc_versions[@]};i++)); do
+
+ for i in ${!oc_versions[@]}; do
 
             case ${oc_versions[i]} in
 
