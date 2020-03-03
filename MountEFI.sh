@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="036"
+edit_vers="037"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -885,7 +885,7 @@ GET_CONFIG_VERS "OpenCore"
 if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
-############## oc_hashes_strings 20 #################
+############## oc_hashes_strings 22 #################
 297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
 e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
 7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
@@ -906,6 +906,8 @@ b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
 5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
 f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
 07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
+12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56r;;
+9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56d;;
                                 *)     oc_revision=""
                     esac
 fi
