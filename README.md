@@ -8,10 +8,11 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Has separate view for SATA (NVME) and USB devices
 * Show physical names of media
 * Hotplug media detector update list of drives and loaders 
-* Easy set up auto-mount EFI as service while login system
+* Easy set up as service auto-mount ESP partition while login system
 * Has alias editor for device names to easy recognize drives
 * Has built-in themes and theme editor. Terminal system theme usage also supported
-* Defines EFI/BOOT/BOOTX64.efi of Clover,OpenCore,Windows,Refind,Grub bootloaders
+* Recognizes EFI/BOOT/BOOTX64.efi of Clover,OpenCore,Windows,Refind,Grub bootloaders
+* Has hashe editor to store BOOTx64.efi hashes in config file to recognize any loaders
 * Backup and restore self settings. Also via iCloud
 * Password for mount stored in keychain
 * Some other features
