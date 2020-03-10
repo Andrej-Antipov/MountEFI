@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="021"
+s_edit_vers="022"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -25,6 +25,7 @@ s_edit_vers="021"
 # 019 - загрузка хэшей других загрузчиков через список в файле
 # 020 - сохранение базы хэшей в виде списка в файл
 # 021 - список загрузчиков сохраняется после рестарта из программы
+# 022 - проверка версии Clover и OpenCore не чаще раз в 10 минут
 
 clear
 
@@ -55,10 +56,28 @@ read -n 1
 clear && printf "\e[3J"
 } 
 
+NET_UPDATE_LOADERS(){
+    rm -Rf ~/Library/Application\ Support/MountEFI
+    if ping -c 1 google.com >> /dev/null 2>&1; then
+    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
+    oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+    mkdir -p ~/Library/Application\ Support/MountEFI
+    date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+    echo $clov_vrs >> ~/Library/Application\ Support/MountEFI/latestClover.txt
+    echo $oc_vrs >> ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
+    fi
+}
+
 CHECK_UPDATE_LOADERS(){
-if ping -c 1 google.com >> /dev/null 2>&1; then
-clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
-oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then 
+         NET_UPDATE_LOADERS
+    else 
+        if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
+            clov_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestClover.txt)
+            oc_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestOpenCore.txt)
+        else 
+          NET_UPDATE_LOADERS
+       fi
 fi
 }
 
