@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.02.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="037"
+edit_vers="038"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -50,10 +50,28 @@ fi
 clear && printf "\e[3J"
 } 
 
+NET_UPDATE_LOADERS(){
+    rm -Rf ~/Library/Application\ Support/MountEFI
+    if ping -c 1 google.com >> /dev/null 2>&1; then
+    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
+    oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+    mkdir -p ~/Library/Application\ Support/MountEFI
+    date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+    echo $clov_vrs >> ~/Library/Application\ Support/MountEFI/latestClover.txt
+    echo $oc_vrs >> ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
+    fi
+}
+
 CHECK_UPDATE_LOADERS(){
-if ping -c 1 google.com >> /dev/null 2>&1; then
-clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
-oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then 
+         NET_UPDATE_LOADERS
+    else 
+        if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
+            clov_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestClover.txt)
+            oc_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestOpenCore.txt)
+        else 
+          NET_UPDATE_LOADERS
+       fi
 fi
 }
 
