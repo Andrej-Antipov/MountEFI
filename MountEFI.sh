@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -45,7 +45,7 @@ if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e
 if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs}'\e[0m'; 
                                 printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
 fi      
-while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]]; then break; fi; done 
+recheckLDs=1; while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]]; then recheckLDs=0; break; fi; done 
 fi
 clear && printf "\e[3J"
 } 
@@ -847,11 +847,13 @@ then
     exit 
 fi
 
+##### флаги и массивы #############################################################
 
 declare -a nlist 
 declare -a dlist
 lists_updated=0
 synchro=0
+recheckLDs=0
 
 # Блок определения функций ########################################################
 
@@ -1375,7 +1377,9 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
 
 CHECK_HOTPLUG_DISKS(){
 
-RECHECK_LOADERS
+if [[ ! "${recheckLDs}" = "1" ]]; then  
+                        RECHECK_LOADERS 
+fi
 
 hotplug=0
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]};
