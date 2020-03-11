@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="038"
+edit_vers="039"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1129,7 +1129,8 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
-if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); else CORRECT_LOADERS_HASH_LINKS; fi
+if [[ ${CheckLoaders} = 0 ]]; then 
+    mounted_loaders_list=(); ldlist=(); lddlist=(); rm -f ~/.hashes_list.txt; rm -f ~/.other_loaders_list.txt; else CORRECT_LOADERS_HASH_LINKS; rm -f ~/.other_loaders_list.txt; fi
 }
 ##########################################################################################################################
 
@@ -1221,8 +1222,9 @@ fi
 
 ############################################# сохранене данных для коррекции после setup ##########################################
 SAVE_EFIes_STATE(){
-rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
-rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
+if [[ ! $CheckLoaders = 0 ]]; then
+    rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
+    rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
         if [[ ! ${#lddlist[@]} = 0 ]]; then
         for h in ${!lddlist[@]}; do 
             if [[ ! ${mounted_loaders_list[h]} = 0 ]]; then
@@ -1234,14 +1236,14 @@ rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
             fi
         done
         fi
-rm -f ~/.other_loaders_list.txt
-if [[ ! ${#oth_list[@]} = 0 ]]; then
-   touch ~/.other_loaders_list.txt
-   for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
-fi
+    rm -f ~/.other_loaders_list.txt
+    if [[ ! ${#oth_list[@]} = 0 ]]; then
+        touch ~/.other_loaders_list.txt
+        for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
+    fi
 
-SAVE_LOADERS_STACK
-        
+    SAVE_LOADERS_STACK
+fi
 }
 ###################################################################################################################################
 
