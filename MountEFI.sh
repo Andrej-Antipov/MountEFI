@@ -45,7 +45,7 @@ if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e
 if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs}'\e[0m'; 
                                 printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
 fi      
-recheckLDs=1; while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then recheckLDs=0; break; fi; done 
+recheckLDs=1; while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then pauser=0; RECHECK_LOADERS; recheckLDs=0; break; fi; done 
 fi
 clear && printf "\e[3J"
 } 
