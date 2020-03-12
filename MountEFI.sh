@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1214,8 +1214,9 @@ GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
 if [[ ${CheckLoaders} = 0 ]]; then 
-    mounted_loaders_list=(); ldlist=(); lddlist=(); rm -f ~/.hashes_list.txt else CORRECT_LOADERS_HASH_LINKS; fi
+    mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
 rm -f ~/.other_loaders_list.txt
+CHECK_AUTOUPDATE
 }
 ##########################################################################################################################
 
@@ -1318,6 +1319,7 @@ fi
 
 ############################################# сохранене данных для коррекции после setup ##########################################
 SAVE_EFIes_STATE(){
+OldAutoUpdate=${AutoUpdate}
 if [[ ! $CheckLoaders = 0 ]]; then
     rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
     rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
@@ -3012,7 +3014,7 @@ START_AUTOUPDATE(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
     if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
-          if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))" -gt "14400" ]]; then
+          if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))" -gt "86400" ]]; then
             autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
             rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
             rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
@@ -3036,20 +3038,18 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
         if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
            if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
                 if [[ $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then 
-                      if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates
+                      if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
                             unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
                             plutil -replace ReadyToAutoUpdate -bool Yes ${HOME}/.MountEFIconf.plist
-                       fi
                 else
                     rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
                 fi
             fi
          fi
             else
-               if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates
+               if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
                    unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
                    plutil -replace ReadyToAutoUpdate -bool Yes ${HOME}/.MountEFIconf.plist
-                fi
         fi
       fi
     fi

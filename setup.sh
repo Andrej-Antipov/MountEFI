@@ -6663,7 +6663,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=32; col=80
+lines=33; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -7015,8 +7015,22 @@ if [[ $inputs = [sS] ]]; then
    if [[ $AutoUpdate = 1 ]]; then 
   plutil -replace UpdateSelfAuto -bool No ${HOME}/.MountEFIconf.plist
   DISABLE_AUTOUPDATE
+        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="Авто-обновление программы ВЫКЛЮЧЕНО !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="Auto-update DISABLED !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION 
  else 
   plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="Авто-обновление программы ВКЛЮЧЕНО !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="Auto-update ENABLED !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION 
   fi
   UPDATE_CACHE
 fi  
