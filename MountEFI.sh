@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="038"
+edit_vers="037"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -117,52 +117,6 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
 fi  
 
 }
-
-START_UPDATE_SERVICE(){
-
-MEFI_PATH="${ROOT}""/MountEFI"
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
-echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
-echo '<dict>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <array>' >> ${HOME}/.MountEFIu.plist
-echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
-echo '  </array>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <true/>' >> ${HOME}/.MountEFIu.plist
-echo '</dict>' >> ${HOME}/.MountEFIu.plist
-echo '</plist>' >> ${HOME}/.MountEFIu.plist
-
-echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
-echo ''             >> ${HOME}/.MountEFIu.sh
-echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
-echo ''             >> ${HOME}/.MountEFIu.sh
-echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
-echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
-echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
-echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
-echo 'fi' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
-echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
-echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
-echo ''  >> ${HOME}/.MountEFIu.sh
-echo 'exit'             >> ${HOME}/.MountEFIu.sh
-chmod u+x ${HOME}/.MountEFIu.sh
-
-if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
-if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
-}
-
 
 FILL_CONFIG(){
 
@@ -342,19 +296,6 @@ if [[ $update_check = "Updating" ]]; then
         upd=1
 fi
 
-if [[ $upd = 0 ]]; then
-    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
-            plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist
-        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
-            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
-            START_UPDATE_SERVICE
-            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
-            osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
-        fi     
-    fi
-fi 
-
-
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
         mypassword="$(echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')"
@@ -529,7 +470,8 @@ if [[ $strng = "false" ]]; then AutoUpdate=0; fi
 
 if [[ ! $upd = 0 ]]; then 
     CHECK_AUTOUPDATE
-    if [[ ${AutoUpdate} = 1 ]]; then 
+    if [[ ${AutoUpdate} = 1 ]] && [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
+                        plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist; UPDATE_CACHE 
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="Авто-обновление программы выполнено !"; MESSAGE="Версия программы '${prog_vers}' редакция '${edit_vers}'"' >> ${HOME}/.MountEFInoty.sh
@@ -3053,6 +2995,62 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
         fi
       fi
     fi
+
+    MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
+    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
+        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
+            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
+            
+MEFI_PATH="${ROOT}""/MountEFI"
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
+echo '<dict>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <array>' >> ${HOME}/.MountEFIu.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
+echo '  </array>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <true/>' >> ${HOME}/.MountEFIu.plist
+echo '</dict>' >> ${HOME}/.MountEFIu.plist
+echo '</plist>' >> ${HOME}/.MountEFIu.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
+echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
+echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
+echo 'while true; do' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
+echo 'sleep 10; else break; fi; done' >> ${HOME}/.MountEFIu.sh
+echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
+echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
+echo 'fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
+echo ''  >> ${HOME}/.MountEFIu.sh
+echo 'exit'             >> ${HOME}/.MountEFIu.sh
+chmod u+x ${HOME}/.MountEFIu.sh
+
+if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+
+
+            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
+           
+        fi     
+    fi
+
 fi
 }
 #############################################################################################
