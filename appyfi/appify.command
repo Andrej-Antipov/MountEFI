@@ -81,6 +81,15 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             if [[ -d MountEFI.app ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; cp -a MountEFI.app/Contents/MacOS/"Application Stub" Updates/$current_vers/$edit_vers; fi
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then 
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
+                if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
+                mkdir Autoupdates; touch Autoupdates/AutoupdatesInfo.txt
+                echo $current_vers >> Autoupdates/AutoupdatesInfo.txt
+                echo $edit_vers >> Autoupdates/AutoupdatesInfo.txt
+                #if [[ -f Updates/$current_vers/$edit_vers/MountEFI ]]; then echo "MountEFI;"$(md5 -qq Updates/$current_vers/$edit_vers/MountEFI) >> Autoupdates/AutoupdatesInfo.txt; fi
+                #if [[ -f Updates/$current_vers/$edit_vers/setup ]]; then echo "setup;"$(md5 -qq Updates/$current_vers/$edit_vers/setup) >> Autoupdates/AutoupdatesInfo.txt; fi
+                #if [[ -f Updates/$current_vers/$edit_vers/document.wflow ]]; then echo "document.wflow;"$(md5 -qq Updates/$current_vers/$edit_vers/document.wflow) >> Autoupdates/AutoupdatesInfo.txt; fi
+                #if [[ -f Updates/$current_vers/$edit_vers/"Application Stub" ]]; then echo ""Application Stub";"$(md5 -qq Updates/$current_vers/$edit_vers/"Application Stub") >> Autoupdates/AutoupdatesInfo.txt; fi
+                if [[ -f Updates/$current_vers/"$edit_vers"".zip" ]]; then echo $(md5 -qq Updates/$current_vers/"$edit_vers"".zip") >> Autoupdates/AutoupdatesInfo.txt; fi
             fi
             rm -Rf Updates/$current_vers/$edit_vers
 fi             
