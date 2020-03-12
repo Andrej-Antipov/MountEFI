@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="022"
+s_edit_vers="023"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -26,6 +26,7 @@ s_edit_vers="022"
 # 020 - сохранение базы хэшей в виде списка в файл
 # 021 - список загрузчиков сохраняется после рестарта из программы
 # 022 - проверка версии Clover и OpenCore не чаще раз в 10 минут
+# 023 - новая функция авто-обновления
 
 clear
 
@@ -57,11 +58,13 @@ clear && printf "\e[3J"
 } 
 
 NET_UPDATE_LOADERS(){
-    rm -Rf ~/Library/Application\ Support/MountEFI
+    rm -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+    rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
+    rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
     if ping -c 1 google.com >> /dev/null 2>&1; then
     clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
     oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
-    mkdir -p ~/Library/Application\ Support/MountEFI
+    if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
     date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
     echo $clov_vrs >> ~/Library/Application\ Support/MountEFI/latestClover.txt
     echo $oc_vrs >> ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
@@ -487,6 +490,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>UpdateSelfAuto</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>XHashes</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <key>CLOVER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
@@ -630,6 +635,9 @@ if [[ ! $strng = "ThemeProfile" ]]; then
             plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
+
+strng=`echo "$MountEFIconf"| grep -e "<key>UpdateSelfAuto</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "UpdateSelfAuto" ]]; then plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "XHashes" ]]; then 
@@ -807,6 +815,45 @@ function set_font {
     osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2"
 }
 ##################################################################################################################################################
+
+CHECK_AUTOUPDATE(){
+AutoUpdate=1
+strng=`echo "$MountEFIconf"  | grep -A 1 -e "UpdateSelfAuto</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then AutoUpdate=0; fi
+}
+
+DISABLE_AUTOUPDATE(){
+if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
+               if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
+               launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+               if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
+               if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
+               plutil -replace UpdateSelfAuto -bool No ${HOME}/.MountEFIconf.plist
+               plutil -remove Updating ${HOME}/.MountEFIconf.plist >>/dev/null 
+               UPDATE_CACHE
+               if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
+                    autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
+                    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
+                    rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
+               fi
+}
+
+GET_AUTOUPDATE(){
+        CHECK_AUTOUPDATE
+if [[ ${AutoUpdate} = 0 ]]; then    
+            if [[ $loc = "ru" ]]; then
+        AutoUpdate_set="Нет"; aus_corr=21
+            else
+        AutoUpdate_set="No"; aus_corr=20
+            fi
+    else
+            if [[ $loc = "ru" ]]; then
+        AutoUpdate_set="Да"; aus_corr=22
+            else
+        AutoUpdate_set="Yes"; aus_corr=19
+            fi
+fi
+}
 
 GET_APP_ICON(){
 icon_string=""
@@ -2696,7 +2743,7 @@ fi
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHh]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsS]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2798,6 +2845,7 @@ sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или 
 sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
 sbuf+=$(printf ' H) Редактор хэшей загрузчиков                                                  \n')
 sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
+sbuf+=$(printf ' S) Авто-обновление программы = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Да, Нет)             \n')
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then 
 sbuf+=$(printf ' U) Обновление программы                                                        \n')
 fi
@@ -2825,8 +2873,9 @@ sbuf+=$(printf ' I) Import config from file (zip or plist)                      
 sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
 sbuf+=$(printf ' H) Hashes of EFI loaders editor                                                \n')
 sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
+sbuf+=$(printf ' S) Auto-update this program = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Yes, No)                \n')
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then
-sbuf+=$(printf ' U) Update program                                                              \n')
+sbuf+=$(printf ' U) Update program manually                                                     \n')
 fi
 
             fi
@@ -2865,6 +2914,7 @@ UPDATE_SCREEN(){
         GET_OPENFINDER
         GET_THEME
         GET_SHOWKEYS
+        GET_AUTOUPDATE
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
         GET_LOADERS
@@ -5561,6 +5611,11 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
             else
             printf '\r\e[40m\e[1;33m   Download files: \e[0m'
             fi
+
+            CHECK_AUTOUPDATE
+            if [[ ${AutoUpdate} = 1 ]]; then
+               DISABLE_AUTOUPDATE
+            fi
    
     if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
     success=0
@@ -5577,7 +5632,6 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
             sleep 2
             printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
             START_UPDATE_SERVICE
-
             plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
             success=1
             
@@ -6713,11 +6767,10 @@ fi
 if [[ $inputs = 7 ]]; then 
    if [[ $ShowKeys = 1 ]]; then 
   plutil -replace ShowKeys -bool NO ${HOME}/.MountEFIconf.plist
-  UPDATE_CACHE
  else 
   plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist
-  UPDATE_CACHE
   fi
+  UPDATE_CACHE
 fi  
 ###############################################################################
 
@@ -6956,6 +7009,17 @@ if [[ $inputs = [eE] ]]; then UPLOAD_CONFIG_TO_FILE;  fi
 if [[ $inputs = [uU] ]] && [[ "${par}" = "-r" ]]  && [[ -f MountEFI ]]; then UPDATE_PROGRAM
     if [[ $success = 1 ]]; then exit; fi
 fi
+
+#############################################################################
+if [[ $inputs = [sS] ]]; then 
+   if [[ $AutoUpdate = 1 ]]; then 
+  plutil -replace UpdateSelfAuto -bool No ${HOME}/.MountEFIconf.plist
+  DISABLE_AUTOUPDATE
+ else 
+  plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist
+  fi
+  UPDATE_CACHE
+fi  
 
 ##############################################################################
 

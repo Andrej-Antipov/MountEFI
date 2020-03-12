@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="039"
+edit_vers="038"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -36,7 +36,7 @@ if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[1;33m
                            let "v5corr=v4corr+17"
                            printf "\033[21;'$v5corr'f"; printf '\e[40m\e[33m  Update completed! \e[0m'
                            fi
-                           read -s -n 1 -t 5
+                           read -s -n 1 -t 3
       else
 if [[ ! $CheckLoaders = 0 ]]; then CHECK_UPDATE_LOADERS $
 sleep 0.5
@@ -51,11 +51,13 @@ clear && printf "\e[3J"
 } 
 
 NET_UPDATE_LOADERS(){
-    rm -Rf ~/Library/Application\ Support/MountEFI
+    rm -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+    rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
+    rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
     if ping -c 1 google.com >> /dev/null 2>&1; then
     clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
     oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
-    mkdir -p ~/Library/Application\ Support/MountEFI
+    if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
     date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
     echo $clov_vrs >> ~/Library/Application\ Support/MountEFI/latestClover.txt
     echo $oc_vrs >> ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
@@ -115,6 +117,52 @@ if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
 fi  
 
 }
+
+START_UPDATE_SERVICE(){
+
+MEFI_PATH="${ROOT}""/MountEFI"
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
+echo '<dict>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <array>' >> ${HOME}/.MountEFIu.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
+echo '  </array>' >> ${HOME}/.MountEFIu.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
+echo '  <true/>' >> ${HOME}/.MountEFIu.plist
+echo '</dict>' >> ${HOME}/.MountEFIu.plist
+echo '</plist>' >> ${HOME}/.MountEFIu.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
+echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
+echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
+echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
+echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
+echo 'fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
+echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
+echo ''  >> ${HOME}/.MountEFIu.sh
+echo 'exit'             >> ${HOME}/.MountEFIu.sh
+chmod u+x ${HOME}/.MountEFIu.sh
+
+if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+}
+
 
 FILL_CONFIG(){
 
@@ -231,6 +279,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <key>UpdateSelfAuto</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '	<key>XHashes</key>' >> ${HOME}/.MountEFIconf.plist
 	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
 	        echo '           <key>CLOVER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
@@ -291,6 +341,18 @@ if [[ $update_check = "Updating" ]]; then
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
 fi
+
+if [[ $upd = 0 ]]; then
+    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
+            plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist
+        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
+            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
+            START_UPDATE_SERVICE
+            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
+            osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
+        fi     
+    fi
+fi 
 
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
@@ -394,6 +456,9 @@ if [[ ! $strng = "ThemeProfile" ]]; then
             cache=0
 fi
 
+strng=`echo "$MountEFIconf"| grep -e "<key>UpdateSelfAuto</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "UpdateSelfAuto" ]]; then plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
+
 strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "XHashes" ]]; then 
 			plutil -insert XHashes -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
@@ -408,29 +473,25 @@ if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
 
+GET_LOCALE(){
+if [[ $cache = 1 ]] ; then
+        locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+            else
+                loc=`echo ${locale}`
+        fi
+    else   
+        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+fi  
+}
+
+GET_LOCALE
+
 GET_LOADERS(){
 CheckLoaders=1
 strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then CheckLoaders=0
 fi
-}
-
-if [[ ! $upd = 0 ]]; then col=80; SHOW_VERSION -u; fi
-
-if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
-if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
-            if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
-            mkdir ${HOME}/.MountEFIconfBackups
-            mkdir ${HOME}/.MountEFIconfBackups/1
-            cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1
-            zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
-            rm -R ${HOME}/.MountEFIconfBackups
-fi
-
-CHECK_RELOAD(){
-reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]]; then rel=1; else rel=0; fi
 }
 
 GET_APP_ICON(){
@@ -458,6 +519,43 @@ echo ' exit' >> ${HOME}/.MountEFInoty.sh
 chmod u+x ${HOME}/.MountEFInoty.sh
 sh ${HOME}/.MountEFInoty.sh
 rm ${HOME}/.MountEFInoty.sh
+}
+
+CHECK_AUTOUPDATE(){
+AutoUpdate=1
+strng=`echo "$MountEFIconf"  | grep -A 1 -e "UpdateSelfAuto</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then AutoUpdate=0; fi
+}
+
+if [[ ! $upd = 0 ]]; then 
+    CHECK_AUTOUPDATE
+    if [[ ${AutoUpdate} = 1 ]]; then 
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="Авто-обновление программы выполнено !"; MESSAGE="Версия программы '${prog_vers}' редакция '${edit_vers}'"' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="Update completed !"; MESSAGE="MountEFI v'${prog_vers}' edit v'${edit_vers}'"' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION 
+    else
+                        col=80; SHOW_VERSION -u
+    fi
+fi
+
+if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
+if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
+            if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
+            mkdir ${HOME}/.MountEFIconfBackups
+            mkdir ${HOME}/.MountEFIconfBackups/1
+            cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1
+            zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
+            rm -R ${HOME}/.MountEFIconfBackups
+fi
+
+CHECK_RELOAD(){
+reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]]; then rel=1; else rel=0; fi
 }
 
 ENTER_PASSWORD(){
@@ -768,26 +866,12 @@ if [[ $strng = "false" ]]; then ShowKeys=0; fi
 
 }
 
-
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #############################################################################################################################
 MyTTY=`tty | tr -d " dev/\n"`
 
 term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
 ##############################################################################################################################
-GET_LOCALE(){
-if [[ $cache = 1 ]] ; then
-        locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-            else
-                loc=`echo ${locale}`
-        fi
-    else   
-        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-fi  
-}
-
-GET_LOCALE
 
 parm="$1"
 
@@ -1130,7 +1214,8 @@ GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
 if [[ ${CheckLoaders} = 0 ]]; then 
-    mounted_loaders_list=(); ldlist=(); lddlist=(); rm -f ~/.hashes_list.txt; rm -f ~/.other_loaders_list.txt; else CORRECT_LOADERS_HASH_LINKS; rm -f ~/.other_loaders_list.txt; fi
+    mounted_loaders_list=(); ldlist=(); lddlist=(); rm -f ~/.hashes_list.txt else CORRECT_LOADERS_HASH_LINKS; fi
+rm -f ~/.other_loaders_list.txt
 }
 ##########################################################################################################################
 
@@ -1159,6 +1244,17 @@ else
 
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
+
+#if [[ $upd = 0 ]]; then
+#    UPDATE_CACHE
+#    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
+#            plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist
+#        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
+#            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
+#            START_UPDATE_SERVICE_SIMPLE
+#        fi     
+#    fi
+#fi 
 ################################## очистка на выходе #############################################################
 rm -f  ~/.disk_list.txt
 CLEAR_HISTORY
@@ -2911,6 +3007,54 @@ fi
 if [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi
 synchro=0
 }
+
+START_AUTOUPDATE(){
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
+          if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))" -gt "14400" ]]; then
+            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
+            rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
+            rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
+            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
+
+            fi
+          fi
+    else
+        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
+        fi
+    fi
+
+  if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]] && [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
+        current_vers=$(echo "$prog_vers" | tr -d "." ); vers_e=$(echo $edit_vers | bc)
+        autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
+        last_e=$(echo ${autoupdate_list[1]} | bc)
+    if [[ "${current_vers}" -lt "${autoupdate_list[0]}" ]] || [[ "${last_e}" -gt "${vers_e}" ]]; then
+      if [[ ! -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]] || [[ ! $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then
+        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
+           if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
+                if [[ $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then 
+                      if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates
+                            unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
+                            plutil -replace ReadyToAutoUpdate -bool Yes ${HOME}/.MountEFIconf.plist
+                       fi
+                else
+                    rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
+                fi
+            fi
+         fi
+            else
+               if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates
+                   unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
+                   plutil -replace ReadyToAutoUpdate -bool Yes ${HOME}/.MountEFIconf.plist
+                fi
+        fi
+      fi
+    fi
+fi
+}
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
@@ -2921,6 +3065,11 @@ GET_CONFIG_HASHES
 chs=0
 
 nogetlist=0
+
+CHECK_AUTOUPDATE
+if [[ ${AutoUpdate} = 1 ]]; then 
+                    START_AUTOUPDATE &
+fi
 
 while [ $chs = 0 ]; do
 if [[ ! $nogetlist = 1 ]]; then
