@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="037"
+edit_vers="038"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -2953,8 +2953,10 @@ synchro=0
 }
 
 START_AUTOUPDATE(){
-if ping -c 1 google.com >> /dev/null 2>&1; then
-    if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
+ if ping -c 1 google.com >> /dev/null 2>&1; then
+  if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+        echo $(date +%s) >> ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
     if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
           if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))" -gt "86400" ]]; then
             autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
@@ -3050,7 +3052,8 @@ if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.j
            
         fi     
     fi
-
+  fi
+    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
 fi
 }
 #############################################################################################
@@ -3066,7 +3069,10 @@ nogetlist=0
 
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]]; then 
+                    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "600" ]]; then
+                    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt; fi
                     START_AUTOUPDATE &
+     
 fi
 
 while [ $chs = 0 ]; do
