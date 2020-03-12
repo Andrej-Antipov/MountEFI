@@ -5615,6 +5615,13 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
             CHECK_AUTOUPDATE
             if [[ ${AutoUpdate} = 1 ]]; then
                DISABLE_AUTOUPDATE
+               SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="Авто-обновление программы ВЫКЛЮЧЕНО !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="Auto-update DISABLED !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
             fi
    
     if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
@@ -7015,7 +7022,7 @@ if [[ $inputs = [sS] ]]; then
    if [[ $AutoUpdate = 1 ]]; then 
   plutil -replace UpdateSelfAuto -bool No ${HOME}/.MountEFIconf.plist
   DISABLE_AUTOUPDATE
-        SET_TITLE
+                        SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="Авто-обновление программы ВЫКЛЮЧЕНО !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                         else
