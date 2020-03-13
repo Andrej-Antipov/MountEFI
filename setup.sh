@@ -2846,7 +2846,7 @@ sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)           
 sbuf+=$(printf ' H) Редактор хэшей загрузчиков                                                  \n')
 sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
 sbuf+=$(printf ' S) Авто-обновление программы = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Да, Нет)             \n')
-if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then 
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
 sbuf+=$(printf ' U) Обновление программы                                                        \n')
 fi
             else
@@ -2874,7 +2874,7 @@ sbuf+=$(printf ' E) Upload config to file (zip)                                 
 sbuf+=$(printf ' H) Hashes of EFI loaders editor                                                \n')
 sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
 sbuf+=$(printf ' S) Auto-update this program = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Yes, No)                \n')
-if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
 sbuf+=$(printf ' U) Update program manually                                                     \n')
 fi
 
@@ -7013,7 +7013,7 @@ if [[ $inputs = [pP] ]]; then THEME_EDITOR;  fi
 if [[ $inputs = [eE] ]]; then UPLOAD_CONFIG_TO_FILE;  fi
 
 ##############################################################################
-if [[ $inputs = [uU] ]] && [[ "${par}" = "-r" ]]  && [[ -f MountEFI ]]; then UPDATE_PROGRAM
+if [[ $inputs = [uU] ]] && [[ "${par}" = "-r" ]]  && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then UPDATE_PROGRAM
     if [[ $success = 1 ]]; then exit; fi
 fi
 
