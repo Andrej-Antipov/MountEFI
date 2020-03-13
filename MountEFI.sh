@@ -2963,12 +2963,12 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
             if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
                 if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
 
-            fi
+            fi 2>/dev/null
           fi
     else
         if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
                 if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
-        fi
+        fi 2>/dev/null
     fi
 
   if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]] && [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
@@ -2987,7 +2987,7 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
                     rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
                 fi
             fi
-         fi
+         fi 2>/dev/null
             else
                if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
                    unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
@@ -3029,7 +3029,7 @@ echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
 echo 'while true; do' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
-echo 'sleep 10; else break; fi; done' >> ${HOME}/.MountEFIu.sh
+echo 'sleep 4; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
 echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
@@ -3040,14 +3040,12 @@ echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleSho
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
 echo ''  >> ${HOME}/.MountEFIu.sh
+echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
 echo 'exit'             >> ${HOME}/.MountEFIu.sh
 chmod u+x ${HOME}/.MountEFIu.sh
 
 if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
 if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
-
-
-            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
            
         fi     
     fi
