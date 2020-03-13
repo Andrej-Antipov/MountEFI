@@ -289,8 +289,6 @@ if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info
         fi
         edit_vers=$( cat MountEFI | grep -m1 "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n' )
         if [[ -f ~/.MountEFIupdates/${edit_vers}.zip ]]; then rm -Rf ~/.MountEFIupdates/${edit_vers}; unzip  -o -qq ~/.MountEFIupdates/${edit_vers}.zip -d ~/.MountEFIupdates 2>/dev/null
-        if [[ -f ~/.MountEFIupdates/${edit_vers}/document.wflow ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/document.wflow "${ROOT}"/../document.wflow ; fi
-        if [[ -f ~/.MountEFIupdates/${edit_vers}/"Application Stub" ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/"Application Stub" "${ROOT}"/../MacOS/"Application Stub" ; fi
         fi
         if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
         upd=1
@@ -3036,6 +3034,8 @@ echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
 echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/"Application Stub" "${DirPath}""/../MacOS/Application Stub"' >> ${HOME}/.MountEFIu.sh       
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
