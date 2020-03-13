@@ -78,7 +78,7 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             mkdir Updates/$current_vers/$edit_vers
             if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
             if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
-            if [[ -d MountEFI.app ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; cp -a MountEFI.app/Contents/MacOS/"Application Stub" Updates/$current_vers/$edit_vers; fi
+            if [[ -d MountEFI.app ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; fi
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then 
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
                 if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
@@ -90,10 +90,15 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                 #if [[ -f Updates/$current_vers/$edit_vers/document.wflow ]]; then echo "document.wflow;"$(md5 -qq Updates/$current_vers/$edit_vers/document.wflow) >> Autoupdates/AutoupdatesInfo.txt; fi
                 #if [[ -f Updates/$current_vers/$edit_vers/"Application Stub" ]]; then echo ""Application Stub";"$(md5 -qq Updates/$current_vers/$edit_vers/"Application Stub") >> Autoupdates/AutoupdatesInfo.txt; fi
                 if [[ -f Updates/$current_vers/"$edit_vers"".zip" ]]; then echo $(md5 -qq Updates/$current_vers/"$edit_vers"".zip") >> Autoupdates/AutoupdatesInfo.txt; fi
+
             fi
             rm -Rf Updates/$current_vers/$edit_vers
-fi             
- 
+fi 
+
+if [[ -d MountEFI.app ]]; then 
+    touch MountEFI.app
+fi          
+
 cat  ~/.bash_history | sed -n '/appify/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
 #osascript -e 'quit app "terminal.app"' & exit
 
