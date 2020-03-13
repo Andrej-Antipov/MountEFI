@@ -55,7 +55,7 @@ NET_UPDATE_LOADERS(){
     rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
     rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
     if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
+    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
     oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
     date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
@@ -3034,8 +3034,7 @@ echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
 echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/"Application Stub" "${DirPath}""/../MacOS/Application Stub"' >> ${HOME}/.MountEFIu.sh       
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh       
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
@@ -3054,7 +3053,9 @@ if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.j
     fi
   fi
     rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
+    #rm -f ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
+
 }
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
@@ -3069,10 +3070,12 @@ nogetlist=0
 
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
-                    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "600" ]]; then
-                    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt; fi
+                    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "120" ]]; then
+                    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
+                    #rm -f ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
+                    fi
                     START_AUTOUPDATE &
-     
+                    #echo $! >> ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 
 while [ $chs = 0 ]; do
