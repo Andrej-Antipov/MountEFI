@@ -467,9 +467,9 @@ if [[ $strng = "false" ]]; then AutoUpdate=0; fi
 }
 
 if [[ ! $upd = 0 ]]; then 
-  IFS=";"; check_version=( $(cat version.txt) ); unset IFS
-  if [[ ! "${prog_vers}" = "${check_version[0]}" ]] || [[ ! "${edit_vers}" = "${check_version[1]}" ]]; then
-    if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
+        check_version=(); if [[ -f version.txt ]]; then IFS=";"; check_version=( $(cat version.txt) ); unset IFS ; fi
+        if [[ ! "${prog_vers}" = "${check_version[0]}" ]] || [[ ! "${edit_vers}" = "${check_version[1]}" ]]; then
+        if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
     CHECK_AUTOUPDATE
     if [[ ${AutoUpdate} = 1 ]] && [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
                         plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist; UPDATE_CACHE 
