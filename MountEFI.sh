@@ -467,6 +467,9 @@ if [[ $strng = "false" ]]; then AutoUpdate=0; fi
 }
 
 if [[ ! $upd = 0 ]]; then 
+  IFS=";"; check_version=( $(cat version.txt) ); unset IFS
+  if [[ ! "${prog_vers}" = "${check_version[0]}" ]] || [[ ! "${edit_vers}" = "${check_version[1]}" ]]; then
+    if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
     CHECK_AUTOUPDATE
     if [[ ${AutoUpdate} = 1 ]] && [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
                         plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist; UPDATE_CACHE 
@@ -480,6 +483,7 @@ if [[ ! $upd = 0 ]]; then
     else
                         col=80; SHOW_VERSION -u
     fi
+  fi
 fi
 
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
@@ -1186,18 +1190,9 @@ else
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
 EXIT_PROGRAM(){
 
-#if [[ $upd = 0 ]]; then
-#    UPDATE_CACHE
-#    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
-#            plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist
-#        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
-#            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
-#            START_UPDATE_SERVICE_SIMPLE
-#        fi     
-#    fi
-#fi 
 ################################## очистка на выходе #############################################################
 rm -f  ~/.disk_list.txt
+if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
 CLEAR_HISTORY
 #####################################################################################################################
 CHECK_TTY_COUNT	
@@ -2999,6 +2994,7 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
     MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
     if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
         if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
+            plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist
             autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
             
 MEFI_PATH="${ROOT}""/MountEFI"
@@ -3025,14 +3021,18 @@ echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
 echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
 echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'current_release=''"'$(echo ${prog_vers})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'current_edit=''"'$(echo ${edit_vers})'"''' >> ${HOME}/.MountEFIu.sh
 echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
+echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
+echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh
 echo 'while true; do' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
 echo 'sleep 4; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
-echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh       
 echo 'fi' >> ${HOME}/.MountEFIu.sh
@@ -3041,7 +3041,9 @@ echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
 echo ''  >> ${HOME}/.MountEFIu.sh
 echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
-echo 'exit'             >> ${HOME}/.MountEFIu.sh
+echo 'plutil -replace ReadyToAutoUpdate -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
+echo 'fi' >> ${HOME}/.MountEFIu.sh
+echo 'exit' >> ${HOME}/.MountEFIu.sh
 chmod u+x ${HOME}/.MountEFIu.sh
 
 if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
