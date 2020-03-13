@@ -5583,7 +5583,7 @@ echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
-echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
+#echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
 echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
 echo ''  >> ${HOME}/.MountEFIu.sh
 echo 'exit'             >> ${HOME}/.MountEFIu.sh
@@ -5642,7 +5642,7 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
             sleep 2
             printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
             START_UPDATE_SERVICE
-            #plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
+            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
             success=1
             
         fi
