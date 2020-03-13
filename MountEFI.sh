@@ -275,7 +275,7 @@ if [[ $reload_check = "Reload" ]]; then par="-s"; fi
 
 upd=0
 update_check=`echo "$MountEFIconf"| grep -o "Updating"`
-if [[ $update_check = "Updating" ]]; then
+if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
         if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
                 launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
         if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
@@ -3068,7 +3068,7 @@ chs=0
 nogetlist=0
 
 CHECK_AUTOUPDATE
-if [[ ${AutoUpdate} = 1 ]]; then 
+if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
                     if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "600" ]]; then
                     rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt; fi
                     START_AUTOUPDATE &
