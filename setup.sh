@@ -5570,24 +5570,22 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
-echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
+echo 'latest_release=''"'$(echo $latest_release)'"''' >> ${HOME}/.MountEFIu.sh
+echo 'latest_edit=''"'$(echo $latest_edit)'"''' >> ${HOME}/.MountEFIu.sh
 echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
-echo 'while true; do' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
-echo 'sleep 4; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
 echo '        DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh       
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
-echo ''  >> ${HOME}/.MountEFIu.sh
 echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
+echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
+echo ''  >> ${HOME}/.MountEFIu.sh
 echo 'exit'             >> ${HOME}/.MountEFIu.sh
 chmod u+x ${HOME}/.MountEFIu.sh
 
