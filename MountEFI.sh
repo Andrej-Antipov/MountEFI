@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="039"
+edit_vers="040"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -531,9 +531,9 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         TRY=3; GET_APP_ICON
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Пароль для подключения разделов EFI: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter the password to mount EFI partitions: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
                 mypassword="${PASSWORD}" 
@@ -543,13 +543,14 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                     security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
-                        echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI теперь работает"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Управляйте паролем через настройки программы"' >> ${HOME}/.MountEFInoty.sh
                         else
-                        echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="Mount EFI Partitions Now Available"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="Manage the password in the program settings"' >> ${HOME}/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION
                         break
                 else
+                        printf "\r\033[1A                                                                               \r"
                         let "TRY--"
                         if [[ ! $TRY = 0 ]]; then 
                         SET_TITLE
@@ -1669,46 +1670,67 @@ UNMOUNTED_CHECK(){
 	     fi
 fi
 }
+
+NEED_PASSWORD(){
+need_password=0
+if [[ ! $flag = 0 ]]; then ENTER_PASSWORD
+   if [[ $mypassword = "0" ]]; then need_password=1
+        elif ! echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
+            printf "\r\033[1A                                                                               \r"
+            ENTER_PASSWORD "force"
+                if [[ $mypassword = "0" ]]; then need_password=1; fi
+    fi
+fi
+}
 ##################################################################################################
 SPIN_OC(){
-printf '\r\n'
-printf "\033[57C"
-spin='-\|/'
-i=0
-while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
-trap "kill $!" EXIT
-FIND_OPENCORE 
-kill $!
-wait $! 2>/dev/null
-trap " " EXIT
+    NEED_PASSWORD
+if [[ ${need_password} = 0 ]]; then
+    printf '\r\n'
+    printf "\033[57C"
+    spin='-\|/'
+    i=0
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
+    trap "kill $!" EXIT
+    FIND_OPENCORE 
+    kill $!
+    wait $! 2>/dev/null
+    trap " " EXIT
+fi
 }
 
 #####################################################################################################
 SPIN_FCLOVER(){
-printf '\r\n'
-printf "\033[57C"
-spin='-\|/'
-i=0
-while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
-trap "kill $!" EXIT 
-FIND_CLOVER
-kill $!
-wait $! 2>/dev/null
-trap " " EXIT
+    NEED_PASSWORD
+if [[ ${need_password} = 0 ]]; then
+    printf '\r\n'
+    printf "\033[57C"
+    spin='-\|/'
+    i=0
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
+    trap "kill $!" EXIT 
+    FIND_CLOVER
+    kill $!
+    wait $! 2>/dev/null
+    trap " " EXIT
+fi
 }
 #####################################################################################################
 
 SPIN_FLOADERS(){
-printf '\r\n'
-printf "\033[57C"
-spin='-\|/'
-i=0
-while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
-trap "kill $!" EXIT 
-FIND_ALL_LOADERS
-kill $!
-wait $! 2>/dev/null
-trap " " EXIT
+    NEED_PASSWORD
+if [[ ${need_password} = 0 ]]; then
+    printf '\r\n'
+    printf "\033[57C"
+    spin='-\|/'
+    i=0
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
+    trap "kill $!" EXIT 
+    FIND_ALL_LOADERS
+    kill $!
+    wait $! 2>/dev/null
+    trap " " EXIT
+fi
 }
 
 ################################### поиск всех загрузчиков #########################################

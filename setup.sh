@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="023"
+s_edit_vers="024"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -27,6 +27,7 @@ s_edit_vers="023"
 # 021 - список загрузчиков сохраняется после рестарта из программы
 # 022 - проверка версии Clover и OpenCore не чаще раз в 10 минут
 # 023 - новая функция авто-обновления
+# 024 - изменён диалог пароля
 
 clear
 
@@ -891,9 +892,9 @@ TRY=3
         while [[ ! $TRY = 0 ]]; do
         GET_APP_ICON
         if [[ $loc = "ru" ]]; then
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Введите пароль: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "       Enter password: " '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]]; then break; fi  
                 mypassword="${PASSWORD}"
@@ -910,6 +911,7 @@ TRY=3
                         DISPLAY_NOTIFICATION
                         break
                 else
+                        printf "\r\033[1A                                                                      \r"
                         let "TRY--"
                         if [[ ! $TRY = 0 ]]; then 
                         SET_TITLE
@@ -5532,6 +5534,7 @@ mypassword=""
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
              mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
              if ! echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then 
+                    printf "\r\033[1A                                                                          \r"
                     security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
                     mypassword=""
                     SET_TITLE
