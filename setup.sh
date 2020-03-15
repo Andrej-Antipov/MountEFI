@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 15.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="024"
+s_edit_vers="025"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -28,6 +28,7 @@ s_edit_vers="024"
 # 022 - проверка версии Clover и OpenCore не чаще раз в 10 минут
 # 023 - новая функция авто-обновления
 # 024 - изменён диалог пароля
+# 025 - сделан деинсталлятор
 
 clear
 
@@ -56,20 +57,22 @@ if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clov
 fi       
 read -n 1 
 clear && printf "\e[3J"
-} 
+}
 
 NET_UPDATE_LOADERS(){
     rm -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
     rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
     rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
-    if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' )
-    oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    clov_vrs=$( curl -s --max-time 7 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
+    oc_vrs=$( curl -s --max-time 7 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
-    date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
-    echo $clov_vrs >> ~/Library/Application\ Support/MountEFI/latestClover.txt
-    echo $oc_vrs >> ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
-    fi
+        if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
+            echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt
+            echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
+            date +%s > ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+        fi
+fi
 }
 
 CHECK_UPDATE_LOADERS(){
@@ -951,7 +954,7 @@ SET_USER_PASSWORD(){
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then 
                 printf '\r'; printf "%"80"s"
                 printf '\r'
-                GET_APP_ICON
+                                GET_APP_ICON
                                 if [[ $loc = "ru" ]]; then
                                 if answer=$(osascript -e 'display dialog "Удалить пароль из связки ключей?" '"${icon_string}"''); then cancel=0; else cancel=1; fi 2>/dev/null
                                 else
@@ -2747,7 +2750,7 @@ fi
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsS]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZ]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2893,8 +2896,10 @@ sbuf+=$(printf ' D) Upload settings backups from iCloud                         
       fi
  if [[ $loc = "ru" ]]; then
 sbuf+=$(printf ' R) Быстро перезагрузить программу настройки              (SHIFT+R)             \n')
+sbuf+=$(printf ' Z) Удаление программы MountEFI с компьютера              (SHIFT+Z)             \n')
 else
 sbuf+=$(printf ' R) Restart the setup program immediately              (SHIFT+R)                \n')
+sbuf+=$(printf ' Z) Uninstall all MountEFI files and services          (SHIFT+Z)                \n')
 fi 
 echo "${sbuf}"
 }
@@ -6667,6 +6672,92 @@ done
 
 }
 
+END_UNINSTALLER(){
+while true; do
+if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then
+sleep 1; else break; fi
+done
+
+                                    dloc=$(defaults read com.apple.dock persistent-apps | grep file-label | awk '/MountEFI/  {printf NR}')
+                                    if [[ ! "${dloc}" = "" ]]; then 
+                                        dloc=$[$dloc-1]
+                                        sudo -u $USER /usr/libexec/PlistBuddy -c "Delete persistent-apps:$dloc" ~/Library/Preferences/com.apple.dock.plist
+                                        osascript -e 'delay 1' -e 'tell Application "Dock"' -e 'quit' -e 'end tell'
+                                    fi
+                                    
+                                    if [[ $loc = "ru" ]]; then
+                                    if answer=$(osascript -e 'display dialog "Очистка завершена !\n\nДоброго дня :)" '"${icon_string}"' buttons {"OK"} default button "OK" giving up after (3)'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                    else
+                                    if answer=$(osascript -e 'display dialog "Сleaning completed !\n\nHave a good day :)" '"${icon_string}"' buttons {"OK"} default button "OK" giving up after (3)'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                    fi
+                                    if [[ -f ~/.MountEFIconf.plist ]]; then rm ~/.MountEFIconf.plist; fi
+                                    if [[ -d "${MEFI_PATH}" ]]; then rm -Rf "${MEFI_PATH}"; fi
+}
+
+RUN_UNINSTALLER(){
+        cleared=0
+        GET_APP_ICON
+        if [[ $loc = "ru" ]]; then
+        if RESULT="$(osascript -e 'Tell application "System Events" to display dialog "Вы запустили программу удаления MountEFI !\nВыберите один из двух уровней очистки:\n\nУровень 1.Локальная очистка:\nУдаляются все файлы и сервисы с вашего\nпользовательского раздела. \n\nУровень 2.Полная очистка:\nПосле локальной очистки выполняется\nудаление архивов настроек из iCloud\n\nФайлы удаляются необратимо\nВведите 1 или 2 для желаемого уровня:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        else
+        if RESULT="$(osascript -e 'Tell application "System Events" to display dialog "You have run the MountEFI uninstall program ! \nChoose one of two levels of cleaning:\n\nLevel 1: Local Cleaning:\nAll files and running services from your \nuser partition will be removed. \n\nLevel 2: Complete Cleaning:\nAfter local cleaning, backups of your settings\nfrom iCloud will be deleted\n\nFiles will be deleted permanently !!!\nEnter 1 or 2 for the desired level:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        fi
+
+        if [[ ! $cansel = 1 ]] && [[ ! "${RESULT}" = "" ]]; then 
+            if [[ "${RESULT}" = "1" ]] || [[ "${RESULT}" = "2" ]]; then
+                                
+                                if [[ $loc = "ru" ]]; then
+                                if [[ "${RESULT}" = "1" ]]; then explaination="Локальная очистка"; else explaination="Полная очистка"; fi
+                                if answer=$(osascript -e 'display dialog "Выбран уровень '"${RESULT}: ${explaination}"'.\nПродолжать?" '"${icon_string}"' giving up after (20)'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+                                if [[ "${RESULT}" = "1" ]]; then explaination="Local Cleaning"; else explaination="Complete Cleaning"; fi
+                                if answer=$(osascript -e 'display dialog "Cleaning Level '"${RESULT}: ${explaination}"'.\nProceed?" '"${icon_string}"' giving up after (20)'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+                               
+                                if [[ $cancel = 0 ]] && [[ "$(echo $answer | grep -o "gave up:true")" = "" ]]; then 
+
+                                    cleared=1
+                                ########################## локальная очистка сервисы ################################
+                                    REMOVE_SYS_AUTOMOUNT_SERVICE
+                                    if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
+                                    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " "); fi                                    
+                                    if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
+                                    launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+                                    if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
+                                        launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+                                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                                ########################## локальная очистка файлы ################################
+                                    if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
+                                    if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
+                                    if [[ -d ~/Library/Application\ Support/MountEFI ]]; then rm -Rf ~/Library/Application\ Support/MountEFI; fi 
+                                    if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
+                                    if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm  ~/Library/LaunchAgents/MountEFIu.plist; fi                                  
+                                    if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm  ~/Library/LaunchAgents/MountEFIr.plist; fi
+                                    if [[ -f ~/.MountEFIconfBackups.zip ]]; then rm ~/.MountEFIconfBackups.zip; fi
+                                    if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
+                                ########################## полная очистка iCloud ################################
+                                    if [[ "${RESULT}" = "2" ]]; then  
+                                    hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+                                        if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid ]]; then
+                                        rm -Rf ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid; fi
+                                    fi
+                                ########################## запуск удаления апплета ##############################
+                                    plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
+                                    MEFI_PATH="$( echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
+                                    END_UNINSTALLER &                                    
+                                fi
+                                            
+            fi
+        fi
+if [[ ${cleared} = 0 ]]; then
+                                    if [[ $loc = "ru" ]]; then
+                                    if answer=$(osascript -e 'display dialog "Очистка отменена !" '"${icon_string}"' buttons {"OK"} default button "OK" giving up after (3)'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                    else
+                                    if answer=$(osascript -e 'display dialog "Сleaning canceled !" '"${icon_string}"' buttons {"OK"} default button "OK" giving up after (3)'); then cancel=0; else cancel=1; fi 2>/dev/null
+                                    fi
+fi
+}
+
 
 ###############################################################################
 ################### MAIN ######################################################
@@ -6678,7 +6769,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=33; col=80
+lines=34; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -6945,14 +7036,21 @@ fi
 
 if [[ $inputs = [dD] ]]; then
                     CHECK_ICLOUD_BACKUPS
-         if [[ $cloud_archive = 1 ]] && [[ $shared_archive = 1 ]]; then
+         if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
                         inputs="§"
                         if [[ $loc = "ru" ]]; then
                 echo "Заместить локальный бэкап архивами из iCloud                       "
-                echo "1) - Загрузить архив с этой машины. 2) -  Публичный архив          "
+                if [[ $cloud_archive = 1 ]] && [[ $shared_archive = 1 ]]; then  echo "1) - Загрузить архив с этой машины. 2) -  Публичный архив          "
+                    elif [[ $cloud_archive = 0 ]] && [[ $shared_archive = 1 ]]; then echo "2) - Загрузить публичный архив                                     "
+                        else echo "1) - Загрузить архив с этой машины.                                "
+                fi
+                
                         else
                 echo "Replace the local backup with archives from iCloud?                "
-                echo "1) - Download the archive from this machine. 2) - Public           "
+                if [[ $cloud_archive = 1 ]] && [[ $shared_archive = 1 ]]; then  echo "1) - Download the archive from this machine. 2) - Public           "
+                    elif [[ $cloud_archive = 0 ]] && [[ $shared_archive = 1 ]]; then echo "1) - Download the archive from this machine. 2) - Public           "
+                        else echo "1) - Download the archive from this machine. 2) - Public           "
+                fi
                         fi
                 printf "\033[?25h" 
                 read -p "(1/2/N) " -n 1 -r
@@ -7057,6 +7155,12 @@ if [[ $inputs = R ]]; then
         UPDATE_CACHE
         START_RELOAD_SERVICE 
         if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+fi
+##############################################################################
+
+if [[ $inputs = Z ]]; then
+   RUN_UNINSTALLER
+   if [[ $par = "-r" ]] && [[ ${cleared} = 1 ]]; then exit 1; fi
 fi
 ##############################################################################
 

@@ -45,34 +45,41 @@ if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e
 if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs}'\e[0m'; 
                                 printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
 fi      
-recheckLDs=1; while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then pauser=0; RECHECK_LOADERS; recheckLDs=0; break; fi; done 
+recheckLDs=1; while true; do CHECK_HOTPLUG_DISKS;  demo="~"; read -rsn1 -t1 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then pauser=0; RECHECK_LOADERS; recheckLDs=0; KILL_CURL_UPDATER; break; fi; done 
 fi
 clear && printf "\e[3J"
+}
+
+KILL_CURL_UPDATER(){
+if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
+    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " "); fi
 } 
 
 NET_UPDATE_LOADERS(){
     rm -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
     rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
     rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
-    if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
-    oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    clov_vrs=$( curl -s --max-time 7 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
+    oc_vrs=$( curl -s --max-time 7 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
-    date +%s >> ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
-    echo $clov_vrs >> ~/Library/Application\ Support/MountEFI/latestClover.txt
-    echo $oc_vrs >> ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
-    fi
+        if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
+            echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt
+            echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
+            date +%s > ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+        fi
+fi
 }
 
 CHECK_UPDATE_LOADERS(){
 if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then 
          NET_UPDATE_LOADERS
     else 
-        if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
-            clov_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestClover.txt)
-            oc_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestOpenCore.txt)
+        if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
+            clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt)
+            oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt)
         else 
-          NET_UPDATE_LOADERS
+          NET_UPDATE_LOADERS 
        fi
 fi
 }
