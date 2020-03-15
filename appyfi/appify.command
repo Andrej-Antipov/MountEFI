@@ -66,6 +66,7 @@ fi
 if [[ -d MountEFI.app ]]; then
 ditto -c -k --sequesterRsrc --keepParent MountEFI.app  newMountEFI.zip
 mv -f newMountEFI.zip MountEFI.zip
+touch MountEFI.app
 fi
 
 if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
@@ -78,6 +79,7 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             mkdir Updates/$current_vers/$edit_vers
             if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
             if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
+            if [[ -f Notifiers/DefaultConf.plist ]]; then cp -a Notifiers/DefaultConf.plist Updates/$current_vers/$edit_vers; fi
             if [[ -d MountEFI.app ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; fi
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then 
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
@@ -95,11 +97,7 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             rm -Rf Updates/$current_vers/$edit_vers
 fi 
 
-if [[ -d MountEFI.app ]]; then 
-    touch MountEFI.app
-fi          
-
-cat  ~/.bash_history | sed -n '/appify/!p' >> ~/new_hist.txt; rm ~/.bash_history; mv ~/new_hist.txt ~/.bash_history
-#osascript -e 'quit app "terminal.app"' & exit
+if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/appify/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
+if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/appify/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
 
 exit
