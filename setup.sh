@@ -401,7 +401,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>20</integer>' >> ${HOME}/.MountEFIconf.plist
             echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
@@ -5681,7 +5681,8 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
     trap "kill $!" EXIT
     latest_release=""
-    latest_release=$(curl -s https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+    latest_release=$(curl -s --max-time 10 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+    if [[ "${latest_release}" = "" ]]; then latest_release="000"; fi
     if [[ ${#latest_release} = 2 ]]; then latest_release+="0"; fi
     if [[ $loc = "ru" ]]; then
     if [[ ! $latest_release = "" ]]; then printf '\r\e[40m\e[1;33m   Последний релиз: \e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'                       \e[0m\n\n'; fi
@@ -5700,7 +5701,7 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     i=0
     while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
     trap "kill $!" EXIT
-    latest_edit=$(curl -s https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+    latest_edit=$(curl -s --max-time 10 https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
     kill $!
     wait $! 2>/dev/null
     trap " " EXIT
@@ -5714,11 +5715,19 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     if [[ "$latest_edit" = "0071" ]]; then last_e=8; else last_e=$(echo $latest_edit | bc); fi
     vers_e=$(echo $edit_vers | bc)
     if [[ "${current_vers}" -ge "${latest_release}" ]] && [[ "${last_e}" -le "${vers_e}" ]]; then
+      if [[ "${latest_release}" = "000" ]] || [[ "$latest_edit" = "000" ]]; then
+        if [[ $loc = "ru" ]]; then
+        printf '\e[40m\e[1;33m   Возникли неполадки в получении информации о версииях. \e[0m'
+        else
+        printf '\e[40m\e[1;33m   There was a problem getting version information. \e[0m'
+        fi
+      else  
         if [[ $loc = "ru" ]]; then
         printf '\e[40m\e[1;33m   Версия и редакция программы новейшие. \e[0m'
         else
         printf '\e[40m\e[1;33m   The version of the program and its edition are the latest. \e[0m'
         fi
+     fi
         else 
             ASK_UPDATE
             if [[ ! $success = 2 ]]; then

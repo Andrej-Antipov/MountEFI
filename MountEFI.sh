@@ -147,7 +147,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
             echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
+            echo '  <integer>20</integer>' >> ${HOME}/.MountEFIconf.plist
             echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
@@ -285,20 +285,22 @@ update_check=`echo "$MountEFIconf"| grep -o "Updating"`
 if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
         if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
                 launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
-        if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
-        if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
-        plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        if [[ ! -d "${ROOT}"/terminal-notifier.app  ]]; then 
+            if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
+            if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
+            plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+            if [[ ! -d "${ROOT}"/terminal-notifier.app  ]]; then 
                 if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
-                curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
+                curl -s --max-time 10 https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
+                if [[ -f ~/.MountEFIupdates/terminal-notifier.zip ]]; then
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
-                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}" 
+                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}"
+                fi
+            fi
+            if [[ -f ~/.MountEFIupdates/${edit_vers}/DefaultConf.plist ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/DefaultConf.plist "${ROOT}"; fi
+            if [[ -f ~/.MountEFIupdates/${edit_vers}.zip ]]; then rm -Rf ~/.MountEFIupdates/${edit_vers}; unzip  -o -qq ~/.MountEFIupdates/${edit_vers}.zip -d ~/.MountEFIupdates 2>/dev/null
         fi
-        edit_vers=$( cat MountEFI | grep -m1 "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n' )
-        if [[ -f ~/.MountEFIupdates/${edit_vers}.zip ]]; then rm -Rf ~/.MountEFIupdates/${edit_vers}; unzip  -o -qq ~/.MountEFIupdates/${edit_vers}.zip -d ~/.MountEFIupdates 2>/dev/null
-        fi
-        if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
-        upd=1
+if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
+upd=1
 fi
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
