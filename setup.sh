@@ -6748,7 +6748,8 @@ RUN_UNINSTALLER(){
                                     if [[ "${RESULT}" = "2" ]]; then  
                                     hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
                                         if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid ]]; then
-                                        rm -Rf ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid; fi
+                                        rm -Rf ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid
+                                        rm -Rf ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared; fi
                                     fi
                                 ########################## запуск удаления апплета ##############################
                                     plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
@@ -7065,9 +7066,9 @@ if [[ $inputs = [dD] ]]; then
                 read -p "(1/2/N) " -n 1 -r
                 printf "\033[?25l"  
                 if [[ $REPLY = 1 ]] || [[ $REPLY = 2 ]]; then 
-                if [[ $REPLY = 2 ]]; then get_shared=1; fi
                 mv  ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups2.zip
-                GET_BACKUPS_FROM_ICLOUD
+                if [[ $REPLY = 2 ]] && [[ $shared_archive = 1 ]]; then get_shared=1; GET_BACKUPS_FROM_ICLOUD; fi
+                if [[ $REPLY = 1 ]] && [[ $cloud_archive = 1 ]]; then get_shared=0; GET_BACKUPS_FROM_ICLOUD; fi
                 if [[ -f ${HOME}/.MountEFIconfBackups.zip ]]; then rm -f ${HOME}/.MountEFIconfBackups2.zip
                 inputs="B"
                         else
