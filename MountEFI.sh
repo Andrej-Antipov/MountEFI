@@ -2608,15 +2608,15 @@ if [[ ! $order = 3 ]]; then
         if [[ $loc = "ru" ]]; then
 	printf '\n      C  -   найти и подключить EFI с загрузчиком Clover \n'
 	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
-	printf '      S  -   вызвать экран настройки MountEFI\n'
+	printf '      S  -   вызвать экран настройки MountEFI \n'
     printf '      I  -   главное меню                     \n'
-    printf '      Q  -   закрыть окно и выход из программы\n\n' 
+    printf '      V  -   посмотреть версию программы    \n\n' 
 			else
 	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
 	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
 	printf '      S  -   call MountEFI setup screen\n'
     printf '      I  -   main menu                      \n'
-    printf '      Q  -   close terminal and exit from the program\n\n' 
+    printf '      V  -   view the program version       \n\n' 
 	     fi
 fi
 else printf '\n\n'
