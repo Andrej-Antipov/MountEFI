@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AutoMount</key>
+	<dict>
+		<key>Enabled</key>
+		<false/>
+		<key>ExitAfterMount</key>
+		<false/>
+		<key>Open</key>
+		<false/>
+		<key>PartUUIDs</key>
+		<string> </string>
+		<key>Timeout2Exit</key>
+		<integer>5</integer>
+	</dict>
+	<key>Backups</key>
+	<dict>
+		<key>Auto</key>
+		<true/>
+		<key>Maximum</key>
+		<integer>20</integer>
+	</dict>
+	<key>CheckLoaders</key>
+	<true/>
+	<key>CurrentPreset</key>
+	<string>BlueSky</string>
+	<key>Locale</key>
+	<string>auto</string>
+	<key>Menue</key>
+	<string>auto</string>
+	<key>OpenFinder</key>
+	<true/>
+	<key>Presets</key>
+	<dict>
+		<key>BlueSky</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>{3341, 25186, 40092}</string>
+			<key>FontName</key>
+			<string>SF Mono Regular</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>{65535, 65535, 65535}</string>
+		</dict>
+		<key>DarkBlueSky</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>{8481, 10537, 33667}</string>
+			<key>FontName</key>
+			<string>SF Mono</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>{65278, 64507, 0}</string>
+		</dict>
+		<key>GreenField</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>{1028, 12850, 10240}</string>
+			<key>FontName</key>
+			<string>SF Mono</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>{61937, 60395, 47288}</string>
+		</dict>
+		<key>Ocean</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>{1028, 12850, 65535}</string>
+			<key>FontName</key>
+			<string>SF Mono Regular</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>{65535, 65535, 65535}</string>
+		</dict>
+		<key>Tolerance</key>
+		<dict>
+			<key>BackgroundColor</key>
+			<string>{40092, 40092, 38293}</string>
+			<key>FontName</key>
+			<string>SF Mono</string>
+			<key>FontSize</key>
+			<string>12</string>
+			<key>TextColor</key>
+			<string>{40606, 4626, 0}</string>
+		</dict>
+	</dict>
+	<key>RenamedHD</key>
+	<string></string>
+	<key>ShowKeys</key>
+	<true/>
+	<key>SysLoadAM</key>
+	<dict>
+		<key>Enabled</key>
+		<false/>
+		<key>Open</key>
+		<false/>
+		<key>PartUUIDs</key>
+		<string> </string>
+	</dict>
+	<key>Theme</key>
+	<string>built-in</string>
+	<key>ThemeLoaders</key>
+	<string>37</string>
+	<key>ThemeLoadersLinks</key>
+	<string></string>
+	<key>ThemeLoadersNames</key>
+	<string>Clover;OpenCore</string>
+	<key>ThemeProfile</key>
+	<string>default</string>
+</dict>
+</plist>
