@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 16.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -280,6 +280,20 @@ UPDATE_CACHE
 reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
 if [[ $reload_check = "Reload" ]]; then par="-s"; fi
 
+GET_LOCALE(){
+if [[ $cache = 1 ]] ; then
+        locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+            else
+                loc=`echo ${locale}`
+        fi
+    else   
+        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+fi  
+}
+
+GET_LOCALE
+
 upd=0
 update_check=`echo "$MountEFIconf"| grep -o "Updating"`
 if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
@@ -289,11 +303,26 @@ if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info
             if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
             plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
             if [[ ! -d "${ROOT}"/terminal-notifier.app  ]]; then 
+                    if [[ $loc = "ru" ]]; then
+                    printf '\n\r  Отсутствует иконка в уведомлениях. Пытаемся загрузить с github ....\n'
+                    else
+                    printf '\n\r  There is no icon in the notifications. Trying to download from github ...\n'
+                    fi
                 if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
-                curl -s --max-time 10 https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
-                if [[ -f ~/.MountEFIupdates/terminal-notifier.zip ]]; then
+                curl -s --max-time 25 https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
                 unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
-                mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}"
+                if [[ -d ~/.MountEFIupdates/terminal-notifier.app ]]; then mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}"
+                        if [[ $loc = "ru" ]]; then
+                    printf '\n\r  Успешно :)'
+                        else
+                    printf '\n\r  Successfully '
+                        fi
+                    else
+                        if [[ $loc = "ru" ]]; then
+                    printf '\n\r  Неудачно :('
+                        else
+                    printf '\n\r  Unsuccessfully :('
+                        fi
                 fi
             fi
             if [[ -f ~/.MountEFIupdates/${edit_vers}/DefaultConf.plist ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/DefaultConf.plist "${ROOT}"; fi
@@ -420,20 +449,6 @@ fi
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
-
-GET_LOCALE(){
-if [[ $cache = 1 ]] ; then
-        locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-            else
-                loc=`echo ${locale}`
-        fi
-    else   
-        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-fi  
-}
-
-GET_LOCALE
 
 GET_LOADERS(){
 CheckLoaders=1
