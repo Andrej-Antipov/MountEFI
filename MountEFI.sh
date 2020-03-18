@@ -1208,6 +1208,9 @@ if [[ ${CheckLoaders} = 0 ]]; then
     mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
 rm -f ~/.other_loaders_list.txt
 CHECK_AUTOUPDATE
+if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
+                    START_AUTOUPDATE &
+fi
 }
 ##########################################################################################################################
 
