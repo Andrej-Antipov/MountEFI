@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 16.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 18.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="040"
+edit_vers="041"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -18,6 +18,28 @@ if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..94};  else prin
 let "var--"; done
 if [[ ! $CheckLoaders = 0 ]]; then vcorr=35; v2corr=27; v3corr=28; v4corr=23; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
 printf "\033[H"
+
+if [[ ${AutoUpdate} = 1 ]]; then
+                    if [[ $loc = "ru" ]]; then
+                        if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
+                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%d/%m/%Y %H:%M')"
+                        else
+                        AutoUpdateCheckTime="$(date '+%d/%m/%Y %H:%M')"
+                        fi
+                            printf "\033[4;'$v4corr'f"; printf '\e[40m\e[1;33m        Авто-обновление \e[1;35mMountEFI\e[1;33m включено! \e[0m'
+                            printf "\033[5;'$v4corr'f"; printf '\e[40m\e[1;33m    Следующая проверка не ранее \e[1;32m'"${AutoUpdateCheckTime}"' \e[0m'
+                    else
+                        if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
+                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%m/%d/%Y %H:%M')"
+                        else
+                        AutoUpdateCheckTime="$(date '+%m/%d/%Y %H:%M')"
+                        fi
+                            printf "\033[4;'$v4corr'f"; printf '\e[40m\e[1;33m            Auto update \e[1;35mMountEFI\e[1;33m enabled! \e[0m'
+                            printf "\033[5;'$v4corr'f"; printf '\e[40m\e[1;33m Next update check no earlier than \e[1;32m'"${AutoUpdateCheckTime}"' \e[0m'
+
+                    fi
+fi
+
 
 printf "\033[8;'$v3corr'f"
 printf '\e[40m\e[1;33m________________________________________\e[0m''\n\033['$v2corr'C'
