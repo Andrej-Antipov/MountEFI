@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 15.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 18.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="025"
+s_edit_vers="026"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -29,6 +29,7 @@ s_edit_vers="025"
 # 023 - новая функция авто-обновления
 # 024 - изменён диалог пароля
 # 025 - сделан деинсталлятор
+# 026 - информация о времени след авто-обновления в окне контроля версии
 
 clear
 
@@ -48,6 +49,30 @@ printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
 printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n' 
+
+v4corr=15
+
+if [[ ${AutoUpdate} = 1 ]]; then
+                    if [[ $loc = "ru" ]]; then
+                        if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
+                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%d/%m/%Y %H:%M')"
+                        else
+                        AutoUpdateCheckTime="$(date '+%d/%m/%Y %H:%M')"
+                        fi
+                            printf "\033[26;'$v4corr'f"; printf '\e[40m\e[33m        Авто-обновление \e[35mMountEFI\e[33m включено! \e[0m'
+                            printf "\033[27;'$v4corr'f"; printf '\e[40m\e[33m    Следующая проверка не ранее \e[32m'"${AutoUpdateCheckTime}"' \e[0m'
+                    else
+                        if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
+                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%m/%d/%Y %H:%M')"
+                        else
+                        AutoUpdateCheckTime="$(date '+%m/%d/%Y %H:%M')"
+                        fi
+                            printf "\033[26;'$v4corr'f"; printf '\e[40m\e[33m            Auto update \e[35mMountEFI\e[33m enabled! \e[0m'
+                            printf "\033[27;'$v4corr'f"; printf '\e[40m\e[33m Next update check no earlier than \e[32m'"${AutoUpdateCheckTime}"' \e[0m'
+
+                    fi
+fi
+
 GET_LOADERS
 printf "\033[23;15f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'
 if [[ ! $CheckLoaders = 0 ]]; then CHECK_UPDATE_LOADERS $
