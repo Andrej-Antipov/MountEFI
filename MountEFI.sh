@@ -82,8 +82,8 @@ NET_UPDATE_LOADERS(){
     rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
     rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s --max-time 7 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
-    oc_vrs=$( curl -s --max-time 7 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+    clov_vrs=$( curl -s --max-time 9 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
+    oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
         if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
             echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt
@@ -1723,12 +1723,7 @@ fi
 NEED_PASSWORD(){
 need_password=0
 if [[ ! $flag = 0 ]]; then ENTER_PASSWORD
-   if [[ $mypassword = "0" ]]; then need_password=1
-        elif ! echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
-            printf "\r\033[1A                                                                               \r"
-            ENTER_PASSWORD "force"
-                if [[ $mypassword = "0" ]]; then need_password=1; fi
-    fi
+   if [[ $mypassword = "0" ]]; then need_password=1; fi
 fi
 }
 ##################################################################################################
