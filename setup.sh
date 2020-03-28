@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="026"
+s_edit_vers="027"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -30,6 +30,7 @@ s_edit_vers="026"
 # 024 - изменён диалог пароля
 # 025 - сделан деинсталлятор
 # 026 - информация о времени след авто-обновления в окне контроля версии
+# 027 - включение проверки авто-обновления сразу после выхода из настроек
 
 clear
 
@@ -2396,9 +2397,9 @@ if [[  ${inputs}  = [qQ] ]]; then
                 plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
                 GET_SYSTEM_FLAG
                 if [[ "$flag" = "1" ]]; then
-                FORCE_CHECK_PASSWORD;
+                FORCE_CHECK_PASSWORD "automount"
                 if [[ $mypassword = "" ]]; then ENTER_PASSWORD;  osascript -e 'tell application "Terminal" to activate'; fi
-                FORCE_CHECK_PASSWORD;
+                FORCE_CHECK_PASSWORD "automount"
                 if [[ $mypassword = "" ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; fi
     
                 fi
@@ -5564,7 +5565,11 @@ mypassword=""
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
              mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
              if ! echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then 
-                    printf "\r\033[1A                                                                          \r"
+                    case $1 in
+                            "automount" ) if [[ $loc = "ru" ]]; then printf '\033[1A\r''  Введите число от\r\033[48C'; else 
+                                                                      printf '\033[1A\r'' Enter a number from\r\033[50C'; fi;;
+                                      * ) printf "\r\033[1A                                                                          \r";;
+                    esac
                     security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
                     mypassword=""
                     SET_TITLE
@@ -6939,9 +6944,9 @@ if [[ $inputs = 9 ]] && [[ "$quick_am" = "1" ]]; then
                 GET_SYSTEM_FLAG
                 if [[ $flag = 0 ]]; then SETUP_SYS_AUTOMOUNT
                 else
-                    FORCE_CHECK_PASSWORD
+                    FORCE_CHECK_PASSWORD "automount"
                     if [[ "$mypassword" = "" ]]; then SET_USER_PASSWORD; fi
-                    FORCE_CHECK_PASSWORD
+                    FORCE_CHECK_PASSWORD "automount"
                     if [[ "$mypassword" = "" ]]; then 
                     plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
 
@@ -6985,9 +6990,9 @@ else
   GET_SYSTEM_FLAG
   if [[ $flag = 0 ]]; then SETUP_SYS_AUTOMOUNT
     else
-  FORCE_CHECK_PASSWORD
+  FORCE_CHECK_PASSWORD "automount"
   if [[ "$mypassword" = "" ]]; then SET_USER_PASSWORD; fi
-  FORCE_CHECK_PASSWORD
+  FORCE_CHECK_PASSWORD "automount"
   if [[ "$mypassword" = "" ]]; then 
     plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
                         SET_TITLE

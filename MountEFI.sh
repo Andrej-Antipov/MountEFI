@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 28.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -550,12 +550,14 @@ if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]]; then rel=
 
 ENTER_PASSWORD(){
 
+GET_APP_ICON
+
 macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
 if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
 
-mypassword="0"
+mypassword="0"; unset cancel; unset PASSWORD
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
                 if [[ ! "$1" = "force" ]]; then
                 mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
@@ -574,7 +576,7 @@ fi
 if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
   if [[ $flag = 1 ]]; then 
         
-        TRY=3; GET_APP_ICON
+        TRY=3
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
@@ -596,7 +598,8 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                         DISPLAY_NOTIFICATION
                         break
                 else
-                        printf "\r\033[1A                                                                               \r"
+                        if [[ $loc = "ru" ]]; then printf '\033[1A\r\033[48C''                                \r\033[48C'; else 
+                                                   printf '\033[1A\r\033[50C''                                \r\033[50C'; fi
                         let "TRY--"
                         if [[ ! $TRY = 0 ]]; then 
                         SET_TITLE
@@ -1649,9 +1652,10 @@ DO_MOUNT(){
                     if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; password_was_entered=1; fi
                     if [[ ! $mypassword = "0" ]]; then 
                     if ! echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string}  2>/dev/null; then
-
+                                printf '\033[1A\r\033[48C''                                \r\033[48C'          
                                 if [[ $password_was_entered = "0" ]]; then ENTER_PASSWORD "force"; password_was_entered=1; fi
-                                echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
+                                if ! echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null; then
+                                        printf '\033[1A\r\033[48C''                                \r\033[48C'; fi
 
                     fi
                 fi
@@ -1722,8 +1726,15 @@ fi
 
 NEED_PASSWORD(){
 need_password=0
-if [[ ! $flag = 0 ]]; then ENTER_PASSWORD
-   if [[ $mypassword = "0" ]]; then need_password=1; fi
+if [[ ! $flag = 0 ]]; then 
+              mypassword=$(security find-generic-password -a ${USER} -s efimounter -w 2>/dev/null)
+                        if [[ "${mypassword}" = "" ]]; then mypassword=0; fi
+                        if ! echo "${mypassword}" | sudo -Sk printf "" 2>/dev/null; then
+                            if [[ $loc = "ru" ]]; then printf '\033[1A\r\033[48C''                                \r\033[48C'; else 
+                                                   printf '\033[1A\r\033[50C''                                \r\033[50C'; fi
+                            ENTER_PASSWORD "force"
+                            if [[ $mypassword = "0" ]]; then need_password=1; fi
+                        fi
 fi
 }
 ##################################################################################################
@@ -1802,7 +1813,7 @@ do
 
 	was_mounted=0
 
-  	DO_MOUNT	
+  	DO_MOUNT ; if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi	
 
 	else
 		was_mounted=1
@@ -1865,7 +1876,7 @@ do
 
 	was_mounted=0
 
-  	DO_MOUNT	
+  	DO_MOUNT ; if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi
 
 	else
 		was_mounted=1
@@ -1935,7 +1946,7 @@ do
 
 	was_mounted=0
 
-  	DO_MOUNT	
+  	DO_MOUNT ; if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi
 
 	else
 		was_mounted=1
