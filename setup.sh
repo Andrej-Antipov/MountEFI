@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 28.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -5334,7 +5334,7 @@ echo 'if [[ ! $apos = 0 ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'macos=`sw_vers -productVersion`' >> ${HOME}/.MountEFIa.sh
 echo 'macos=`echo ${macos//[^0-9]/}`' >> ${HOME}/.MountEFIa.sh
 echo 'macos=${macos:0:4}' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
 echo 'mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
@@ -5557,7 +5557,7 @@ GET_SYSTEM_FLAG(){
 macos=`sw_vers -productVersion`
   macos=`echo ${macos//[^0-9]/}`
   macos=${macos:0:4}
-  if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
+  if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 
 FORCE_CHECK_PASSWORD(){
