@@ -92,11 +92,17 @@ if [[ ! $CheckLoaders = 0 ]]; then
                             ppid=$!
         fi        
     oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
-    if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e[1;35mOpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m'
-                                printf "\033[18;17f"'\e[40m\e[36m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'; fi
+    if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e[1;35mOpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}' \e[0m'
+                                    printf "\033[18;17f"'\e[40m\e[36m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'
+                               else printf "\033[17;36f"'\e[40m                             \e[0m'
+                                    printf "\033[18;17f"'\e[40m                                                          \e[0m'
+    fi
     clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
-    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs}'\e[0m'; 
-                                printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases  \e[0m'; fi
+    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs}'\e[0m' 
+                                      printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases   \e[0m'
+                                 else printf "\033[19;40f"'\e[40m                 \e[0m' 
+                                      printf "\033[20;17f"'\e[40m                                                                  \e[0m'
+    fi
     
     if [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]] && [[ $(ps -xa -o pid,command | grep -v grep | cut -f1 -d " " | grep -ow $ppid | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
     ppid=0
