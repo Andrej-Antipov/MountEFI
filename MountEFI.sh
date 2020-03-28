@@ -556,8 +556,7 @@ macos=`sw_vers -productVersion`
 macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
 if [[ "$macos" = "1015" ]] || [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]]; then flag=1; else flag=0; fi
-
-mypassword="0"; unset cancel; unset PASSWORD
+mypassword="0"; unset cancel; unset PASSWORD; braked=0
 if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
                 if [[ ! "$1" = "force" ]]; then
                 mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
@@ -565,17 +564,15 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
                 security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
-                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ УДАЛЁН ИЗ КЛЮЧЕЙ !"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="СТАРЫЙ ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ!"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFInoty.sh
                         else
-                        echo 'SUBTITLE="WRONG PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="OLD PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> ${HOME}/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION 
                 fi
 fi
-
 if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
   if [[ $flag = 1 ]]; then 
-        
         TRY=3
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
@@ -583,7 +580,7 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         else
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
-                if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi  
+                if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then braked=1; break; fi  
                 mypassword="${PASSWORD}" 
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
@@ -1635,32 +1632,45 @@ MOUNTED_CHECK(){
 
     SET_TITLE
     if [[ $loc = "ru" ]]; then
-    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения ..."' >> ${HOME}/.MountEFInoty.sh
+    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения '${string}'"' >> ${HOME}/.MountEFInoty.sh
     else
-    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting ..."' >> ${HOME}/.MountEFInoty.sh
+    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting '${string}'"' >> ${HOME}/.MountEFInoty.sh
     fi
     DISPLAY_NOTIFICATION 
 
     fi
 }
 
-DO_MOUNT(){
+CHECK_PASSWORD(){
+need_password=0
+if ! echo "${mypassword}" | sudo -S printf "" 2>/dev/null; then
+       printf '\033[1A\r\033[48C''                                \r\033[48C'          
+       if [[ $password_was_entered = "0" ]]; then ENTER_PASSWORD "force"; password_was_entered=1;  fi
+       if ! echo "${mypassword}" | sudo -S printf "" 2>/dev/null; then
+            printf '\033[1A\r\033[48C''                                \r\033[48C'
+            need_password=1
+       fi
+fi
+}
 
-		if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${string}
-                else
+DO_MOUNT(){
+    	if [[ $flag = 0 ]]; then 
+                    if ! diskutil quiet mount  /dev/${string} 2>/dev/null; then
+                    sleep 1
+                    diskutil quiet mount  /dev/${string} 2>/dev/null; fi  
+        else
                     password_was_entered=0
                     if [[ $mypassword = "0" ]]; then ENTER_PASSWORD; password_was_entered=1; fi
-                    if [[ ! $mypassword = "0" ]]; then 
-                    if ! echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string}  2>/dev/null; then
-                                printf '\033[1A\r\033[48C''                                \r\033[48C'          
-                                if [[ $password_was_entered = "0" ]]; then ENTER_PASSWORD "force"; password_was_entered=1; fi
-                                if ! echo "${mypassword}" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null; then
-                                        printf '\033[1A\r\033[48C''                                \r\033[48C'; fi
-
+                    if [[ ! $mypassword = "0" ]]; then
+                        CHECK_PASSWORD
+                        if [[ ${need_password} = 0 ]]; then
+                            if ! sudo diskutil quiet mount  /dev/${string} 2>/dev/null; then 
+                                sleep 1
+                                sudo diskutil quiet mount  /dev/${string} 2>/dev/null
+                            fi
+                        fi
                     fi
-                fi
         fi
-
 MOUNTED_CHECK
         
 }
@@ -1813,7 +1823,7 @@ do
 
 	was_mounted=0
 
-  	DO_MOUNT ; if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi	
+  	DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi	
 
 	else
 		was_mounted=1
@@ -1876,7 +1886,7 @@ do
 
 	was_mounted=0
 
-  	DO_MOUNT ; if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi
+  	DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi
 
 	else
 		was_mounted=1
@@ -1946,7 +1956,7 @@ do
 
 	was_mounted=0
 
-  	DO_MOUNT ; if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi
+  	DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi
 
 	else
 		was_mounted=1
