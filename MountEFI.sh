@@ -107,7 +107,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
     if [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]] && [[ $(ps -xa -o pid,command | grep -v grep | cut -f1 -d " " | grep -ow $ppid | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
     ppid=0
     fi
-    CHECK_HOTPLUG_DISKS; read -rsn1 -t2 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then pauser=0; RECHECK_LOADERS; recheckLDs=0; KILL_CURL_UPDATER; if [[ ! $ppid = 0 ]]; then kill $ppid; wait $ppid ; fi; break; fi
+    CHECK_HOTPLUG_DISKS; read -rsn1 -t2 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then printf '\033[1D\e[40m \e[0m'; pauser=0; RECHECK_LOADERS; recheckLDs=0; KILL_CURL_UPDATER; if [[ ! $ppid = 0 ]]; then kill $ppid; wait $ppid ; fi; break; fi
    done 
 fi
 fi
@@ -3088,7 +3088,7 @@ choice="±"
 printf '\033[1B'
 while [[ $choice = "±" ]]
 do
-IFS="±"; read -n 1 -t 1 choice ; unset IFS; sym=2
+IFS="±"; read -n1 -t 1 choice ; unset IFS; sym=2
 if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; fi
 CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
@@ -3098,7 +3098,7 @@ else
 if [[ $CheckLoaders = 1 ]]; then printf '\033[1B' ; fi
 READ_TWO_SYMBOLS; sym=2
 fi
-printf "\033[?25l\033[1D"
+printf "\033[?25l\033[1D "
 if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; UPDATELIST; choice=0; else choice="V"; fi; fi
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
@@ -3113,8 +3113,8 @@ if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
-if [[ ${choice} = [oO] ]]; then  SPIN_OC; choice="0"; order=4; fi
-if [[ ${choice} = [cC] ]]; then  SPIN_FCLOVER; choice="0"; order=4; fi
+if [[ ${choice} = [oO] ]]; then  printf '                               '; SPIN_OC; choice="0"; order=4; fi
+if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
