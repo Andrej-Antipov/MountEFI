@@ -134,7 +134,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
     if [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]] && [[ $(ps -xa -o pid,command | grep -v grep | cut -f1 -d " " | grep -ow $ppid | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
     ppid=0
     fi
-    read -rsn1 -t2 demo; if [[ ! $demo = "~" ]]; then KILL_CURL_UPDATER; if [[ ! $ppid = 0 ]]; then kill $ppid; wait $ppid ; fi; break; fi
+    read -rsn1 -t2 demo; if [[ ! $demo = "~" ]]; then printf '\e[40m \e[0m'; KILL_CURL_UPDATER; if [[ ! $ppid = 0 ]]; then kill $ppid; wait $ppid ; fi; break; fi
    done 
 fi       
 clear && printf "\e[3J"
