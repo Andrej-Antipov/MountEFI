@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 28.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="027"
+s_edit_vers="028"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -31,6 +31,7 @@ s_edit_vers="027"
 # 025 - сделан деинсталлятор
 # 026 - информация о времени след авто-обновления в окне контроля версии
 # 027 - включение проверки авто-обновления сразу после выхода из настроек
+# 028 - улучшенная версия информации о программе и загрузчика по клавише V
 
 clear
 
@@ -42,14 +43,28 @@ printf '\e[40m %.0s\e[0m' {1..80}
 let "var12--"; done
 printf "\033[H"
 
-printf "\033[10;21f"
+show_mefi=0
+if [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
+edit_vers=$(cat MountEFI | grep -m1 "edit_vers=" | sed s'/edit_vers=//' | tr -d '" \n')
+prog_vers=$(cat MountEFI | grep "prog_vers=" | sed s'/prog_vers=//' | tr -d '" \n')
+show_mefi=1
+fi
+
+printf "\033[9;21f"
 printf '\e[40m\e[1;33m________________________________________\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
 printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+if [[ $show_mefi = 1 ]]; then
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+printf '\e[40m\e[1;33m[                                      ]\e[0m''\n\033[20C'
+fi
 printf '\e[40m\e[1;33m[______________________________________]\e[0m''\n'
-printf '\r\033[3A\033[28C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n' 
+printf '\r\033[3A\033[29C' ; printf '\e[40m\e[1;35m  SETUP v. \e[1;33m'$s_prog_vers'.\e[1;32m '$s_edit_vers' \e[1;35m®\e[0m''\n'
+if [[ $show_mefi = 1 ]]; then
+printf '\r\033[3A\033[26C' ; printf '\e[40m\e[1;35m  MountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m©\e[0m''\n' 
+fi
 
 v4corr=15
 
@@ -76,41 +91,87 @@ fi
 
 GET_LOADERS
 printf "\033[23;15f"; printf '\e[40m\e[33mhttps://github.com/Andrej-Antipov/MountEFI/releases \e[0m'
-if [[ ! $CheckLoaders = 0 ]]; then CHECK_UPDATE_LOADERS $
-sleep 0.5
-if [[ ! ${oc_vrs} = "" ]]; then printf "\033[3;5f"'\e[40m\e[1;33m'"Latest OpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m'; fi  
-if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clover  :  "'\e[1;32m'${clov_vrs}'\e[0m'; fi
+if [[ ! $CheckLoaders = 0 ]]; then 
+    ppid=0
+    while true; do 
+            demo="~"; need_update=0
+       if [[ $ppid = 0 ]] && [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then   
+            if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then
+                need_update=1
+            else 
+                if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
+                clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
+                oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
+                    if [[ $clov_vrs = "" ]] && [[ $oc_vrs = "" ]]; then need_update=1
+                            elif [[ $clov_vrs = "" ]]; then need_update=2
+                                elif [[ $oc_vrs = "" ]]; then need_update=3
+                    fi
+                else 
+                    need_update=1
+                fi 2>/dev/null
+            fi
+        fi
+        if [[ ! $need_update = 0 ]] && [[ $ppid = 0 ]]; then
+                    case $need_update in
+                        2)  NET_UPDATE_CLOVER &
+                            ;;
+                        3)  NET_UPDATE_OPENCORE &
+                            ;;
+                        *)  NET_UPDATE_LOADERS &
+                            ;;
+                    esac
+                            ppid=$!
+        fi        
+    oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
+    if [[ ! ${oc_vrs} = "" ]]; then printf "\033[3;5f"'\e[40m\e[1;33m'"Latest OpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}'\e[0m'
+                               else printf "\033[3;5f"'\e[40m                       \e[0m'
+    fi
+    clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
+    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clover  :  "'\e[1;32m'${clov_vrs}'\e[0m'
+                                 else printf "\033[4;5f"'\e[40m                       \e[0m'
+    fi
+
+    if [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]] && [[ $(ps -xa -o pid,command | grep -v grep | cut -f1 -d " " | grep -ow $ppid | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
+    ppid=0
+    fi
+    read -rsn1 -t2 demo; if [[ ! $demo = "~" ]]; then KILL_CURL_UPDATER; if [[ ! $ppid = 0 ]]; then kill $ppid; wait $ppid ; fi; break; fi
+   done 
 fi       
-read -n 1 
 clear && printf "\e[3J"
 }
 
-NET_UPDATE_LOADERS(){
-    rm -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
-    rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt
-    rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
+KILL_CURL_UPDATER(){
+if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
+    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " "); fi
+} 
+
+NET_UPDATE_CLOVER(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s --max-time 7 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
-    oc_vrs=$( curl -s --max-time 7 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+    clov_vrs=$( curl -s --max-time 9 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
+    if [[ ! "${clov_vrs}" = "" ]]; then echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
+fi
+}
+
+NET_UPDATE_OPENCORE(){
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep -m1 '[0-9]*' | egrep -o '[0-9]{1,4}' | tr -d '\n' )
+    if [[ ! "${oc_vrs}" = "" ]]; then echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
+fi
+}
+
+NET_UPDATE_LOADERS(){
+ if ping -c 1 google.com >> /dev/null 2>&1; then
+                if [[ -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt; fi
+                if [[ -f ~/Library/Application\ Support/MountEFI/latestClover.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
+                if [[ -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
+    clov_vrs=$( curl -s --max-time 9 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
+    oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
         if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
             echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt
             echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
             date +%s > ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
         fi
-fi
-}
-
-CHECK_UPDATE_LOADERS(){
-if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then 
-         NET_UPDATE_LOADERS
-    else 
-        if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
-            clov_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestClover.txt)
-            oc_vrs=$(cat ~/Library/Application\ Support/MountEFI/latestOpenCore.txt)
-        else 
-          NET_UPDATE_LOADERS
-       fi
 fi
 }
 

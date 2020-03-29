@@ -128,7 +128,7 @@ fi
 
 NET_UPDATE_OPENCORE(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed 's/[^0-9]//g' | grep -m1 '[0-9]*' )
+    oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep -m1 '[0-9]*' | egrep -o '[0-9]{1,4}' | tr -d '\n' )
     if [[ ! "${oc_vrs}" = "" ]]; then echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
 fi
 }
