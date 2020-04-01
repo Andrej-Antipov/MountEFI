@@ -102,6 +102,8 @@ if [[ ! $CheckLoaders = 0 ]]; then
                 if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
                 clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
                 oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
+                    if [[ ${#clov_vrs} -gt 4 ]]; then clov_vrs=""; fi
+                    if [[ ${#oc_vrs} -gt 4 ]]; then oc_vrs=""; fi 
                     if [[ $clov_vrs = "" ]] && [[ $oc_vrs = "" ]]; then need_update=1
                             elif [[ $clov_vrs = "" ]]; then need_update=2
                                 elif [[ $oc_vrs = "" ]]; then need_update=3
@@ -127,7 +129,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
                                else printf "\033[3;5f"'\e[40m                       \e[0m'
     fi
     clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
-    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clover  :  "'\e[1;32m'${clov_vrs}'\e[0m'
+    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[4;5f"'\e[40m\e[1;33m'"Latest Clover  :  "'\e[1;32m'${clov_vrs:0:4}'\e[0m'
                                  else printf "\033[4;5f"'\e[40m                       \e[0m'
     fi
 
@@ -148,14 +150,14 @@ if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com
 NET_UPDATE_CLOVER(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
     clov_vrs=$( curl -s --max-time 9 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep pkg | grep -oE '[^_]+$' | sed 's/[^0-9]//g' | tr '\n' ' ' | cut -f1 -d ' ' )
-    if [[ ! "${clov_vrs}" = "" ]]; then echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
+    if [[ ! "${clov_vrs}" = "" ]] || [[ ${#clov_vrs} -le 4 ]]; then echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
 fi
 }
 
 NET_UPDATE_OPENCORE(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
     oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep -m1 '[0-9]*' | egrep -o '[0-9]{1,4}' | tr -d '\n' )
-    if [[ ! "${oc_vrs}" = "" ]]; then echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
+    if [[ ! "${oc_vrs}" = "" ]] || [[ ${#oc_vrs} -le 4 ]]; then echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
 fi
 }
 
