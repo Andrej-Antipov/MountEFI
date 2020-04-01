@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 01.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="028"
+s_edit_vers="029"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -32,6 +32,7 @@ s_edit_vers="028"
 # 026 - информация о времени след авто-обновления в окне контроля версии
 # 027 - включение проверки авто-обновления сразу после выхода из настроек
 # 028 - улучшенная версия информации о программе и загрузчика по клавише V
+# 029 - исправлена ошибка в SET_INPUT: иногда не переключалась раскладка
 
 clear
 
@@ -1103,9 +1104,8 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     declare -a layouts_names
     layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
     IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
-    keyboard="0"
 
-    for ((i=0;i<$num;i++)); do
+    for i in ${!layouts_names[@]}; do
         case ${layouts_names[i]} in
     "ABC"                ) keyboard=${layouts_names[i]}; break ;;
     "US Extended"        ) keyboard="USExtended"; break ;;
@@ -1113,15 +1113,12 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     "U.S."               ) keyboard="US"; break ;;
     "British"            ) keyboard=${layouts_names[i]}; break ;;
     "British-PC"         ) keyboard=${layouts_names[i]}; break ;;
+                        *) keyboard="0";;
     esac 
     done
 
-    if [[ ! $i = 0 ]]; then 
-       cd "$(dirname "$0")"
-        if [[ ! $keyboard = "0" ]] && [[ -f "./xkbswitch" ]]; then ./xkbswitch -se $keyboard; fi
+        if [[ ! $keyboard = "0" ]] && [[ -f "${ROOT}/xkbswitch" ]]; then "${ROOT}"/xkbswitch -se $keyboard; fi
             
-    fi
-     
 fi
 
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.03.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 01.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1546,9 +1546,8 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     declare -a layouts_names
     layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
     IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
-    keyboard="0"
 
-    for ((i=0;i<$num;i++)); do
+    for i in ${!layouts_names[@]}; do
         case ${layouts_names[i]} in
     "ABC"                ) keyboard=${layouts_names[i]}; break ;;
     "US Extended"        ) keyboard="USExtended"; break ;;
@@ -1556,12 +1555,11 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     "U.S."               ) keyboard="US"; break ;;
     "British"            ) keyboard=${layouts_names[i]}; break ;;
     "British-PC"         ) keyboard=${layouts_names[i]}; break ;;
+                        *) keyboard="0";;
     esac 
     done
 
-    if [[ ! $i = 0 ]]; then 
-#       cd "$(dirname "$0")"
-        if [[ ! $keyboard = "0" ]] && [[ -f "./xkbswitch" ]]; then ./xkbswitch -se $keyboard
+        if [[ ! $keyboard = "0" ]] && [[ -f "${ROOT}/xkbswitch" ]]; then "${ROOT}"/xkbswitch -se $keyboard
             elif [[ ! "${msg}" = "silent" ]]; then
                 if [[ $loc = "ru" ]]; then
             printf '\n\n                         ! Смените раскладку на латиницу !'
@@ -1572,7 +1570,6 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
             printf '\r                                                                               \r'
             printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
         fi
-     fi
 fi
 }
 
@@ -2169,7 +2166,7 @@ spin='-\|/'
 i=0
 noefi=1
 
-cd ~
+cd "${ROOT}"
 
 while [ $var1 != 0 ] 
 do 
