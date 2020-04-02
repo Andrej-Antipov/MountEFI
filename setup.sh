@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="030"
+s_edit_vers="031"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -33,7 +33,8 @@ s_edit_vers="030"
 # 027 - включение проверки авто-обновления сразу после выхода из настроек
 # 028 - улучшенная версия информации о программе и загрузчика по клавише V
 # 029 - исправлена ошибка в SET_INPUT: иногда не переключалась раскладка
-# 030 - выбор папки документов при сохранении конфига в файл. 
+# 030 - выбор папки документов при сохранении конфига в файл.
+# 031 - ручная проверка обновления в бэкграунд с возможностью прервать
 
 clear
 
@@ -145,8 +146,8 @@ clear && printf "\e[3J"
 }
 
 KILL_CURL_UPDATER(){
-if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
-    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " "); fi
+if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
+    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " "); fi
 } 
 
 NET_UPDATE_CLOVER(){
@@ -5711,9 +5712,11 @@ if [[ -f ~/.disk_list.txt ]]; then cp -f ~/.disk_list.txt ~/.disk_list.txt.back;
 
 ASK_UPDATE(){
 if [[ $loc = "ru" ]]; then
-printf '\e[40m\e[1;33m   Загрузить обновления и обновить программу? (y/N) \e[0m'
+printf '\033[3;25f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mЧтобы прервать нажмите [ \e[40m\e[1;35mQ\e[40m\e[0;1;40;32m ]\e[0m'; printf '\033[9;0f'
+printf '\e[40m\e[1;33m   Загрузить обновления и обновить программу? (\e[40m\e[1;35my\e[40m\e[1;33m/\e[40m\e[1;36mN\e[40m\e[1;33m) \e[0m'
 else
-printf '\e[40m\e[1;33m   Download updates and update the program?   (y/N) \e[0m'
+printf '\033[3;23f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mTo cancel checking press [ \e[40m\e[1;35mQ\e[40m\e[0;1;40;32m ]\e[0m'; printf '\033[9;0f'
+printf '\e[40m\e[1;33m   Download updates and update the program?   (\e[40m\e[1;35my\e[40m\e[1;33m/\e[40m\e[1;36mN\e[40m\e[1;33m) \e[0m'
 fi
 success=2
 read -s -n 1 
@@ -5760,6 +5763,17 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
 fi
 }
 
+GET_LATEST_RELEASE(){
+latest_release=$(curl -s --max-time 10 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+if [[ -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+echo "${latest_release}" > ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt
+}
+
+GET_LATEST_EDITION(){
+latest_edit=$(curl -s --max-time 10 https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+echo "${latest_edit}" > ~/Library/Application\ Support/MountEFI/MEFILatestEdition.txt
+}
+
 UPDATE_PROGRAM(){
 clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
@@ -5770,18 +5784,28 @@ printf "\033[H"
             prog_vers=$(cat MountEFI | grep "prog_vers=" | sed s'/prog_vers=//' | tr -d '" \n')
             vers="$prog_vers"".""$edit_vers"
 printf '\033[0;25f''\e[40m\e[1;35m   '; printf '\e[40m\e[1;35mMountEFI v. \e[1;33m'$prog_vers'.\e[1;32m '$edit_vers' \e[1;35m© \e[0m''\n\n'
+if [[ $loc = "ru" ]]; then
+printf '\033[3;25f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mЧтобы прервать нажмите [ \e[40m\e[1;5;35mQ\e[40m\e[0;1;40;32m ]\e[0m''\n\n'
+else
+printf '\033[3;23f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mTo cancel checking press [ \e[40m\e[1;5;35mQ\e[40m\e[0;1;40;32m ]\e[0m''\n\n'
+fi
 if ping -c 1 google.com >> /dev/null 2>&1; then
     if [[ $loc = "ru" ]]; then
     printf '\e[40m\e[1;33m   Проверяем доступную версию программы на github  \e[0m'
     else
     printf '\e[40m\e[1;33m   Checking the available version of the program on github  \e[0m'
     fi
+    breaked=0
     spin='-\|/'
     i=0
-    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
-    trap "kill $!" EXIT
-    latest_release=""
-    latest_release=$(curl -s --max-time 10 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done & 
+    spinpid=$!
+    latest_release=""; demo=""
+    GET_LATEST_RELEASE &
+    while true; do read -rsn1 -t1 demo; if [[ ${demo} = [Qq] ]] || [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then if [[ ${demo} = [Qq] ]]; then breaked=1; fi; sleep 0.4; KILL_CURL_UPDATER; break; fi; done
+    kill $spinpid; wait $spinpid 2>/dev/null
+if [[ $breaked = 0 ]]; then
+    latest_release="$(cat ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt)"; rm -f ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt
     if [[ "${latest_release}" = "" ]]; then latest_release="000"; fi
     if [[ ${#latest_release} = 2 ]]; then latest_release+="0"; fi
     if [[ $loc = "ru" ]]; then
@@ -5789,9 +5813,6 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     else
     if [[ ! $latest_release = "" ]]; then printf '\r\e[40m\e[1;33m   Latest Release: \e[1;36mMountEFI v. \e[1;32m'${latest_release:0:1}'.'${latest_release:1:1}'.'${latest_release:2:1}'                         \e[0m\n\n'; fi
     fi
-    kill $!
-    wait $! 2>/dev/null
-    trap " " EXIT
 
     if [[ $loc = "ru" ]]; then
     printf '\e[40m\e[1;33m   Проверяем доступную редакцию программы на github  \e[0m'
@@ -5799,12 +5820,20 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     printf '\e[40m\e[1;33m   Checking the available edition of the program on github  \e[0m'
     fi
     i=0
-    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done &
-    trap "kill $!" EXIT
-    latest_edit=$(curl -s --max-time 10 https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
-    kill $!
-    wait $! 2>/dev/null
-    trap " " EXIT
+    while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[40m\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.15;done 2>/dev/null &
+    spinpid=$!
+    latest_edit=""
+    GET_LATEST_EDITION &
+    while true; do read -rsn1 -t1 demo; if [[ ${demo} = [Qq] ]] || [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then if [[ ${demo} = [Qq] ]]; then breaked=1; fi; sleep 0.4; KILL_CURL_UPDATER; break; fi; done
+    kill $spinpid; wait $spinpid 2>/dev/null
+else
+    latest_release="000"
+fi
+if [[ $breaked = 0 ]]; then 
+    latest_edit="$(cat ~/Library/Application\ Support/MountEFI/MEFILatestEdition.txt)"; rm -f ~/Library/Application\ Support/MountEFI/MEFILatestEdition.txt
+else
+    latest_edit="000"
+fi
     if [[ "${latest_edit}" = "" ]]; then latest_edit="000"; fi
     if [[ $loc = "ru" ]]; then
     printf '\r\e[40m\e[1;33m   Последняя редакция: \e[1;32m'"${latest_edit}"'                                \e[0m\n\n'
@@ -5816,11 +5845,19 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     vers_e=$(echo $edit_vers | bc)
     if [[ "${current_vers}" -ge "${latest_release}" ]] && [[ "${last_e}" -le "${vers_e}" ]]; then
       if [[ "${latest_release}" = "000" ]] || [[ "$latest_edit" = "000" ]]; then
-        if [[ $loc = "ru" ]]; then
-        printf '\e[40m\e[1;33m   Возникли неполадки в получении информации о версииях. \e[0m'
-        else
-        printf '\e[40m\e[1;33m   There was a problem getting version information. \e[0m'
-        fi
+            if [[ $breaked = 1 ]]; then
+                if [[ $loc = "ru" ]]; then
+                printf '\e[40m\e[1;33m   Получении информации прервано пользователем. \e[0m'
+                else
+                printf '\e[40m\e[1;33m   Getting version information aborted by user. \e[0m'
+                fi
+            else
+                if [[ $loc = "ru" ]]; then
+                printf '\e[40m\e[1;33m   Возникли неполадки в получении информации о версииях. \e[0m'
+                else
+                printf '\e[40m\e[1;33m   There was a problem getting version information. \e[0m'
+                fi
+            fi
       else  
         if [[ $loc = "ru" ]]; then
         printf '\e[40m\e[1;33m   Версия и редакция программы новейшие. \e[0m'
@@ -5844,6 +5881,11 @@ else
    else
    printf '\e[40m\e[1;33m   Unable to connect to the network.  \e[0m'
    fi
+fi
+if [[ $loc = "ru" ]]; then
+printf '\033[3;25f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mЧтобы прервать нажмите [ \e[40m\e[1;35mQ\e[40m\e[0;1;40;32m ]\e[0m'
+else
+printf '\033[3;24f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mTo cancel checking press [ \e[40m\e[1;35mQ\e[40m\e[0;1;40;32m ]\e[0m'
 fi
 if [[ ! $success = 2 ]]; then read -s -n 1 -t 6; fi
 printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
