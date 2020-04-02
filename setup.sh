@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 01.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="029"
+s_edit_vers="030"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -33,6 +33,7 @@ s_edit_vers="029"
 # 027 - включение проверки авто-обновления сразу после выхода из настроек
 # 028 - улучшенная версия информации о программе и загрузчика по клавише V
 # 029 - исправлена ошибка в SET_INPUT: иногда не переключалась раскладка
+# 030 - выбор папки документов при сохранении конфига в файл. 
 
 clear
 
@@ -2758,9 +2759,10 @@ rm -r ~/.temp2
 #######################################################################################################################################################################
 
 DOWNLOAD_CONFIG_FROM_FILE(){
-errorep=0
-
-if filepath=$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file)'); then 
+errorep=0; if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ .ZIP ИЛИ .PLIST C КОНФИГУРАЦИЕЙ MountEFI:"'
+                                 else prompt='"CHOOSE .ZIP OR .PLIST FILE WITH MountEFI CONFIGURATION:"'; fi
+alias_string='"'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"':Users:'$(whoami)':Documents"'
+if filepath="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias '"${alias_string}"' with prompt '"${prompt}"')')"; then 
         
         filepath=$(echo -n "${filepath}" | sed "s/ /\\\ /g" | xargs )
         filename="${filepath##*/}"; extension="${filename##*.}"
@@ -2795,8 +2797,10 @@ fi
 }
 
 UPLOAD_CONFIG_TO_FILE(){
-errorep=0
-if folderpath=$(osascript -e 'tell application "Terminal" to return POSIX path of (choose folder)'); then 
+errorep=0; if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ПАПКУ ДЛЯ СОХРАНЕНИЯ КОНФИГУРАЦИИ MountEFI:"'
+                                 else prompt='"CHOOSE A FOLDER TO SAVE MountEFI CONFIGURATION:"'; fi
+alias_string='"'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"':Users:'$(whoami)':Documents"'
+if folderpath="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose folder default location alias '"${alias_string}"' with prompt '"${prompt}"')')"; then 
         
         folderpath=$(echo -n "${folderpath}" | sed "s/ /\\\ /g" | xargs )
         
@@ -2806,8 +2810,14 @@ if folderpath=$(osascript -e 'tell application "Terminal" to return POSIX path o
         if [[ -f ${HOME}/.MountEFIconf.zip ]]; then rm ${HOME}/.MountEFIconf.zip; fi
         zip -X -qq ${HOME}/.MountEFIconf.zip ${HOME}/MountEFIconf.plist
         rm ${HOME}/MountEFIconf.plist
-        
-        mv -f ${HOME}/.MountEFIconf.zip "${folderpath}"/MountEFIconf.zip
+
+        savename="MountEFIconf"; savenum=0
+        while true; do
+        if [[ ! -f "${folderpath}/${savename}.zip" ]]; then mv -f ${HOME}/.MountEFIconf.zip "${folderpath}/${savename}.zip"; break
+        else 
+        ((savenum++)); savename="${savename:0:12}-${savenum}"
+        fi
+        done
 
 else errorep=1
         
@@ -2816,7 +2826,7 @@ fi >/dev/null 2>&1
 if [[ $loc = "ru" ]]; then
     if [[ $errorep = 1 ]]; then printf '\n\n  Экспорт конфигурации отменён   '; sleep 2 
         else
-if [[ -f "${folderpath}"/MountEFIconf.zip ]]; then printf '\n\n  Конфигурация успешно экспортирована в архиве   '; sleep 2 
+if [[ -f "${folderpath}/${savename}.zip" ]]; then printf '\n\n  Конфигурация успешно экспортирована в архиве   '; sleep 2 
   else
         printf '\n\n  Ошибка. Экспорт конфигурации не удался   '; sleep 2
 fi
@@ -2824,7 +2834,7 @@ fi
 else
     if [[ $errorep = 1 ]]; then printf '\n\n  Configuration export canceled   '; sleep 2 
         else
-if [[ -f "${folderpath}"/MountEFIconf.zip ]]; then printf '\n\n  Configuration exported to archive successfully   '; sleep 2 
+if [[ -f "${folderpath}/${savename}.zip" ]]; then printf '\n\n  Configuration exported to archive successfully   '; sleep 2 
   else
         printf '\n\n  Error. Export configuration failed   '; sleep 2
 fi
