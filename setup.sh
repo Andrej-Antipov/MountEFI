@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="031"
+s_edit_vers="032"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -35,6 +35,7 @@ s_edit_vers="031"
 # 029 - исправлена ошибка в SET_INPUT: иногда не переключалась раскладка
 # 030 - выбор папки документов при сохранении конфига в файл.
 # 031 - ручная проверка обновления в бэкграунд с возможностью прервать
+# 032 - в редактор хэшей добавлено  изменение выбранного пункта
 
 clear
 
@@ -5903,8 +5904,9 @@ fi
 
 SHOW_HASHES_SCREEN(){
 GET_HASHES
+all_hashes_list=()
 lines2=$(( ${#ocr_list[@]}+${#ocd_list[@]}+${#clv_list[@]}+${#oth_list[@]}+24 ))
-if [[ ${lines2} -lt 34 ]]; then lines2=34; fi
+if [[ ${lines2} -lt 35 ]]; then lines2=35; fi
 clear && printf '\e[8;'${lines2}';80t' && printf '\e[3J' && printf "\033[0;0H"
 unset bbuf; chn=1; bb=6
                             if [[ $loc = "ru" ]]; then
@@ -5943,6 +5945,7 @@ unset bbuf; chn=1; bb=6
             else
             bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
             fi
+            all_hashes_list+=( "1${some_hash}${revision}" )
             bbuf+=$( echo ${some_hash}"   "${revision})
             let "bb++"
             let "chn++"
@@ -5962,6 +5965,7 @@ unset bbuf; chn=1; bb=6
             else
             bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
             fi
+            all_hashes_list+=( "2${some_hash}${revision}" )
             bbuf+=$( echo ${some_hash}"   "${revision})
             let "bb++"
             let "chn++"
@@ -5980,6 +5984,7 @@ unset bbuf; chn=1; bb=6
             else
             bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
             fi
+            all_hashes_list+=( "3${some_hash}${revision}" )
             bbuf+=$( echo ${some_hash}"   "${revision})
             let "bb++"
             let "chn++"
@@ -5998,6 +6003,7 @@ unset bbuf; chn=1; bb=6
             else
             bbuf+=$(printf '\033['$bb';0f''              '$chn')    ')
             fi
+            all_hashes_list+=( "4${some_hash}${revision}" )
             bbuf+=$( echo ${some_hash}"   ""${revision}")
             let "bb++"
             let "chn++"
@@ -6018,6 +6024,7 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Добавит�
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  С)  Добавить хэши разработки Open Core        ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  O)  Добавить хэши других загрузчиков          ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Добавить хэши из файла со списком         ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  E)  Редактировать информацию хэша             ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Сохранить хэши из конфига в файл          ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Удалить хэш из файла конфигурации         ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Очистить ВСЮ базу хэшей                   ')
@@ -6028,6 +6035,7 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  A)  Add hashes for 
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  B)  Add Open Core relases hashes              ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  C)  Add Open Core develop hashes              ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  O)  Add another loaders hashes                ')
+let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  E)  Edit hashe entry info                     ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  L)  Add hashes from file with list            ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  S)  Save config hashes to file                ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  D)  Delete hash from config file              ')
@@ -6161,67 +6169,15 @@ ENTER_OTHER_NAME(){
                         demo2="$( echo "$demo2" | tr -d \"\'\;\+\-\(\)\\ )"
                         demo2=`echo "$demo2" | tr -cd "[:print:]\n"`
                         demo2=`echo "$demo2" | tr -d "={}]><[&^$"`
-                        demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
-                        if [[ ${#demo2} -gt 12 ]]; then demo2="${demo2::12}"; fi
+                        #demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
+                        demo2=$(echo "${demo2}" | tr '\t' ' ')
+                        if [[ $(echo "${demo2}" | tr -d ' ') = "" ]]; then demo2=""; fi
+                        if [[ ${#demo2} -gt 13 ]]; then demo2="${demo2::13}"; fi
             
 
 }
 
-ADD_HASHES(){
-loader_type=$1
-
-    case ${loader_type} in
-
-"Clover" ) loader="Clover"; pattern="\n   5101    4998   2546"; AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES";;
-
-   "OCR" ) loader="OpenCore Release"; pattern="\n   .54r   .53d   1.3r   13.d   001r"; AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES";;
-
-   "OCD" ) loader="OpenCore Develop"; pattern="\n   .54®   .53ð   .55n   1.2∂   11.ð   011®"; AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
-
- "Other" ) if [[ $loc = "ru" ]]; then loader="загрузчика определямого пользователем"; pattern="\n   12 букв или цифр максимум"
-                else 
-                    loader="user defined loader"; pattern="\n   12 letters or numbers maximum"
-           fi
-           AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"
-           ;;
-
-   esac
-
-while true; do
-
-            GET_APP_ICON
-            
-######### диалог метода задания хэша ################################
-                                if [[ $loc = "ru" ]]; then
-             if answer=$(osascript -e 'display dialog "Как указать хэш файла для '"${loader}"'?" '"${icon_string}"' buttons {"Вручную", "Выбрать файл", "Отмена" } default button "Вручную" '); then cancel=0; else cancel=1; fi 2>/dev/null
-                                else
-             if answer=$(osascript -e 'display dialog "Choose the way to add a hash for '"${loader}"'?" '"${icon_string}"' buttons {"Manually", "File Path", "Cancel" } default button "Manually" '); then cancel=0; else cancel=1; fi 2>/dev/null
-                                fi
-             answer=$(echo "${answer}"  | cut -f2 -d':' )
-
-             if [[ ${answer} = "Отмена" ]]; then cancel=1; fi 
-
-             if [[ $cancel = 1 ]]; then break; fi
-        
-      if [[ "${answer}" = "Вручную" ]] || [[ "${answer}" = "Manually" ]]; then
-
-######### диалог ввода хэша вручную ##################################
-           while true; do
-                while true; do
-             demo=""
-             if [[ $loc = "ru" ]]; then
-             if demo=$(osascript -e 'set T to text returned of (display dialog "Укажите 32 байта значения хэша md5 для '"${loader}"':" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
-             else
-             if demo=$(osascript -e 'set T to text returned of (display dialog "Set 32 byles of the md5 hash for '"${loader}"':" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
-             fi
-             demo=$( echo "${demo}" | xargs )
-             invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
-             demo=$( echo "${demo}" | egrep -o '^[0-9a-f]{32}\b' )
-              if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
-                done
-             if [[ $cancel = 1 ]]; then break; else
-######### диалог ввода идентификатора ##################################
-                while true; do
+ENTER_LOADER_NAME(){
              demo2=""
           if [[ ! ${loader_type} = "Other" ]]; then 
              if [[ $loc = "ru" ]]; then
@@ -6238,12 +6194,79 @@ while true; do
            else
                 ENTER_OTHER_NAME
            fi
+}
+
+ADD_HASHES(){
+loader_type=$1
+editor_type=$2
+
+    case ${loader_type} in
+
+"Clover" ) loader="Clover"; pattern="\n   5101    4998   2546"; AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES";;
+
+   "OCR" ) loader="OpenCore Release"; pattern="\n   .54r   .53d   1.3r   13.d   001r"; AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES";;
+
+   "OCD" ) loader="OpenCore Develop"; pattern="\n   .54®   .53ð   .55n   1.2∂   11.ð   011®"; AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES" ;;
+
+ "Other" ) if [[ $loc = "ru" ]]; then loader="загрузчика определямого пользователем"; pattern="\n   13 букв или цифр максимум"
+                else 
+                    loader="user defined loader"; pattern="\n   13 letters or numbers maximum"
+           fi
+           AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"
+           ;;
+
+   esac
+
+while true; do
+
+            GET_APP_ICON
+    if [[ ! ${editor_type} = "edit" ]]; then            
+######### диалог метода задания хэша ################################
+                                if [[ $loc = "ru" ]]; then
+             if answer=$(osascript -e 'display dialog "Как указать хэш файла для '"${loader}"'?" '"${icon_string}"' buttons {"Вручную", "Выбрать файл", "Отмена" } default button "Вручную" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                else
+             if answer=$(osascript -e 'display dialog "Choose the way to add a hash for '"${loader}"'?" '"${icon_string}"' buttons {"Manually", "File Path", "Cancel" } default button "Manually" '); then cancel=0; else cancel=1; fi 2>/dev/null
+                                fi
+             answer=$(echo "${answer}"  | cut -f2 -d':' )
+
+             if [[ ${answer} = "Отмена" ]]; then cancel=1; fi 
+
              if [[ $cancel = 1 ]]; then break; fi
+    fi
+        
+      if [[ "${answer}" = "Вручную" ]] || [[ "${answer}" = "Manually" ]]; then
+
+######### диалог ввода хэша вручную ##################################
+           while true; do
+    if [[ ! ${editor_type} = "edit" ]]; then
+                while true; do
+             demo=""
+             if [[ $loc = "ru" ]]; then
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Укажите 32 байта значения хэша md5 для '"${loader}"':" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "")'); then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Set 32 byles of the md5 hash for '"${loader}"':" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "")'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+             demo=$( echo "${demo}" | xargs )
+             invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
+             demo=$( echo "${demo}" | egrep -o '^[0-9a-f]{32}\b' )
+              if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
+                done
+
+    fi
+             if [[ $cancel = 1 ]]; then break; else
+######### диалог ввода идентификатора ##################################
+                while true; do
+             ENTER_LOADER_NAME
+             if [[ $cancel = 1 ]]; then 
+                    if [[ ${editor_type} = "edit" ]]; then cancel=2; fi
+                                break
+             fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER
                 ########### запись хэша в конфиг #################################################
-            else hash_string=""; hash_string="${demo}""=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST;  cancel=2; break
+            else 
+                 if [[ ${editor_type} = "edit" ]]; then hash_string="${all_hashes_list[ch]:1:32}=${adrive}"; DEL_HASHES_IN_PLIST; fi; hash_string="${demo}""=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST;  cancel=2; break
             fi
-                   done
+                        done
 
                 if [[ $cancel = 2 ]]; then break; fi
 
@@ -6263,23 +6286,8 @@ while true; do
                             cancel=0;  hash_string=$( md5 -qq "${answer}" )
                             CHECK_DUPLICATE_HASHES
                             if [[ $cancel = 1 ]]; then break; fi
- ########### диалог ввода версии загрузчика ######################################
-             demo2="" 
-          if [[ ! ${loader_type} = "Other" ]]; then                           
-             if [[ $loc = "ru" ]]; then
-             if demo2=$(osascript -e 'set T to text returned of (display dialog "Укажите 4 байта ревизии по примерам:  '"${pattern}"'" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
-             else
-             if demo2=$(osascript -e 'set T to text returned of (display dialog "Set 4 byles revision as example:  '"${pattern}"'" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${adrive}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
-             fi
-              demo2=$( echo "${demo2}" | xargs )
-              invalid_value=$( echo "${demo2}" | tr -cd "[:print:]\n" )
-              if [[ "${loader_type}" = "Clover" ]]; then demo2=$( echo $demo2 | egrep -o '^[0-9]{4}\b' )
-                elif [[ "${loader_type}" = "OCR" ]]; then demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[rd]\b' )
-                    else demo2=$( echo $demo2 | egrep -o '^[.0-9]{3}[®ðn∂]\b' )
-             fi
-           else
-               ENTER_OTHER_NAME
-           fi
+ ########### диалог ввода версии загрузчика ###################################### 
+             ENTER_LOADER_NAME
              if [[ $cancel = 1 ]]; then break; fi
              if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER;
 ########### запись хэша в конфиг #################################################
@@ -6620,7 +6628,7 @@ ADD_HASHES_LIST(){
                             demo2=`echo "$demo2" | tr -cd "[:print:]\n"`
                             demo2=`echo "$demo2" | tr -d "{}]><[&^$"`
                             demo2=$(echo "${demo2}" | sed 's/^[ \t]*//')
-                            hashes_others_temp_string="$( echo  "${demo2}" | egrep -o '^[0-9a-f]{32}\b=.{1,12}' | tr '\n' ';' )"
+                            hashes_others_temp_string="$( echo  "${demo2}" | egrep -o '^[0-9a-f]{32}\b=.{1,13}' | tr '\n' ';' )"
                             IFS=';'; hashes_others_temp_array=(${hashes_others_temp_string}); unset IFS
                             hashes_others_array=(); hashes_others_temp_string=""
                             for i in "${hashes_others_temp_array[@]}"; do
@@ -6763,6 +6771,53 @@ REM_HASHES(){
 fi
 }
 
+EDIT_HASHES_INFO(){
+
+                            printf "\r\033"; printf "%"80"s"
+                            if [[ $loc = "ru" ]]; then
+                        printf '\r  Редактирование информации о хэше. (или просто "Enter" для отмены):\n\n'
+                            else
+                        printf '\r  The Hash info editing. (or just "Enter" to cancel):\n\n'
+                        fi
+                        ch=$((--chn))
+                        while [[ ! ${inputs} =~ ^[0-9] ]]; do
+                        printf "%"80"s"
+                        printf "\033[1A"
+                        if [[ $loc = "ru" ]]; then
+                        printf '   Выберите номер записи хэша ( 1 - '$ch' ): ' 
+                            else
+                        printf '   Choose hash entry number  ( 1 - '$ch' ): '
+                        fi
+                        printf "\033[?25h"
+                        read  inputs
+                        printf "\033[?25l" 
+                        printf '\r';  printf "%"80"s"
+                        if [[ $inputs = 0 ]]; then inputs="t"; fi &> /dev/null
+                        if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
+                        if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
+                        printf "\033[1A"
+                        printf "\r"
+                        done
+                        if [[ ! ${inputs} = "p" ]]; then
+                        
+                        cancel=0; if [[ $loc = "ru" ]]; then answer="Вручную" ; else answer="Manually"; fi
+                        ch=$((--inputs))
+                        hash_string="${all_hashes_list[ch]:1:32}"; demo=${hash_string}; adrive="${all_hashes_list[ch]:33:${#all_hashes_list[ch]}}"
+     
+                            case ${all_hashes_list[ch]:0:1} in
+                                "1" )  ADD_HASHES "OCR" "edit" ;;
+                                "2" )  ADD_HASHES "OCD" "edit" ;;
+                                "3" )  ADD_HASHES "Clover" "edit" ;;
+                                "4" )  ADD_HASHES "Other" "edit" ;;
+                            esac
+                        
+                        unset adrive; unset demo; unset hash_string; unset answer; unset ch; unset editor_type
+
+                        fi
+                        inputs=0
+
+}
+
 HASHES_EDITOR(){
 
 SHOW_HASHES_SCREEN
@@ -6772,17 +6827,17 @@ BACKUP_LAST_HASHES
 while true; do
 
 unset inputs
-while [[ ! ${inputs} =~ ^[aAbBcCoOsSdDrRqQlLuU]+$ ]]; do 
+while [[ ! ${inputs} =~ ^[aAbBcCoOeEsSdDrRqQlLuU]+$ ]]; do 
 printf "\r"
 
                 if [[ $loc = "ru" ]]; then
-printf '  Выберите A, B, C, O, L, S, D, R, U или Q :   ' ; printf '                             '
+printf '  Выберите A, B, C, O, E, L, S, D, R, U или Q :   ' ; printf '                             '
 			else
-printf '     Enter A, B, C, O, L, S, D, R, U or Q :   ' ; printf '                             '
+printf '     Enter A, B, C, O, E, L, S, D, R, U or Q :   ' ; printf '                             '
                 fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
-printf "\r\033[45C"
+printf "\r\033[48C"
 printf "\033[?25h"
 
 read -n 1 inputs 
@@ -6800,6 +6855,8 @@ done
         [cC] ) ADD_HASHES "OCD";;
 
         [oO] ) ADD_HASHES "Other";;
+        
+        [eE] ) EDIT_HASHES_INFO ;;
 
         [sS] ) SAVE_HASHES_IN_FILE;;
 
