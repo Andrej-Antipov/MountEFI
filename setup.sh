@@ -6789,14 +6789,13 @@ EDIT_HASHES_INFO(){
                         printf '   Choose hash entry number  ( 1 - '$ch' ): '
                         fi
                         printf "\033[?25h"
-                        read  inputs
+                        if [[ ${ch} -le 9 ]]; then read -rsn1 inputs;  else read inputs; fi
                         printf "\033[?25l" 
                         printf '\r';  printf "%"80"s"
                         if [[ $inputs = 0 ]]; then inputs="t"; fi &> /dev/null
                         if [[ $inputs -gt $ch ]]; then inputs="t"; fi &> /dev/null
                         if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; break; fi &> /dev/null
-                        printf "\033[1A"
-                        printf "\r"
+                        if [[ ${ch} -gt 9 ]]; then printf "\033[1A\r"; else printf '\r'; fi
                         done
                         if [[ ! ${inputs} = "p" ]]; then
                         

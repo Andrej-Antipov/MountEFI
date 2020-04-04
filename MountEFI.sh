@@ -941,7 +941,7 @@ then
     printf ' Программа поставляется как есть. Она может свободно копироваться, передаваться другим    \n'
     printf ' лицам и изменяться без ограничений. Вы используете её без каких либо гарантий, на своё   \n'
     printf ' усмотрение и под свою ответственность.                                                   \n\n'
-    printf '\n Copyright © Андрей Антипов. (Gosvamih) Сентябрь 2019 год.\n\n\n\n'
+    printf '\n Copyright © Андрей Антипов. (Gosvamih) Апрель 2020 г.\n\n\n\n'
     
 			else
 
@@ -963,7 +963,7 @@ then
     printf ' prints this help information. The program is delivered as is.It can be freely copied,\n'
     printf ' transferred to other persons and changed without restrictions. You use it without any\n'
     printf ' either warranties from the developer, at your discretion and under your responsibility.\n\n'
-    printf '\n Copyright © Andrew Antipov (Gosvamih) Septembre 2019\n\n\n\n'
+    printf '\n Copyright © Andrew Antipov (Gosvamih) April 2020\n\n\n\n'
     
 	fi
     exit 
@@ -1544,7 +1544,7 @@ msg=$1
 
 if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     declare -a layouts_names
-    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
+    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';') 2>/dev/null
     IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 
     for i in ${!layouts_names[@]}; do
@@ -1561,14 +1561,27 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
 
         if [[ ! $keyboard = "0" ]] && [[ -f "${ROOT}/xkbswitch" ]]; then "${ROOT}"/xkbswitch -se $keyboard
             elif [[ ! "${msg}" = "silent" ]]; then
+            current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
+            case "${current_layout}" in 
+                 "ABC"                )  ;;
+                 "US Extended"        )  ;;
+                 "USInternational-PC" )  ;;
+                 "U.S."               )  ;;
+                 "British"            )  ;;
+                 "British-PC"         )  ;;
+                        *) current_layout="";;
+            esac 
+            if [[ "${current_layout}" = "" ]]; then 
+                
                 if [[ $loc = "ru" ]]; then
-            printf '\n\n                         ! Смените раскладку на латиницу !'
+                printf '\n\n                         ! Смените раскладку на латиницу !'
                 else
-            printf '\n\n                         ! Change layout to UTF-8 ABC, US or EN !'
+                printf '\n\n                         ! Change layout to UTF-8 ABC, US or EN !'
+                fi
+                read -t 2 -n 2 -s
+                printf '\r                                                                               \r'
+                printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
             fi
-            read -t 2 -n 2 -s
-            printf '\r                                                                               \r'
-            printf "\r\n\033[3A\033[46C" ; if [[ $order = 3 ]]; then printf "\033[3C"; fi
         fi
 fi
 }
