@@ -12,7 +12,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Has alias editor for device names to easy recognize drives
 * Has built-in themes and theme editor. Terminal system theme usage also supported
 * Recognizes EFI/BOOT/BOOTX64.efi of Clover,OpenCore,Windows,Refind,Grub bootloaders
-* Has hashe editor to store BOOTx64.efi hashes in config file to recognize any loaders
+* Has hashes editor to store BOOTx64.efi MD5 hashes in config file to recognize any loaders
 * Backup and restore self settings. Also via iCloud
 * Password for mount stored in keychain
 * Some other features
