@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 01.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -2445,7 +2445,7 @@ printf "\033[H"
                                      if [[ $loc = "ru" ]]; then Unrec="Не распознан"; else Unrec="Unrecognized"; fi
                                      printf "\033[$line;f\033['$c_unr'C"'\e['$themeldrs'm'"${Unrec}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:5} = "Other" ]]; then
-                                     Other="${ldlist[$pointer]:5}"; ooc=${#Other}; let "c_oth=(12-ooc)/2+47"; printf "\033[$line;f\033[47C""             "
+                                     Other="${ldlist[$pointer]:5}"; ooc=${#Other}; let "c_oth=(13-ooc)/2+46"; printf "\033[$line;f\033[47C""             "
                                      printf "\033[$line;f\033['$c_oth'C"'\e['$themeldrs'm'"${Other}"" "; printf '\e[0m'
                                 elif [[ ${ldlist[$pointer]:0:9} = "GNU/Linux" ]]; then
                                      Linux="GNU/Linux"; c_lin=49
