@@ -1055,6 +1055,8 @@ f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
 07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
 12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56r;;
 9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56d;;
+10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.57r;;
+9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57d;;
                                 *)     oc_revision=""
                     esac
 fi
