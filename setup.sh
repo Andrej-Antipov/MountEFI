@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 07.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="032"
+s_edit_vers="033"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -36,6 +36,7 @@ s_edit_vers="032"
 # 030 - выбор папки документов при сохранении конфига в файл.
 # 031 - ручная проверка обновления в бэкграунд с возможностью прервать
 # 032 - в редактор хэшей добавлено  изменение выбранного пункта
+# 033 - сервис перезапуска убирает процесс AUTOAPDATE
 
 clear
 
@@ -5611,7 +5612,11 @@ echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
-echo '            open "${ProgPath}"'             >> ${HOME}/.MountEFIr.sh
+echo 'if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then' >> ${HOME}/.MountEFIr.sh
+echo 'kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " ")' >> ${HOME}/.MountEFIr.sh
+echo 'rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt' >> ${HOME}/.MountEFIr.sh
+echo 'fi' >> ${HOME}/.MountEFIr.sh
+echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'exit'             >> ${HOME}/.MountEFIr.sh
 
@@ -6880,9 +6885,12 @@ done
 }
 
 END_UNINSTALLER(){
+
+cycle_count=0
 while true; do
 if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then
-sleep 1; else break; fi
+sleep 0.5; let "cycle_count++"; if [[ ${cycle_count} -ge 5 ]]; then break; fi
+else break; fi
 done
 
                                     dloc=$(defaults read com.apple.dock persistent-apps | grep file-label | awk '/MountEFI/  {printf NR}')
@@ -6899,6 +6907,9 @@ done
                                     fi
                                     if [[ -f ~/.MountEFIconf.plist ]]; then rm ~/.MountEFIconf.plist; fi
                                     if [[ -d "${MEFI_PATH}" ]]; then rm -Rf "${MEFI_PATH}"; fi
+
+for i in $( ps x  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev ); do kill ${i}; wait ${i} 2>/dev/null; done
+
 }
 
 RUN_UNINSTALLER(){

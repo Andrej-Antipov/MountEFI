@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 07.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -906,9 +906,10 @@ if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1;
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #############################################################################################################################
-MyTTY=`tty | tr -d " dev/\n"`
-
-term=`ps`;  MyTTYcount=`echo $term | grep -Eo $MyTTY | wc -l | tr - " \t\n"`
+MyTTY=$(tty | tr -d " dev/\n")
+MyPID=$(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d' ')
+MyZPID=$(ps | grep -v grep  | grep $MyTTY | grep zsh | xargs | cut -f1 -d' ')
+term=$(ps);  MyTTYcount=$(echo "$term" | egrep -o $MyTTY | wc -l | bc)
 ##############################################################################################################################
 
 parm="$1" ### параметр с которым вызывается MountEFI
@@ -1260,7 +1261,8 @@ if [[ ${CheckLoaders} = 0 ]]; then
 rm -f ~/.other_loaders_list.txt
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
-                    START_AUTOUPDATE & 
+                    START_AUTOUPDATE &
+                    #echo $! > ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 }
 ##########################################################################################################################
@@ -1269,9 +1271,12 @@ MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  
 setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
 # Возвращает в переменной TTYcount 0 если наш терминал один
 CHECK_TTY_COUNT(){
-term=`ps`
-AllTTYcount=`echo $term | grep -Eo ttys[0-9][0-9][0-9] | wc -l | tr - " \t\n"`
-let "TTYcount=AllTTYcount-MyTTYcount"
+term=$(ps); AllTTYcount=$( echo "$term" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc )
+TTYcount=$((AllTTYcount-MyTTYcount))
+zpid=0
+if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
+   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then ((--TTYcount)); zpid=1; fi
+fi
 }
 
 CLEAR_HISTORY(){
@@ -1280,12 +1285,10 @@ if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> 
 }
 
 TERMINATE(){
-kill $(ps  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev) 2>/dev/null
-sleep 1
-if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
-else
-   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
- fi 
+kill $MyPID
+if [[ ${zpid} = 1 ]] && [[ ! ${MyZPID} = "" ]]; then
+   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then kill ${MyZPID}; fi
+fi 
 }
 
 ################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
@@ -1298,11 +1301,12 @@ CLEAR_HISTORY
 #####################################################################################################################
 CHECK_TTY_COUNT	
 
-#TERMINATE &
+osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
+TERMINATE &
 if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
 else
    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
- fi 
+ fi
 }
 
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
@@ -1489,6 +1493,7 @@ if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.j
     fi
   fi
     rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
+    TTYterm=$(ps); if [[ $( echo "$TTYterm" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc ) = 0 ]]; then osascript -e 'quit app "terminal.app"'; fi 
     #rm -f ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 
@@ -3211,12 +3216,12 @@ nogetlist=0
 
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
-                    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "120" ]]; then
+                    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "60" ]]; then
                     rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
                     #rm -f ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
                     fi
                     START_AUTOUPDATE &
-                    #echo $! >> ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
+                    #echo $! > ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 
 while [ $chs = 0 ]; do
@@ -3253,12 +3258,6 @@ fi
 # Если нажата клавиша выхода из программы
 if  [[ $chs = $ch ]]; then
 clear
-	if [[ $loc = "ru" ]]; then
-printf '\n\n  Выходим. Конец программы. \n\n\n\n''\e[3J'
-			else
-printf '\n\n  The end of the program. \n\n\n\n''\e[3J'
-	fi
-
 
 EXIT_PROGRAM
 fi
