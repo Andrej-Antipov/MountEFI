@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="034"
+s_edit_vers="035"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -38,6 +38,7 @@ s_edit_vers="034"
 # 032 - в редактор хэшей добавлено  изменение выбранного пункта
 # 033 - сервис перезапуска убирает процесс AUTOAPDATE
 # 034 - исправлен детект версии Clover и OpenCore
+# 035 - транслятор двух байт юникод в один для первого ввода
 
 clear
 
@@ -1680,12 +1681,12 @@ clear && printf '\e[8;'${lines2}';'$MM't' && printf '\e[3J' && printf "\033[0;0H
                             fi
                         
 GET_BACKUPS
-if [[ ! $Now = 0 ]]; then
-var6=$Maximum; chn=1; bb=6
-if [[ $Now -lt $Maximum ]]; then var6=$Now; fi
-while [[ ! $var6 = 0 ]] 
-do
-if [[ -d ${HOME}/.MountEFIconfBackups/$chn ]]; then
+#if [[ ! $Now = 0 ]]; then
+    var6=$Maximum; chn=1; bb=6
+    if [[ $Now -lt $Maximum ]]; then var6=$Now; fi
+    while [[ ! $var6 = 0 ]] 
+    do
+    if [[ -d ${HOME}/.MountEFIconfBackups/$chn ]]; then
         backtime=$(stat -f %m $F ${HOME}/.MountEFIconfBackups/$chn/.MountEFIconf.plist)
             if [[ $chn -le 9 ]]; then
             bbuf+=$(printf '\033['$bb';0f''               '$chn')    ')
@@ -1694,11 +1695,11 @@ if [[ -d ${HOME}/.MountEFIconfBackups/$chn ]]; then
             fi
             bbuf+=$(date -r "$backtime")
             
-fi
-let "chn++"; let "bb++"; let "var6--"
-done
-let "chn--"
-fi
+    fi
+    let "chn++"; let "bb++"; let "var6--"
+    done
+    let "chn--"
+#fi
 let "bb++"
 
                        bbuf+=$(printf '\033['$bb';0f''   ')
@@ -1727,9 +1728,9 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Quit to the set
                    fi
 else
                   if [[ $loc = "ru" ]]; then
-let "bb++"; bbuf+=$(printf '\033['$bb';0f'' Z/X - для выбора, Q/V - выход из просмотра :   ''                             ')
+let "bb++"; bbuf+=$(printf '\033['$bb';4f'' Z/X - для выбора, Q/V - выход из просмотра :   ''                             ')
 			else
-let "bb++"; bbuf+=$(printf '\033['$bb';0f''  Z/X - for choice, Q/V - exit from preview :   ''                           ')
+let "bb++"; bbuf+=$(printf '\033['$bb';4f''  Z/X - for choice, Q/V - exit from preview :   ''                           ')
                 fi
 fi
 
@@ -2112,7 +2113,7 @@ printf "\r\033[42C"
 printf "\033[?25h"
 
 read -n 1 inputs 
-if [[ $inputs = "" ]]; then printf "\033[1A"; fi
+if [[ $inputs = "" ]]; then printf "\033[1A"; else TRANS_READ; fi
 done
 
 if [[ $inputs = [sS] ]]; then printf "\r\033"
@@ -2139,6 +2140,7 @@ if [[ $inputs = [sS] ]]; then printf "\r\033"
                 fi
                 printf "\033[?25h"
                 read  -n 1 -r
+                if [[ ! $REPLY = "" ]]; then inputs=$REPLY; TRANS_READ; REPLY=$inputs; fi
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
                 CHECK_BUNZIP
@@ -2154,7 +2156,10 @@ if [[ $inputs = [sS] ]]; then printf "\r\033"
 fi
 
 if [[ ${inputs} = [vV] ]]; then
+        Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
+        if [[ ! $Now = 0 ]]; then
                 unset bbuf; unset inputs
+                SET_INPUT
                 printf "\033[?25l"
                 SHOW_BACKUPS "double"
                 clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
@@ -2164,12 +2169,13 @@ if [[ ${inputs} = [vV] ]]; then
                 SHOW_BACKUP_DATA
                 while [[ $vart = 0 ]]; do
                 while [[ ! ${inputs} =~ ^[zZxXqQvV]+$ ]]; do
-                printf '\033['$ilines';47f'
+                printf '\033['$ilines';51f'
                 printf "\033[?25h"
                 read -s -n 1 inputs
+                if [[ ! ${inputs} = "" ]]; then TRANS_READ; fi 
                 printf "\033[?25l"
                 done
-                if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A";  fi 
+                if [[ ${inputs} = "" ]]; then inputs="p"; printf "\033[1A"; else TRANS_READ; fi 
                 if [[ ${inputs} = [qQvV] ]]; then unset inputs; break;  fi
                 if [[ ${inputs} = [zZ] ]]; then
                                printf '\033['$plines';10f''   '
@@ -2191,7 +2197,8 @@ if [[ ${inputs} = [vV] ]]; then
                                SHOW_BACKUP_DATA &
                 fi
                 read -s -n 1 inputs
-                done 
+                done
+        fi
 fi
 
 if [[ ${inputs} = [dD] ]]; then
@@ -2294,6 +2301,7 @@ if [[ $inputs = [cC] ]]; then printf "\r\033"
                 fi
                 printf "\033[?25h"
                 read  -n 1 -r
+                if [[ ! $REPLY = "" ]]; then inputs=$REPLY; TRANS_READ; REPLY=$inputs; fi
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
                 CHECK_BUNZIP
@@ -2358,7 +2366,8 @@ if [[ $inputs = [pP] ]]; then printf "\r\033"
                 
                 fi
                 printf "\033[?25h"
-                read  -n 1 -r                
+                read  -n 1 -r
+                if [[ ! $REPLY = "" ]]; then inputs=$REPLY; TRANS_READ; REPLY=$inputs; fi                
                 printf "\033[?25l"
               if [[ ! $REPLY = "" ]]; then 
                 if [[  $REPLY =~ ^[yY]$ ]]; then
@@ -2597,7 +2606,7 @@ if [[ ${ch} -le 9 ]]; then
     inputs="±"
     while [[ $inputs = "±" ]]
     do
-    IFS="±"; read -n 1 -t 1 inputs ; unset IFS  ; CHECK_HOTPLUG
+    IFS="±"; read -n 1 -t 1 inputs ; unset IFS; if [[ ! $inputs = "" ]]; then TRANS_READ; fi;  CHECK_HOTPLUG
     done
 else
     if [[ $loc = "ru" ]]; then
@@ -2847,6 +2856,53 @@ fi
         
 }
 
+######### транслция двойных кодов в управляющие символы для русского украинского и белорусского #########################################
+
+SET_CODE_BASE(){
+current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
+            case "${current_layout}" in 
+
+                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+                                             ;;
+                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+                                             ;;
+                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab )
+                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+                                             ;;
+                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+                                             ;;
+                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+                                             ;;
+                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+                                             ;;
+                                          *) code_base=()
+                                             sym_base=()
+                                             ;;
+            esac 
+
+}
+
+TRANS_READ(){
+   codes=$(echo $inputs | hexdump | head -n1 | cut -f2 -d ' ')
+   for i in d0 d1
+   do
+   if [[ $codes = $i ]]; then
+        read -rsn1 symsym; 
+        codes+=$(echo $symsym | hexdump | head -n1 | cut -f2 -d ' ')
+        SET_CODE_BASE
+        for i in ${!code_base[@]}; do if [[ $codes = ${code_base[i]} ]]; then inputs=${sym_base[i]}; break; fi; done
+        break
+   fi
+   done
+}
+#############################################################################################################################################
+
+
 GET_INPUT(){
 
 unset inputs
@@ -2863,7 +2919,7 @@ printf "\r\033[45C"
 printf "\033[?25h"
 SET_INPUT
 IFS="±"; read -n 1 inputs ; unset IFS 
-if [[ ${inputs} = "" ]]; then printf "\033[1A"; fi
+if [[ ${inputs} = "" ]]; then printf "\033[1A"; else TRANS_READ; fi
 printf "\r"
 done
 printf "\033[?25l"
@@ -3419,7 +3475,7 @@ printf '                                                                        
 printf "\r\n\033[3A\033['$pos_corr'C"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 IFS="±"; read   -n 1 -t 1  choice1 ; unset IFS 
-if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
+if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; else inputs=$choice1; TRANS_READ; choice1=$inputs; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         
@@ -4903,7 +4959,7 @@ printf "\033[?25h"
 
         inputs="±"
         if [[ ${chn} -le 9 ]]; then
-        IFS="±"; read -n 1  inputs ; unset IFS ; sym=1 
+        IFS="±"; read -n 1  inputs ; unset IFS ; if [[ ! $inputs = "" ]]; then TRANS_READ; fi; sym=1 
         else
             if [[ $loc = "ru" ]]; then
         READ_TWO_SYMBOLS 46
@@ -4962,6 +5018,7 @@ done
         fi
 
         if [[ $inputs = [lL] ]]; then
+                        SET_INPUT
                         oldlines=$lines; lines=32
                         clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
                         GET_CURRENT_SET
@@ -5000,6 +5057,7 @@ done
         fi
 
         if [[ $inputs = [sS] ]]; then
+                        SET_INPUT
                         if result=$(ASK_SYSTEM_THEME); then
                                             osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$result"'"'
                                             osascript -e 'tell application "Terminal" to activate' &
@@ -6846,22 +6904,22 @@ printf "\r\033[48C"
 printf "\033[?25h"
 
 read -n 1 inputs 
-if [[ $inputs = "" ]]; then printf "\033[1A"; fi
+if [[ $inputs = "" ]]; then printf "\033[1A"; else TRANS_READ; fi
 done
 
                     case ${inputs} in
 
         [qQ] ) clear && printf '\e[3J' && printf "\033[0;0H"; break;;
 
-        [aA] )  ADD_HASHES "Clover" ;;
+        [aA] )  SET_INPUT; ADD_HASHES "Clover" ;;
 
-        [bB] ) ADD_HASHES "OCR";;
+        [bB] ) SET_INPUT; ADD_HASHES "OCR";;
 
-        [cC] ) ADD_HASHES "OCD";;
+        [cC] ) SET_INPUT; ADD_HASHES "OCD";;
 
-        [oO] ) ADD_HASHES "Other";;
+        [oO] ) SET_INPUT; ADD_HASHES "Other";;
         
-        [eE] ) EDIT_HASHES_INFO ;;
+        [eE] ) SET_INPUT; EDIT_HASHES_INFO ;;
 
         [sS] ) SAVE_HASHES_IN_FILE;;
 
