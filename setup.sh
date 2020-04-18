@@ -2860,28 +2860,22 @@ fi
 
 SET_CODE_BASE(){
 current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
+sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
             case "${current_layout}" in 
 
                 "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
-                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
                                              ;;
                 "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
-                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
                                              ;;
                 "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab )
-                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
                                              ;;
                 "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
-                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
                                              ;;
                 "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
-                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
                                              ;;
                 "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
-                                             sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
                                              ;;
                                           *) code_base=()
-                                             sym_base=()
                                              ;;
             esac 
 
