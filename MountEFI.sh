@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 18.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="042"
+edit_vers="043"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -3021,7 +3021,7 @@ printf '                                                                        
 printf "\r\n\033[3A\033['$pos_corr'C"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 IFS="±"; read   -n 1 -t 1  choice1 ; unset IFS 
-if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; fi
+if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; else choice=$choice1; TRANS_READ; choice1=$choice; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         if [[ ! $order = 3 ]]; then
@@ -3072,7 +3072,37 @@ printf "\033[?25l"
 
   }
 ########################################################################################
+######### транслция двойных кодов в управляющие символы для русского украинского и белорусского #########################################
 
+SET_CODE_BASE(){
+current_language=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/')
+if [[ "${current_language}" = "Russian - Phonetic" ]]; then
+    code_base=( d18f d0af d0b5 d095 d183 d0a3 d0b8 d098 d0be d09e d0b0 d090 d181 d0a1 d186 d0a6 d0b2 d092)
+    sym_base=( q Q e E u U i I o O a A s S c C v V)
+elif [[ "${current_language}" = "RussianWin" ]] || [[ "${current_language}" = "Russian" ]] || [[ "${current_language}" = "Ukrainian-PC" ]] || [[ "${current_language}" = "Ukrainian" ]] || [[ "${current_language}" = "Byelorussian" ]]; then
+    code_base=( d0b9 d099 d0bc d09c d0b3 d093 d188 d0a8 d189 d0a9 d184 d0a4 d18b d0ab d183 d0a3 d181 d0a1 d0b8 d098 d196 d086 d19e d08e ) 
+    sym_base=( q Q v V u U i I o O a A s S e E c C s S s S o O )
+else
+    code_base=()
+    sym_base=()
+fi
+
+}
+
+TRANS_READ(){
+   codes=$(echo $choice | hexdump | head -n1 | cut -f2 -d ' ')
+   for i in d0 d1
+   do
+   if [[ $codes = $i ]]; then
+        read -rsn1 symsym; 
+        codes+=$(echo $symsym | hexdump | head -n1 | cut -f2 -d ' ')
+        SET_CODE_BASE
+        for i in ${!code_base[@]}; do if [[ $codes = ${code_base[i]} ]]; then choice=${sym_base[i]}; break; fi; done
+        break
+   fi
+   done
+}
+#############################################################################################################################################
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
 unset choice
@@ -3108,8 +3138,8 @@ choice="±"
 printf '\033[1B'
 while [[ $choice = "±" ]]
 do
-IFS="±"; read -n1 -t 1 choice ; unset IFS; sym=2
-if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; fi
+IFS="±"; read -rn1 -t 1 choice ; unset IFS; sym=2
+if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; else TRANS_READ; fi
 CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
 done
