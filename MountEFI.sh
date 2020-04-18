@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 19.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1576,7 +1576,15 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
                  "U.S."               )  ;;
                  "British"            )  ;;
                  "British-PC"         )  ;;
-                        *) current_layout="";;
+                 "Russian"            )  ;;
+                 "RussianWin"         )  ;;
+                 "Russian - Phonetic" )  ;;
+                 "Ukrainian-PC"       )  ;;
+                 "Ukrainian"          )  ;;
+                 "Byelorussian"       )  ;;
+                 
+                                     *) current_layout=""
+                                         ;;
             esac 
             if [[ "${current_layout}" = "" ]]; then 
                 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 19.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -3566,7 +3566,7 @@ printf "\033[?25h"
   if [[ ${ch} -le 9 ]]; then
     while [[ $inputs = "±" ]]
     do
-    IFS="±"; read -n 1 -t 1 inputs ; unset IFS ; sym=1 ; CHECK_HOTPLUG ; CHECK_HOTPLUG_PARTS
+    IFS="±"; read -n 1 -t 1 inputs ; unset IFS ; if [[ ! $inputs = "" ]]; then TRANS_READ; fi; sym=1 ; CHECK_HOTPLUG ; CHECK_HOTPLUG_PARTS
     done
   else
         if [[ $loc = "ru" ]]; then
@@ -3606,6 +3606,7 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 fi
                 printf "\033[?25h"
                 read  -n 1 -r
+                if [[ ! $REPLY = "" ]]; then inputs=$REPLY; TRANS_READ; REPLY=$inputs; fi
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
                 SAVE_STRING
@@ -5785,6 +5786,7 @@ printf '\e[40m\e[1;33m   Download updates and update the program?   (\e[40m\e[1;
 fi
 success=2
 read -s -n 1 
+if [[ ! $REPLY = "" ]]; then inputs=$REPLY; TRANS_READ; REPLY=$inputs; fi
 if [[ $REPLY =~ ^[yY]$ ]]; then
             printf '\r\e[40m\e[1;33m                                                   \e[0m'
             if [[ $loc = "ru" ]]; then
@@ -5867,7 +5869,7 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     spinpid=$!
     latest_release=""; demo=""
     GET_LATEST_RELEASE &
-    while true; do read -rsn1 -t1 demo; if [[ ${demo} = [Qq] ]] || [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then if [[ ${demo} = [Qq] ]]; then breaked=1; fi; sleep 0.4; KILL_CURL_UPDATER; break; fi; done
+    while true; do read -rsn1 -t1 demo; if [[ ! $demo = "" ]]; then inputs=$demo; TRANS_READ; demo=$inputs;fi ; if [[ ${demo} = [Qq] ]] || [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then if [[ ${demo} = [Qq] ]]; then breaked=1; fi; sleep 0.4; KILL_CURL_UPDATER; break; fi; done
     kill $spinpid; wait $spinpid 2>/dev/null
 if [[ $breaked = 0 ]]; then
     latest_release="$(cat ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt)"; rm -f ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt
@@ -5889,7 +5891,7 @@ if [[ $breaked = 0 ]]; then
     spinpid=$!
     latest_edit=""
     GET_LATEST_EDITION &
-    while true; do read -rsn1 -t1 demo; if [[ ${demo} = [Qq] ]] || [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then if [[ ${demo} = [Qq] ]]; then breaked=1; fi; sleep 0.4; KILL_CURL_UPDATER; break; fi; done
+    while true; do read -rsn1 -t1 demo; if [[ ! $demo = "" ]]; then inputs=$demo; TRANS_READ; demo=$inputs; fi ; if [[ ${demo} = [Qq] ]] || [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then if [[ ${demo} = [Qq] ]]; then breaked=1; fi; sleep 0.4; KILL_CURL_UPDATER; break; fi; done
     kill $spinpid; wait $spinpid 2>/dev/null
 else
     latest_release="000"
