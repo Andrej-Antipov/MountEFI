@@ -1938,6 +1938,7 @@ fi
 }
 ##################################################################################################
 SPIN_OC(){
+if [[ $loc = "ru" ]]; then printf '\r\033[48C'; else printf '\r\033[50C'; fi
     NEED_PASSWORD
 if [[ ${need_password} = 0 ]]; then
     printf '\r\n'
@@ -1955,6 +1956,7 @@ fi
 
 #####################################################################################################
 SPIN_FCLOVER(){
+if [[ $loc = "ru" ]]; then printf '\r\033[48C'; else printf '\r\033[50C'; fi
     NEED_PASSWORD
 if [[ ${need_password} = 0 ]]; then
     printf '\r\n'
