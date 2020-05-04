@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 19.04.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="043"
+edit_vers="044"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -124,14 +124,14 @@ if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com
 
 NET_UPDATE_CLOVER(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s --max-time 9 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
     if [[ ! "${clov_vrs}" = "" ]] || [[ ${#clov_vrs} -le 4 ]]; then echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
 fi
 }
 
 NET_UPDATE_OPENCORE(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    oc_vrs=$( curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
+    oc_vrs=$( curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
     if [[ ! "${oc_vrs}" = "" ]] || [[ ${#oc_vrs} -le 4 ]]; then echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
 fi
 }
@@ -141,8 +141,8 @@ NET_UPDATE_LOADERS(){
                 if [[ -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt; fi
                 if [[ -f ~/Library/Application\ Support/MountEFI/latestClover.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
                 if [[ -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
-    clov_vrs=$( curl -s --max-time 9 https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
-    oc_vrs=$(curl -s --max-time 9 https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
+    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    oc_vrs=$(curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
         if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
             echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt
@@ -977,6 +977,7 @@ declare -a dlist
 lists_updated=0
 synchro=0
 recheckLDs=0
+old_oc_revision=""
 
 GET_APP_ICON
 
@@ -1024,10 +1025,30 @@ synchro=0
 
 }
 
+############################### уточняем версияю Open Core по OpenCore.efi ###################
+
+CORRECT_OC_VERS(){
+
+case $( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null ) in 
+        dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
+        3e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
+                                        *)     oc_revision=""
+esac 
+
+}
+
 ################################ получение имени диска для переименования #####################
 GET_OC_VERS(){
 
 GET_CONFIG_VERS "OpenCore"
+
+####### bootx64.efi у версии .57 и .58 одинаковый ###
+######  уточняем версию через хэш OpenCore.efi ######
+if [[ ${oc_revision} = "" ]]; then
+    if [[ "${md5_loader}" = "10610877a9cc0ed958ff74ed7a192474" ]]; then
+    CORRECT_OC_VERS
+    fi
+fi
 
 if [[ ${oc_revision} = "" ]]; then
 
@@ -1055,11 +1076,13 @@ f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
 07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
 12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56r;;
 9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56d;;
-10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.57r;;
+10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
 9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57d;;
+d90190bfea64112ed83621079371277a ) oc_revision=.58d;;
                                 *)     oc_revision=""
                     esac
 fi
+
 ################ no_release_hashes ##################
 if [[ ${oc_revision} = "" ]]; then 
             
@@ -2238,6 +2261,22 @@ if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
 
 }
 
+PRINT_HEADER(){
+if [[ $loc = "ru" ]]; then
+        if [[ $CheckLoaders = 0 ]]; then
+            printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
+        else
+            printf '\n*********           Программа монтирует EFI разделы в Mac OS (X.11 - X.15)           *********\n'
+        fi
+    else
+        if [[ $CheckLoaders = 0 ]]; then
+            printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
+        else
+            printf '\n*********         This program mounts EFI partitions on Mac OS (X.11 - X.15)         *********\n'
+        fi
+	fi
+}
+
 
 # У Эль Капитан другой термин для размера раздела
 	
@@ -2253,7 +2292,6 @@ if [[ ! $upd = 0 ]]; then GET_MOUNTEFI_STACK; CORRECT_LOADERS_HASH_LINKS; upd=0;
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
-
 if [[ $pos = 1 ]]; then 
 
 if [[ ! ${menue} = 1 ]]; then
@@ -2269,12 +2307,13 @@ if [[ ! $mcheck = "Yes" ]]; then
 
     if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
 
+    clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
 
-    if [[ $loc = "ru" ]]; then
+            if [[ $loc = "ru" ]]; then
         printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n\n'
 			else
         printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n\n'
-	                 fi
+	        fi
                     	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		
     	printf '\n     '
@@ -2310,7 +2349,12 @@ if [[ $loc = "ru" ]]; then
 	printf '\n              '"$drive""%"$dcorr"s"${string}"%"$corr"s"'  '"%"$scorr"s""$dsize"'\n' 
     printf '\n     '
 	printf '.%.0s' {1..68}
-    ENTER_PASSWORD
+    
+    if [[ $loc = "ru" ]]; then printf '\n\n\r\033[48C''                                \r\033[48C'; else 
+                                                   printf '\n\n\r\033[50C''                                \r\033[50C'; fi
+
+    NEED_PASSWORD
+    
  fi        
 
 if [[ $mypassword = "0" ]]; then 
@@ -2319,9 +2363,9 @@ if [[ $mypassword = "0" ]]; then
             printf '\r\033[1A'
             GET_APP_ICON
             if [[ $loc = "ru" ]]; then
-            osascript -e 'display dialog "Без правильного пароля EFI не подключить. Выходим....." '"${icon_string}"' buttons {"OK"} default button "OK"'
+            osascript -e 'display dialog "Без правильного пароля EFI раздел не подключить. \nВыходим....." '"${icon_string}"' buttons {"OK"} default button "OK"'
             else
-            osascript -e 'display dialog "You have to input valid password to mount EFI. Exiting...." '"${icon_string}"' buttons {"OK"} default button "OK"'
+            osascript -e 'display dialog "You should enter the correct password \nto mount EFI partition. Exiting...." '"${icon_string}"' buttons {"OK"} default button "OK"'
             fi
             EXIT_PROGRAM
 fi
@@ -2395,7 +2439,7 @@ GET_LOADER_STRING(){
                                 loader+="${revision:0:4}"
                                 ;;
   
-                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}" 
+                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
                         ;;
                     "GNU/Linux" ) loader="GNU/Linux"                                       
                         ;;
@@ -2492,7 +2536,7 @@ printf "\033[H"
                     done
     fi                       
 fi
-printf "\033[H"; let "correct=lines-7"; printf "\r\033[$correct;f\033[49C"
+printf "\033[H"; let "correct=lines-7"; if [[ $loc = "ru" ]]; then printf "\r\033[$correct;f\033[49C"; else printf "\r\033[$correct;f\033[51C"; fi
 }
 #################################################################################################
 spinny(){
@@ -2751,7 +2795,7 @@ fi
                 printf '.%.0s' {1..31}
                 printf '\n'
                 else
-                printf '\n*********        Программа монтирует EFI разделы в Mac OS (X.11 - X.15)        *********\n'
+                printf '\n*********           Программа монтирует EFI разделы в Mac OS (X.11 - X.15)           *********\n'
                 printf '\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n' 
 	            printf '     '
                 printf '.%.0s' {1..38}
@@ -2761,9 +2805,9 @@ fi
                 fi
 
 			else
-        	printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
 
              if [[ $CheckLoaders = 0 ]]; then
+                printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
                 printf '\n\n      0)  update EFI partitions list                        "+" - mounted \n\n'  
 	            printf '     '
 	            printf '.%.0s' {1..31} 
@@ -2771,6 +2815,7 @@ fi
                 printf '.%.0s' {1..31}
                 printf '\n'
                 else
+                printf '\n*********         This program mounts EFI partitions on Mac OS (X.11 - X.15)         *********\n'
                 printf '\n\n      0)  update EFI partitions list                              "+" - mounted \n\n'  
 	            printf '     '
                 printf '.%.0s' {1..38}
@@ -2882,14 +2927,19 @@ fi
 RECHECK_LOADERS(){
 if [[ ! $CheckLoaders = 0 ]]; then
     if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
-        let "pauser=3"
+        let "pauser=3"; update_screen_flag=0
         for pnum in ${!dlist[@]}
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-                if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]]; then 
+                    if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
+
+                    if [[ ${loader_sum} = "10610877a9cc0ed958ff74ed7a192474" ]]; then md5_loader=${loader_sum}; CORRECT_OC_VERS
+                       if [[ ! ${old_oc_revision} = ${oc_revision} ]]; then old_oc_revision=${oc_revision}; update_screen_flag=1; else update_screen_flag=0; fi
+                    fi
+
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
                     if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""; GET_LOADER_STRING; fi
                     ldlist[pnum]=$loader; lddlist[pnum]=${dlist[$pnum]}
@@ -3273,19 +3323,7 @@ if [[ ! $nogetlist = 1 ]]; then
         if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2;  fi 
         clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 
-	if [[ $loc = "ru" ]]; then
-        if [[ $CheckLoaders = 0 ]]; then
-            printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
-        else
-            printf '\n*********        Программа монтирует EFI разделы в Mac OS (X.11 - X.15)        *********\n'
-        fi
-    else
-        if [[ $CheckLoaders = 0 ]]; then
-            printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
-        else
-            printf '\n*********      This program mounts EFI partitions on Mac OS (X.11 - X.15)      *********\n'
-        fi
-	fi
+	    PRINT_HEADER
 fi
         unset nlist
         declare -a nlist
