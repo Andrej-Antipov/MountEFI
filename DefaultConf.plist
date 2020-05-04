@@ -37,13 +37,13 @@
 		<key>BlueSky</key>
 		<dict>
 			<key>BackgroundColor</key>
-			<string>{3341, 25186, 40092}</string>
+			<string>{4096, 15458, 40092}</string>
 			<key>FontName</key>
-			<string>SF Mono Regular</string>
+			<string>Menlo Regular</string>
 			<key>FontSize</key>
 			<string>12</string>
 			<key>TextColor</key>
-			<string>{65535, 65535, 65535}</string>
+			<string>{56831, 61439, 53247}</string>
 		</dict>
 		<key>DarkBlueSky</key>
 		<dict>
@@ -108,7 +108,7 @@
 	<key>ThemeLoaders</key>
 	<string>37</string>
 	<key>ThemeLoadersLinks</key>
-	<string></string>
+	<string> {B,BlueSky,Clover;OpenCore,38;5;225{</string>
 	<key>ThemeLoadersNames</key>
 	<string>Clover;OpenCore</string>
 	<key>ThemeProfile</key>
