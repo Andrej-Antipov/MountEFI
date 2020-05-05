@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="044"
+edit_vers="045"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1039,6 +1039,8 @@ esac
 
 ################################ получение имени диска для переименования #####################
 GET_OC_VERS(){
+
+oc_revision=""
 
 GET_CONFIG_VERS "OpenCore"
 
@@ -3192,7 +3194,7 @@ printf '                                                                        
 printf "\r\n\033[2A\033[49C"
 printf "\033[3A"
 if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
-if [[ ${ch} -le 10 ]]; then
+if [[ ${ch} -le 9 ]]; then
 printf "\033[?25h"
 choice="±"
 printf '\033[1B'
@@ -3270,11 +3272,22 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 # Конец определения MOUNTS #################################################################
 
 ################### ожидание завершения монтирования разделов при хотплаге #################
+
+WARNING_SYNCHRO(){
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="ОЖИДАНИЕ ГОТОВНОСТИ РАЗДЕЛОВ ! ..."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="WAITING FOR COMPLETE MOUNTING !..."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
+}
+
 WAIT_SYNCHRO(){
 if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
-    init_time="$(date +%s)"; usblist=() 
+    init_time="$(date +%s)"; usblist=(); warning_sent=0
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); fi; done; done
     if [[ ! ${#usblist[@]} = 0 ]]; then
         while true; do
@@ -3284,7 +3297,8 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
             diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
             if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
             exec_time="$(($(date +%s)-init_time))"
-            if [[ ${exec_time} -ge 4 ]]; then break; fi
+            if [[ ${exec_time} -ge 3 ]] && [[ ${warning_sent} = 0 ]]; then WARNING_SYNCHRO; warning_sent=1; fi
+            if [[ ${exec_time} -ge 30 ]]; then break; fi
             sleep 0.25
         done        
     fi
@@ -3293,7 +3307,6 @@ fi
 if [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi
 synchro=0
 }
-
 
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
