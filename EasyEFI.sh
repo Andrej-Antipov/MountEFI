@@ -4,7 +4,7 @@
 
 ############################################################################## EasyESP #########################################################################################################################
 prog_vers="1.0.0"
-edit_vers="003"
+edit_vers="004"
 ##################################################################################################################################################################################################################
 
 GET_LOCALE(){
@@ -44,15 +44,20 @@ osascript -e 'display dialog '"${MESSAGE}"'  '"${icon_string}"'  buttons { "OK"}
 }
 
 ERROR_NO_PASSWORD(){
-if [[ $loc = "ru" ]]; then
-error_message='"Пароль не получен !\nНе могу подключить EFI раздел"'; ERROR_MSG
-else
-error_message='"Password not got!\nNCannot mount EFI partition"'; ERROR_MSG
-fi
+if [[ $loc = "ru" ]]; then error_message='"Пароль не получен !\nНе могу подключить EFI раздел"'; else error_message='"Password not got!\nNCannot mount EFI partition"'; fi; ERROR_MSG
+}
+
+ERROR_NO_EI_FOUND(){
+if [[ $loc = "ru" ]]; then error_message='"Странно !\nНе могу найти ни одного EFI раздела"'; else error_message='"Cannot find any EFI partition !"'; fi; ERROR_MSG
 }
 
 MESSAGE_SEARCH(){
 osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null
+}
+
+ONE_EFI_FOUND(){
+if [[ $loc = "ru" ]]; then MESSAGE='"Открыть EFI раздел '${dlist[0]}' ?"'; else MESSAGE='"Open EFI partition '${dlist[0]}' ?"'; fi
+if answer=$(osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' ' >>/dev/null 2>/dev/null); then cansel=0; else cansel=1; fi 2>/dev/null
 }
 
 ################ запрос пароля sudo #################################
@@ -325,26 +330,16 @@ cd "${ROOT}"
 while [ $var1 != 0 ] 
 do 
 
-	pnum=${nlist[num]}
-	string=`echo ${dlist[$pnum]}`
+	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+    if [[ $mcheck = "Yes" ]]; then diskutil quiet umount force  /dev/${string}; UNMOUNTED_CHECK; fi
 
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
-
-
-if [[ $mcheck = "Yes" ]]; then
-
-	diskutil quiet umount force  /dev/${string}
-
-	UNMOUNTED_CHECK	
-fi
     let "num++"
 	let "var1--"
 done
 
 kill $mspid
 wait $mspid 2>/dev/null
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
+KILL_DIALOG
 }
 
 MOUNTED_CHECK(){
@@ -709,7 +704,7 @@ while [[ $var0 != 0 ]]; do
         
                      if [[ ! $mcheck = "Yes" ]]; then
                if [[ ${pnum} = 0 ]]; then  
-        screen_buffer+=$(printf '     ...   '"$drive""%"$dcorr"s"'         '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'   '"${lname}")";"
+        screen_buffer+=$(printf '     ...   '"$drive""%"$dcorr"s"'          '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'   '"${lname}")";"
                else
         screen_buffer+=$(printf '     ...   '"$drive""%"$dcorr"s"'    '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'   '"${lname}")";"
                fi
@@ -749,55 +744,19 @@ CheckLoaders=1
 if [[ ! $CheckLoaders = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); else lname=""; fi 
 
 UPDATE_SCREEN
-
-}
-
-ASK_SETTINGS_LIST(){
-settings_prompt_list='"**********************************************************************************"'","
-if [[ $loc = "ru" ]]; then
-settings_prompt_list+='"            Язык сообщений: русский, английский или автоматически. "'","
-settings_prompt_list+='"            Открывать в Finder папку EFI после подключения раздела."'","
-settings_prompt_list+='"            Задать псевдонимы физическим именам носителей в списке."'","
-settings_prompt_list+='"            Выбрать разделы EFI для монтирования при входе в систему ."'","
-#settings_prompt_list+='"'"                                                                         "'"'","
-settings_prompt_list+='"**********************************************************************************"'
-
-osascript <<EOD
-tell application "System Events"    activate
-set ThemeList to {$settings_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "Установки программы EasyEFI"  with prompt "Выбирайте по одному пункту." 
-end tell
-EOD
-
-else
-
-settings_prompt_list+='"            Язык сообщений: русский, английский или автоматически. "'","
-settings_prompt_list+='"            Открывать в Finder папку EFI после подключения раздела."'","
-settings_prompt_list+='"            Задать псевдонимы физическим именам носителей в списке."'","
-settings_prompt_list+='"            Выбрать разделы EFI для монтирования при входе в систему ."'","
-#settings_prompt_list+='"'"                                                                         "'"'","
-settings_prompt_list+='"**********************************************************************************"'
-
-osascript <<EOD
-tell application "System Events"    activate
-set ThemeList to {$settings_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "EasyEFI setup menu"  with prompt "Select one item at a time." 
-end tell
-EOD
-fi
 }
 
 ASK_LIST(){
 if [[ ${ldname} = 1 ]]; then 
-efi_prompt_list='"*****************************************************************************************"'","
+efi_prompt_list='"*********************************************************************************************"'","
 else
-efi_prompt_list='"**********************************************************************************"'","
+efi_prompt_list='"*****************************************************************************"'","
 fi
 for i in ${!ask_efi_list[@]}; do efi_prompt_list+='"'"${ask_efi_list[i]}"'"'; efi_prompt_list+=","; done
 if [[ ${ldname} = 1 ]]; then
-if [[ $loc = "ru" ]]; then
-efi_prompt_list+='"'"                                                                                "'"'","
-efi_prompt_list+='"'"*********************************** дополнительно *************************************"'"'","
+    if [[ $loc = "ru" ]]; then
+    efi_prompt_list+='"'"                                                                                "'"'","
+    efi_prompt_list+='"'"*********************************** дополнительно *****************************************"'"'","
         efi_prompt_list+='"                                  Отключить все подключенные EFI разделы  "'","
     if [[ ${menu_mode} = 1 ]]; then
         efi_prompt_list+='"                                  Найти и подключить разделы с OpenCore  "'","
@@ -808,7 +767,7 @@ efi_prompt_list+='"'"*********************************** дополнитель�
         efi_prompt_list+='"                                  Включить расширенный режим управления  "'
     fi
 else
-efi_prompt_list+='"'"************************************* additionally: **************************************"'"'","
+    efi_prompt_list+='"'"*************************************** additionally: ****************************************"'"'","
         efi_prompt_list+='"                                       Unmount ALL mounted EFI partitions  "'","
     if [[ ${menu_mode} = 1 ]]; then
         efi_prompt_list+='"                                       Find and mount EFI partitions with OpenCore  "'","
@@ -822,7 +781,7 @@ fi
 else
 efi_prompt_list+='"'"                                                                         "'"'","
 if [[ $loc = "ru" ]]; then
-efi_prompt_list+='"'"******************************* дополнительно: ********************************"'"'","
+efi_prompt_list+='"'"***************************** дополнительно: ******************************"'"'","
             efi_prompt_list+='"                          Отключить все подключенные EFI разделы  "'","
         if [[ ${menu_mode} = 1 ]]; then
             efi_prompt_list+='"                          Найти и подключить разделы с OpenCore  "'","
@@ -833,7 +792,7 @@ efi_prompt_list+='"'"******************************* дополнительно:
             efi_prompt_list+='"                          Включить расширенный режим управления  "'
         fi
 else
-efi_prompt_list+='"'"********************************* additionally: ***********************************"'"'","
+efi_prompt_list+='"'"******************************* additionally: *********************************"'"'","
             efi_prompt_list+='"                                Unmount ALL mounted EFI partitions  "'","
         if [[ ${menu_mode} = 1 ]]; then
             efi_prompt_list+='"                                Find and mount EFI partitions with OpenCore  "'","
@@ -850,7 +809,7 @@ if [[ $loc = "ru" ]]; then
 osascript <<EOD
 tell application "System Events"    activate
 set ThemeList to {$efi_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "Список EFI / ESP разделов"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed 
+set FavoriteThemeAnswer to choose from list ThemeList with title "Список EFI / ESP разделов"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed OK button name {"Поехали!"} cancel button name {"Выход"}
 end tell
 EOD
 
@@ -859,7 +818,7 @@ else
 osascript <<EOD
 tell application "System Events"    activate
 set ThemeList to {$efi_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "EFI / ESP partition list"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed 
+set FavoriteThemeAnswer to choose from list ThemeList with title "EFI / ESP partition list"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed cancel button name {"Exit"}
 end tell
 EOD
 
@@ -905,8 +864,7 @@ done
 
 kill $mspid
 wait $mspid 2>/dev/null
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
+KILL_DIALOG
 
 fi
 }
@@ -951,8 +909,7 @@ done
 
 kill $mspid
 wait $mspid 2>/dev/null
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
+KILL_DIALOG
 fi
 }
 
@@ -995,16 +952,18 @@ done
 
 kill $mspid
 wait $mspid 2>/dev/null
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
+KILL_DIALOG
 
 fi
+}
 
+KILL_DIALOG(){
+if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
+   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
 }
 
 EXIT_PROGRAM(){
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
+KILL_DIALOG
 sudo -k
 exit
 }
@@ -1025,13 +984,18 @@ MESSAGE='"Searching for EFI partitions ....!"'
 fi
 MESSAGE_SEARCH &
 mspid=$(($!+2))
-sleep 0.5
 GETARR
+if [[ ${pos} = 0 ]]; then menu_mode=0; KILL_DIALOG; ERROR_NO_EI_FOUND; fi
+if [[ ${pos} = 1 ]]; then KILL_DIALOG; ONE_EFI_FOUND; if [[ $cansel = 0 ]]; then 
+            NEED_PASSWORD; string=${dlist[0]}; DO_MOUNT
+            GET_OPENFINDER; if [[ "${OpenFinder}" = "1" ]]; then open $(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-); fi
+            EXIT_PROGRAM; fi
+fi
+
 GETLIST
 kill $mspid
 wait $mspid 2>/dev/null
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
+KILL_DIALOG
 while true; do
 #################### MAIN MENU #####################
 result_names=$( ASK_LIST ) 
@@ -1066,7 +1030,6 @@ if [[ ${modename} = "" ]]; then
     fi
 
     disk_mount_list=( $(echo "${result_names}" | egrep -o "disk[0-9]*s[0-9]*") )
-    echo "список от диалога = "${disk_mount_list[@]}
     if [[ ! ${#disk_mount_list[@]} = "0" ]]; then 
         NEED_PASSWORD    
     if [[ ${need_password} = 0 ]]; then
