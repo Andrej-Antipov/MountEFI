@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="045"
+edit_vers="046"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -222,8 +222,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>always</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>always</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
@@ -231,13 +231,13 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{3341, 25186, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{4096, 15458, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>Menlo Regular</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{56831, 61439, 53247}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
@@ -343,6 +343,16 @@ if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then GET_INITCONF_FROM_ICLOUD; fi
 UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
+
+if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
+rst=0
+        if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
+                launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
+        plutil -remove Restart ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        rst=1
+fi
 
 reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
 if [[ $reload_check = "Reload" ]]; then par="-s"; fi
@@ -513,6 +523,9 @@ if [[ ! $strng = "XHashes" ]]; then
             cache=0
 fi
 
+strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
+
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
@@ -588,9 +601,10 @@ if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
 fi
 
 CHECK_RELOAD(){
+restart_check=`echo "$MountEFIconf"| grep -e "<key>Restart</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]]; then rel=1; else rel=0; fi
+if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]] || [[ $restart_check = "Restart" ]]; then rel=1; else rel=0; fi
 }
 
 ENTER_PASSWORD(){
@@ -1286,6 +1300,9 @@ GET_LOADERS
 if [[ ${CheckLoaders} = 0 ]]; then 
     mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
 rm -f ~/.other_loaders_list.txt
+if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
+    SAVE_LOADERS_STACK
+fi
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
                     START_AUTOUPDATE &
@@ -2290,7 +2307,7 @@ rmlist=(); posrm=0
 
 GETARR
 
-if [[ ! $upd = 0 ]]; then GET_MOUNTEFI_STACK; CORRECT_LOADERS_HASH_LINKS; upd=0; else mounted_loaders_list=(); ldlist=(); lddlist=(); fi
+if [[ ! $upd = 0 ]] || [[ ! $rst = 0 ]]; then GET_MOUNTEFI_STACK; CORRECT_LOADERS_HASH_LINKS; upd=0; else mounted_loaders_list=(); ldlist=(); lddlist=(); fi
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
@@ -3069,6 +3086,49 @@ ADVANCED_MENUE(){
     order=3; UPDATELIST; GETKEYS
 }
 
+EASYEFI_RESTART_APP(){
+MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' |  xargs)"
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
+echo '<dict>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <array>' >> ${HOME}/.MountEFIr.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
+echo '  </array>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <true/>' >> ${HOME}/.MountEFIr.plist
+echo '</dict>' >> ${HOME}/.MountEFIr.plist
+echo '</plist>' >> ${HOME}/.MountEFIr.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
+echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'exit'             >> ${HOME}/.MountEFIr.sh
+
+chmod u+x ${HOME}/.MountEFIr.sh
+
+if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+
+plutil -replace EasyEFImode -bool Yes ${HOME}/.MountEFIconf.plist
+plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
+
+SAVE_LOADERS_STACK
+
+EXIT_PROGRAM
+}
+
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
 unset pos_corr; pos_corr=$1; if [[ $pos_corr = "" ]]; then pos_corr=50; fi
@@ -3089,7 +3149,7 @@ if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
         if [[ ! $order = 3 ]]; then
             if [[ $choice1 = [uUqQeEiIvVsSoOaA] ]]; then choice=${choice1}; break; fi
                     else
-             if [[ $choice1 = [qQcCoOsSiIvVoO] ]]; then choice=${choice1}; break; fi
+             if [[ $choice1 = [qQcCoOsSiIvVW] ]]; then choice=${choice1}; break; fi
         fi
  
 fi
@@ -3139,11 +3199,11 @@ printf "\033[?25l"
 SET_CODE_BASE(){
 current_language=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/')
 if [[ "${current_language}" = "Russian - Phonetic" ]]; then
-    code_base=( d18f d0af d0b5 d095 d183 d0a3 d0b8 d098 d0be d09e d0b0 d090 d181 d0a1 d186 d0a6 d0b2 d092)
-    sym_base=( q Q e E u U i I o O a A s S c C v V)
+    code_base=( d18f d0af d0b5 d095 d183 d0a3 d0b8 d098 d0be d09e d0b0 d090 d181 d0a1 d186 d0a6 d0b2 d092 d0a8)
+    sym_base=( q Q e E u U i I o O a A s S c C v V W)
 elif [[ "${current_language}" = "RussianWin" ]] || [[ "${current_language}" = "Russian" ]] || [[ "${current_language}" = "Ukrainian-PC" ]] || [[ "${current_language}" = "Ukrainian" ]] || [[ "${current_language}" = "Byelorussian" ]]; then
-    code_base=( d0b9 d099 d0bc d09c d0b3 d093 d188 d0a8 d189 d0a9 d184 d0a4 d18b d0ab d183 d0a3 d181 d0a1 d0b8 d098 d196 d086 d19e d08e ) 
-    sym_base=( q Q v V u U i I o O a A s S e E c C s S s S o O )
+    code_base=( d0b9 d099 d0bc d09c d0b3 d093 d188 d0a8 d189 d0a9 d184 d0a4 d18b d0ab d183 d0a3 d181 d0a1 d0b8 d098 d196 d086 d19e d08e d0a6) 
+    sym_base=( q Q v V u U i I o O a A s S e E c C s S s S o O W)
 else
     code_base=()
     sym_base=()
@@ -3223,13 +3283,14 @@ if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
-if [[ ! $choice =~ ^[0-9qQcCoOsSiIvV]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVW]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [oO] ]]; then  printf '                               '; SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_FCLOVER; choice="0"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
+if [[ ${choice} = [W] ]];  then EASYEFI_RESTART_APP; fi
 fi
 else
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="036"
+s_edit_vers="037"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -40,6 +40,7 @@ s_edit_vers="036"
 # 034 - исправлен детект версии Clover и OpenCore
 # 035 - транслятор двух байт юникод в один для первого ввода
 # 036 - удалена таймаут curl для проверки версии загрузчиков на github.
+# 037 - переключение в режим EasyEFI
 
 clear
 
@@ -506,8 +507,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>always</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>always</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
@@ -515,13 +516,13 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{3341, 25186, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{4096, 15458, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>Menlo Regular</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
             echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
             echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
+            echo '          <string>{56831, 61439, 53247}</string>' >> ${HOME}/.MountEFIconf.plist
             echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
             echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
             echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
@@ -749,6 +750,9 @@ if [[ ! $strng = "XHashes" ]]; then
             plutil -insert XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
             cache=0
 fi
+
+strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
@@ -2861,20 +2865,20 @@ fi
 
 SET_CODE_BASE(){
 current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
-sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y )
+sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y W)
             case "${current_layout}" in 
 
-                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
                                              ;;
-                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
                                              ;;
-                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab )
+                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab d0a8)
                                              ;;
-                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
                                              ;;
-                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
                                              ;;
-                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d )
+                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
                                              ;;
                                           *) code_base=()
                                              ;;
@@ -2901,7 +2905,7 @@ TRANS_READ(){
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZ]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZW]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -3046,9 +3050,15 @@ sbuf+=$(printf ' D) Upload settings backups from iCloud                         
             fi
       fi
  if [[ $loc = "ru" ]]; then
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+sbuf+=$(printf ' W) Быстро переключить MountEFI в режим EasyEFI           (SHIFT+W)             \n')
+fi
 sbuf+=$(printf ' R) Быстро перезагрузить программу настройки              (SHIFT+R)             \n')
 sbuf+=$(printf ' Z) Удаление программы MountEFI с компьютера              (SHIFT+Z)             \n')
 else
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+sbuf+=$(printf ' W) Instantly switch MountEFI in EasyEFI mode          (SHIFT+W)                \n')
+fi
 sbuf+=$(printf ' R) Restart the setup program immediately              (SHIFT+R)                \n')
 sbuf+=$(printf ' Z) Uninstall all MountEFI files and services          (SHIFT+Z)                \n')
 fi 
@@ -3474,7 +3484,7 @@ if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; else inputs=$choice
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         
-            if [[ $choice1 = [uUqQeEiIvVdDaAoOzZxXnNrRlLsS] ]]; then choice=${choice1}; break; fi
+            if [[ $choice1 = [uUqQeEiIvVdDaAoOzZxXnNrRlLsSW] ]]; then choice=${choice1}; break; fi
        
 fi
  choice1="±"
@@ -7033,6 +7043,46 @@ if [[ ${cleared} = 0 ]]; then
 fi
 }
 
+RESTART_APP(){
+MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' |  xargs)"
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
+echo '<dict>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <array>' >> ${HOME}/.MountEFIr.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
+echo '  </array>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <true/>' >> ${HOME}/.MountEFIr.plist
+echo '</dict>' >> ${HOME}/.MountEFIr.plist
+echo '</plist>' >> ${HOME}/.MountEFIr.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
+echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'exit'             >> ${HOME}/.MountEFIr.sh
+
+chmod u+x ${HOME}/.MountEFIr.sh
+
+if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+
+plutil -replace EasyEFImode -bool Yes ${HOME}/.MountEFIconf.plist
+plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
+
+}
+
 
 ###############################################################################
 ################### MAIN ######################################################
@@ -7044,7 +7094,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=34; col=80
+lines=35; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -7423,6 +7473,13 @@ if [[ $inputs = [sS] ]]; then
   UPDATE_CACHE
 fi  
 
+##############################################################################
+
+if [[ $inputs = [Ww] ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
+        RESTART_APP 
+        if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
+fi
+##############################################################################
 ##############################################################################
 
 if [[ $inputs = R ]]; then 
