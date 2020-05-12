@@ -4,7 +4,7 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="046"
+edit_vers="047"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -344,15 +344,18 @@ UPDATE_CACHE
 
 ########################## Инициализация нового конфига ##################################################################################
 
-if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
 rst=0
+if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
         if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
                 launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
         if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
         if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
         plutil -remove Restart ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        rst=1
+        if [[ $(echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "Updating" ]]; then rst=2; else rst=1; fi
 fi
+
+if [[ $(echo "$MountEFIconf"| grep -e "<key>NO_RETURN_EASYEFI</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "NO_RETURN_EASYEFI" ]]; then
+        rst=1; plutil -remove NO_RETURN_EASYEFI ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; fi
 
 reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
 if [[ $reload_check = "Reload" ]]; then par="-s"; fi
@@ -564,6 +567,121 @@ sh ${HOME}/.MountEFInoty.sh
 rm ${HOME}/.MountEFInoty.sh
 }
 
+SAVE_LOADERS_STACK(){
+
+if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
+mkdir ~/.MountEFIst
+
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
+            touch ~/.MountEFIst/.mounted_loaders_list
+            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> ~/.MountEFIst/.mounted_loaders_list; done
+fi
+
+if [[ ! ${#ldlist[@]} = 0 ]]; then 
+            touch ~/.MountEFIst/.ldlist
+            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${ldlist[h]} >> ~/.MountEFIst/.ldlist; done
+fi
+
+if [[ ! ${#lddlist[@]} = 0 ]]; then 
+            touch ~/.MountEFIst/.lddlist
+            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> ~/.MountEFIst/.lddlist; done
+fi
+
+}
+
+#запоминаем на каком терминале и сколько процессов у нашего скрипта
+#############################################################################################################################
+MyTTY=$(tty | tr -d " dev/\n")
+MyPID=$(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d' ')
+MyZPID=$(ps | grep -v grep  | grep $MyTTY | grep zsh | xargs | cut -f1 -d' ')
+term=$(ps);  MyTTYcount=$(echo "$term" | egrep -o $MyTTY | wc -l | bc)
+##############################################################################################################################
+
+TERMINATE(){
+kill $MyPID
+if [[ ${zpid} = 1 ]] && [[ ! ${MyZPID} = "" ]]; then
+   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then kill ${MyZPID}; fi
+fi 
+}
+
+CHECK_TTY_COUNT(){
+term=$(ps); AllTTYcount=$( echo "$term" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc )
+TTYcount=$((AllTTYcount-MyTTYcount))
+zpid=0
+if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
+   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then ((--TTYcount)); zpid=1; fi
+fi
+}
+
+CLEAR_HISTORY(){
+if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
+if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
+}
+
+################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
+EXIT_PROGRAM(){
+
+################################## очистка на выходе #############################################################
+rm -f  ~/.disk_list.txt
+if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
+CLEAR_HISTORY
+#####################################################################################################################
+CHECK_TTY_COUNT	
+
+osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
+TERMINATE &
+if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
+else
+   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
+ fi
+}
+
+EASYEFI_RESTART_APP(){
+MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' |  xargs)"
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
+echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
+echo '<dict>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <array>' >> ${HOME}/.MountEFIr.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
+echo '  </array>' >> ${HOME}/.MountEFIr.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
+echo '  <true/>' >> ${HOME}/.MountEFIr.plist
+echo '</dict>' >> ${HOME}/.MountEFIr.plist
+echo '</plist>' >> ${HOME}/.MountEFIr.plist
+
+echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
+echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
+echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'exit'             >> ${HOME}/.MountEFIr.sh
+
+chmod u+x ${HOME}/.MountEFIr.sh
+
+if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+
+plutil -replace EasyEFImode -bool Yes ${HOME}/.MountEFIconf.plist
+plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
+
+SAVE_LOADERS_STACK
+
+EXIT_PROGRAM
+}
+
 CHECK_AUTOUPDATE(){
 AutoUpdate=1
 strng=`echo "$MountEFIconf"  | grep -A 1 -e "UpdateSelfAuto</key>" | grep false | tr -d "<>/"'\n\t'`
@@ -583,7 +701,8 @@ if [[ ! $upd = 0 ]]; then
                         else
                         echo 'SUBTITLE="Update completed !"; MESSAGE="MountEFI v'${prog_vers}' edit v'${edit_vers}'"' >> ${HOME}/.MountEFInoty.sh
                         fi
-                        DISPLAY_NOTIFICATION 
+                        DISPLAY_NOTIFICATION
+        if [[ $rst = 2 ]]; then EASYEFI_RESTART_APP; fi
     else
                         col=80; SHOW_VERSION -u
     fi
@@ -606,7 +725,7 @@ reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed
 update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]] || [[ $restart_check = "Restart" ]]; then rel=1; else rel=0; fi
 }
-
+ 
 ENTER_PASSWORD(){
 
 mypassword="0"; unset cancel; unset PASSWORD; braked=0
@@ -917,14 +1036,6 @@ macos=`echo ${macos//[^0-9]/}`
 macos=${macos:0:4}
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
-
-#запоминаем на каком терминале и сколько процессов у нашего скрипта
-#############################################################################################################################
-MyTTY=$(tty | tr -d " dev/\n")
-MyPID=$(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d' ')
-MyZPID=$(ps | grep -v grep  | grep $MyTTY | grep zsh | xargs | cut -f1 -d' ')
-term=$(ps);  MyTTYcount=$(echo "$term" | egrep -o $MyTTY | wc -l | bc)
-##############################################################################################################################
 
 parm="$1" ### параметр с которым вызывается MountEFI
 
@@ -1314,44 +1425,6 @@ fi
 MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep MountEFI | wc -l)
 setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
 # Возвращает в переменной TTYcount 0 если наш терминал один
-CHECK_TTY_COUNT(){
-term=$(ps); AllTTYcount=$( echo "$term" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc )
-TTYcount=$((AllTTYcount-MyTTYcount))
-zpid=0
-if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
-   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then ((--TTYcount)); zpid=1; fi
-fi
-}
-
-CLEAR_HISTORY(){
-if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
-if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
-}
-
-TERMINATE(){
-kill $MyPID
-if [[ ${zpid} = 1 ]] && [[ ! ${MyZPID} = "" ]]; then
-   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then kill ${MyZPID}; fi
-fi 
-}
-
-################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
-EXIT_PROGRAM(){
-
-################################## очистка на выходе #############################################################
-rm -f  ~/.disk_list.txt
-if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
-CLEAR_HISTORY
-#####################################################################################################################
-CHECK_TTY_COUNT	
-
-osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
-TERMINATE &
-if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
-else
-   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
- fi
-}
 
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
 if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
@@ -1375,31 +1448,6 @@ if [[ -f ~/.disk_list.txt.back ]]; then mv -f ~/.disk_list.txt.back ~/.disk_list
 
 }
 ######################## сохранение данных для перезагрузки ###################################################################
-
-SAVE_LOADERS_STACK(){
-
-if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
-mkdir ~/.MountEFIst
-
-if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.mounted_loaders_list
-            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> ~/.MountEFIst/.mounted_loaders_list; done
-fi
-
-if [[ ! ${#ldlist[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.ldlist
-            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${ldlist[h]} >> ~/.MountEFIst/.ldlist; done
-fi
-
-if [[ ! ${#lddlist[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.lddlist
-            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> ~/.MountEFIst/.lddlist; done
-fi
-
-}
 
 ############################################# сохранене данных для коррекции после setup ##########################################
 SAVE_EFIes_STATE(){
@@ -3086,48 +3134,6 @@ ADVANCED_MENUE(){
     order=3; UPDATELIST; GETKEYS
 }
 
-EASYEFI_RESTART_APP(){
-MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' |  xargs)"
-
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
-echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
-echo '<dict>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <array>' >> ${HOME}/.MountEFIr.plist
-echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
-echo '  </array>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <true/>' >> ${HOME}/.MountEFIr.plist
-echo '</dict>' >> ${HOME}/.MountEFIr.plist
-echo '</plist>' >> ${HOME}/.MountEFIr.plist
-
-echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
-echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
-echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'exit'             >> ${HOME}/.MountEFIr.sh
-
-chmod u+x ${HOME}/.MountEFIr.sh
-
-if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
-if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
-
-plutil -replace EasyEFImode -bool Yes ${HOME}/.MountEFIconf.plist
-plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
-
-SAVE_LOADERS_STACK
-
-EXIT_PROGRAM
-}
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
