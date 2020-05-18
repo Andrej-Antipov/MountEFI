@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="047"
+edit_vers="048"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -528,6 +528,8 @@ fi
 
 strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
+strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFIsimple</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "EasyEFIsimple" ]]; then plutil -replace EasyEFIsimple -bool Yes ${HOME}/.MountEFIconf.plist; cache=0; fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
