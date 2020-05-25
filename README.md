@@ -19,6 +19,6 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 
 ![Theme customizable GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/100.png)
 
-![Russian and English GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/101.png)
+![Theme customizable GUI](https://github.com/Andrej-Antipov/EasyEFI/blob/master/screens/Снимок%20экрана%202020-05-11%20в%2022.47.34.png)
 
 
