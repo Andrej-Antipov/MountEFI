@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 25.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="048"
+edit_vers="050"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1208,6 +1208,8 @@ f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
 10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
 9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57d;;
 d90190bfea64112ed83621079371277a ) oc_revision=.58d;;
+01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59r;;
+efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59d;;
                                 *)     oc_revision=""
                     esac
 fi
@@ -3357,12 +3359,25 @@ if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     init_time="$(date +%s)"; usblist=(); warning_sent=0
-    for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); fi; done; done
+    for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
+    #echo "0 D_LIST = ${dlist[@]}" >> ~/Desktop/temp.txt
+    #echo "0 USB_LIST = ${usblist[@]}" >> ~/Desktop/temp.txt
+    if [[ ! ${#usblist[@]} = 0 ]]; then
+        realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
+        #echo "REALEFI_LIST = ${realEFI_list[@]}" >> ~/Desktop/temp.txt
+        if [[ ! ${#realEFI_list[@]} = 0 ]]; then
+        temp_usblist=()
+        for z in ${usblist[@]}; do for y in ${!realEFI_list[@]}; do match=0; if [[ ${z} = ${realEFI_list[y]} ]]; then match=1; break; fi; done; if [[ ${match} = 0 ]]; then temp_usblist+=(${z}); fi; done
+        #echo "1 TEMP_USB_LIST = ${temp_usblist[@]}" >> ~/Desktop/temp.txt
+        usblist=(${temp_usblist[@]})
+        #echo "1 USB_LIST = ${usblist[@]}" >> ~/Desktop/temp.txt
+        fi
+    fi
     if [[ ! ${#usblist[@]} = 0 ]]; then
         while true; do
             mounted_list=( $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
             usb_mounted_list=()
-            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ ${z} = ${y} ]]; then usb_mounted_list+=( ${z} );  fi; done; done
+            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ ${z} = ${y} ]]; then usb_mounted_list+=( ${z} ); break; fi; done; done
             diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
             if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
             exec_time="$(($(date +%s)-init_time))"
