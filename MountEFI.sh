@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 23.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="050"
+edit_vers="051"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -746,13 +746,29 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
                 fi
 fi
 if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
-  if [[ $flag = 1 ]]; then 
+  
+  if [[ $flag = 1 ]] || ( [[ $flag = 0 ]] && [[ "$(sysctl -n kern.safeboot)" = "1" ]] ); then 
+        
+        if [[ $flag = 0 ]]  && [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then
+            if [[ $loc = "ru" ]]; then
+                sudo_message='Для подключения EFI разделов в режиме безопасной загрузки нужен пароль!'
+            else
+                sudo_message='Password is required to mount EFI partitions in safe boot mode!'
+        fi
+  else
+        if [[ $loc = "ru" ]]; then
+                sudo_message='Для подключения EFI разделов нужен пароль!'
+        else
+                sudo_message='Password is required to mount EFI partitions!'
+        fi
+ fi
+
         TRY=3
         while [[ ! $TRY = 0 ]]; do
         if [[ $loc = "ru" ]]; then
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then braked=1; break; fi  
                 mypassword="${PASSWORD}" 
@@ -805,6 +821,7 @@ fi
 fi
 osascript -e 'tell application "Terminal" to activate'
 }
+
 
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
@@ -1936,8 +1953,27 @@ if ! echo "${mypassword}" | sudo -S printf "" 2>/dev/null; then
 fi
 }
 
+############### разблокировать раздел EFI в Safe Mode ##########################################
+
+IF_UNLOCK_SAFE_MODE(){
+if [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then 
+    if [[ $(kextstat -l | grep -ow com.apple.filesystems.msdosfs) = "" ]]; then 
+        if [[ ! "${mypassword}" = "" ]]; then
+             if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+ 	         rsync -avq  /S*/L*/E*/msdosfs.kext ~/Library/Application\ Support/MountEFI
+	         /usr/libexec/PlistBuddy -c "Add :OSBundleRequired string Safe Boot" ~/Library/Application\ Support/MountEFI/msdosfs.kext/Contents/Info.plist
+             echo "${mypassword}" | sudo -S chown -R root:wheel ~/Library/Application\ Support/MountEFI/msdosfs.kext
+             sudo chmod -R 755 ~/Library/Application\ Support/MountEFI/msdosfs.kext
+	         sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext; sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext
+  	         echo "${mypassword}" | sudo -Sk rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext
+        fi
+    fi
+fi
+}
+
 DO_MOUNT(){
-    	if [[ $flag = 0 ]]; then 
+    	if [[ $flag = 0 ]] && [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then ENTER_PASSWORD; password_was_entered=1; IF_UNLOCK_SAFE_MODE; fi
+        if [[ $flag = 0 ]]; then
                     if ! diskutil quiet mount  /dev/${string} 2>/dev/null; then
                     sleep 1
                     diskutil quiet mount  /dev/${string} 2>/dev/null; fi  
@@ -1947,6 +1983,7 @@ DO_MOUNT(){
                     if [[ ! $mypassword = "0" ]]; then
                         CHECK_PASSWORD
                         if [[ ${need_password} = 0 ]]; then
+                            IF_UNLOCK_SAFE_MODE
                             if ! sudo diskutil quiet mount  /dev/${string} 2>/dev/null; then 
                                 sleep 1
                                 sudo diskutil quiet mount  /dev/${string} 2>/dev/null
