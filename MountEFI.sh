@@ -1960,12 +1960,12 @@ if [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then
     if [[ $(kextstat -l | grep -ow com.apple.filesystems.msdosfs) = "" ]]; then 
         if [[ ! "${mypassword}" = "" ]]; then
              if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
- 	         rsync -avq  /S*/L*/E*/msdosfs.kext ~/Library/Application\ Support/MountEFI
-	         /usr/libexec/PlistBuddy -c "Add :OSBundleRequired string Safe Boot" ~/Library/Application\ Support/MountEFI/msdosfs.kext/Contents/Info.plist
-             echo "${mypassword}" | sudo -S chown -R root:wheel ~/Library/Application\ Support/MountEFI/msdosfs.kext
-             sudo chmod -R 755 ~/Library/Application\ Support/MountEFI/msdosfs.kext
-	         sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext; sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext
-  	         echo "${mypassword}" | sudo -Sk rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext
+ 	         rsync -avq  /S*/L*/E*/msdosfs.kext ~/Library/Application\ Support/MountEFI >/dev/null 2>&1
+	         /usr/libexec/PlistBuddy -c "Add :OSBundleRequired string Safe Boot" ~/Library/Application\ Support/MountEFI/msdosfs.kext/Contents/Info.plist >/dev/null 2>&1
+             echo "${mypassword}" | sudo -S chown -R root:wheel ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
+             sudo chmod -R 755 ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
+	         sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1; sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
+  	         echo "${mypassword}" | sudo -Sk rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
         fi
     fi
 fi
