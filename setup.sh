@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.05.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 26.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="037"
+s_edit_vers="039"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -41,6 +41,8 @@ s_edit_vers="037"
 # 035 - транслятор двух байт юникод в один для первого ввода
 # 036 - удалена таймаут curl для проверки версии загрузчиков на github.
 # 037 - переключение в режим EasyEFI
+# 038 - Add copyright info in kext plist while update
+# 039 - в ручном обновление пофиксено создание служебной папки
 
 clear
 
@@ -5764,6 +5766,7 @@ echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace NSHumanReadableCopyright -string "Copyright © 2020 gosvamih. All rights reserved." "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
 echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
@@ -5862,6 +5865,7 @@ else
 printf '\033[3;23f''\e[40m\e[1;32m   '; printf '\e[40m\e[1;32mTo cancel checking press [ \e[40m\e[1;5;35mQ\e[40m\e[0;1;40;32m ]\e[0m''\n\n'
 fi
 if ping -c 1 google.com >> /dev/null 2>&1; then
+    if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
     if [[ $loc = "ru" ]]; then
     printf '\e[40m\e[1;33m   Проверяем доступную версию программы на github  \e[0m'
     else
