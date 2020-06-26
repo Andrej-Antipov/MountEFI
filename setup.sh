@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 26.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 27.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="039"
+s_edit_vers="040"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -43,6 +43,7 @@ s_edit_vers="039"
 # 037 - переключение в режим EasyEFI
 # 038 - Add copyright info in kext plist while update
 # 039 - в ручном обновление пофиксено создание служебной папки
+# 040 - увеличить время проверки версии в ручном режиме
 
 clear
 
@@ -5839,13 +5840,13 @@ fi
 }
 
 GET_LATEST_RELEASE(){
-latest_release=$(curl -s --max-time 10 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+latest_release=$(curl -s --max-time 30 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
 if [[ -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
 echo "${latest_release}" > ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt
 }
 
 GET_LATEST_EDITION(){
-latest_edit=$(curl -s --max-time 10 https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+latest_edit=$(curl -s --max-time 30 https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
 echo "${latest_edit}" > ~/Library/Application\ Support/MountEFI/MEFILatestEdition.txt
 }
 
