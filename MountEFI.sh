@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 23.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="051"
+edit_vers="052"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -569,6 +569,11 @@ sh ${HOME}/.MountEFInoty.sh
 rm ${HOME}/.MountEFInoty.sh
 }
 
+ERROR_MSG(){
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+EXIT_PROGRAM
+}
+
 SAVE_LOADERS_STACK(){
 
 if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
@@ -1048,11 +1053,14 @@ if [[ $strng = "false" ]]; then ShowKeys=0; fi
 
 }
 
+ERROR_OS_VERSION(){
+if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+}
+
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ "${macos}" -gt "1015" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 

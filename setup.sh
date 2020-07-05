@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.06.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.7.0"
-s_edit_vers="040"
+s_edit_vers="041"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -44,6 +44,7 @@ s_edit_vers="040"
 # 038 - Add copyright info in kext plist while update
 # 039 - в ручном обновление пофиксено создание служебной папки
 # 040 - увеличить время проверки версии в ручном режиме
+# 041 - проверка на неподдерживаемые весрии Mac OS
 
 clear
 
@@ -990,6 +991,11 @@ echo ' exit' >> ${HOME}/.MountEFInoty.sh
 chmod u+x ${HOME}/.MountEFInoty.sh
 sh ${HOME}/.MountEFInoty.sh
 rm ${HOME}/.MountEFInoty.sh
+}
+
+ERROR_MSG(){
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+EXIT_PROG
 }
 
 ENTER_PASSWORD(){
@@ -5698,11 +5704,15 @@ if [[ -f ~/.other_loaders_list.txt ]]; then cp -f ~/.other_loaders_list.txt ~/.o
 if [[ -f ~/.disk_list.txt ]]; then cp -f ~/.disk_list.txt ~/.disk_list.txt.back; fi
 }
 
+ERROR_OS_VERSION(){
+SET_LOCALE
+if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+}
+
 GET_SYSTEM_FLAG(){
-macos=`sw_vers -productVersion`
-  macos=`echo ${macos//[^0-9]/}`
-  macos=${macos:0:4}
-  if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ "${macos}" -gt "1015" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 
 FORCE_CHECK_PASSWORD(){
@@ -7094,6 +7104,7 @@ plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
 ###############################################################################
 
 SET_INPUT
+GET_SYSTEM_FLAG
 theme="system"
 var4=0
 cd "${ROOT}"
