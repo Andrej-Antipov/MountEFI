@@ -690,6 +690,14 @@ SAVE_LOADERS_STACK
 EXIT_PROGRAM
 }
 
+# Установка флага необходимости в SUDO - flag
+GET_FLAG(){
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ "${macos}" -gt "1110" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
+}
+
+
 CHECK_AUTOUPDATE(){
 AutoUpdate=1
 strng=`echo "$MountEFIconf"  | grep -A 1 -e "UpdateSelfAuto</key>" | grep false | tr -d "<>/"'\n\t'`
@@ -702,6 +710,7 @@ if [[ ! $upd = 0 ]]; then
         if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
     CHECK_AUTOUPDATE
     if [[ ${AutoUpdate} = 1 ]] && [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
+                        GET_FLAG
                         plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist; UPDATE_CACHE 
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -1056,13 +1065,6 @@ if [[ $strng = "false" ]]; then ShowKeys=0; fi
 
 ERROR_OS_VERSION(){
 if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
-}
-
-# Установка флага необходимости в SUDO - flag
-GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ "${macos}" -gt "1110" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
-if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 
 parm="$1" ### параметр с которым вызывается MountEFI
