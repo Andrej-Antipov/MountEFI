@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -557,7 +557,8 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 }
 
 DISPLAY_NOTIFICATION(){
-if [[ -d "${ROOT}"/terminal-notifier.app ]]; then
+
+if [[ -d "${ROOT}"/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
 echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
 sleep 1.5
 else
@@ -1060,7 +1061,7 @@ if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' �
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ "${macos}" -gt "1015" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+if [[ "${macos}" -gt "1110" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 
@@ -1595,7 +1596,10 @@ echo 'sleep 4; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh       
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
+echo '        if [[ -f ~/.MountEFIupdates/$latest_edit/alerter ]]; then' >> ${HOME}/.MountEFIu.sh
+echo '              mv -f ~/.MountEFIupdates/$latest_edit/alerter "${DirPath}""alerter"' >> ${HOME}/.MountEFIu.sh
+echo '        fi' >> ${HOME}/.MountEFIu.sh       
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh

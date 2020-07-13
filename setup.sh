@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -45,6 +45,7 @@ s_edit_vers="041"
 # 039 - в ручном обновление пофиксено создание служебной папки
 # 040 - увеличить время проверки версии в ручном режиме
 # 041 - проверка на неподдерживаемые весрии Mac OS
+# 042 - для Big Sur отключить показ икнки в предупреждениях
 
 clear
 
@@ -981,7 +982,7 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 }
 
 DISPLAY_NOTIFICATION(){
-if [[ -d terminal-notifier.app ]]; then
+if [[ -d terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
 echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
 sleep 1
 else
@@ -5402,7 +5403,7 @@ FILL_SYS_AUTOMOUNT_EXEC(){
 echo '#!/bin/bash'  >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
 echo 'DISPLAY_NOTIFICATION(){' >> ${HOME}/.MountEFIa.sh
-if [[ -d ${HOME}/.MountEFInotifyService/terminal-notifier.app ]]; then
+if [[ -d ${HOME}/.MountEFInotifyService/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
 echo '${HOME}/.MountEFInotifyService/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFIa.sh
 else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFIa.sh
@@ -5612,7 +5613,7 @@ if [[ -d ~/.MountEFInotifyService ]]; then rm -R ~/.MountEFInotifyService; fi
 
 SETUP_SYS_AUTOMOUNT(){
 REMOVE_SYS_AUTOMOUNT_SERVICE
-if [[ -d terminal-notifier.app ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp -R terminal-notifier.app ~/.MountEFInotifyService; fi
+if [[ -d terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp -R terminal-notifier.app ~/.MountEFInotifyService; fi
 if [[ -f AppIcon.icns ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp AppIcon.icns ~/.MountEFInotifyService; fi
 FILL_SYS_AUTOMOUNT_PLIST
 FILL_SYS_AUTOMOUNT_EXEC
@@ -5711,7 +5712,7 @@ if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' �
 
 GET_SYSTEM_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ "${macos}" -gt "1015" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+if [[ "${macos}" -gt "1110" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 
