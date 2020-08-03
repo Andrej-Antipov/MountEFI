@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.07.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.08.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="052"
+edit_vers="053"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1239,6 +1239,8 @@ f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
 d90190bfea64112ed83621079371277a ) oc_revision=.58d;;
 01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59r;;
 efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59d;;
+bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60d;;
+58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.60r;;
                                 *)     oc_revision=""
                     esac
 fi
