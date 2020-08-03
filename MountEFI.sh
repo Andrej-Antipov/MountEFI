@@ -693,7 +693,8 @@ EXIT_PROGRAM
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ "${macos}" -gt "1110" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "${macos}" -gt "1100" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 
