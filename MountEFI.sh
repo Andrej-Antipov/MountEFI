@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.08.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="053"
+edit_vers="054"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -118,8 +118,8 @@ clear && printf "\e[3J"
 }
 
 KILL_CURL_UPDATER(){
-if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
-    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " "); fi
+for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ); do 
+    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " ") 2>/dev/null; done
 } 
 
 NET_UPDATE_CLOVER(){
@@ -1184,13 +1184,19 @@ synchro=0
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 
 CORRECT_OC_VERS(){
-
 case $( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null ) in 
         dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
         3e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
                                         *)     oc_revision=""
 esac 
+}
 
+CORRECT_OC_VERS_1(){
+case $( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null ) in 
+        3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
+        5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
+                                        *)     oc_revision=""
+esac 
 }
 
 ################################ получение имени диска для переименования #####################
@@ -1203,111 +1209,61 @@ GET_CONFIG_VERS "OpenCore"
 ####### bootx64.efi у версии .57 и .58 одинаковый ###
 ######  уточняем версию через хэш OpenCore.efi ######
 if [[ ${oc_revision} = "" ]]; then
-    if [[ "${md5_loader}" = "10610877a9cc0ed958ff74ed7a192474" ]]; then
-    CORRECT_OC_VERS
-    fi
+    if [[ "${md5_loader}" = "10610877a9cc0ed958ff74ed7a192474" ]]; then CORRECT_OC_VERS; fi
+    if [[ "${md5_loader}" = "58c4b4a88f8c41f84683bdf4afa3e77c" ]]; then CORRECT_OC_VERS_1; fi
 fi
 
 if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
-############## oc_hashes_strings 22 #################
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
-52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
-91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54r;;
-5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
-f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
-07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
-12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56r;;
-9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56d;;
-10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
-9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57d;;
-d90190bfea64112ed83621079371277a ) oc_revision=.58d;;
+############## oc_hashes_strings 29 #################
+75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61d;;
+58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
+bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60d;;
 01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59r;;
 efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59d;;
-bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60d;;
-58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.60r;;
+d90190bfea64112ed83621079371277a ) oc_revision=.58d;;
+9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57d;;
+10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
+12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56r;;
+9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56d;;
+f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
+07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
+91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54r;;
+5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
+97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
+b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
+1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
+eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
+eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
+c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
+7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
+c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;
+91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
+5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
+303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
+52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
+7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
+bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
+297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
+e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
                                 *)     oc_revision=""
                     esac
 fi
 
 ################ no_release_hashes ##################
-if [[ ${oc_revision} = "" ]]; then 
+#if [[ ${oc_revision} = "" ]]; then 
             
-                 case "${md5_loader}" in
-b3c22c4a30c3d6ee9dd8c9e202d62f1f ) oc_revision=.55ð
-;;
-e7d387c1e60de4a6264b65f0939fa58d ) oc_revision=.55n
-;;
-0b717fd908ae278a0b0de7c2ba21a5b3 ) oc_revision=.55ð
-;;
-bbce97ad42c5ce36ef1b00dd2d35cf41 ) oc_revision=.55ð
-;;
-ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
-;;
-d3c0c19a82e9dbbf5e457ef85f8ad3b5 ) oc_revision=.55®
-;;
-13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
-;;
-5e8fe9b3c1398f50c4bd126dade630ac ) oc_revision=.55®
-;;
-7a7b1fef20a36fcb216e0a012931b123 ) oc_revision=.55ð
-;;
-8e8fb33c3f0409bfc1d0e24a6340dc8a ) oc_revision=.55n
-;;
-4500e9f6f0d3d3fa9e4378931418b1f7 ) oc_revision=.54n
-;;
-3edc7635655663fdb9cf6979f7ef20f3 ) oc_revision=.54ð
-;;
-181e452d5aa32e168159aafbe8353d10 ) oc_revision=.54n
-;;
-005807d0d8ae2b8c0eed2822ab82ea5b ) oc_revision=.54ð
-;;
-aa99fb18962af96cc7d77f9331336aa7 ) oc_revision=.54n
-;;
-f8b52899bdff4a6c4062c1ef17acd1c9 ) oc_revision=.54ð
-;;
-31cd059b295eb8d3cccfb8d243dba02a ) oc_revision=.54®
-;;
-6a0aaf2df97fc11d9cca3b63a943d345 ) oc_revision=.54n
-;;
-992ea6899e67dabd396fca6b87b33058 ) oc_revision=.54ð
-;;
-8aab12ce737ec6b285a498c2e14700fd ) oc_revision=.54®
-;;
-5349b8cb888951e719fca0b6d7f017d3 ) oc_revision=.54n
-;;
-01a1c38cb71da54313a160504eb1aba0 ) oc_revision=.54ð
-;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.54®
-;;
-f677bc4739f8d94bdae1223727fbd67c ) oc_revision=.54ð
-;;
-96f479f194cc9048c43f511a5de793e8 ) oc_revision=.54n
-;;
-d0a1ed17c3433f546fede7e2700e7322 ) oc_revision=.53®
-;;
-2f674084287ebc38bd8d214f7c9f26f3 ) oc_revision=.53ð
-;;
-c6d4a4d0860d32e9e3faee2062a82a26 ) oc_revision=.53n
-;;
-                                *)     oc_revision=""
-                    esac
-fi
+#                 case "${md5_loader}" in
+#ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
+#;;
+#d3c0c19a82e9dbbf5e457ef85f8ad3b5 ) oc_revision=.55®
+#;;
+#13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
+#;;
+#                                *)     oc_revision=""
+#                    esac
+#fi
 
 }
 
@@ -3061,6 +3017,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
 
                     if [[ ${loader_sum} = "10610877a9cc0ed958ff74ed7a192474" ]]; then md5_loader=${loader_sum}; CORRECT_OC_VERS
+                       elif [[ ${loader_sum} = "58c4b4a88f8c41f84683bdf4afa3e77c" ]]; then md5_loader=${loader_sum}; CORRECT_OC_VERS_1
                        if [[ ! ${old_oc_revision} = ${oc_revision} ]]; then old_oc_revision=${oc_revision}; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
 

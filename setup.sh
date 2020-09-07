@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.08.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
-s_prog_vers="1.7.0"
-s_edit_vers="042"
+s_prog_vers="1.8.0"
+s_edit_vers="043"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -46,6 +46,7 @@ s_edit_vers="042"
 # 040 - увеличить время проверки версии в ручном режиме
 # 041 - проверка на неподдерживаемые весрии Mac OS
 # 042 - для Big Sur отключить показ икнки в предупреждениях
+# 043 - faster kill curl function 
 
 clear
 
@@ -157,8 +158,8 @@ clear && printf "\e[3J"
 }
 
 KILL_CURL_UPDATER(){
-if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
-    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep github.com | xargs | cut -f1 -d " "); fi
+for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ); do 
+    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " ") 2>/dev/null; done
 } 
 
 NET_UPDATE_CLOVER(){
