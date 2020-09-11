@@ -67,20 +67,6 @@ export LANG=en_US.UTF-8
 prog_vers="1.8.0"
 edit_vers="055"
 
-DEBUG_MODE=0
-
-DBG(){
-if [[ $DEBUG_MODE = 1 ]]; then
-echo "________________________________ DBG $1 _________________________________" >> ~/Desktop/temp.txt
-printf "mounted_ld_list =" >> ~/Desktop/temp.txt; for i in ${!mounted_loaders_list[@]}; do printf " $i).${mounted_loaders_list[i]}" >> ~/Desktop/temp.txt; done; printf '\n' >> ~/Desktop/temp.txt
-printf "dlist =" >> ~/Desktop/temp.txt; for i in ${!dlist[@]}; do printf " $i).${dlist[i]}" >> ~/Desktop/temp.txt; done; printf '\n' >> ~/Desktop/temp.txt
-printf "lddlist =" >> ~/Desktop/temp.txt; for i in ${!lddlist[@]}; do printf " $i).${lddlist[i]}" >> ~/Desktop/temp.txt; done; printf '\n' >> ~/Desktop/temp.txt
-printf "ldlist =" >> ~/Desktop/temp.txt; for i in ${!ldlist[@]}; do printf " $i).${ldlist[i]}" >> ~/Desktop/temp.txt; done; printf '\n' >> ~/Desktop/temp.txt
-printf "oc_list =" >> ~/Desktop/temp.txt; for i in ${!oc_list[@]}; do printf " $i).${oc_list[i]}" >> ~/Desktop/temp.txt; done; printf '\n' >> ~/Desktop/temp.txt
-echo "__________________________________________________________________________" >> ~/Desktop/temp.txt
-fi
-}
-
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
 
@@ -1408,15 +1394,6 @@ if [[ $hotplug = 0 ]]; then synchro=0
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2&gt;/dev/null); then loader_sum=0 ; fi
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || ( [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]] &amp;&amp; [[ ! ${oc_list[pnum]} = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi ) ]]  ); then
-
-                    if [[ $DEBUG_MODE = 1 ]]; then 
-                    echo "" >> ~/Desktop/temp.txt; echo "hotplug = 1" >> ~/Desktop/temp.txt
-                    echo "oc_list (pnum) = ${oc_list[pnum]}" >> ~/Desktop/temp.txt
-                    echo "oc_efi_md5 (pnum) = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi )" >> ~/Desktop/temp.txt
-                    echo "OC_CHECK = $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" )" >> ~/Desktop/temp.txt
-                    echo "" >> ~/Desktop/temp.txt
-                    fi
-                    
                     hotplug=1; echo "1" &gt; ~/Library/Application\ Support/MountEFI/recheckLoadersFlag; break; fi
             fi
         done        
@@ -1549,12 +1526,6 @@ exit
 
 RECHECK_LOADERS(){
 if [[ ! $CheckLoaders = 0 ]] &amp;&amp; [[ -f ~/Library/Application\ Support/MountEFI/recheckLoadersFlag ]]; then
-
-        if [[ $DEBUG_MODE = 1 ]]; then 
-        echo "" >> ~/Desktop/temp.txt; 
-        echo "RECHECK 1 oc_list: " >> ~/Desktop/temp.txt; for a in ${!oc_list[@]}; do echo "a$a = ${oc_list[a]}" >> ~/Desktop/temp.txt; done ; echo >> ~/Desktop/temp.txt 
-        fi
-
 		update_screen_flag=0
         for pnum in ${!dlist[@]}
         do
@@ -1565,13 +1536,6 @@ if [[ ! $CheckLoaders = 0 ]] &amp;&amp; [[ -f ~/Library/Application\ Support/Mou
                     if [[ ! ${loader_sum} = 0 ]] &amp;&amp; ( [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]] &amp;&amp; [[ ! ${oc_list[pnum]} = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi ) ]] ); then 
                             oc_list[pnum]=$( md5 -qq "$vname"/EFI/OC/OpenCore.efi )
                             md5_loader=${loader_sum}; GET_OC_VERS; update_screen_flag=1
-
-                            if [[ $DEBUG_MODE = 1 ]]; then
-                            echo "RECHECK 2 oc_list: " >> ~/Desktop/temp.txt;
-                            for a in ${!oc_list[@]}; do echo "a$a = ${oc_list[a]}" >> ~/Desktop/temp.txt; done ; echo >> ~/Desktop/temp.txt 
-                            echo "OC_CHECK = $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" )" >> ~/Desktop/temp.txt
-                            echo "update_screen_flag=1" >> ~/Desktop/temp.txt
-                            fi
                     fi
 
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
@@ -1581,10 +1545,6 @@ if [[ ! $CheckLoaders = 0 ]] &amp;&amp; [[ -f ~/Library/Application\ Support/Mou
                     let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; hotplug=1; fi
             fi
         done
-
-        if [[ $DEBUG_MODE = 1 ]]; then
-        echo "RECHECK 2 oc_list: " >> ~/Desktop/temp.txt; for a in ${!oc_list[@]}; do echo "a$a = ${oc_list[a]}" >> ~/Desktop/temp.txt; done ; echo >> ~/Desktop/temp.txt 
-        fi
 
         rm -f ~/Library/Application\ Support/MountEFI/recheckLoadersFlag
 fi
