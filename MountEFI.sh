@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="054"
+edit_vers="055"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -589,7 +589,7 @@ fi
 if [[ ! ${#ldlist[@]} = 0 ]]; then 
             touch ~/.MountEFIst/.ldlist
             max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${ldlist[h]} >> ~/.MountEFIst/.ldlist; done
+            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ~/.MountEFIst/.ldlist; done
 fi
 
 if [[ ! ${#lddlist[@]} = 0 ]]; then 
@@ -1133,7 +1133,7 @@ declare -a dlist
 lists_updated=0
 synchro=0
 recheckLDs=0
-old_oc_revision=""
+old_oc_revision=()
 
 GET_APP_ICON
 
@@ -1152,7 +1152,6 @@ fi
 ########################### коррекция списка определённых загрузчиков с уменьшением ###############################
 
 REMOVE_LOADERS_FROM_LIST(){
-
 for x in ${temp_lddlist[@]}; do
             for y in ${!lddlist[@]}; do
                 if [[ ${x} = ${lddlist[y]} ]]; then            
@@ -1184,18 +1183,32 @@ synchro=0
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 
 CORRECT_OC_VERS(){
-case $( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null ) in 
-        dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
-        3e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
-                                        *)     oc_revision=""
-esac 
-}
-
-CORRECT_OC_VERS_1(){
-case $( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null ) in 
-        3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
-        5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
-                                        *)     oc_revision=""
+case "${md5_full}" in
+75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
+58c4b4a88f8c41f84683bdf4afa3e77c3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
+58c4b4a88f8c41f84683bdf4afa3e77c5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
+bb901639773a1c319a3ff804128bdfb4f663a56f66b9d95fd053a46b0829fa5c ) oc_revision=.60d;;
+01dfbdd3175793d729999c52882dd3b6da4a5e54641317b2aa7715f8b4273791 ) oc_revision=.59r;;
+efbad161ffbf7a17374d08ec924651fef46456574b8b67f603de74c201b4e130 ) oc_revision=.59d;;
+10610877a9cc0ed958ff74ed7a192474dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
+d90190bfea64112ed83621079371277ab85c28aa004291a96bf74d95eea3364a ) oc_revision=.58d;;
+10610877a9cc0ed958ff74ed7a1924743e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
+9ff8a0c61dc1332dd58ecc311e0938b088e8aec480eb24e757241580731d2023 ) oc_revision=.57d;;
+12e5d34064fed06441b86b21f3fa3b7d947f8ccfec961d02f54d1a2f5c808504 ) oc_revision=.56r;;
+9004a000df355d09a79ba510c055a5f0db78c5fef3550213e947b8d6fa5338e4 ) oc_revision=.56d;;
+f3b1534643d3eb11fc18ac5a56528d794bdb27730c0c06275e2fc389348d46d0 ) oc_revision=.55r;;
+07b64c16f48d61e5e9f2364467250912217a07b161306324d147681914a319c3 ) oc_revision=.55d;;
+91e8abcf647af737d4a22fe3f98d00c021aa72da926ec362ab58626b60c36ac8 ) oc_revision=.54r;;
+5758e9b672486b863b18f6e5ff001b27d36cb1eafafcd9b94d3526aece5bc8b4 ) oc_revision=.54d;;
+97f744526c733aa2e6505f01f37de6d78cc62a1017afa01c2c75ad4b6fca8df2 ) oc_revision=.53r;;
+b09cd76fadd2f7a14e76003b2ff4016f1d821f7a51eab7c39999328438770fa7 ) oc_revision=.53d;;
+1ca142bf009ed537d84c980196c36d72ba2a5846697e7895753e7b05989738e5 ) oc_revision=.52r;;
+eaba9d5b467da41f5a872630d4ad7ff552f819181055f501b6882c2a73268dbc ) oc_revision=.52d;;
+eb66a8a986762b9cadecb6408ecb1ec7ff42893722bc0a3278c7d8029b797342 ) oc_revision=.51r;;
+c31035549f86156ff5e79b9d87240ec54be8a2620c923129b3bac0b2d1b8fd6b ) oc_revision=.51d;;
+7844acab1d74aeccc5d2696627c1ed3d081f9922be27b2d1e82fc8dbd3426498 ) oc_revision=.50r;;
+c221f59769bd185857b2c30858fe3aa2ec0e6c7dfa2ab84eaad52f167e85466f ) oc_revision=.50d;;
+                                                                *)     oc_revision=""
 esac 
 }
 
@@ -1206,39 +1219,38 @@ oc_revision=""
 
 GET_CONFIG_VERS "OpenCore"
 
-####### bootx64.efi у версии .57 и .58 одинаковый ###
-######  уточняем версию через хэш OpenCore.efi ######
+######  уточняем версию через хэши BOOTx64.efi + OpenCore.efi ######
 if [[ ${oc_revision} = "" ]]; then
-    if [[ "${md5_loader}" = "10610877a9cc0ed958ff74ed7a192474" ]]; then CORRECT_OC_VERS; fi
-    if [[ "${md5_loader}" = "58c4b4a88f8c41f84683bdf4afa3e77c" ]]; then CORRECT_OC_VERS_1; fi
+    md5_full="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"
+    CORRECT_OC_VERS
 fi
 
 if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
 ############## oc_hashes_strings 29 #################
-75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61d;;
+75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
 58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
-bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60d;;
-01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59r;;
-efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59d;;
-d90190bfea64112ed83621079371277a ) oc_revision=.58d;;
-9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57d;;
+bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60x;;
+01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59x;;
+efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59x;;
+d90190bfea64112ed83621079371277a ) oc_revision=.58x;;
+9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57x;;
 10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
-12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56r;;
-9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56d;;
-f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55r;;
-07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55d;;
-91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54r;;
-5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54d;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53d;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52r;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52d;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51r;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51d;;
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50r;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50d;;
+12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56x;;
+9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56x;;
+f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55x;;
+07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55x;;
+91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54x;;
+5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54x;;
+97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53x;;
+b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53x;;
+1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52x;;
+eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52x;;
+eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51x;;
+c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51x;;
+7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50x;;
+c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50x;;
 91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
 5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
 303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
@@ -1269,34 +1281,31 @@ fi
 
 
 GET_CONFIG_VERS(){
+if [[ ! ${md5_loader} = "" ]]; then
+    target=$1
+    if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
 
-target=$1
-
-if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
-
-    if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]" | cut -f2 -d= ); fi
- 
-    if [[ ${oc_revision} = "" ]]; then 
-    if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn∂]" | cut -f2 -d= ); fi
+        if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]" | cut -f2 -d= ); fi
+        if [[ ${oc_revision} = "" ]]; then 
+        if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn∂]" | cut -f2 -d= ); fi
+        fi
     fi
 
-fi
+    if [[ ${target} = "ALL" ]] && [[ ! ${oc_revision} = "" ]]; then loader="OpenCore"; loader+="${oc_revision}"
 
-if [[ ${target} = "ALL" ]] && [[ ! ${oc_revision} = "" ]]; then loader="OpenCore"; loader+="${oc_revision}"
+    else
 
-else
+        if [[ ${target} = "Clover" ]] || [[ ${target} = "ALL" ]]  ; then 
 
-    if [[ ${target} = "Clover" ]] || [[ ${target} = "ALL" ]]  ; then 
-
-    revision=""
-    if [[ ! ${#clv_list[@]} = 0 ]]; then revision=$( echo "${clv_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}" | cut -f2 -d= ); fi
+        revision=""
+        if [[ ! ${#clv_list[@]} = 0 ]]; then revision=$( echo "${clv_list[@]}" | egrep -o "${md5_loader}=[0-9]{4}" | cut -f2 -d= ); fi
 
 
-    if [[ ${target} = "ALL" ]] && [[ ! ${revision} = "" ]]; then loader="Clover"; loader+="${revision}"; fi
+        if [[ ${target} = "ALL" ]] && [[ ! ${revision} = "" ]]; then loader="Clover"; loader+="${revision}"; fi
 
+        fi
     fi
 fi
-
 }
 
 GET_OTHER_LOADERS_STRING(){
@@ -1324,21 +1333,17 @@ unset IFS
 ######################################################################################################################
 
 CORRECT_LOADERS_HASH_LINKS(){
-
     GET_CONFIG_HASHES
-
     old_config_hashes=(); temp_lddlist=()
 
     if [[ -f ~/.hashes_list.txt ]]; then old_config_hashes=( $( cat ~/.hashes_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.hashes_list.txt
-
 if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
     for i in ${!mounted_loaders_list[@]}; do
         if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
                 loader=""; oc_revision=""; revision=""
-                md5_loader=${mounted_loaders_list[i]}; GET_CONFIG_VERS "ALL"                            
-                            if [[ ! ${loader} = "" ]]; then ldlist[i]=$loader
-                            
-                            elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
+                md5_loader=${mounted_loaders_list[i]}; GET_CONFIG_VERS "ALL"
+                            if [[ ! "${loader}" = "" ]]; then ldlist[i]="$loader"
+                                 elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
                                     for hh in ${old_config_hashes[@]}; do
                                         if [[ ${hh} = ${md5_loader} ]]; then
                                                 unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
@@ -1360,7 +1365,6 @@ if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_
                                 if [[ ${match} = 0 ]]; then deleted_other_loaders+=( ${y} ); fi
                       done
      fi
-
      if [[ ! ${#deleted_other_loaders[@]} = 0 ]] ; then
                 for i in ${!mounted_loaders_list[@]}; do
                             md5_loader=${mounted_loaders_list[i]}
@@ -1386,7 +1390,6 @@ if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_
     fi
     
 fi
-
 }
 
 ############## обновление даных после выхода из скрипта настроек #########################################################
@@ -1408,7 +1411,6 @@ fi
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
                     START_AUTOUPDATE &
-                    #echo $! > ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 }
 ##########################################################################################################################
@@ -1580,7 +1582,6 @@ if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.j
   fi
     rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
     TTYterm=$(ps); if [[ $( echo "$TTYterm" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc ) = 0 ]]; then osascript -e 'quit app "terminal.app"'; fi 
-    #rm -f ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 
 }
@@ -2555,10 +2556,10 @@ if [[ ! $CheckLoaders = 0 ]]; then
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
 
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
 
 			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )                 
+                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
                 if [[ ${md5_loader} = "" ]]; then loader=""; else
                    if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
                     SHIFT_UP
@@ -2579,7 +2580,6 @@ fi
 
 ########################### вывод признаков наличия загрузчика #########################################
 SHOW_LOADERS(){
-
 if [[ $CheckLoaders = 1 ]]; then
 printf "\033[H"
         ldnlist=(); for zz in ${!dlist[@]}; do for xx in ${!lddlist[@]}; do if [[ ${dlist[zz]} = ${lddlist[xx]} ]]; then ldnlist[zz]=$((zz+1)); break; fi; done; done
@@ -2594,24 +2594,24 @@ printf "\033[H"
                         let "line=ldnlist[pointer]+11"
                         fi
 
-                        if [[ ${ldlist[$pointer]:0:6} = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
-                                elif [[ ${ldlist[$pointer]:0:12} = "unrecognized" ]]; then
+                        if [[ "${ldlist[$pointer]:0:6}" = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
+                                elif [[ "${ldlist[$pointer]:0:12}" = "unrecognized" ]]; then
                                      c_unr=47
                                      if [[ $loc = "ru" ]]; then Unrec="Не распознан"; else Unrec="Unrecognized"; fi
                                      printf "\033[$line;f\033['$c_unr'C"'\e['$themeldrs'm'"${Unrec}"" "; printf '\e[0m'
-                                elif [[ ${ldlist[$pointer]:0:5} = "Other" ]]; then
+                                elif [[ "${ldlist[$pointer]:0:5}" = "Other" ]]; then
                                      Other="${ldlist[$pointer]:5}"; ooc=${#Other}; let "c_oth=(13-ooc)/2+46"; printf "\033[$line;f\033[47C""             "
                                      printf "\033[$line;f\033['$c_oth'C"'\e['$themeldrs'm'"${Other}"" "; printf '\e[0m'
-                                elif [[ ${ldlist[$pointer]:0:9} = "GNU/Linux" ]]; then
+                                elif [[ "${ldlist[$pointer]:0:9}" = "GNU/Linux" ]]; then
                                      Linux="GNU/Linux"; c_lin=49
                                      printf "\033[$line;f\033['$c_lin'C"'\e['$themeldrs'm'"${Linux}"" "; printf '\e[0m'
-                                elif [[ ${ldlist[$pointer]:0:6} = "refind" ]]; then
+                                elif [[ "${ldlist[$pointer]:0:6}" = "refind" ]]; then
                                      Refind="rEFInd"; c_ref=51
                                      printf "\033[$line;f\033['$c_ref'C"'\e['$themeldrs'm'"${Refind}"" "; printf '\e[0m'
-                                elif [[ ${ldlist[$pointer]:0:7} = "Windows" ]]; then
+                                elif [[ "${ldlist[$pointer]:0:7}" = "Windows" ]]; then
                                      Windows="Windows"; c_win=47
                                      printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[54C${ldlist[$pointer]:7:9}""  MS ";  printf '\e[0m'
-                                elif [[ ${ldlist[$pointer]:0:8} = "OpenCore" ]]; then
+                                elif [[ "${ldlist[$pointer]:0:8}" = "OpenCore" ]]; then
                                      printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
                         fi 
                     done
@@ -2730,7 +2730,7 @@ do
                      max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
                      for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
             fi
-             ldlist[pnum]=$loader; lddlist[pnum]=${dlist[pnum]}
+             ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}
         fi
         fi
                 
@@ -3016,15 +3016,14 @@ if [[ ! $CheckLoaders = 0 ]]; then
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
 
-                    if [[ ${loader_sum} = "10610877a9cc0ed958ff74ed7a192474" ]]; then md5_loader=${loader_sum}; CORRECT_OC_VERS
-                       elif [[ ${loader_sum} = "58c4b4a88f8c41f84683bdf4afa3e77c" ]]; then md5_loader=${loader_sum}; CORRECT_OC_VERS_1
-                       if [[ ! ${old_oc_revision} = ${oc_revision} ]]; then old_oc_revision=${oc_revision}; update_screen_flag=1; else update_screen_flag=0; fi
+                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
+                       if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
 
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
-                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""; GET_LOADER_STRING; fi
-                    ldlist[pnum]=$loader; lddlist[pnum]=${dlist[$pnum]}
+                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
+                    ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
                     let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
             fi
         done
@@ -3051,13 +3050,11 @@ while [ $var0 != 0 ]; do
         FIND_LOADERS
 
         if [[ ! ${lflag} = 0 ]]; then 
-
             if [[ ! ${lddlist[$((chs-1))]} = "" ]]; then 
                      max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
                      for ((y=$((max+1));y>$((chs-1));y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
             fi
-             ldlist[$((chs-1))]=$loader; lddlist[$((chs-1))]=${dlist[$((chs-1))]}
-
+             ldlist[$((chs-1))]="$loader"; lddlist[$((chs-1))]=${dlist[$((chs-1))]}
         fi
 
     if [[ $ch1 -le $sata_lines ]]; then
@@ -3371,17 +3368,13 @@ new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq 
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     init_time="$(date +%s)"; usblist=(); warning_sent=0
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
-    #echo "0 D_LIST = ${dlist[@]}" >> ~/Desktop/temp.txt
-    #echo "0 USB_LIST = ${usblist[@]}" >> ~/Desktop/temp.txt
     if [[ ! ${#usblist[@]} = 0 ]]; then
         realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
-        #echo "REALEFI_LIST = ${realEFI_list[@]}" >> ~/Desktop/temp.txt
         if [[ ! ${#realEFI_list[@]} = 0 ]]; then
         temp_usblist=()
         for z in ${usblist[@]}; do for y in ${!realEFI_list[@]}; do match=0; if [[ ${z} = ${realEFI_list[y]} ]]; then match=1; break; fi; done; if [[ ${match} = 0 ]]; then temp_usblist+=(${z}); fi; done
-        #echo "1 TEMP_USB_LIST = ${temp_usblist[@]}" >> ~/Desktop/temp.txt
         usblist=(${temp_usblist[@]})
-        #echo "1 USB_LIST = ${usblist[@]}" >> ~/Desktop/temp.txt
+
         fi
     fi
     if [[ ! ${#usblist[@]} = 0 ]]; then
@@ -3418,10 +3411,8 @@ CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
                     if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] && [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "60" ]]; then
                     rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
-                    #rm -f ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
                     fi
                     START_AUTOUPDATE &
-                    #echo $! > ~/Library/Application\ Support/MountEFI/AutoUpdatePID.txt
 fi
 
 while [ $chs = 0 ]; do
