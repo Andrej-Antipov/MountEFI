@@ -1085,6 +1085,7 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2
                                
                                 if [[ $cancel = 0 ]]; then 
                 security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
+                sudo -k
                 SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
