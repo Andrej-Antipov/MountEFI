@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="043"
+s_edit_vers="044"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -46,7 +46,8 @@ s_edit_vers="043"
 # 040 - увеличить время проверки версии в ручном режиме
 # 041 - проверка на неподдерживаемые весрии Mac OS
 # 042 - для Big Sur отключить показ икнки в предупреждениях
-# 043 - faster kill curl function 
+# 043 - faster kill curl function
+# 044 - generic password key name 
 
 clear
 
@@ -642,13 +643,22 @@ if [[ $reload_check = "Reload" ]]; then
         plutil -remove Reload ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
 fi
 
+zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+
+efimounter=$(echo 0x7a 0x78 | xxd -r)
+
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
+fi
 
 login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
         mypassword="$( echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n' )"
         if [[ ! $mypassword = "" ]]; then
-            if ! (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
+            if ! (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
             fi
             plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
         fi
@@ -1016,7 +1026,7 @@ TRY=3
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
                 if echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
-                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
+                    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
@@ -1045,8 +1055,8 @@ TRY=3
                 fi
             done
             mypassword="0"
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w); 
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w); 
 fi
             if [[ "$mypassword" = "0" ]]; then
                 SET_TITLE
@@ -1063,7 +1073,7 @@ fi
 
 # Установка/удаление пароля для sudo через связку ключей
 SET_USER_PASSWORD(){
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then 
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then 
                 printf '\r'; printf "%"80"s"
                 printf '\r'
                                 GET_APP_ICON
@@ -1074,7 +1084,7 @@ if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1;
                                 fi
                                
                                 if [[ $cancel = 0 ]]; then 
-                security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
                 SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
@@ -1099,8 +1109,8 @@ osascript -e 'tell application "Terminal" to activate'
 GET_USER_PASSWORD(){
 mypassword="0"
 
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w)
                 passl=${#mypassword}
                 mypassword_set=$( echo "${mypassword}" | tr -c '\n' "*")
                 if [[ $loc = "ru" ]]; then
@@ -5485,11 +5495,13 @@ echo 'macos=`echo ${macos//[^0-9]/}`' >> ${HOME}/.MountEFIa.sh
 echo 'macos=${macos:0:4}' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
+echo 'zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '"'/IOPlatformUUID/'"' | cut -f2 -d"=" | tr -d '"'"'"'""' '"'"' | cut -f2-4 -d '"'-'"' | tr -d - | rev)' >> ${HOME}/.MountEFIa.sh
+echo 'efimounter=$(echo 0x7a 0x78 | xxd -r)' >> ${HOME}/.MountEFIa.sh
 echo 'mypassword="0"' >> ${HOME}/.MountEFIa.sh
-echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
-echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)' >> ${HOME}/.MountEFIa.sh
+echo 'if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w)' >> ${HOME}/.MountEFIa.sh
 echo '                if ! echo "${mypassword}" | sudo -Sk printf '"''"' 2>/dev/null; then ' >> ${HOME}/.MountEFIa.sh
-echo '                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
+echo '                    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
 echo '                    mypassword="0"' >> ${HOME}/.MountEFIa.sh
 echo '                    SET_LOCALE' >> ${HOME}/.MountEFIa.sh
 echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
@@ -5522,7 +5534,7 @@ echo '                if [[ $cansel = 1 ]]; then break; fi ' >> ${HOME}/.MountEF
 echo '                mypassword=$PASSWORD' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $mypassword = "" ]]; then mypassword="?"; fi' >> ${HOME}/.MountEFIa.sh
 echo '                if echo "${mypassword}" | sudo -Sk printf '"''"' 2>/dev/null; then' >> ${HOME}/.MountEFIa.sh
-echo '                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
+echo '                    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1' >> ${HOME}/.MountEFIa.sh
 echo '                        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '                        SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Авто-монтирование EFI работает"' >> ${HOME}/.MountEFIa.sh
 echo '                        else' >> ${HOME}/.MountEFIa.sh
@@ -5547,8 +5559,8 @@ echo '                fi' >> ${HOME}/.MountEFIa.sh
 echo '                fi' >> ${HOME}/.MountEFIa.sh
 echo '            done' >> ${HOME}/.MountEFIa.sh
 echo '            mypassword="0"' >> ${HOME}/.MountEFIa.sh
-echo 'if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
-echo '                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w); ' >> ${HOME}/.MountEFIa.sh
+echo 'if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then' >> ${HOME}/.MountEFIa.sh
+echo '                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w); ' >> ${HOME}/.MountEFIa.sh
 echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo '            if [[ "$mypassword" = "0" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo '                    if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
@@ -5720,15 +5732,15 @@ if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1;
 
 FORCE_CHECK_PASSWORD(){
 mypassword=""
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-             mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+             mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w)
              if ! echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then 
                     case $1 in
                             "automount" ) if [[ $loc = "ru" ]]; then printf '\033[1A\r''  Введите число от\r\033[48C'; else 
                                                                       printf '\033[1A\r'' Enter a number from\r\033[50C'; fi;;
                                       * ) printf "\r\033[1A                                                                          \r";;
                     esac
-                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
                     mypassword=""
                     SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -7027,7 +7039,7 @@ RUN_UNINSTALLER(){
                                     launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
                                     if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
                                         launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
-                                    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                                    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
                                 ########################## локальная очистка файлы ################################
                                     if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
                                     if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi

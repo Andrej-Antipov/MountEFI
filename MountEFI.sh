@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="055"
+edit_vers="056"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -117,6 +117,8 @@ fi
 clear && printf "\e[3J"
 }
 
+zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+
 KILL_CURL_UPDATER(){
 for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ); do 
     kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " ") 2>/dev/null; done
@@ -155,16 +157,24 @@ fi
 clear  && printf '\e[3J'
 printf "\033[?25l"
 
-
 cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f ${HOME}/.MountEFIconf.plist ]]; then rm ${HOME}/.MountEFIconf.plist; fi
 fi
 
-if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
-    if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+efimounter=$(echo 0x7a 0x78 | xxd -r)
+
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
     security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
+fi
+
+
+if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
+    if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
     fi
 fi
 
@@ -416,12 +426,13 @@ login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
 if [[ $login = "LoginPassword" ]]; then
         mypassword="$(echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')"
         if [[ ! $mypassword = "" ]]; then
-            if ! (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
+            if ! (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
             fi
             plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
         fi
 fi
+
 
 deleted=0
 if [[ $cache = 1 ]]; then
@@ -575,6 +586,20 @@ osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "
 EXIT_PROGRAM
 }
 
+CHECK_SANDBOX(){
+if [[ -f "$ROOT"/version.txt ]]; then
+    if ! touch "$ROOT"/version.txt 2>/dev/null; then 
+        SET_TITLE
+                    if [[ $loc = "ru" ]]; then
+                echo 'SUBTITLE="MountEFI запущен в ПЕСОЧНИЦЕ !"; MESSAGE="Переместите апплет в другую папку !"' >> ${HOME}/.MountEFInoty.sh
+                    else
+                echo 'SUBTITLE="MountEFI runs in SANDBOX !"; MESSAGE="Move the applet to another place !"' >> ${HOME}/.MountEFInoty.sh
+                    fi
+                DISPLAY_NOTIFICATION
+    fi
+fi   
+}
+
 SAVE_LOADERS_STACK(){
 
 if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
@@ -599,6 +624,7 @@ if [[ ! ${#lddlist[@]} = 0 ]]; then
 fi
 
 }
+
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #############################################################################################################################
@@ -747,11 +773,11 @@ if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]] || [[ $res
 ENTER_PASSWORD(){
 
 mypassword="0"; unset cancel; unset PASSWORD; braked=0
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
                 if [[ ! "$1" = "force" ]]; then
-                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w)
                 else
-                security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+                security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="СТАРЫЙ ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ!"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFInoty.sh
@@ -791,7 +817,7 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
                 if echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
-                    security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" >/dev/null 2>&1
+                    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Управляйте паролем через настройки программы"' >> ${HOME}/.MountEFInoty.sh
@@ -820,8 +846,8 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                 fi
             done
             mypassword="0"
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w); 
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w); 
 fi
             if [[ "$mypassword" = "0" ]]; then
                 SET_TITLE
@@ -1144,8 +1170,8 @@ GET_FLAG
 #Получение пароля для sudo из связки ключей
 GET_USER_PASSWORD(){
 mypassword="0"
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-                mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w)
 fi
 }
 
@@ -2031,7 +2057,7 @@ fi
 NEED_PASSWORD(){
 need_password=0
 if [[ ! $flag = 0 ]]; then 
-              mypassword=$(security find-generic-password -a ${USER} -s efimounter -w 2>/dev/null)
+              mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w 2>/dev/null)
                         if [[ "${mypassword}" = "" ]]; then mypassword=0; fi
                         if ! echo "${mypassword}" | sudo -Sk printf "" 2>/dev/null; then
                             if [[ $loc = "ru" ]]; then printf '\033[1A\r\033[48C''                                \r\033[48C'; else 
@@ -2359,6 +2385,8 @@ if [[ $loc = "ru" ]]; then
 	fi
 }
 
+
+CHECK_SANDBOX
 
 # У Эль Капитан другой термин для размера раздела
 	

@@ -62,10 +62,10 @@
 					<string>export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 09.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
-edit_vers="055"
+edit_vers="056"
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -209,6 +209,23 @@ if [[ $loc = "ru" ]]; then MESSAGE='"Открыть EFI раздел '${dlist[0]
 if answer=$(osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' ' &gt;&gt;/dev/null 2&gt;/dev/null); then cansel=0; else cansel=1; fi 2&gt;/dev/null
 }
 
+MSG_SANDBOX(){
+
+if [[ $loc = "ru" ]]; then MESSAGE='"MountEFI запущен в ПЕСОЧНИЦЕ !\nПереместите апплет в другую папку !"'
+    else MESSAGE='"MountEFI runs in SANDBOX !\nMove the applet to another place !"'; fi
+    DISPLAY_NOTIFICATION
+}
+
+CHECK_SANDBOX(){
+if [[ -f "$ROOT"/version.txt ]]; then
+    if ! touch "$ROOT"/version.txt 2>/dev/null; then 
+                    MSG_SANDBOX
+    fi
+fi   
+}
+
+CHECK_SANDBOX
+
 ################ запрос пароля sudo #################################
 PROMT_SUDO_PASSWORD(){
 
@@ -259,9 +276,9 @@ ENTER_PASSWORD(){
 
 SET_INPUT
 
-if (security find-generic-password -a ${USER} -s efimounter -w) &gt;/dev/null 2&gt;&amp;1; then
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) &gt;/dev/null 2&gt;&amp;1; then
                 if [[ "$1" = "force" ]]; then
-                security delete-generic-password -a ${USER} -s efimounter &gt;/dev/null 2&gt;&amp;1
+                security delete-generic-password -a ${USER} -s ${!efimounter} &gt;/dev/null 2&gt;&amp;1
                 if [[ $loc = "ru" ]]; then
                 MESSAGE='"СТАРЫЙ ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ!"'
                 else
@@ -273,17 +290,17 @@ fi
 
 PROMT_SUDO_PASSWORD
 if [[ ${mypassword} = "" ]]; then ERROR_NO_PASSWORD; else
-    if (security find-generic-password -a ${USER} -s efimounter -w) &gt;/dev/null 2&gt;&amp;1; then
-        security delete-generic-password -a ${USER} -s efimounter &gt;/dev/null 2&gt;&amp;1
+    if (security find-generic-password -a ${USER} -s ${!efimounter} -w) &gt;/dev/null 2&gt;&amp;1; then
+        security delete-generic-password -a ${USER} -s ${!efimounter} &gt;/dev/null 2&gt;&amp;1
     fi
-        security add-generic-password -a ${USER} -s efimounter -w "${mypassword}" &gt;/dev/null 2&gt;&amp;1
+        security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" &gt;/dev/null 2&gt;&amp;1
 fi
 }
 
 GET_PASSWORD(){
 mypassword=""
-if (security find-generic-password -a ${USER} -s efimounter -w) &gt;/dev/null 2&gt;&amp;1; then
-mypassword=$(security find-generic-password -a ${USER} -s efimounter -w 2&gt;/dev/null); fi
+if (security find-generic-password -a ${USER} -s ${!efimounter} -w) &gt;/dev/null 2&gt;&amp;1; then
+mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w 2&gt;/dev/null); fi
 }
 
 NEED_PASSWORD(){
@@ -1550,6 +1567,18 @@ if [[ ! $CheckLoaders = 0 ]] &amp;&amp; [[ -f ~/Library/Application\ Support/Mou
 fi
 }
 
+CHANGE_PSW(){
+zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+
+efimounter=$(echo 0x7a 0x78 | xxd -r)
+
+if (security find-generic-password -a ${USER} -s efimounter -w); then
+    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+    security delete-generic-password -a ${USER} -s efimounter
+    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}"
+fi
+}
+
 IF_UNLOCK_SAFE_MODE(){
 if [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then 
     if [[ $(kextstat -l | grep -ow com.apple.filesystems.msdosfs) = "" ]]; then 
@@ -1573,6 +1602,8 @@ if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') =
 GET_FLAG
 UPDATE_CACHE
 
+CHANGE_PSW
+
 menu_mode=0
 if [[ $(echo "$MountEFIconf"  | grep -A 1 -e "EasyEFIsimple&lt;/key&gt;" | grep false | tr -d "&lt;&gt;/"'\n\t') = "false" ]]; then menu_mode=1; fi
 
@@ -1592,7 +1623,6 @@ GET_APP_ICON
 
 hotplug_flag=0
 
-#opencore_efi_list=()
 ############################################################################################
 #################################### MAIN ##################################################
 
