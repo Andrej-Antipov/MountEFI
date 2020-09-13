@@ -807,16 +807,25 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
 
         TRY=3
         while [[ ! $TRY = 0 ]]; do
+        while true; do
         if [[ $loc = "ru" ]]; then
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         else
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
-        fi      
-                if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then braked=1; break; fi  
+        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        fi 
+        if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
+        done
+
+                pressed_button=$(echo "${PASS_ANSWER}" | egrep -o "button returned:OK,|Cancel,|Store in keychain,|Отмена,|Сохранить в связке," | tr -d ',' | cut -f2 -d:)
+                PASSWORD=$(echo "${PASS_ANSWER}" | egrep -o "text returned:.*," | tr -d ',' | cut -f2 -d:)
+     
+                if [[ "$pressed_button" = "Отмена" || "$pressed_button" = "Cancel" || "${PASSWORD}" = "" ]]; then mypassword="0"; cansel=1; braked=1; break; else cansel=0; fi  
+
                 mypassword="${PASSWORD}" 
                 if [[ $mypassword = "" ]]; then mypassword="?"; fi
 
-                if echo "${mypassword}" | sudo -Sk printf '' 2>/dev/null; then
+                if echo "${mypassword}" | sudo -S printf '' 2>/dev/null; then
+                  if [[ "$pressed_button" = "Store in keychain" || "$pressed_button" = "Сохранить в связке" ]]; then       
                     security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -825,6 +834,7 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                         echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="Manage the password in the program settings"' >> ${HOME}/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION
+                   fi
                         break
                 else
                         if [[ $loc = "ru" ]]; then printf '\033[1A\r\033[48C''                                \r\033[48C'; else 
@@ -845,10 +855,12 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                 fi
                 fi
             done
+    if [[ ! "$pressed_button" = "OK" ]]; then 
             mypassword="0"
-if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+        if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
                 mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w); 
-fi
+        fi
+    fi
             if [[ "$mypassword" = "0" ]]; then
                 SET_TITLE
                     if [[ $loc = "ru" ]]; then
@@ -1965,7 +1977,7 @@ if [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then
              echo "${mypassword}" | sudo -S chown -R root:wheel ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
              sudo chmod -R 755 ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
 	         sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1; sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
-  	         echo "${mypassword}" | sudo -Sk rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
+  	         echo "${mypassword}" | sudo -S rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext >/dev/null 2>&1
         fi
     fi
 fi
@@ -2059,7 +2071,7 @@ need_password=0
 if [[ ! $flag = 0 ]]; then 
               mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w 2>/dev/null)
                         if [[ "${mypassword}" = "" ]]; then mypassword=0; fi
-                        if ! echo "${mypassword}" | sudo -Sk printf "" 2>/dev/null; then
+                        if ! echo "${mypassword}" | sudo -S printf "" 2>/dev/null; then
                             if [[ $loc = "ru" ]]; then printf '\033[1A\r\033[48C''                                \r\033[48C'; else 
                                                    printf '\033[1A\r\033[50C''                                \r\033[50C'; fi
                             ENTER_PASSWORD "force"
