@@ -246,13 +246,18 @@ fi
 mypassword=""        
         TRY=3
         while [[ ! $TRY = 0 ]]; do
+        while true; do
         if [[ $loc = "ru" ]]; then
-        if mypassword="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2&gt;/dev/null
+        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         else
-        if mypassword="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2&gt;/dev/null
-        fi    
-                if [[ $cansel = 1 ]] || [[ "${mypassword}" = "" ]]; then break; fi  
-                if echo "${mypassword}" | sudo -Sk printf '' 2&gt;/dev/null; then  break
+        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        fi 
+        if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
+        done  
+                pressed_button=$(echo "${PASS_ANSWER}" | egrep -o "button returned:OK,|Cancel,|Store in keychain,|Отмена,|Сохранить в связке," | tr -d ',' | cut -f2 -d:)
+                mypassword=$(echo "${PASS_ANSWER}" | egrep -o "text returned:.*," | tr -d ',' | cut -f2 -d:)
+                if [[ "$pressed_button" = "Отмена" || "$pressed_button" = "Cancel" || "${PASSWORD}" = "" ]]; then cansel=1; break; else cansel=0; fi  
+                if echo "${mypassword}" | sudo -S printf '' 2&gt;/dev/null; then  break
                 else
                         mypassword=""
                         let "TRY--"
@@ -289,16 +294,17 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) &gt;/dev/nul
 fi
 
 PROMT_SUDO_PASSWORD
-if [[ ${mypassword} = "" ]]; then ERROR_NO_PASSWORD; else
+if [[ ! "$pressed_button" = "OK" ]]; then 
+    if [[ ${mypassword} = "" ]]; then ERROR_NO_PASSWORD; else
     if (security find-generic-password -a ${USER} -s ${!efimounter} -w) &gt;/dev/null 2&gt;&amp;1; then
         security delete-generic-password -a ${USER} -s ${!efimounter} &gt;/dev/null 2&gt;&amp;1
     fi
         security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" &gt;/dev/null 2&gt;&amp;1
+    fi
 fi
 }
 
 GET_PASSWORD(){
-mypassword=""
 if (security find-generic-password -a ${USER} -s ${!efimounter} -w) &gt;/dev/null 2&gt;&amp;1; then
 mypassword=$(security find-generic-password -a ${USER} -s ${!efimounter} -w 2&gt;/dev/null); fi
 }
@@ -307,7 +313,7 @@ NEED_PASSWORD(){
 need_password=0
 if [[ ! $flag = 0 ]] || [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then  
               GET_PASSWORD
-        if ! echo "${mypassword}" | sudo -Sk printf "" 2&gt;/dev/null; then ENTER_PASSWORD "force"
+        if ! echo "${mypassword}" | sudo -S printf "" 2&gt;/dev/null; then ENTER_PASSWORD "force"
            if [[ $mypassword = "" ]]; then need_password=1; fi
         fi
 fi
@@ -1589,7 +1595,7 @@ if [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then
              echo "${mypassword}" | sudo -S chown -R root:wheel ~/Library/Application\ Support/MountEFI/msdosfs.kext
              sudo chmod -R 755 ~/Library/Application\ Support/MountEFI/msdosfs.kext
 	         sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext; sudo kextutil ~/Library/Application\ Support/MountEFI/msdosfs.kext
-  	         echo "${mypassword}" | sudo -Sk rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext
+  	         echo "${mypassword}" | sudo -S rm -Rf ~/Library/Application\ Support/MountEFI/msdosfs.kext
         fi
     fi
 fi
