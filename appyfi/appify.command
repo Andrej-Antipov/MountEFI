@@ -87,6 +87,9 @@ if [[ ! -d ../MountEFI.app ]]; then
             if [[ -f ../MountEFI.app/Contents/document.wflow ]]; then 
                 cat ../MountEFI.app/Contents/document.wflow | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > .document.wflow
                 if [[ -s .document.wflow ]]; then mv -f .document.wflow ../MountEFI.app/Contents/document.wflow; fi
+                elif [[ -f ../MountEFI.app/Contents/Resources/script ]]; then 
+                    cat ../MountEFI.app/Contents/Resources/script | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > .script
+                    if [[ -s .script ]]; then mv -f .script ../MountEFI.app/Contents/Resources/script; chmod +x ../MountEFI.app/Contents/Resources/script; fi
             fi
             touch ../MountEFI.app
             rm -f .document.wflow
@@ -129,7 +132,10 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             if [[ -d MountEFI.app ]] && [[ ! -d Notifiers/Newapp ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; fi
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then
             if [[ -d Notifiers/Newapp ]]; then 
-                    cp -a Notifiers/Newapp Updates/$current_vers/$edit_vers; rm -f Updates/$current_vers/$edit_vers/document.wflow 
+                    cp -a Notifiers/Newapp Updates/$current_vers/$edit_vers; rm -f Updates/$current_vers/$edit_vers/document.wflow
+                    cat Updates/$current_vers/$edit_vers/Newapp/script | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > Updates/$current_vers/$edit_vers/Newapp/.script
+                    if [[ -s Updates/$current_vers/$edit_vers/Newapp/.script ]]; then mv -f Updates/$current_vers/$edit_vers/Newapp/.script Updates/$current_vers/$edit_vers/Newapp/script; fi
+                    rm -f Updates/$current_vers/$edit_vers/.script; chmod +x Updates/$current_vers/$edit_vers/Newapp/script
             fi
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
                 if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
