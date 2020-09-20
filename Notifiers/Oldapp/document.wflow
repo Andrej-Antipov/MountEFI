@@ -65,7 +65,7 @@ export LANG=en_US.UTF-8
 #  Created by Андрей Антипов on 09.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
-edit_vers="055"
+edit_vers="056"
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -89,6 +89,7 @@ echo '&lt;/plist&gt;' &gt;&gt; ${HOME}/.MountEFIr.plist
 
 echo '#!/bin/bash'  &gt;&gt; ${HOME}/.MountEFIr.sh
 echo ''             &gt;&gt; ${HOME}/.MountEFIr.sh
+echo 'export LC_ALL=en_US.UTF-8;export LANG=en_US.UTF-8' &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'i=60; while [[ ! $i = 0 ]]; do' &gt;&gt; ${HOME}/.MountEFIr.sh
@@ -1254,8 +1255,10 @@ echo 'while true; do' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'sleep 4; else break; fi; done' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' &gt;&gt; ${HOME}/.MountEFIu.sh
+echo 'chmod +x "${ProgPath}"'  &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             &gt;&gt; ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' &gt;&gt; ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' &gt;&gt; ${HOME}/.MountEFIu.sh
+echo '        chmod +x "${DirPath}setup"' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' &gt;&gt; ${HOME}/.MountEFIu.sh 
 echo '        if [[ -f ~/.MountEFIupdates/$latest_edit/alerter ]]; then'             &gt;&gt; ${HOME}/.MountEFIu.sh 
 echo '              mv -f ~/.MountEFIupdates/$latest_edit/alerter "${DirPath}""alerter"' &gt;&gt; ${HOME}/.MountEFIu.sh
@@ -1699,7 +1702,7 @@ if [ "${MountEFI_count}" -lt "1" ]; then
 	if [[ $(cat ~/.MountEFIconf.plist | grep -A 1 -e "EasyEFImode&lt;/key&gt;" | grep -o true) = "true" ]] &amp;&amp; [[ $(echo "$MountEFIconf"| grep -e "&lt;key&gt;Updating&lt;/key&gt;" | grep key | sed -e 's/.*&gt;\(.*\)&lt;.*/\1/' | tr -d '\t\n') = "Updating" ]]; then RESTART_APP; fi
 
     app_path="$(ps xao command | grep -i "MountEFI" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)"
-    open "$app_path"./../Resources/MountEFI
+    open -a Terminal "$app_path"./../Resources/MountEFI
 else
     osascript -e 'tell application "Terminal" to activate'
 fi
