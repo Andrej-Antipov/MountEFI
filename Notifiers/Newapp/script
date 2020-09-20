@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 14.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
 edit_vers="056"
