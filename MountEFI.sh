@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -382,6 +382,22 @@ if [[ $cache = 1 ]] ; then
 fi  
 }
 
+IF_NEW_APPLET(){
+            if [[ -d "${SOURCE}/Newapp" ]]; then
+                SOURCE="${HOME}/.MountEFIupdates/${edit_vers}/Newapp"
+                TARGET="${ROOT}/../../../MountEFI.app/Contents"
+                mv -f "${SOURCE}/script" "${ROOT}/script" 2>/dev/null
+                if [[ ! -d "${ROOT}/MainMenu.nib" ]]; then mv -f "${SOURCE}/MainMenu.nib" "${ROOT}/" 2>/dev/null; fi 
+                if [[ ! -f "${ROOT}/AppSettings.plist" ]]; then mv -f "${SOURCE}/AppSettings.plist" "${ROOT}/AppSettings.plist" 2>/dev/null; fi
+                if [[ ! -f "$TARGET/MacOS/MountEFI" ]]; then mv -f "${SOURCE}/MountEFI" "$TARGET/MacOS/MountEFI" 2>/dev/null; fi
+                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
+                rm -f "$TARGET/document.wflow" 2>/dev/null
+                rm -f "$TARGET/MacOS/Automator"* 2>/dev/null
+                rm -f "$TARGET/MacOS/Application"* 2>/dev/null
+                touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
+            fi
+}
+
 GET_LOCALE
 
 upd=0
@@ -415,9 +431,11 @@ if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info
                         fi
                 fi
             fi
-            if [[ -f ~/.MountEFIupdates/${edit_vers}/DefaultConf.plist ]]; then mv -f ~/.MountEFIupdates/${edit_vers}/DefaultConf.plist "${ROOT}"; fi
-            if [[ -f ~/.MountEFIupdates/${edit_vers}.zip ]]; then rm -Rf ~/.MountEFIupdates/${edit_vers}; unzip  -o -qq ~/.MountEFIupdates/${edit_vers}.zip -d ~/.MountEFIupdates 2>/dev/null
+            if [[ -f "${SOURCE}.zip" ]]; then rm -Rf "${SOURCE}"; unzip  -o -qq "${SOURCE}.zip" -d ~/.MountEFIupdates 2>/dev/null
         fi
+SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
+if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
+IF_NEW_APPLET
 if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
 upd=1
 fi

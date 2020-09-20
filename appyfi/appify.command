@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Версия для нового апплета
+
 cd "$(dirname "$0")"
 
 clear
@@ -29,11 +31,41 @@ fi
             if [[ -f MountEFI ]]; then cp MountEFI ../Extra; fi
             if [[ -f setup ]]; then cp setup ../Extra; fi
 
+
+MAKE_NEW_APPLET(){
+            if [[ -d "${SOURCE}" ]]; then
+                ROOT="../MountEFI.app/Contents/Resources"
+                TARGET="../MountEFI.app/Contents"
+                mv -f "${SOURCE}/script" "${ROOT}/script" 2>/dev/null
+                if [[ ! -d "${ROOT}/MainMenu.nib" ]]; then mv -f "${SOURCE}/MainMenu.nib" "${ROOT}/" 2>/dev/null; fi 
+                if [[ ! -f "${ROOT}/AppSettings.plist" ]]; then mv -f "${SOURCE}/AppSettings.plist" "${ROOT}/AppSettings.plist" 2>/dev/null; fi
+                if [[ ! -f "$TARGET/MacOS/MountEFI" ]]; then mv -f "${SOURCE}/MountEFI" "$TARGET/MacOS/MountEFI" 2>/dev/null; fi
+                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
+                rm -f "$TARGET/document.wflow" 2>/dev/null
+                rm -f "$TARGET/MacOS/Automator"* 2>/dev/null
+                rm -f "$TARGET/MacOS/Application"* 2>/dev/null
+                plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
+                rm -Rf "${SOURCE}"
+            fi
+}
+
+BACK_OLD_APPLET(){
+                ROOT="../MountEFI.app/Contents/Resources"
+                TARGET="../MountEFI.app/Contents"
+                rm -Rf "${ROOT}/MainMenu.nib"
+                rm -f "${ROOT}/script" "${ROOT}/AppSettings.plist" "$TARGET/MacOS/MountEFI"*
+                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null 
+                mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null
+                mv -f "${SOURCE}/document.wflow" "$TARGET/document.wflow" 2>/dev/null
+                plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
+                rm -Rf "${SOURCE}"
+
+}
+
 if [[ ! -d ../MountEFI.app ]]; then
     if  [[ -f ../MountEFI.zip ]]; then unzip  -o -qq ../MountEFI.zip -d ../. ; rm -R -f ../*MACOSX ; fi
-fi
-
-if [[ -d ../MountEFI.app ]]; then
+ 
+  elif [[ -d ../MountEFI.app ]]; then
             if [[ -f MountEFI ]]; then 
                 mv -f MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
@@ -43,7 +75,21 @@ if [[ -d ../MountEFI.app ]]; then
                 mv -f setup ../MountEFI.app/Contents/Resources/setup
             fi
             if [[ -f ../Notifiers/AppIcon.icns ]]; then rm -f ../MountEFI.app/Contents/Resources/AppIcon.icns; cp ../Notifiers/AppIcon.icns ../MountEFI.app/Contents/Resources/AppIcon.icns; fi
+            if [[ -d ../Notifiers/Newapp ]]; then 
+                cp -a ../Notifiers/Newapp .Newapp
+                SOURCE=".Newapp"
+                MAKE_NEW_APPLET
+                elif [[ -f ../MountEFI.app/Contents/Resources/MountEFI ]]; then
+                     cp -a ../Notifiers/Oldapp .Oldapp
+                     SOURCE=".Oldapp"
+                BACK_OLD_APPLET
+            fi 
+            if [[ -f ../MountEFI.app/Contents/document.wflow ]]; then 
+                cat ../MountEFI.app/Contents/document.wflow | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > .document.wflow
+                if [[ -s .document.wflow ]]; then mv -f .document.wflow ../MountEFI.app/Contents/document.wflow; fi
+            fi
             touch ../MountEFI.app
+            rm -f .document.wflow
 fi
 
 cd ..
@@ -80,8 +126,11 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
             if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
             if [[ -f Notifiers/DefaultConf.plist ]]; then cp -a Notifiers/DefaultConf.plist Updates/$current_vers/$edit_vers; fi
-            if [[ -d MountEFI.app ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; fi
-            if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then 
+            if [[ -d MountEFI.app ]] && [[ ! -d Notifiers/Newapp ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; fi
+            if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then
+            if [[ -d Notifiers/Newapp ]]; then 
+                    cp -a Notifiers/Newapp Updates/$current_vers/$edit_vers; rm -f Updates/$current_vers/$edit_vers/document.wflow 
+            fi
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
                 if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
                 #mkdir Autoupdates; touch Autoupdates/AutoupdatesInfo.txt
