@@ -74,6 +74,7 @@ if [[ ! -d ../MountEFI.app ]]; then
                 
                 mv -f setup ../MountEFI.app/Contents/Resources/setup
             fi
+            chmod +x ../MountEFI.app/Contents/Resources/MountEFI ../MountEFI.app/Contents/Resources/setup
             if [[ -f ../Notifiers/AppIcon.icns ]]; then rm -f ../MountEFI.app/Contents/Resources/AppIcon.icns; cp ../Notifiers/AppIcon.icns ../MountEFI.app/Contents/Resources/AppIcon.icns; fi
             if [[ -d ../Notifiers/Newapp ]]; then 
                 cp -a ../Notifiers/Newapp .Newapp
@@ -90,7 +91,7 @@ if [[ ! -d ../MountEFI.app ]]; then
                 elif [[ -f ../MountEFI.app/Contents/Resources/script ]]; then 
                     cat ../MountEFI.app/Contents/Resources/script | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > .script
                     if [[ -s .script ]]; then mv -f .script ../MountEFI.app/Contents/Resources/script; chmod +x ../MountEFI.app/Contents/Resources/script; fi
-            fi
+            fi 
             touch ../MountEFI.app
             rm -f .document.wflow
 fi
