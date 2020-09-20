@@ -68,7 +68,7 @@ if [[ ! -d ../MountEFI.app ]]; then
   elif [[ -d ../MountEFI.app ]]; then
             if [[ -f MountEFI ]]; then 
                 mv -f MountEFI ../MountEFI.app/Contents/Resources/MountEFI 
-                plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
+                #plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
             fi
             if [[ -f setup ]]; then
                 
@@ -130,7 +130,11 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             if [[ -f Extra/MountEFI ]]; then cp -a Extra/MountEFI Updates/$current_vers/$edit_vers; fi
             if [[ -f Extra/setup ]]; then cp -a Extra/setup Updates/$current_vers/$edit_vers; fi
             if [[ -f Notifiers/DefaultConf.plist ]]; then cp -a Notifiers/DefaultConf.plist Updates/$current_vers/$edit_vers; fi
-            if [[ -d MountEFI.app ]] && [[ ! -d Notifiers/Newapp ]]; then cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers; fi
+            if [[ -d MountEFI.app ]] && [[ ! -d Notifiers/Newapp ]]; then
+                cp -a MountEFI.app/Contents/Info.plist Updates/$current_vers/$edit_vers 
+                cp -a MountEFI.app/Contents/document.wflow Updates/$current_vers/$edit_vers
+                cp -a MountEFI.app/Contents/MacOS/"Application Stub" Updates/$current_vers/$edit_vers
+            fi
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then
             if [[ -d Notifiers/Newapp ]]; then 
                     cp -a Notifiers/Newapp Updates/$current_vers/$edit_vers; rm -f Updates/$current_vers/$edit_vers/document.wflow
@@ -143,10 +147,6 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                 #mkdir Autoupdates; touch Autoupdates/AutoupdatesInfo.txt
                 echo $current_vers > Updates/AutoupdatesInfo.txt
                 echo $edit_vers >> Updates/AutoupdatesInfo.txt
-                #if [[ -f Updates/$current_vers/$edit_vers/MountEFI ]]; then echo "MountEFI;"$(md5 -qq Updates/$current_vers/$edit_vers/MountEFI) >> Autoupdates/AutoupdatesInfo.txt; fi
-                #if [[ -f Updates/$current_vers/$edit_vers/setup ]]; then echo "setup;"$(md5 -qq Updates/$current_vers/$edit_vers/setup) >> Autoupdates/AutoupdatesInfo.txt; fi
-                #if [[ -f Updates/$current_vers/$edit_vers/document.wflow ]]; then echo "document.wflow;"$(md5 -qq Updates/$current_vers/$edit_vers/document.wflow) >> Autoupdates/AutoupdatesInfo.txt; fi
-                #if [[ -f Updates/$current_vers/$edit_vers/"Application Stub" ]]; then echo ""Application Stub";"$(md5 -qq Updates/$current_vers/$edit_vers/"Application Stub") >> Autoupdates/AutoupdatesInfo.txt; fi
                 if [[ -f Updates/$current_vers/"$edit_vers"".zip" ]]; then echo $(md5 -qq Updates/$current_vers/"$edit_vers"".zip") >> Updates/AutoupdatesInfo.txt; fi
 
             fi
