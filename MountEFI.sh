@@ -383,9 +383,9 @@ fi
 }
 
 IF_NEW_APPLET(){
+            TARGET="${ROOT}/../../../MountEFI.app/Contents"
             if [[ -d "${SOURCE}/Newapp" ]]; then
                 SOURCE="${HOME}/.MountEFIupdates/${edit_vers}/Newapp"
-                TARGET="${ROOT}/../../../MountEFI.app/Contents"
                 mv -f "${SOURCE}/script" "${ROOT}/script" 2>/dev/null
                 if [[ ! -d "${ROOT}/MainMenu.nib" ]]; then mv -f "${SOURCE}/MainMenu.nib" "${ROOT}/" 2>/dev/null; fi 
                 if [[ ! -f "${ROOT}/AppSettings.plist" ]]; then mv -f "${SOURCE}/AppSettings.plist" "${ROOT}/AppSettings.plist" 2>/dev/null; fi
@@ -396,8 +396,15 @@ IF_NEW_APPLET(){
                 rm -f "$TARGET/MacOS/Application"* 2>/dev/null
                 chmod +x "$TARGET/MacOS/MountEFI" "${ROOT}/script" 2>/dev/null
                 touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
+            elif [[ -f "$TARGET/MacOS/MountEFI" ]] && [[ -f "$TARGET/document.wflow" ]]; then 
+                rm -f "$TARGET/MacOS/MountEFI" "${ROOT}/AppSettings.plist" "${ROOT}/script" 2>/dev/null
+                rm -Rf "${ROOT}/MainMenu.nib" 2>/dev/null
+                if [[ -f "${SOURCE}/Info.plist" ]]; then mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null; fi
+                if [[ -f "${SOURCE}/Application Stub" ]]; then mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null; fi
+                touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
             fi
 }
+
 
 GET_LOCALE
 
@@ -1622,10 +1629,7 @@ echo 'chmod +x "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
 echo '        chmod +x "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
-echo '        if [[ -f ~/.MountEFIupdates/$latest_edit/alerter ]]; then' >> ${HOME}/.MountEFIu.sh
-echo '              mv -f ~/.MountEFIupdates/$latest_edit/alerter "${DirPath}""alerter"' >> ${HOME}/.MountEFIu.sh
-echo '        fi' >> ${HOME}/.MountEFIu.sh       
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh  
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
