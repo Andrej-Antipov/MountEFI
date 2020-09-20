@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="044"
+s_edit_vers="045"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -47,7 +47,8 @@ s_edit_vers="044"
 # 041 - проверка на неподдерживаемые весрии Mac OS
 # 042 - для Big Sur отключить показ икнки в предупреждениях
 # 043 - faster kill curl function
-# 044 - generic password key name 
+# 044 - generic password key name
+# 045 - баг фиксы и улучшении
 
 clear
 
@@ -3639,6 +3640,8 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 SAVE_STRING
                 plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
                 inputs=0
+                else
+                    inputs="C"
                 fi
                 printf "\r\033[4A"
                 if [[ $loc = "ru" ]]; then
@@ -3702,10 +3705,11 @@ if [[ ${inputs} = [dD] ]]; then
                         if [[ ! ${inputs} = "p" ]]; then 
                         GET_DRIVE
                         DEL_RENAMEHD; SAVE_STRING
+                        inputs=0
+                        else
+                            inputs="C"
                         fi
                         clear
-    
-                        inputs=0
 fi
 
 if [[ ${inputs} = [vV] ]]; then
@@ -5699,6 +5703,9 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIr.sh
+echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' >> ${HOME}/.MountEFIr.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
 echo 'if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then' >> ${HOME}/.MountEFIr.sh
@@ -5779,6 +5786,7 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'touch ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
 echo 'latest_release=''"'$(echo $latest_release)'"''' >> ${HOME}/.MountEFIu.sh
 echo 'latest_edit=''"'$(echo $latest_edit)'"''' >> ${HOME}/.MountEFIu.sh
 echo 'current_release=''"'$(echo ${prog_vers})'"''' >> ${HOME}/.MountEFIu.sh
@@ -5786,10 +5794,16 @@ echo 'current_edit=''"'$(echo ${edit_vers})'"''' >> ${HOME}/.MountEFIu.sh
 echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
 echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
+echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+echo 'chmod +x "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
+echo '        chmod +x "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
 echo 'fi' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
@@ -5798,6 +5812,8 @@ echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""
 echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
 echo '      open "$ProgPath"' >> ${HOME}/.MountEFIu.sh
 echo ''  >> ${HOME}/.MountEFIu.sh
+echo 'fi' >> ${HOME}/.MountEFIu.sh
+echo 'rm -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
 echo 'exit'             >> ${HOME}/.MountEFIu.sh
 chmod u+x ${HOME}/.MountEFIu.sh
 
@@ -7098,6 +7114,9 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIr.sh
+echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' >> ${HOME}/.MountEFIr.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
 echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh

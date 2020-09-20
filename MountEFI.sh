@@ -394,6 +394,7 @@ IF_NEW_APPLET(){
                 rm -f "$TARGET/document.wflow" 2>/dev/null
                 rm -f "$TARGET/MacOS/Automator"* 2>/dev/null
                 rm -f "$TARGET/MacOS/Application"* 2>/dev/null
+                chmod +x "$TARGET/MacOS/MountEFI" "${ROOT}/script" 2>/dev/null
                 touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
             fi
 }
@@ -715,6 +716,9 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIr.sh
+echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' >> ${HOME}/.MountEFIr.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
 echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
@@ -1600,6 +1604,7 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
 echo ''             >> ${HOME}/.MountEFIu.sh
+echo 'touch ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
 echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
 echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
 echo 'current_release=''"'$(echo ${prog_vers})'"''' >> ${HOME}/.MountEFIu.sh
@@ -1608,13 +1613,15 @@ echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
 echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
+echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh
-echo 'while true; do' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ ! $(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d / | rev | grep -ow "MountEFI" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
-echo 'sleep 4; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+echo 'chmod +x "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}""setup"' >> ${HOME}/.MountEFIu.sh
+echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
+echo '        chmod +x "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
 echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
 echo '        if [[ -f ~/.MountEFIupdates/$latest_edit/alerter ]]; then' >> ${HOME}/.MountEFIu.sh
 echo '              mv -f ~/.MountEFIupdates/$latest_edit/alerter "${DirPath}""alerter"' >> ${HOME}/.MountEFIu.sh
@@ -1627,6 +1634,7 @@ echo ''  >> ${HOME}/.MountEFIu.sh
 echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
 echo 'plutil -replace ReadyToAutoUpdate -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
 echo 'fi' >> ${HOME}/.MountEFIu.sh
+echo 'rm -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
 echo 'exit' >> ${HOME}/.MountEFIu.sh
 chmod u+x ${HOME}/.MountEFIu.sh
 
