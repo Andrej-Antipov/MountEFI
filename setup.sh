@@ -5704,7 +5704,7 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
 echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIr.sh
+echo 'i=120; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIr.sh
 echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' >> ${HOME}/.MountEFIr.sh
 echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIr.sh
 echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
@@ -5796,7 +5796,7 @@ echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
 echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
-echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
+echo 'i=600; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
 echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
 echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIu.sh
 echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh

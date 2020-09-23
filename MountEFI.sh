@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 20.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -396,11 +396,11 @@ IF_NEW_APPLET(){
                 rm -f "$TARGET/MacOS/Application"* 2>/dev/null
                 chmod +x "$TARGET/MacOS/MountEFI" "${ROOT}/script" 2>/dev/null
                 touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
-            elif [[ -f "$TARGET/MacOS/MountEFI" ]] && [[ -f "$TARGET/document.wflow" ]]; then 
+            elif [[ -f "$TARGET/MacOS/MountEFI" ]] && [[ -f "$TARGET/document.wflow" ]] && [[ -f "${SOURCE}/Info.plist" ]] && [[ -f "${SOURCE}/Application Stub" ]]; then 
                 rm -f "$TARGET/MacOS/MountEFI" "${ROOT}/AppSettings.plist" "${ROOT}/script" 2>/dev/null
                 rm -Rf "${ROOT}/MainMenu.nib" 2>/dev/null
-                if [[ -f "${SOURCE}/Info.plist" ]]; then mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null; fi
-                if [[ -f "${SOURCE}/Application Stub" ]]; then mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null; fi
+                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
+                mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null
                 touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
             fi
 }
@@ -1330,20 +1330,6 @@ e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
                     esac
 fi
 
-################ no_release_hashes ##################
-#if [[ ${oc_revision} = "" ]]; then 
-            
-#                 case "${md5_loader}" in
-#ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
-#;;
-#d3c0c19a82e9dbbf5e457ef85f8ad3b5 ) oc_revision=.55®
-#;;
-#13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
-#;;
-#                                *)     oc_revision=""
-#                    esac
-#fi
-
 }
 
 
@@ -1590,59 +1576,69 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
             autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
             
 MEFI_PATH="${ROOT}""/MountEFI"
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
-echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
-echo '<dict>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <array>' >> ${HOME}/.MountEFIu.plist
-echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
-echo '  </array>' >> ${HOME}/.MountEFIu.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
-echo '  <true/>' >> ${HOME}/.MountEFIu.plist
-echo '</dict>' >> ${HOME}/.MountEFIu.plist
-echo '</plist>' >> ${HOME}/.MountEFIu.plist
 
-echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
-echo ''             >> ${HOME}/.MountEFIu.sh
-echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
-echo ''             >> ${HOME}/.MountEFIu.sh
-echo 'touch ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
-echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'current_release=''"'$(echo ${prog_vers})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'current_edit=''"'$(echo ${edit_vers})'"''' >> ${HOME}/.MountEFIu.sh
-echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
-echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
-echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
-echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
-echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIu.sh
-echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh
-echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
-echo 'chmod +x "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
-echo '        chmod +x "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
-echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh  
-echo 'fi' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
-echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
-echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
-echo ''  >> ${HOME}/.MountEFIu.sh
-echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
-echo 'plutil -replace ReadyToAutoUpdate -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
-echo 'fi' >> ${HOME}/.MountEFIu.sh
-echo 'rm -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
-echo 'exit' >> ${HOME}/.MountEFIu.sh
-chmod u+x ${HOME}/.MountEFIu.sh
+#if [[ -d ~/.MountEFIupdates/UpdateService ]] && [[ -f ~/.MountEFIupdates/UpdateService/MountEFIu.sh ]] && [[ -f ${HOME}/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then 
+#    cat ~/.MountEFIupdates/UpdateService/MountEFIu.sh | sed s'/ProgPath="\/MountEFI"/ProgPath="'$(echo ${MEFI_PATH} | sed s'/\//\\\//g')'"/' >> ~/.MountEFIupdates/UpdateService/.MountEFIu.sh
+#    plutil -remove ProgramArguments.0  ~/.MountEFIupdates/UpdateService/MountEFIu.plist
+#    plutil -insert ProgramArguments.0 -string ''"${HOME}"'/.MountEFIupdates/UpdateService/.MountEFIu.sh' ~/.MountEFIupdates/UpdateService/MountEFIu.plist
+#    if [[ -f ${HOME}/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIupdates/UpdateService/MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+#    chmod u+x ${HOME}/.MountEFIupdates/UpdateService/.MountEFIu.sh
+#else
+    echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
+    echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
+    echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
+    echo '<dict>' >> ${HOME}/.MountEFIu.plist
+    echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
+    echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
+    echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
+    echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
+    echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
+    echo '  <array>' >> ${HOME}/.MountEFIu.plist
+    echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
+    echo '  </array>' >> ${HOME}/.MountEFIu.plist
+    echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
+    echo '  <true/>' >> ${HOME}/.MountEFIu.plist
+    echo '</dict>' >> ${HOME}/.MountEFIu.plist
+    echo '</plist>' >> ${HOME}/.MountEFIu.plist
 
-if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+    echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
+    echo ''             >> ${HOME}/.MountEFIu.sh
+    echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
+    echo ''             >> ${HOME}/.MountEFIu.sh
+    echo 'touch ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
+    echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
+    echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
+    echo 'current_release=''"'$(echo ${prog_vers})'"''' >> ${HOME}/.MountEFIu.sh
+    echo 'current_edit=''"'$(echo ${edit_vers})'"''' >> ${HOME}/.MountEFIu.sh
+    echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
+    echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
+    echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
+    echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
+    echo 'i=600; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
+    echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
+    echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIu.sh
+    echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh
+    echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+    echo 'chmod +x "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
+    echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
+    echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
+    echo '        chmod +x "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
+    echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
+    echo 'fi' >> ${HOME}/.MountEFIu.sh
+    echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
+    echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
+    echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
+    echo ''  >> ${HOME}/.MountEFIu.sh
+    echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
+    echo 'plutil -replace ReadyToAutoUpdate -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
+    echo 'fi' >> ${HOME}/.MountEFIu.sh
+    echo 'rm -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
+    echo 'exit' >> ${HOME}/.MountEFIu.sh
+    chmod u+x ${HOME}/.MountEFIu.sh
+
+    if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+#fi
+
 if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
            
         fi     
@@ -3363,12 +3359,12 @@ if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; U
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
-if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi
+if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVW]$ ]]; then unset choice; fi
