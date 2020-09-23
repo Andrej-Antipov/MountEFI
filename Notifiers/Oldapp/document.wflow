@@ -1287,9 +1287,9 @@ echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}" ]]; then ' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} &gt;&gt; "${DirPath}""version.txt"' &gt;&gt; ${HOME}/.MountEFIu.sh
-echo 'while true; do' &gt;&gt; ${HOME}/.MountEFIu.sh
+echo 'i=600; while [[ ! $i = 0 ]]; do' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' &gt;&gt; ${HOME}/.MountEFIu.sh
-echo 'i=$((i-1)); sleep 0.25; else break; fi; done' &gt;&gt; ${HOME}/.MountEFIu.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done'&gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'chmod +x "${ProgPath}"'  &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             &gt;&gt; ${HOME}/.MountEFIu.sh
