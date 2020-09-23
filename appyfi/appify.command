@@ -142,6 +142,11 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                     if [[ -s Updates/$current_vers/$edit_vers/Newapp/.script ]]; then mv -f Updates/$current_vers/$edit_vers/Newapp/.script Updates/$current_vers/$edit_vers/Newapp/script; fi
                     rm -f Updates/$current_vers/$edit_vers/.script; chmod +x Updates/$current_vers/$edit_vers/Newapp/script
             fi
+                if [[ -d Notifiers/Oldapp ]]; then 
+                    cp -a Notifiers/Oldapp/document.wflow Updates/$current_vers/$edit_vers
+                    #cp -a Notifiers/Oldapp/Info.plist Updates/$current_vers/$edit_vers
+                fi
+
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
                 if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
                 #mkdir Autoupdates; touch Autoupdates/AutoupdatesInfo.txt
