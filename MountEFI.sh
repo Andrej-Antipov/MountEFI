@@ -1,12 +1,610 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 21.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 25.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="056"
+edit_vers="057"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
+
+clear  && printf '\e[3J'
+printf "\033[?25l"
+
+cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
+
+if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
+if [[ -f "${HOME}"/.MountEFIconf.plist ]]; then rm "${HOME}"/.MountEFIconf.plist; fi
+fi
+
+zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+
+efimounter=$(echo 0x7a 0x78 | xxd -r)
+
+if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
+fi
+
+
+if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
+    if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
+    fi
+fi
+
+####################################### кэш конфига #####################################################################################
+
+UPDATE_CACHE(){
+if [[ -f "${HOME}"/.MountEFIconf.plist ]]; then MountEFIconf=$( cat "${HOME}"/.MountEFIconf.plist ); cache=1; else cache=0; fi
+}
+
+##########################################################################################################################################
+
+GET_LOCALE(){
+if [[ $cache = 1 ]] ; then 
+    locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=$(defaults read -g AppleLocale | cut -d "_" -f1); else loc="${locale}"; fi
+else   
+    loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+fi  
+}
+
+#GET_INIT_FROM_ICLOUD
+
+if [[ ! -f "${HOME}"/.MountEFIconf.plist ]]; then 
+
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+    if [[ -d "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+        if [[ -f "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ]]; then 
+            cp "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist "${HOME}"/
+        fi
+    fi
+fi
+
+UPDATE_CACHE
+
+GET_LOCALE
+########################## check restart reload ####################################################################################
+
+rst=0
+if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
+        if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
+                launchctl unload -w "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIr.plist ]]; then rm "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
+        if [[ -f "${HOME}"/.MountEFIr.sh ]]; then rm "${HOME}"/.MountEFIr.sh; fi
+        plutil -remove Restart "${HOME}"/.MountEFIconf.plist; UPDATE_CACHE
+        if [[ $(echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "Updating" ]]; then rst=2; else rst=1; fi
+fi
+
+if [[ $(echo "$MountEFIconf"| grep -e "<key>NO_RETURN_EASYEFI</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "NO_RETURN_EASYEFI" ]]; then
+        rst=1; plutil -remove NO_RETURN_EASYEFI "${HOME}"/.MountEFIconf.plist; UPDATE_CACHE; fi
+
+reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
+if [[ $reload_check = "Reload" ]]; then par="-s"; fi
+
+#################### CHECK UPDATE ###################################################################################
+
+upd=0
+update_check=`echo "$MountEFIconf"| grep -o "Updating"`
+if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+        if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
+                launchctl unload -w "${HOME}"/Library/LaunchAgents/MountEFIu.plist; fi
+            if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIu.plist ]]; then rm "${HOME}"/Library/LaunchAgents/MountEFIu.plist; fi
+            if [[ -f "${HOME}"/.MountEFIu.sh ]]; then rm "${HOME}"/.MountEFIu.sh; fi
+            plutil -remove Updating "${HOME}"/.MountEFIconf.plist; UPDATE_CACHE
+            if [[ ! -d "${ROOT}"/terminal-notifier.app  ]]; then 
+                    if [[ $loc = "ru" ]]; then
+                    printf '\n\r  Отсутствует иконка в уведомлениях. Пытаемся загрузить с github ....\n'
+                    else
+                    printf '\n\r  There is no icon in the notifications. Trying to download from github ...\n'
+                    fi
+                if [[ ! -d "${HOME}"/.MountEFIupdates ]]; then mkdir "${HOME}"/.MountEFIupdates; fi
+                curl -s --max-time 25 https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o "${HOME}"/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
+                unzip  -o -qq "${HOME}"/.MountEFIupdates/terminal-notifier.zip -d "${HOME}"/.MountEFIupdates 2>/dev/null
+                if [[ -d "${HOME}"/.MountEFIupdates/terminal-notifier.app ]]; then mv -f "${HOME}"/.MountEFIupdates/terminal-notifier.app "${ROOT}"
+                        if [[ $loc = "ru" ]]; then
+                    printf '\n\r  Успешно :)'
+                        else
+                    printf '\n\r  Successfully '
+                        fi
+                    else
+                        if [[ $loc = "ru" ]]; then
+                    printf '\n\r  Неудачно :('
+                        else
+                    printf '\n\r  Unsuccessfully :('
+                        fi
+                fi
+            fi
+            if [[ -f "${SOURCE}.zip" ]]; then rm -Rf "${SOURCE}"; unzip  -o -qq "${SOURCE}.zip" -d "${HOME}"/.MountEFIupdates 2>/dev/null
+        fi
+SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
+if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
+
+#IF_NEW_APPLET
+            TARGET="${ROOT}/../../../MountEFI.app/Contents"
+            if [[ -d "${SOURCE}/Newapp" ]]; then
+                SOURCE="${HOME}/.MountEFIupdates/${edit_vers}/Newapp"
+                mv -f "${SOURCE}/script" "${ROOT}/script" 2>/dev/null
+                if [[ ! -d "${ROOT}/MainMenu.nib" ]]; then mv -f "${SOURCE}/MainMenu.nib" "${ROOT}/" 2>/dev/null; fi 
+                if [[ ! -f "${ROOT}/AppSettings.plist" ]]; then mv -f "${SOURCE}/AppSettings.plist" "${ROOT}/AppSettings.plist" 2>/dev/null; fi
+                if [[ ! -f "$TARGET/MacOS/MountEFI" ]]; then mv -f "${SOURCE}/MountEFI" "$TARGET/MacOS/MountEFI" 2>/dev/null; fi
+                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
+                rm -f "$TARGET/document.wflow" 2>/dev/null
+                rm -f "$TARGET/MacOS/Automator"* 2>/dev/null
+                rm -f "$TARGET/MacOS/Application"* 2>/dev/null
+                chmod +x "$TARGET/MacOS/MountEFI" "${ROOT}/script" 2>/dev/null
+                touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
+            elif [[ -f "$TARGET/MacOS/MountEFI" ]] && [[ -f "$TARGET/document.wflow" ]] && [[ -f "${SOURCE}/Info.plist" ]] && [[ -f "${SOURCE}/Application Stub" ]]; then 
+                rm -f "$TARGET/MacOS/MountEFI" "${ROOT}/AppSettings.plist" "${ROOT}/script" 2>/dev/null
+                rm -Rf "${ROOT}/MainMenu.nib" 2>/dev/null
+                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
+                mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null
+                touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
+            fi
+
+if [[ -d "${HOME}"/.MountEFIupdates ]]; then rm -Rf "${HOME}"/.MountEFIupdates; fi
+upd=1
+fi
+
+##################################### Инициализация нового конфига и правка старого ###################################################
+
+MEFI_MD5=$(md5 -qq MountEFI)
+if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5} ]]; then
+
+    login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
+    if [[ $login = "LoginPassword" ]]; then
+        mypassword="$(echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')"
+        if [[ ! $mypassword = "" ]]; then
+            if ! (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+                security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
+            fi
+            plutil -remove LoginPassword ""${HOME}""/.MountEFIconf.plist; UPDATE_CACHE
+        fi
+    fi
+
+
+    deleted=0
+    if [[ $cache = 1 ]]; then
+    strng=`echo "$MountEFIconf" | grep  "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+        if [[ ! $strng = "CurrentPreset" ]]; then
+            theme=`echo "$MountEFIconf" |  grep -A 1   "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+            rm "${HOME}"/.MountEFIconf.plist; unset MountEFIconf; cache=0; deleted=1
+        fi
+    fi
+
+    if [[ ! $cache = 1 ]]; then
+        if [[ -f DefaultConf.plist ]]; then
+            cp DefaultConf.plist "${HOME}"/.MountEFIconf.plist
+        else
+    #FILL_CONFIG
+    echo '<?xml version="1.0" encoding="UTF-8"?>' >> "${HOME}"/.MountEFIconf.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> "${HOME}"/.MountEFIconf.plist
+            echo '<plist version="1.0">' >> "${HOME}"/.MountEFIconf.plist
+            echo '<dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	<key>AutoMount</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	<dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>Enabled</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <false/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>Open</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <false/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>PartUUIDs</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string> </string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>Timeout2Exit</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <integer>10</integer>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	</dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	<key>Backups</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	<dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>Auto</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <true/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>Maximum</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <integer>20</integer>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	</dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>CheckLoaders</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <true/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>CurrentPreset</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>BlueSky</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>Locale</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>auto</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>Menue</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>always</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>OpenFinder</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <true/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>Presets</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <key>BlueSky</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{4096, 15458, 40092}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>Menlo Regular</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>12</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{56831, 61439, 53247}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <key>DarkBlueSky</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{8481, 10537, 33667}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>12</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{65278, 64507, 0}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <key>GreenField</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{1028, 12850, 10240}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>12</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{61937, 60395, 47288}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <key>Ocean</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{1028, 12850, 65535}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>SF Mono Regular</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>12</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{65535, 65535, 65535}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <key>Tolerance</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      <dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>BackgroundColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{40092, 40092, 38293}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontName</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>SF Mono</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>FontSize</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>12</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <key>TextColor</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '          <string>{40606, 4626, 0}</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '      </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>RenamedHD</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string> </string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>ShowKeys</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <true/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	<key>SysLoadAM</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '	<dict>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>Enabled</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <false/>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>Open</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <false/>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>PartUUIDs</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <string> </string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>Theme</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string>built-in</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>ThemeLoaders</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string>37</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>ThemeLoadersLinks</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string> </string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>ThemeLoadersNames</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string>Clover;OpenCore</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>ThemeProfile</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <string>default</string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <key>UpdateSelfAuto</key>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  <true/>' >> "${HOME}"/.MountEFIconf.plist
+            echo '	<key>XHashes</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '	<dict>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>CLOVER_HASHES</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <string></string>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>OC_DEV_HASHES</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <string></string>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>OC_REL_HASHES</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <string></string>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <key>OTHER_HASHES</key>' >> "${HOME}"/.MountEFIconf.plist
+	        echo '           <string></string>' >> "${HOME}"/.MountEFIconf.plist
+            echo '  </dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '</dict>' >> "${HOME}"/.MountEFIconf.plist
+            echo '</plist>' >> "${HOME}"/.MountEFIconf.plist
+
+        fi
+    fi
+
+    if [[ $deleted = 1 ]]; then
+        plutil -replace Theme -string $theme "${HOME}"/.MountEFIconf.plist 
+    fi
+
+    if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
+    strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES "${HOME}"/.MountEFIconf.plist; cache=0; fi
+
+    strng=`echo "$MountEFIconf"| grep -e "<key>CheckLoaders</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "CheckLoaders" ]]; then plutil -replace CheckLoaders -bool NO "${HOME}"/.MountEFIconf.plist; cache=0; fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "AutoMount" ]]; then 
+			plutil -insert AutoMount -xml  '<dict/>'   "${HOME}"/.MountEFIconf.plist
+			plutil -insert AutoMount.Enabled -bool NO "${HOME}"/.MountEFIconf.plist
+			plutil -insert AutoMount.ExitAfterMount -bool NO "${HOME}"/.MountEFIconf.plist
+			plutil -insert AutoMount.Open -bool NO "${HOME}"/.MountEFIconf.plist
+			plutil -insert AutoMount.PartUUIDs -string " " "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>SysLoadAM</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "SysLoadAM" ]]; then 
+			plutil -insert SysLoadAM -xml  '<dict/>'   "${HOME}"/.MountEFIconf.plist
+			plutil -insert SysLoadAM.Enabled -bool NO "${HOME}"/.MountEFIconf.plist
+			plutil -insert SysLoadAM.Open -bool NO "${HOME}"/.MountEFIconf.plist
+            plutil -insert SysLoadAM.PartUUIDs -string " " "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
+    if [[ ! $strng = "Timeout2Exit" ]]; then
+            plutil -insert AutoMount.Timeout2Exit -integer 5 "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "RenamedHD" ]]; then
+            plutil -insert RenamedHD -string " " "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>Backups</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "Backups" ]]; then 
+             plutil -insert Backups -xml  '<dict/>'   "${HOME}"/.MountEFIconf.plist
+             plutil -insert Backups.Maximum -integer 10 "${HOME}"/.MountEFIconf.plist
+             cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoaders</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "ThemeLoaders" ]]; then
+            plutil -insert ThemeLoaders -string "37" "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersLinks</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "ThemeLoadersLinks" ]]; then
+            plutil -insert ThemeLoadersLinks -string " " "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersNames</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "ThemeLoadersNames" ]]; then
+            plutil -insert ThemeLoadersNames -string "Clover;OpenCore" "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "ThemeProfile" ]]; then
+            plutil -insert ThemeProfile -string "default" "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf"| grep -e "<key>UpdateSelfAuto</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "UpdateSelfAuto" ]]; then plutil -replace UpdateSelfAuto -bool YES "${HOME}"/.MountEFIconf.plist; cache=0; fi
+
+    strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "XHashes" ]]; then 
+			plutil -insert XHashes -xml  '<dict/>'   "${HOME}"/.MountEFIconf.plist
+			plutil -insert XHashes.CLOVER_HASHES -string "" "${HOME}"/.MountEFIconf.plist
+			plutil -insert XHashes.OC_DEV_HASHES -string "" "${HOME}"/.MountEFIconf.plist
+            plutil -insert XHashes.OC_REL_HASHES -string "" "${HOME}"/.MountEFIconf.plist
+            plutil -insert XHashes.OTHER_HASHES -string "" "${HOME}"/.MountEFIconf.plist
+            cache=0
+    fi
+
+    strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO "${HOME}"/.MountEFIconf.plist; cache=0; fi
+    strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFIsimple</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "EasyEFIsimple" ]]; then plutil -replace EasyEFIsimple -bool Yes "${HOME}"/.MountEFIconf.plist; cache=0; fi
+
+    if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
+    
+    if [[ ! -d "${HOME}"/Library/Application\ Support/MountEFI/validconf ]]; then mkdir -p "${HOME}"/Library/Application\ Support/MountEFI/validconf; fi
+    touch "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
+
+fi
+#############################################################################################################################################
+
+GET_LOADERS(){
+CheckLoaders=1
+strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then CheckLoaders=0
+fi
+}
+
+GET_APP_ICON(){
+icon_string=""
+if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
+   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
+fi 
+}
+
+SET_TITLE(){
+echo '#!/bin/bash'  >> "${HOME}"/.MountEFInoty.sh
+echo '' >> "${HOME}"/.MountEFInoty.sh
+echo 'TITLE="MountEFI"' >> "${HOME}"/.MountEFInoty.sh
+echo 'SOUND="Submarine"' >> "${HOME}"/.MountEFInoty.sh
+}
+
+DISPLAY_NOTIFICATION(){
+
+if [[ -d "${ROOT}"/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
+echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> "${HOME}"/.MountEFInoty.sh
+sleep 1.5
+else
+echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> "${HOME}"/.MountEFInoty.sh
+fi
+echo ' exit' >> "${HOME}"/.MountEFInoty.sh
+chmod u+x "${HOME}"/.MountEFInoty.sh
+sh "${HOME}"/.MountEFInoty.sh
+rm "${HOME}"/.MountEFInoty.sh
+}
+
+ERROR_MSG(){
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
+EXIT_PROGRAM
+}
+
+CHECK_SANDBOX(){
+if [[ -f "$ROOT"/version.txt ]]; then
+    if ! touch "$ROOT"/version.txt 2>/dev/null; then 
+        SET_TITLE
+                    if [[ $loc = "ru" ]]; then
+                echo 'SUBTITLE="MountEFI запущен в ПЕСОЧНИЦЕ !"; MESSAGE="Переместите апплет в другую папку !"' >> "${HOME}"/.MountEFInoty.sh
+                    else
+                echo 'SUBTITLE="MountEFI runs in SANDBOX !"; MESSAGE="Move the applet to another place !"' >> "${HOME}"/.MountEFInoty.sh
+                    fi
+                DISPLAY_NOTIFICATION
+    fi
+fi   
+}
+
+SAVE_LOADERS_STACK(){
+
+if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi
+mkdir "${HOME}"/.MountEFIst
+
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
+            touch "${HOME}"/.MountEFIst/.mounted_loaders_list
+            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${HOME}"/.MountEFIst/.mounted_loaders_list; done
+fi
+
+if [[ ! ${#ldlist[@]} = 0 ]]; then 
+            touch "${HOME}"/.MountEFIst/.ldlist
+            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${HOME}"/.MountEFIst/.ldlist; done
+fi
+
+if [[ ! ${#lddlist[@]} = 0 ]]; then 
+            touch "${HOME}"/.MountEFIst/.lddlist
+            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${HOME}"/.MountEFIst/.lddlist; done
+fi
+
+}
+
+#запоминаем на каком терминале и сколько процессов у нашего скрипта
+#############################################################################################################################
+MyTTY=$(tty | tr -d " dev/\n")
+MyPID=$(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d' ')
+MyZPID=$(ps | grep -v grep  | grep $MyTTY | grep zsh | xargs | cut -f1 -d' ')
+term=$(ps);  MyTTYcount=$(echo "$term" | egrep -o $MyTTY | wc -l | bc)
+##############################################################################################################################
+
+CLEAR_HISTORY(){
+if [[ -f "${HOME}"/.bash_history ]]; then cat  "${HOME}"/.bash_history | sed -n '/MountEFI/!p' >> "${HOME}"/new_hist.txt; rm -f "${HOME}"/.bash_history; mv "${HOME}"/new_hist.txt "${HOME}"/.bash_history ; fi >/dev/null 2>/dev/null
+if [[ -f "${HOME}"/.zsh_history ]]; then cat  "${HOME}"/.zsh_history | sed -n '/MountEFI/!p' >> "${HOME}"/new_z_hist.txt; rm -f "${HOME}"/.zsh_history; mv "${HOME}"/new_z_hist.txt "${HOME}"/.zsh_history ; fi >/dev/null 2>/dev/null
+}
+
+################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
+EXIT_PROGRAM(){
+
+TERMINATE(){
+kill $MyPID
+if [[ ${zpid} = 1 ]] && [[ ! ${MyZPID} = "" ]]; then
+   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then kill ${MyZPID}; fi
+fi 
+}
+
+################################## очистка на выходе #############################################################
+rm -f  "${HOME}"/.disk_list.txt
+if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
+CLEAR_HISTORY
+#####################################################################################################################
+#CHECK_TTY_COUNT
+term=$(ps); AllTTYcount=$( echo "$term" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc )
+TTYcount=$((AllTTYcount-MyTTYcount))
+zpid=0
+if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
+   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then ((--TTYcount)); zpid=1; fi
+fi
+	
+osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
+TERMINATE &
+if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
+else
+   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
+ fi
+}
+
+# Установка флага необходимости в SUDO - flag
+GET_FLAG(){
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "${macos}" -gt "1100" ]] || [[ "${macos}" -lt "1011" ]]; then 
+############## ERROR_OS_VERSION
+if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+##############################
+fi
+if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
+}
+
+##################### получение имени и версии загрузчика ######################################################################################
+
+GET_LOADER_STRING(){                
+               GET_OTHER_LOADERS_STRING               
+               if [[ ! "${loader:0:5}" = "Other" ]]; then                
+                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
+                    case "${check_loader}" in
+                    "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
+                                if [[ ${revision} = "" ]]; then
+                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                loader+="${revision:0:4}"
+                                ;;
+  
+                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
+                        ;;
+                    "GNU/Linux" ) loader="GNU/Linux"                                       
+                        ;;
+                    "Refind"    ) loader="refind"                                          
+                        ;;
+                    "Microsoft C" ) loader="Windows"; loader+="®"                           
+                        ;;
+                               *) loader="unrecognized"                                    
+                        ;;
+                    esac    
+                    if [[ ${loader} = "unrecognized" ]]; then GET_CONFIG_VERS "ALL"; fi
+                fi
+}
+
+##################################################################################################################################################
+
+# Oпределение функции обновления экрана в случае замены файла загрузчика ####################################################
+RECHECK_LOADERS(){
+if [[ ! $CheckLoaders = 0 ]]; then
+    if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
+        let "pauser=3"; update_screen_flag=0
+        for pnum in ${!dlist[@]}
+        do
+        mounted_check=$( df | grep ${dlist[$pnum]} )   
+            if [[ ! $mounted_check = "" ]]; then 
+            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+                    if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
+
+                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
+                       if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
+                    fi
+
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
+                    mounted_loaders_list[$pnum]=${loader_sum}
+                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
+                    ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
+                    let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
+            fi
+        done
+    else
+        let "pauser=pauser-1"
+    fi
+fi
+}
+#################################################################################################################################
 
 SHOW_VERSION(){
 clear && printf '\e[8;24;'$col't' && printf '\e[3J' && printf "\033[H"
@@ -19,18 +617,53 @@ let "var--"; done
 if [[ ! $CheckLoaders = 0 ]]; then vcorr=35; v2corr=27; v3corr=28; v4corr=23; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
 printf "\033[H"
 
+KILL_CURL_UPDATER(){
+for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ); do 
+    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " ") 2>/dev/null; done
+} 
+
+NET_UPDATE_CLOVER(){
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    if [[ ! "${clov_vrs}" = "" ]] || [[ ${#clov_vrs} -le 4 ]]; then echo $clov_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt; fi
+fi
+}
+
+NET_UPDATE_OPENCORE(){
+if ping -c 1 google.com >> /dev/null 2>&1; then
+    oc_vrs=$( curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
+    if [[ ! "${oc_vrs}" = "" ]] || [[ ${#oc_vrs} -le 4 ]]; then echo $oc_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
+fi
+}
+
+NET_UPDATE_LOADERS(){
+ if ping -c 1 google.com >> /dev/null 2>&1; then
+                if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt ]]; then rm -f "${HOME}"/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt; fi
+                if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt ]]; then rm -f "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt; fi
+                if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt ]]; then rm -f "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
+    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    oc_vrs=$(curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
+    if [[ ! -d "${HOME}"/Library/Application\ Support/MountEFI ]]; then mkdir -p "${HOME}"/Library/Application\ Support/MountEFI; fi
+        if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
+            echo $clov_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt
+            echo $oc_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt
+            date +%s > "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+        fi
+fi
+}
+
 if [[ ${AutoUpdate} = 1 ]]; then
                     if [[ $loc = "ru" ]]; then
-                        if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
-                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%d/%m/%Y %H:%M')"
+                        if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
+                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat "${HOME}"/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%d/%m/%Y %H:%M')"
                         else
                         AutoUpdateCheckTime="$(date '+%d/%m/%Y %H:%M')"
                         fi
                             printf "\033[4;'$v4corr'f"; printf '\e[40m\e[1;33m        Авто-обновление \e[1;35mMountEFI\e[1;33m включено! \e[0m'
                             printf "\033[5;'$v4corr'f"; printf '\e[40m\e[1;33m    Следующая проверка не ранее \e[1;32m'"${AutoUpdateCheckTime}"' \e[0m'
                     else
-                        if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
-                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%m/%d/%Y %H:%M')"
+                        if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then
+                        AutoUpdateCheckTime="$(date -r "$((86400+$(cat "${HOME}"/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))"  '+%m/%d/%Y %H:%M')"
                         else
                         AutoUpdateCheckTime="$(date '+%m/%d/%Y %H:%M')"
                         fi
@@ -117,642 +750,51 @@ fi
 clear && printf "\e[3J"
 }
 
-zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
-
-KILL_CURL_UPDATER(){
-for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ); do 
-    kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " ") 2>/dev/null; done
-} 
-
-NET_UPDATE_CLOVER(){
-if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
-    if [[ ! "${clov_vrs}" = "" ]] || [[ ${#clov_vrs} -le 4 ]]; then echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
-fi
-}
-
-NET_UPDATE_OPENCORE(){
-if ping -c 1 google.com >> /dev/null 2>&1; then
-    oc_vrs=$( curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
-    if [[ ! "${oc_vrs}" = "" ]] || [[ ${#oc_vrs} -le 4 ]]; then echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
-fi
-}
-
-NET_UPDATE_LOADERS(){
- if ping -c 1 google.com >> /dev/null 2>&1; then
-                if [[ -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt; fi
-                if [[ -f ~/Library/Application\ Support/MountEFI/latestClover.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
-                if [[ -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
-    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
-    oc_vrs=$(curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
-    if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
-        if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
-            echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt
-            echo $oc_vrs > ~/Library/Application\ Support/MountEFI/latestOpenCore.txt
-            date +%s > ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
-        fi
-fi
-}
-
-clear  && printf '\e[3J'
-printf "\033[?25l"
-
-cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
-
-if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then rm ${HOME}/.MountEFIconf.plist; fi
-fi
-
-efimounter=$(echo 0x7a 0x78 | xxd -r)
-
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
-    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
-fi
-
-
-if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
-    if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
-    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
-    fi
-fi
-
-GET_INITCONF_FROM_ICLOUD(){
-hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
-    if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
-        if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ]]; then 
-            cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ${HOME}/
-        fi
-    fi
-}
-
-
-GET_BACKUPS_FROM_ICLOUD(){
-hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
-if [[ -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
-       if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
-            cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip  ${HOME}
-       else
-                if [[ -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
-                    cp ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip  ${HOME}
-            fi
-       fi 
-fi  
-
-}
-
-FILL_CONFIG(){
-
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
-            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
-            echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
-            echo '<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
-            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>Backups</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>20</integer>' >> ${HOME}/.MountEFIconf.plist
-            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>always</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{4096, 15458, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>Menlo Regular</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{56831, 61439, 53247}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{8481, 10537, 33667}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{65278, 64507, 0}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>GreenField</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{1028, 12850, 10240}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{61937, 60395, 47288}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>Ocean</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{1028, 12850, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>Tolerance</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{40092, 40092, 38293}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{40606, 4626, 0}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>RenamedHD</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>SysLoadAM</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>37</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeLoadersLinks</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeLoadersNames</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>UpdateSelfAuto</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>XHashes</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>CLOVER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>OC_DEV_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>OC_REL_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>OTHER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '</plist>' >> ${HOME}/.MountEFIconf.plist
-
-
-}
-
-####################################### кэш конфига #####################################################################################
-
-UPDATE_CACHE(){
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
-cache=1
-else
-unset MountEFIconf; cache=0
-fi
-}
-##########################################################################################################################################
-
-if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then GET_INITCONF_FROM_ICLOUD; fi
-
-UPDATE_CACHE
-
-########################## Инициализация нового конфига ##################################################################################
-
-rst=0
-if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
-        if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
-                launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
-        if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
-        if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
-        plutil -remove Restart ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        if [[ $(echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "Updating" ]]; then rst=2; else rst=1; fi
-fi
-
-if [[ $(echo "$MountEFIconf"| grep -e "<key>NO_RETURN_EASYEFI</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "NO_RETURN_EASYEFI" ]]; then
-        rst=1; plutil -remove NO_RETURN_EASYEFI ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; fi
-
-reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
-if [[ $reload_check = "Reload" ]]; then par="-s"; fi
-
-GET_LOCALE(){
-if [[ $cache = 1 ]] ; then
-        locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ ! $locale = "ru" ]] && [[ ! $locale = "en" ]]; then loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-            else
-                loc=`echo ${locale}`
-        fi
-    else   
-        loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-fi  
-}
-
-IF_NEW_APPLET(){
-            TARGET="${ROOT}/../../../MountEFI.app/Contents"
-            if [[ -d "${SOURCE}/Newapp" ]]; then
-                SOURCE="${HOME}/.MountEFIupdates/${edit_vers}/Newapp"
-                mv -f "${SOURCE}/script" "${ROOT}/script" 2>/dev/null
-                if [[ ! -d "${ROOT}/MainMenu.nib" ]]; then mv -f "${SOURCE}/MainMenu.nib" "${ROOT}/" 2>/dev/null; fi 
-                if [[ ! -f "${ROOT}/AppSettings.plist" ]]; then mv -f "${SOURCE}/AppSettings.plist" "${ROOT}/AppSettings.plist" 2>/dev/null; fi
-                if [[ ! -f "$TARGET/MacOS/MountEFI" ]]; then mv -f "${SOURCE}/MountEFI" "$TARGET/MacOS/MountEFI" 2>/dev/null; fi
-                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
-                rm -f "$TARGET/document.wflow" 2>/dev/null
-                rm -f "$TARGET/MacOS/Automator"* 2>/dev/null
-                rm -f "$TARGET/MacOS/Application"* 2>/dev/null
-                chmod +x "$TARGET/MacOS/MountEFI" "${ROOT}/script" 2>/dev/null
-                touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
-            elif [[ -f "$TARGET/MacOS/MountEFI" ]] && [[ -f "$TARGET/document.wflow" ]] && [[ -f "${SOURCE}/Info.plist" ]] && [[ -f "${SOURCE}/Application Stub" ]]; then 
-                rm -f "$TARGET/MacOS/MountEFI" "${ROOT}/AppSettings.plist" "${ROOT}/script" 2>/dev/null
-                rm -Rf "${ROOT}/MainMenu.nib" 2>/dev/null
-                mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null
-                mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null
-                touch "${ROOT}/../../../MountEFI.app" 2>/dev/null
-            fi
-}
-
-
-GET_LOCALE
-
-upd=0
-update_check=`echo "$MountEFIconf"| grep -o "Updating"`
-if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-        if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
-                launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
-            if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
-            if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
-            plutil -remove Updating ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-            if [[ ! -d "${ROOT}"/terminal-notifier.app  ]]; then 
-                    if [[ $loc = "ru" ]]; then
-                    printf '\n\r  Отсутствует иконка в уведомлениях. Пытаемся загрузить с github ....\n'
-                    else
-                    printf '\n\r  There is no icon in the notifications. Trying to download from github ...\n'
-                    fi
-                if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
-                curl -s --max-time 25 https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/terminal-notifier.zip -L -o ~/.MountEFIupdates/terminal-notifier.zip 2>/dev/null
-                unzip  -o -qq ~/.MountEFIupdates/terminal-notifier.zip -d ~/.MountEFIupdates 2>/dev/null
-                if [[ -d ~/.MountEFIupdates/terminal-notifier.app ]]; then mv -f ~/.MountEFIupdates/terminal-notifier.app "${ROOT}"
-                        if [[ $loc = "ru" ]]; then
-                    printf '\n\r  Успешно :)'
-                        else
-                    printf '\n\r  Successfully '
-                        fi
-                    else
-                        if [[ $loc = "ru" ]]; then
-                    printf '\n\r  Неудачно :('
-                        else
-                    printf '\n\r  Unsuccessfully :('
-                        fi
-                fi
-            fi
-            if [[ -f "${SOURCE}.zip" ]]; then rm -Rf "${SOURCE}"; unzip  -o -qq "${SOURCE}.zip" -d ~/.MountEFIupdates 2>/dev/null
-        fi
-SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
-if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
-IF_NEW_APPLET
-if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
-upd=1
-fi
-
-login=`echo "$MountEFIconf" | grep -Eo "LoginPassword"  | tr -d '\n'`
-if [[ $login = "LoginPassword" ]]; then
-        mypassword="$(echo "$MountEFIconf" | grep -A 1 "LoginPassword" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')"
-        if [[ ! $mypassword = "" ]]; then
-            if ! (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
-                security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
-            fi
-            plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
-        fi
-fi
-
-
-deleted=0
-if [[ $cache = 1 ]]; then
-strng=`echo "$MountEFIconf" | grep  "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-      if [[ ! $strng = "CurrentPreset" ]]; then
-        theme=`echo "$MountEFIconf" |  grep -A 1   "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        rm ${HOME}/.MountEFIconf.plist; unset MountEFIconf; cache=0; deleted=1
-    fi
-fi
-
-if [[ ! $cache = 1 ]]; then
-        if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
-        else
-             FILL_CONFIG
-        fi
-fi
-
-if [[ $deleted = 1 ]]; then
-    plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
-fi
-
-if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
-strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
-
-strng=`echo "$MountEFIconf"| grep -e "<key>CheckLoaders</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "CheckLoaders" ]]; then plutil -replace CheckLoaders -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "AutoMount" ]]; then 
-			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>SysLoadAM</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "SysLoadAM" ]]; then 
-			plutil -insert SysLoadAM -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-			plutil -insert SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert SysLoadAM.Open -bool NO ${HOME}/.MountEFIconf.plist
-            plutil -insert SysLoadAM.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
-if [[ ! $strng = "Timeout2Exit" ]]; then
-            plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "RenamedHD" ]]; then
-            plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>Backups</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "Backups" ]]; then 
-             plutil -insert Backups -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-             plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
-             cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoaders</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ThemeLoaders" ]]; then
-            plutil -insert ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersLinks</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ThemeLoadersLinks" ]]; then
-            plutil -insert ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersNames</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ThemeLoadersNames" ]]; then
-            plutil -insert ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ThemeProfile" ]]; then
-            plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf"| grep -e "<key>UpdateSelfAuto</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "UpdateSelfAuto" ]]; then plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
-
-strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "XHashes" ]]; then 
-			plutil -insert XHashes -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-			plutil -insert XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
-			plutil -insert XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
-            plutil -insert XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
-            plutil -insert XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
-            cache=0
-fi
-
-strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
-strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFIsimple</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "EasyEFIsimple" ]]; then plutil -replace EasyEFIsimple -bool Yes ${HOME}/.MountEFIconf.plist; cache=0; fi
-
-if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
-
-#############################################################################################################################################
-
-GET_LOADERS(){
-CheckLoaders=1
-strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then CheckLoaders=0
-fi
-}
-
-GET_APP_ICON(){
-icon_string=""
-if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
-   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
-fi 
-}
-
-SET_TITLE(){
-echo '#!/bin/bash'  >> ${HOME}/.MountEFInoty.sh
-echo '' >> ${HOME}/.MountEFInoty.sh
-echo 'TITLE="MountEFI"' >> ${HOME}/.MountEFInoty.sh
-echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
-}
-
-DISPLAY_NOTIFICATION(){
-
-if [[ -d "${ROOT}"/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
-echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
-sleep 1.5
-else
-echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFInoty.sh
-fi
-echo ' exit' >> ${HOME}/.MountEFInoty.sh
-chmod u+x ${HOME}/.MountEFInoty.sh
-sh ${HOME}/.MountEFInoty.sh
-rm ${HOME}/.MountEFInoty.sh
-}
-
-ERROR_MSG(){
-osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
-EXIT_PROGRAM
-}
-
-CHECK_SANDBOX(){
-if [[ -f "$ROOT"/version.txt ]]; then
-    if ! touch "$ROOT"/version.txt 2>/dev/null; then 
-        SET_TITLE
-                    if [[ $loc = "ru" ]]; then
-                echo 'SUBTITLE="MountEFI запущен в ПЕСОЧНИЦЕ !"; MESSAGE="Переместите апплет в другую папку !"' >> ${HOME}/.MountEFInoty.sh
-                    else
-                echo 'SUBTITLE="MountEFI runs in SANDBOX !"; MESSAGE="Move the applet to another place !"' >> ${HOME}/.MountEFInoty.sh
-                    fi
-                DISPLAY_NOTIFICATION
-    fi
-fi   
-}
-
-SAVE_LOADERS_STACK(){
-
-if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
-mkdir ~/.MountEFIst
-
-if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.mounted_loaders_list
-            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> ~/.MountEFIst/.mounted_loaders_list; done
-fi
-
-if [[ ! ${#ldlist[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.ldlist
-            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ~/.MountEFIst/.ldlist; done
-fi
-
-if [[ ! ${#lddlist[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.lddlist
-            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> ~/.MountEFIst/.lddlist; done
-fi
-
-}
-
-
-#запоминаем на каком терминале и сколько процессов у нашего скрипта
-#############################################################################################################################
-MyTTY=$(tty | tr -d " dev/\n")
-MyPID=$(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d' ')
-MyZPID=$(ps | grep -v grep  | grep $MyTTY | grep zsh | xargs | cut -f1 -d' ')
-term=$(ps);  MyTTYcount=$(echo "$term" | egrep -o $MyTTY | wc -l | bc)
-##############################################################################################################################
-
-TERMINATE(){
-kill $MyPID
-if [[ ${zpid} = 1 ]] && [[ ! ${MyZPID} = "" ]]; then
-   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then kill ${MyZPID}; fi
-fi 
-}
-
-CHECK_TTY_COUNT(){
-term=$(ps); AllTTYcount=$( echo "$term" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc )
-TTYcount=$((AllTTYcount-MyTTYcount))
-zpid=0
-if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
-   if [[ ! $(ps | grep -v grep | grep $MyZPID | grep $MyTTY) = "" ]]; then ((--TTYcount)); zpid=1; fi
-fi
-}
-
-CLEAR_HISTORY(){
-if [[ -f ~/.bash_history ]]; then cat  ~/.bash_history | sed -n '/MountEFI/!p' >> ~/new_hist.txt; rm -f ~/.bash_history; mv ~/new_hist.txt ~/.bash_history ; fi >/dev/null 2>/dev/null
-if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/MountEFI/!p' >> ~/new_z_hist.txt; rm -f ~/.zsh_history; mv ~/new_z_hist.txt ~/.zsh_history ; fi >/dev/null 2>/dev/null
-}
-
-################## Выход из программы с проверкой - выгружать терминал из трея или нет #####################################################
-EXIT_PROGRAM(){
-
-################################## очистка на выходе #############################################################
-rm -f  ~/.disk_list.txt
-if [[ -f ../Info.plist ]]; then rm -f version.txt; echo ${prog_vers}";"${edit_vers} >> version.txt; fi
-CLEAR_HISTORY
-#####################################################################################################################
-CHECK_TTY_COUNT	
-
-osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
-TERMINATE &
-if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
-else
-   osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
- fi
-}
-
 EASYEFI_RESTART_APP(){
 MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' |  xargs)"
 
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIr.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIr.plist
-echo '<plist version="1.0">' >> ${HOME}/.MountEFIr.plist
-echo '<dict>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>Label</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <string>MountEFIr.job</string>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <array>' >> ${HOME}/.MountEFIr.plist
-echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> ${HOME}/.MountEFIr.plist
-echo '  </array>' >> ${HOME}/.MountEFIr.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIr.plist
-echo '  <true/>' >> ${HOME}/.MountEFIr.plist
-echo '</dict>' >> ${HOME}/.MountEFIr.plist
-echo '</plist>' >> ${HOME}/.MountEFIr.plist
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> "${HOME}"/.MountEFIr.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> "${HOME}"/.MountEFIr.plist
+echo '<plist version="1.0">' >> "${HOME}"/.MountEFIr.plist
+echo '<dict>' >> "${HOME}"/.MountEFIr.plist
+echo '  <key>Label</key>' >> "${HOME}"/.MountEFIr.plist
+echo '  <string>MountEFIr.job</string>' >> "${HOME}"/.MountEFIr.plist
+echo '  <key>Nicer</key>' >> "${HOME}"/.MountEFIr.plist
+echo '  <integer>1</integer>' >> "${HOME}"/.MountEFIr.plist
+echo '  <key>ProgramArguments</key>' >> "${HOME}"/.MountEFIr.plist
+echo '  <array>' >> "${HOME}"/.MountEFIr.plist
+echo '      <string>/Users/'"$(whoami)"'/.MountEFIr.sh</string>' >> "${HOME}"/.MountEFIr.plist
+echo '  </array>' >> "${HOME}"/.MountEFIr.plist
+echo '  <key>RunAtLoad</key>' >> "${HOME}"/.MountEFIr.plist
+echo '  <true/>' >> "${HOME}"/.MountEFIr.plist
+echo '</dict>' >> "${HOME}"/.MountEFIr.plist
+echo '</plist>' >> "${HOME}"/.MountEFIr.plist
 
-echo '#!/bin/bash'  >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'sleep 1'             >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'i=60; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIr.sh
-echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' >> ${HOME}/.MountEFIr.sh
-echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIr.sh
-echo 'arg=''"'$(echo $par)'"''' >> ${HOME}/.MountEFIr.sh
-echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIr.sh
-echo '            open "${ProgPath}"'  >> ${HOME}/.MountEFIr.sh
-echo ''             >> ${HOME}/.MountEFIr.sh
-echo 'exit'             >> ${HOME}/.MountEFIr.sh
+echo '#!/bin/bash'  >> "${HOME}"/.MountEFIr.sh
+echo ''             >> "${HOME}"/.MountEFIr.sh
+echo 'sleep 1'             >> "${HOME}"/.MountEFIr.sh
+echo ''             >> "${HOME}"/.MountEFIr.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do' >> "${HOME}"/.MountEFIr.sh
+echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f "${HOME}"/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' >> "${HOME}"/.MountEFIr.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> "${HOME}"/.MountEFIr.sh
+echo 'arg=''"'$(echo $par)'"''' >> "${HOME}"/.MountEFIr.sh
+echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> "${HOME}"/.MountEFIr.sh
+echo '            open "${ProgPath}"'  >> "${HOME}"/.MountEFIr.sh
+echo ''             >> "${HOME}"/.MountEFIr.sh
+echo 'exit'             >> "${HOME}"/.MountEFIr.sh
 
-chmod u+x ${HOME}/.MountEFIr.sh
+chmod u+x "${HOME}"/.MountEFIr.sh
 
-if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
-if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ -f "${HOME}"/.MountEFIr.plist ]]; then mv -f "${HOME}"/.MountEFIr.plist "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
+if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
 
-plutil -replace EasyEFImode -bool Yes ${HOME}/.MountEFIconf.plist
-plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
+plutil -replace EasyEFImode -bool Yes "${HOME}"/.MountEFIconf.plist
+plutil -replace Restart -bool Yes "${HOME}"/.MountEFIconf.plist
 
 SAVE_LOADERS_STACK
 
 EXIT_PROGRAM
 }
-
-# Установка флага необходимости в SUDO - flag
-GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1100" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
-if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
-}
-
 
 CHECK_AUTOUPDATE(){
 AutoUpdate=1
@@ -767,12 +809,12 @@ if [[ ! $upd = 0 ]]; then
     CHECK_AUTOUPDATE
     if [[ ${AutoUpdate} = 1 ]] && [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
                         GET_FLAG
-                        plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist; UPDATE_CACHE 
+                        plutil -remove ReadyToAutoUpdate "${HOME}"/.MountEFIconf.plist; UPDATE_CACHE 
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
-                        echo 'SUBTITLE="Авто-обновление программы выполнено !"; MESSAGE="Версия программы '${prog_vers}' редакция '${edit_vers}'"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="Авто-обновление программы выполнено !"; MESSAGE="Версия программы '${prog_vers}' редакция '${edit_vers}'"' >> "${HOME}"/.MountEFInoty.sh
                         else
-                        echo 'SUBTITLE="Update completed !"; MESSAGE="MountEFI v'${prog_vers}' edit v'${edit_vers}'"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="Update completed !"; MESSAGE="MountEFI v'${prog_vers}' edit v'${edit_vers}'"' >> "${HOME}"/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION
         if [[ $rst = 2 ]]; then EASYEFI_RESTART_APP; fi
@@ -782,14 +824,26 @@ if [[ ! $upd = 0 ]]; then
   fi
 fi
 
-if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R -f ${HOME}/.MountEFIconfBackups; fi
-if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
-            if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
-            mkdir ${HOME}/.MountEFIconfBackups
-            mkdir ${HOME}/.MountEFIconfBackups/1
-            cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1
-            zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
-            rm -R ${HOME}/.MountEFIconfBackups
+if [[ -d "${HOME}"/.MountEFIconfBackups ]]; then rm -R -f "${HOME}"/.MountEFIconfBackups; fi
+if [[ ! -f "${HOME}"/.MountEFIconfBackups.zip ]]; then 
+#GET_BACKUPS_FROM_ICLOUD
+hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
+    if [[ -d "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs ]]; then
+       if [[ -f "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip ]]; then
+            cp "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/.MountEFIconfBackups.zip  "${HOME}"
+       else
+                if [[ -f "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip ]]; then
+                    cp "${HOME}"/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared/.MountEFIconfBackups.zip  "${HOME}"
+            fi
+       fi 
+    fi  
+ fi
+            if [[ ! -f "${HOME}"/.MountEFIconfBackups.zip ]]; then
+            mkdir "${HOME}"/.MountEFIconfBackups
+            mkdir "${HOME}"/.MountEFIconfBackups/1
+            cp "${HOME}"/.MountEFIconf.plist "${HOME}"/.MountEFIconfBackups/1
+            zip -rX -qq "${HOME}"/.MountEFIconfBackups.zip "${HOME}"/.MountEFIconfBackups
+            rm -R "${HOME}"/.MountEFIconfBackups
 fi
 
 CHECK_RELOAD(){
@@ -809,9 +863,9 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2
                 security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
-                        echo 'SUBTITLE="СТАРЫЙ ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ!"; MESSAGE="Подключение разделов EFI НЕ работает"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="СТАРЫЙ ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ!"; MESSAGE="Подключение разделов EFI НЕ работает"' >> "${HOME}"/.MountEFInoty.sh
                         else
-                        echo 'SUBTITLE="OLD PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="OLD PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE="Mount EFI Partitions NOT Available"' >> "${HOME}"/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION 
                 fi
@@ -858,9 +912,9 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                     security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
-                        echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Управляйте паролем через настройки программы"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="ПАРОЛЬ СОХРАНЁН В СВЯЗКЕ КЛЮЧЕЙ !"; MESSAGE="Управляйте паролем через настройки программы"' >> "${HOME}"/.MountEFInoty.sh
                         else
-                        echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="Manage the password in the program settings"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="PASSWORD KEEPED IN KEYCHAIN !"; MESSAGE="Manage the password in the program settings"' >> "${HOME}"/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION
                    fi
@@ -874,11 +928,11 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
                             if [[ $loc = "ru" ]]; then
                         if [[ $TRY = 2 ]]; then ATTEMPT="ПОПЫТКИ"; LAST="ОСТАЛОСЬ"; fi
                         if [[ $TRY = 1 ]]; then ATTEMPT="ПОПЫТКА"; LAST="ОСТАЛАСЬ"; fi
-                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ. '$LAST' '$TRY' '$ATTEMPT' !"; MESSAGE="Для подключения разделов EFI нужен пароль"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="НЕВЕРНЫЙ ПАРОЛЬ. '$LAST' '$TRY' '$ATTEMPT' !"; MESSAGE="Для подключения разделов EFI нужен пароль"' >> "${HOME}"/.MountEFInoty.sh
                             else
                         if [[ $TRY = 2 ]]; then ATTEMPT="ATTEMPTS"; fi
                         if [[ $TRY = 1 ]]; then ATTEMPT="ATTEMPT"; fi
-                        echo 'SUBTITLE="INCORRECT PASSWORD. LEFT '$TRY' '$ATTEMPT' !"; MESSAGE="Password required to mount EFI partitions"' >> ${HOME}/.MountEFInoty.sh
+                        echo 'SUBTITLE="INCORRECT PASSWORD. LEFT '$TRY' '$ATTEMPT' !"; MESSAGE="Password required to mount EFI partitions"' >> "${HOME}"/.MountEFInoty.sh
                             fi
                 DISPLAY_NOTIFICATION
                 fi
@@ -893,9 +947,9 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
             if [[ "$mypassword" = "0" ]]; then
                 SET_TITLE
                     if [[ $loc = "ru" ]]; then
-                echo 'SUBTITLE="ПАРОЛЬ НЕ ПОЛУЧЕН !"; MESSAGE="Подключение разделов EFI недоступно"' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="ПАРОЛЬ НЕ ПОЛУЧЕН !"; MESSAGE="Подключение разделов EFI недоступно"' >> "${HOME}"/.MountEFInoty.sh
                     else
-                echo 'SUBTITLE="PASSWORD NOT KEEPED IN KEYCHAIN !"; MESSAGE="Mount EFI Partitions Unavailable"' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="PASSWORD NOT KEEPED IN KEYCHAIN !"; MESSAGE="Mount EFI Partitions Unavailable"' >> "${HOME}"/.MountEFInoty.sh
                     fi
                 DISPLAY_NOTIFICATION
                 
@@ -908,81 +962,77 @@ osascript -e 'tell application "Terminal" to activate'
 
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
-REM_ABSENT(){
-strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-alist=($strng1); apos=${#alist[@]}
-if [[ ! $apos = 0 ]]
-	then
-		var8=$apos
-		posb=0
-		while [[ ! $var8 = 0 ]]
+am_enabled=0
+strng3=`cat "${HOME}"/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
+if [[ $strng3 = "true" ]]; then am_enabled=1
+
+    ################ REM_ABSENT
+    strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    alist=($strng1); apos=${#alist[@]}
+    if [[ ! $apos = 0 ]]
+	     then
+		      var8=$apos
+		      posb=0
+		           while [[ ! $var8 = 0 ]]
 					do
                        check_uuid=`ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[$posb]}`
                        if [[ $check_uuid = "" ]]; then 
 						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
-						plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
+						plutil -replace AutoMount.PartUUIDs -string "$strng2" "${HOME}"/.MountEFIconf.plist
 						strng1=$strng2
                         cache=0
 						fi
 					let "posb++"
 					let "var8--"
 					done
-alist=($strng1); apos=${#alist[@]}
-fi
-if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; am_enabled=0; cache=0; fi
-}
+    alist=($strng1); apos=${#alist[@]}
+    fi
+    if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO "${HOME}"/.MountEFIconf.plist; am_enabled=0; cache=0; fi
+    ##############################################
 
-am_enabled=0
-strng3=`cat ${HOME}/.MountEFIconf.plist | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
-if [[ $strng3 = "true" ]]; then am_enabled=1
-
-REM_ABSENT
-if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
+    if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 fi
 
 if [[ ! $am_enabled = 0 ]]; then 
+    if [[ ! $apos = 0 ]]; then
+        ENTER_PASSWORD
 
-if [[ ! $apos = 0 ]]; then
+        autom_open=0
+        strng3=`echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
+        if [[ $strng3 = "true" ]]; then autom_open=1; fi
 
-ENTER_PASSWORD
+        autom_exit=0
+        strng3=`echo "$MountEFIconf" | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
+        if [[ $strng3 = "true" ]]; then autom_exit=1; fi
 
-autom_open=0
-strng3=`echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
-if [[ $strng3 = "true" ]]; then autom_open=1; fi
+        var9=$apos
+        posa=0
+        while [[ ! $var9 = 0 ]]
+        do
+            if [[ "${flag}" = "0" ]]; then diskutil quiet mount ${alist[$posa]} >&- 2>&-
 
-autom_exit=0
-strng3=`echo "$MountEFIconf" | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
-if [[ $strng3 = "true" ]]; then autom_exit=1; fi
-
-var9=$apos
-posa=0
-while [[ ! $var9 = 0 ]]
-do
-    if [[ "${flag}" = "0" ]]; then diskutil quiet mount ${alist[$posa]} >&- 2>&-
-
-        else
+            else
       
-        if [[ ! $mypassword = "0" ]]; then
-               echo "${mypassword}" | sudo -S diskutil quiet mount ${alist[$posa]} >&- 2>&-
+                if [[ ! $mypassword = "0" ]]; then
+                echo "${mypassword}" | sudo -S diskutil quiet mount ${alist[$posa]} >&- 2>&-
 		               
-         fi
+                fi
 	
-    fi
+            fi
 
-if  [[ $autom_open = 1 ]]; then 
+            if  [[ $autom_open = 1 ]]; then 
 
                 string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
                 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 				open "$vname"
-fi
+            fi
 
-let "posa++"
-let "var9--"
-done
-	fi
-    
-  fi
+            let "posa++"
+            let "var9--"
+            done
+	  fi
+fi
 
 ################################################ конец функции автомонтирования ########################################################## 
 
@@ -1002,93 +1052,34 @@ if [[ $strng = "false" ]]; then OpenFinder=0; fi
 ############################################################################################
 # Colors for Apple Terminal
 #
-
-function grep_apple_color {
-    grep "$*" colors.csv
-}
-
-function get_apple_color {
-    egrep "(^|,)$*(,|\t)" colors.csv | cut -f 6
-}
-
-function set_foreground_color {
-    color=$(get_apple_color $*)
-    if [ "$color" != "" ] ; then
-        osascript -e "tell application \"Terminal\" to set normal text color of window 1 to ${color}"
-
-    fi
-}    
-
-function set_background_color {
-    color=$(get_apple_color $*)
-    if [ "$color" != "" ] ; then
-        osascript -e "tell application \"Terminal\" to set background color of window 1 to ${color}"
-
-    fi
-}    
-  
-
-function set_font {
-    osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\""
-    osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2"
-}
+grep_apple_color(){ grep "$*" colors.csv ; }
+get_apple_color(){ egrep "(^|,)$*(,|\t)" colors.csv | cut -f 6 ; }
+set_foreground_color(){ color=$(get_apple_color $*); if [ "$color" != "" ] ; then osascript -e "tell application \"Terminal\" to set normal text color of window 1 to ${color}"; fi ; }    
+set_background_color(){ color=$(get_apple_color $*); if [ "$color" != "" ] ; then osascript -e "tell application \"Terminal\" to set background color of window 1 to ${color}" ; fi ; }    
+set_font(){ osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\"" ; osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2" ; }
 ##################################################################################################################################################
-
-GET_PRESETS_COUNTS(){
-pcount=0
-
-pstring=`echo "$MountEFIconf"  | grep  -e "<key>BackgroundColor</key>" | sed -e 's/.*>\(.*\)<.*/\1/' | tr ' \n' ';'`
-IFS=';'; slist=($pstring); unset IFS;
-pcount=${#slist[@]}
-unset slist
-unset pstring
-}
-
-GET_PRESETS_NAMES(){
-pstring=`echo "$MountEFIconf"  | grep  -B 2 -e "<key>BackgroundColor</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | sed 's/BackgroundColor/;/g' | tr -d '\n'`
-IFS=';'; plist=($pstring); unset IFS
-unset pstring
-}
-
-
-#################################################################################################
+######################################## получение принта загрузчиков из конфига #########################################################
 
 GET_THEME_LOADERS(){
 strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
 theme=`echo "$MountEFIconf"  |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-if [[ "$theme" = "built-in" ]]; then 
-current=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
-NN="B,"
+if [[ "$theme" = "built-in" ]]; then current=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'); NN="B,"
 else
-current=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
-NN="S,"
-fi
-check=$(echo $strng | grep -ow "$NN""$current")
+    current=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'); NN="S,"; fi
+    check=$(echo $strng | grep -ow "$NN""$current")
 if [[ ! $check = "" ]]; then
-IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
-for (( i=0; i<$lptr; i++ )) do
-tname=$(echo "${llist[i]}" | cut -f2 -d ',')
-if [[ "$tname" = "$current" ]]; then Loaders=$(echo "${llist[i]}" | cut -f3 -d ','); themeldrs=$(echo "${llist[i]}" | cut -f4 -d ','); break; fi
-done
+    IFS='{'; llist=($strng); unset IFS; lptr=${#llist[@]}
+    for (( i=0; i<$lptr; i++ )) do
+        tname=$(echo "${llist[i]}" | cut -f2 -d ',')
+        if [[ "$tname" = "$current" ]]; then Loaders=$(echo "${llist[i]}" | cut -f3 -d ','); themeldrs=$(echo "${llist[i]}" | cut -f4 -d ','); break; fi
+    done
 else
-themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
-Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+    themeldrs=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoaders</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+    Loaders=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersNames</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
 fi
 Clover=$(echo $Loaders | cut -f1 -d ";"); OpenCore=$(echo $Loaders | cut -f2 -d ";")
 if [[ $Clover = "" ]]; then Clover="Clover"; fi; if [[ $OpenCore = "" ]]; then OpenCore="OpenCore"; fi
-pclov=${#Clover}; 
-poc=${#OpenCore}; 
-let "c_clov=(9-pclov)/2+46"; let "c_oc=(9-poc)/2+46"
-}
-
-GET_CURRENT_SET(){
-
-current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_background=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_foreground=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_fontname=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-current_fontsize=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-
+pclov=${#Clover}; poc=${#OpenCore}; let "c_clov=(9-pclov)/2+46"; let "c_oc=(9-poc)/2+46"
 }
 
 SET_SYSTEM_THEME(){
@@ -1102,8 +1093,13 @@ fi
 
 
 CUSTOM_SET(){
-
-GET_CURRENT_SET
+######## GET_CURRENT_SET
+current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_background=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_foreground=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontname=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontsize=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+########################
 
 if [[ ${current_background:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
 		else set_background_color $current_background
@@ -1112,27 +1108,11 @@ if [[ ${current_foreground:0:1} = "{" ]]; then osascript -e "tell application \"
 		else  set_foreground_color $current_foreground
 fi
 set_font "$current_fontname" $current_fontsize
-
 }
 
 GET_THEME(){
-
 HasTheme=`echo "$MountEFIconf"  | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
-    if [[ $HasTheme = "Theme" ]]; then
-theme=`echo "$MountEFIconf"  |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-    fi
-
-}
-
-GET_SKEYS(){
-ShowKeys=1
-strng=`echo "$MountEFIconf"  | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then ShowKeys=0; fi
-
-}
-
-ERROR_OS_VERSION(){
-if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+if [[ $HasTheme = "Theme" ]]; then theme=`echo "$MountEFIconf"  |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`; fi
 }
 
 parm="$1" ### параметр с которым вызывается MountEFI
@@ -1216,40 +1196,18 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2
 fi
 }
 
-########################### коррекция списка определённых загрузчиков с уменьшением ###############################
+################################ получение имени диска для переименования #####################
+GET_OC_VERS(){
 
-REMOVE_LOADERS_FROM_LIST(){
-for x in ${temp_lddlist[@]}; do
-            for y in ${!lddlist[@]}; do
-                if [[ ${x} = ${lddlist[y]} ]]; then            
-                unset 'mounted_loaders_list[y]'; unset 'lddlist[y]'; unset 'ldlist[y]'
-                max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
-                    if [[ ${y} -lt ${max} ]]; then
-                        for ((z=${y};z<=${max};z++)); do
-                            lddlist[z]=${lddlist[$((z+1))]}; ldlist[z]=${ldlist[$((z+1))]}; mounted_loaders_list[z]=${mounted_loaders_list[$((z+1))]}; done
-                        unset 'lddlist[max]'; unset 'ldlist[max]'; unset 'mounted_loaders_list[max]'
-                    fi
-                fi
-            done
-        done
-}
+oc_revision=""
 
-############################# корректировка списка разделов с загрузчиками ######################################### 
-CORRECT_LOADERS_LIST(){
+GET_CONFIG_VERS "OpenCore"
 
-if [[ ! ${lddlist[@]} = 0 ]]; then
-    temp_lddlist=()
-    temp_lddlist=( $( echo ${dlist[@]} ${lddlist[@]} | tr ' ' '\n' | sort | uniq -u ) )
-
-    REMOVE_LOADERS_FROM_LIST
-fi
-synchro=0
-
-}
-
+######  уточняем версию через хэши BOOTx64.efi + OpenCore.efi ######
+if [[ ${oc_revision} = "" ]]; then
+    md5_full="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
-
-CORRECT_OC_VERS(){
+############################### CORRECT_OC_VERS ##############################################
 case "${md5_full}" in
 75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
 58c4b4a88f8c41f84683bdf4afa3e77c3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
@@ -1277,19 +1235,7 @@ c31035549f86156ff5e79b9d87240ec54be8a2620c923129b3bac0b2d1b8fd6b ) oc_revision=.
 c221f59769bd185857b2c30858fe3aa2ec0e6c7dfa2ab84eaad52f167e85466f ) oc_revision=.50d;;
                                                                 *)     oc_revision=""
 esac 
-}
-
-################################ получение имени диска для переименования #####################
-GET_OC_VERS(){
-
-oc_revision=""
-
-GET_CONFIG_VERS "OpenCore"
-
-######  уточняем версию через хэши BOOTx64.efi + OpenCore.efi ######
-if [[ ${oc_revision} = "" ]]; then
-    md5_full="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"
-    CORRECT_OC_VERS
+######################################################################################
 fi
 
 if [[ ${oc_revision} = "" ]]; then
@@ -1362,13 +1308,7 @@ fi
 }
 
 GET_OTHER_LOADERS_STRING(){
-if [[ ! ${#oth_list[@]} = 0 ]]; then 
-                    for y in ${!oth_list[@]}; do
-                    if [[ "${oth_list[y]:0:32}" = "${md5_loader}" ]]; then loader="Other"; loader+="${oth_list[y]:33}"; break; fi
-                    done
-               fi
-
-}
+if [[ ! ${#oth_list[@]} = 0 ]]; then for y in ${!oth_list[@]}; do if [[ "${oth_list[y]:0:32}" = "${md5_loader}" ]]; then loader="Other"; loader+="${oth_list[y]:33}"; break; fi ; done ; fi ; }
 
 ###############################################################################################
 
@@ -1389,7 +1329,8 @@ CORRECT_LOADERS_HASH_LINKS(){
     GET_CONFIG_HASHES
     old_config_hashes=(); temp_lddlist=()
 
-    if [[ -f ~/.hashes_list.txt ]]; then old_config_hashes=( $( cat ~/.hashes_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.hashes_list.txt
+if [[ -f ~/.hashes_list.txt ]]; then old_config_hashes=( $( cat ~/.hashes_list.txt | tr '\n' ' ' ) ); fi
+rm -f ~/.hashes_list.txt
 if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
     for i in ${!mounted_loaders_list[@]}; do
         if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
@@ -1406,10 +1347,10 @@ if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
          fi
     done 
 
-old_other_loaders=(); deleted_other_loaders=()
-if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_loaders_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.other_loaders_list.txt
+    old_other_loaders=(); deleted_other_loaders=()
+    if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_loaders_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.other_loaders_list.txt
      
-     if [[ ! ${#old_other_loaders[@]} = 0 ]] ; then
+        if [[ ! ${#old_other_loaders[@]} = 0 ]] ; then
                       for y in "${old_other_loaders[@]}"; do
                                 match=0
                                     for z in "${oth_list[@]}"; do
@@ -1417,7 +1358,7 @@ if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_
                                     done
                                 if [[ ${match} = 0 ]]; then deleted_other_loaders+=( ${y} ); fi
                       done
-     fi
+        fi
      if [[ ! ${#deleted_other_loaders[@]} = 0 ]] ; then
                 for i in ${!mounted_loaders_list[@]}; do
                             md5_loader=${mounted_loaders_list[i]}
@@ -1442,6 +1383,133 @@ if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_
         done
     fi
     
+fi
+}
+
+#### функция автообноления программы MountEFI
+START_AUTOUPDATE(){
+if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
+ if ping -c 1 google.com >> /dev/null 2>&1; then
+  if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+        echo $(date +%s) >> ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
+    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
+          if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))" -gt "86400" ]]; then
+            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
+            rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
+            rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
+            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
+
+            fi 2>/dev/null
+          fi
+    else
+        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
+        fi 2>/dev/null
+    fi
+
+  if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]] && [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
+        current_vers=$(echo "$prog_vers" | tr -d "." ); vers_e=$(echo $edit_vers | bc)
+        autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
+        last_e=$(echo ${autoupdate_list[1]} | bc)
+    if [[ "${current_vers}" -lt "${autoupdate_list[0]}" ]] || [[ "${last_e}" -gt "${vers_e}" ]]; then
+      if [[ ! -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]] || [[ ! $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then
+        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
+           if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
+                if [[ $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then 
+                      if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
+                            unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
+                            plutil -replace ReadyToAutoUpdate -bool Yes "${HOME}"/.MountEFIconf.plist
+                else
+                    rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
+                fi
+            fi
+         fi 2>/dev/null
+            else
+               if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
+                   unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
+                   plutil -replace ReadyToAutoUpdate -bool Yes "${HOME}"/.MountEFIconf.plist
+        fi
+      fi
+    fi
+
+    MountEFIconf=$( cat "${HOME}"/.MountEFIconf.plist )
+    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
+        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
+            plutil -remove ReadyToAutoUpdate "${HOME}"/.MountEFIconf.plist
+            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
+            
+MEFI_PATH="${ROOT}""/MountEFI"
+
+#if [[ -d ~/.MountEFIupdates/UpdateService ]] && [[ -f ~/.MountEFIupdates/UpdateService/MountEFIu.sh ]] && [[ -f "${HOME}"/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then 
+#    cat ~/.MountEFIupdates/UpdateService/MountEFIu.sh | sed s'/ProgPath="\/MountEFI"/ProgPath="'$(echo ${MEFI_PATH} | sed s'/\//\\\//g')'"/' >> ~/.MountEFIupdates/UpdateService/.MountEFIu.sh
+#    plutil -remove ProgramArguments.0  ~/.MountEFIupdates/UpdateService/MountEFIu.plist
+#    plutil -insert ProgramArguments.0 -string ''"${HOME}"'/.MountEFIupdates/UpdateService/.MountEFIu.sh' ~/.MountEFIupdates/UpdateService/MountEFIu.plist
+#    if [[ -f "${HOME}"/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then mv -f "${HOME}"/.MountEFIupdates/UpdateService/MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+#    chmod u+x "${HOME}"/.MountEFIupdates/UpdateService/.MountEFIu.sh
+#else
+    echo '<?xml version="1.0" encoding="UTF-8"?>' >> "${HOME}"/.MountEFIu.plist
+    echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> "${HOME}"/.MountEFIu.plist
+    echo '<plist version="1.0">' >> "${HOME}"/.MountEFIu.plist
+    echo '<dict>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <key>Label</key>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <string>MountEFIu.job</string>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <key>Nicer</key>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <integer>1</integer>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <key>ProgramArguments</key>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <array>' >> "${HOME}"/.MountEFIu.plist
+    echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> "${HOME}"/.MountEFIu.plist
+    echo '  </array>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <key>RunAtLoad</key>' >> "${HOME}"/.MountEFIu.plist
+    echo '  <true/>' >> "${HOME}"/.MountEFIu.plist
+    echo '</dict>' >> "${HOME}"/.MountEFIu.plist
+    echo '</plist>' >> "${HOME}"/.MountEFIu.plist
+
+    echo '#!/bin/bash'  >> "${HOME}"/.MountEFIu.sh
+    echo ''             >> "${HOME}"/.MountEFIu.sh
+    echo 'sleep 1'             >> "${HOME}"/.MountEFIu.sh
+    echo ''             >> "${HOME}"/.MountEFIu.sh
+    echo 'touch ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> "${HOME}"/.MountEFIu.sh
+    echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> "${HOME}"/.MountEFIu.sh
+    echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> "${HOME}"/.MountEFIu.sh
+    echo 'current_release=''"'$(echo ${prog_vers})'"''' >> "${HOME}"/.MountEFIu.sh
+    echo 'current_edit=''"'$(echo ${edit_vers})'"''' >> "${HOME}"/.MountEFIu.sh
+    echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> "${HOME}"/.MountEFIu.sh
+    echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> "${HOME}"/.MountEFIu.sh
+    echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> "${HOME}"/.MountEFIu.sh
+    echo 'if [[ -d "${DirPath}" ]]; then ' >> "${HOME}"/.MountEFIu.sh
+    echo 'i=1200; while [[ ! $i = 0 ]]; do' >> "${HOME}"/.MountEFIu.sh
+    echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> "${HOME}"/.MountEFIu.sh
+    echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> "${HOME}"/.MountEFIu.sh
+    echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> "${HOME}"/.MountEFIu.sh
+    echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> "${HOME}"/.MountEFIu.sh
+    echo 'chmod +x "${ProgPath}"' >> "${HOME}"/.MountEFIu.sh
+    echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> "${HOME}"/.MountEFIu.sh
+    echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> "${HOME}"/.MountEFIu.sh
+    echo '        chmod +x "${DirPath}setup"' >> "${HOME}"/.MountEFIu.sh
+    echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> "${HOME}"/.MountEFIu.sh
+    echo 'fi' >> "${HOME}"/.MountEFIu.sh
+    echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> "${HOME}"/.MountEFIu.sh
+    echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> "${HOME}"/.MountEFIu.sh
+    echo 'sleep 1' >> "${HOME}"/.MountEFIu.sh
+    echo ''  >> "${HOME}"/.MountEFIu.sh
+    echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> "${HOME}"/.MountEFIu.sh
+    echo 'plutil -replace ReadyToAutoUpdate -bool Yes ~/.MountEFIconf.plist' >> "${HOME}"/.MountEFIu.sh
+    echo 'fi' >> "${HOME}"/.MountEFIu.sh
+    echo 'rm -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> "${HOME}"/.MountEFIu.sh
+    echo 'exit' >> "${HOME}"/.MountEFIu.sh
+    chmod u+x "${HOME}"/.MountEFIu.sh
+
+    if [[ -f "${HOME}"/.MountEFIu.plist ]]; then mv -f "${HOME}"/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
+#fi
+
+if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+           
+        fi     
+    fi
+  fi
+    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
+    TTYterm=$(ps); if [[ $( echo "$TTYterm" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc ) = 0 ]]; then osascript -e 'quit app "terminal.app"'; fi 
 fi
 }
 
@@ -1522,140 +1590,16 @@ if [[ ! $CheckLoaders = 0 ]]; then
 fi
 }
 ###################################################################################################################################
-#### функция автообноления программы MountEFI
-START_AUTOUPDATE(){
-if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
- if ping -c 1 google.com >> /dev/null 2>&1; then
-  if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
-        echo $(date +%s) >> ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
-    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
-          if [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt)))" -gt "86400" ]]; then
-            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
-            rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
-            rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
-            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
-                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
-
-            fi 2>/dev/null
-          fi
-    else
-        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
-                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
-        fi 2>/dev/null
-    fi
-
-  if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]] && [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]]; then 
-        current_vers=$(echo "$prog_vers" | tr -d "." ); vers_e=$(echo $edit_vers | bc)
-        autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
-        last_e=$(echo ${autoupdate_list[1]} | bc)
-    if [[ "${current_vers}" -lt "${autoupdate_list[0]}" ]] || [[ "${last_e}" -gt "${vers_e}" ]]; then
-      if [[ ! -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]] || [[ ! $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then
-        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
-           if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
-                if [[ $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then 
-                      if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
-                            unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
-                            plutil -replace ReadyToAutoUpdate -bool Yes ${HOME}/.MountEFIconf.plist
-                else
-                    rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
-                fi
-            fi
-         fi 2>/dev/null
-            else
-               if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
-                   unzip  -o -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" -d ~/.MountEFIupdates 2>/dev/null
-                   plutil -replace ReadyToAutoUpdate -bool Yes ${HOME}/.MountEFIconf.plist
-        fi
-      fi
-    fi
-
-    MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
-    if [[ $(echo "$MountEFIconf"| grep -o "ReadyToAutoUpdate") = "ReadyToAutoUpdate" ]]; then
-        if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
-            plutil -remove ReadyToAutoUpdate ${HOME}/.MountEFIconf.plist
-            autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS 
-            
-MEFI_PATH="${ROOT}""/MountEFI"
-
-#if [[ -d ~/.MountEFIupdates/UpdateService ]] && [[ -f ~/.MountEFIupdates/UpdateService/MountEFIu.sh ]] && [[ -f ${HOME}/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then 
-#    cat ~/.MountEFIupdates/UpdateService/MountEFIu.sh | sed s'/ProgPath="\/MountEFI"/ProgPath="'$(echo ${MEFI_PATH} | sed s'/\//\\\//g')'"/' >> ~/.MountEFIupdates/UpdateService/.MountEFIu.sh
-#    plutil -remove ProgramArguments.0  ~/.MountEFIupdates/UpdateService/MountEFIu.plist
-#    plutil -insert ProgramArguments.0 -string ''"${HOME}"'/.MountEFIupdates/UpdateService/.MountEFIu.sh' ~/.MountEFIupdates/UpdateService/MountEFIu.plist
-#    if [[ -f ${HOME}/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIupdates/UpdateService/MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
-#    chmod u+x ${HOME}/.MountEFIupdates/UpdateService/.MountEFIu.sh
-#else
-    echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIu.plist
-    echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIu.plist
-    echo '<plist version="1.0">' >> ${HOME}/.MountEFIu.plist
-    echo '<dict>' >> ${HOME}/.MountEFIu.plist
-    echo '  <key>Label</key>' >> ${HOME}/.MountEFIu.plist
-    echo '  <string>MountEFIu.job</string>' >> ${HOME}/.MountEFIu.plist
-    echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIu.plist
-    echo '  <integer>1</integer>' >> ${HOME}/.MountEFIu.plist
-    echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIu.plist
-    echo '  <array>' >> ${HOME}/.MountEFIu.plist
-    echo '      <string>/Users/'"$(whoami)"'/.MountEFIu.sh</string>' >> ${HOME}/.MountEFIu.plist
-    echo '  </array>' >> ${HOME}/.MountEFIu.plist
-    echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIu.plist
-    echo '  <true/>' >> ${HOME}/.MountEFIu.plist
-    echo '</dict>' >> ${HOME}/.MountEFIu.plist
-    echo '</plist>' >> ${HOME}/.MountEFIu.plist
-
-    echo '#!/bin/bash'  >> ${HOME}/.MountEFIu.sh
-    echo ''             >> ${HOME}/.MountEFIu.sh
-    echo 'sleep 1'             >> ${HOME}/.MountEFIu.sh
-    echo ''             >> ${HOME}/.MountEFIu.sh
-    echo 'touch ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
-    echo 'latest_release=''"'$(echo ${autoupdate_list[0]})'"''' >> ${HOME}/.MountEFIu.sh
-    echo 'latest_edit=''"'$(echo ${autoupdate_list[1]})'"''' >> ${HOME}/.MountEFIu.sh
-    echo 'current_release=''"'$(echo ${prog_vers})'"''' >> ${HOME}/.MountEFIu.sh
-    echo 'current_edit=''"'$(echo ${edit_vers})'"''' >> ${HOME}/.MountEFIu.sh
-    echo 'vers="${latest_release:0:1}"".""${latest_release:1:1}"".""${latest_release:2:1}"".""${latest_edit}"' >> ${HOME}/.MountEFIu.sh
-    echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' >> ${HOME}/.MountEFIu.sh
-    echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  >> ${HOME}/.MountEFIu.sh
-    echo 'if [[ -d "${DirPath}" ]]; then ' >> ${HOME}/.MountEFIu.sh
-    echo 'i=600; while [[ ! $i = 0 ]]; do' >> ${HOME}/.MountEFIu.sh
-    echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' >> ${HOME}/.MountEFIu.sh
-    echo 'i=$((i-1)); sleep 0.25; else break; fi; done' >> ${HOME}/.MountEFIu.sh
-    echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} >> "${DirPath}""version.txt"' >> ${HOME}/.MountEFIu.sh
-    echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
-    echo 'chmod +x "${ProgPath}"' >> ${HOME}/.MountEFIu.sh
-    echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             >> ${HOME}/.MountEFIu.sh
-    echo '        mv -f ~/.MountEFIupdates/$latest_edit/setup "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
-    echo '        chmod +x "${DirPath}setup"' >> ${HOME}/.MountEFIu.sh
-    echo '        mv -f ~/.MountEFIupdates/$latest_edit/document.wflow "${DirPath}""../document.wflow"' >> ${HOME}/.MountEFIu.sh
-    echo 'fi' >> ${HOME}/.MountEFIu.sh
-    echo 'if [[ -f "${DirPath}""/../Info.plist" ]]; then plutil -replace CFBundleShortVersionString -string "$vers" "${DirPath}""/../Info.plist"; fi' >> ${HOME}/.MountEFIu.sh
-    echo 'if [[ -d "${DirPath}""/../../../MountEFI.app" ]]; then touch "${DirPath}""/../../../MountEFI.app"; fi' >> ${HOME}/.MountEFIu.sh
-    echo 'sleep 1' >> ${HOME}/.MountEFIu.sh
-    echo ''  >> ${HOME}/.MountEFIu.sh
-    echo 'plutil -replace Updating -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
-    echo 'plutil -replace ReadyToAutoUpdate -bool Yes ~/.MountEFIconf.plist' >> ${HOME}/.MountEFIu.sh
-    echo 'fi' >> ${HOME}/.MountEFIu.sh
-    echo 'rm -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt' >> ${HOME}/.MountEFIu.sh
-    echo 'exit' >> ${HOME}/.MountEFIu.sh
-    chmod u+x ${HOME}/.MountEFIu.sh
-
-    if [[ -f ${HOME}/.MountEFIu.plist ]]; then mv -f ${HOME}/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
-#fi
-
-if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
-           
-        fi     
-    fi
-  fi
-    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
-    TTYterm=$(ps); if [[ $( echo "$TTYterm" | egrep -o 'ttys[0-9]{1,3}' | wc -l |  bc ) = 0 ]]; then osascript -e 'quit app "terminal.app"'; fi 
-fi
-
-}
-
 ############################### обработка условия после перезагрузки ###############################################################
 
 if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; GET_MOUNTEFI_STACK; upd=1; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then SAVE_LOADERS_STACK;  EXIT_PROGRAM; fi
 ##########################################################################################################################
-########################## обратный отсчёт для автомонтирования ##########################################################
-COUNTDOWN(){ 
+
+####### Выход по опции авто-монтирования c проверкой таймаута    ####################################################
+if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then 
+        
+        ########################## обратный отсчёт для автомонтирования ##########################################################
+        COUNTDOWN(){ 
         printf '\n\n\n'
         local t=$1 remaining=$1;
         SECONDS=0; demo="±"
@@ -1676,10 +1620,9 @@ COUNTDOWN(){
                 break;
             fi;
         done
-}
-#############################################################################################################################
-####### Выход по опции авто-монтирования c проверкой таймаута    ####################################################
-if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then 
+        }
+        #############################################################################################################################
+
         auto_timeout=0
         strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
         if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
@@ -1833,18 +1776,7 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
         fi
 }
 ###################################################################################################################################################################
-
-CHECK_USB(){
-
-if [[ ! $posrm = 0 ]]; then
-                usb=0
-                for (( i=0; i<=$posrm; i++ ))
-                do
-                if [[ "${dstring}" = "${rmlist[$i]}" ]]; then usb=1; break; fi
-                done                
-            fi
-}
-
+###################### движок детекта EFI разделов ####################################################
 GET_EFI_S(){
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
@@ -1898,8 +1830,10 @@ ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Y
 
 pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
-
 }
+############################## USB ##############################
+CHECK_USB(){ if [[ ! $posrm = 0 ]]; then usb=0; for (( i=0; i<=$posrm; i++ )); do if [[ "${dstring}" = "${rmlist[$i]}" ]]; then usb=1; break; fi; done ; fi ; }
+##################################################################
 
 GETARR(){
 
@@ -1932,7 +1866,11 @@ if [[ ! $pos = 0 ]]; then
 		let "num++"
 	done
 
-GET_SKEYS
+######## GET_SKEYS
+ShowKeys=1
+strng=`echo "$MountEFIconf"  | grep -A 1 -e "ShowKeys</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then ShowKeys=0; fi
+##################
 
 if [[ $ShowKeys = 1 ]]; then lines=25; else lines=22; fi
 let "lines=lines+pos"
@@ -1963,6 +1901,8 @@ EXIT_PROGRAM
 	fi
 }
 
+############################################ конец движка детекта EFI ###############################################
+
 MOUNTED_CHECK(){
 
  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
@@ -1970,9 +1910,9 @@ MOUNTED_CHECK(){
 
     SET_TITLE
     if [[ $loc = "ru" ]]; then
-    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения '${string}'"' >> ${HOME}/.MountEFInoty.sh
+    echo 'SUBTITLE="НЕ УДАЛОСЬ ПОДКЛЮЧИТЬ РАЗДЕЛ EFI !"; MESSAGE="Ошибка подключения '${string}'"' >> "${HOME}"/.MountEFInoty.sh
     else
-    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting '${string}'"' >> ${HOME}/.MountEFInoty.sh
+    echo 'SUBTITLE="FAILED TO MOUNT EFI PARTITION !"; MESSAGE="Error mounting '${string}'"' >> "${HOME}"/.MountEFInoty.sh
     fi
     DISPLAY_NOTIFICATION 
 
@@ -2033,35 +1973,6 @@ MOUNTED_CHECK
         
 }
 
-# Определение функции получения информаци о системном разделе EFI
-GET_SYSTEM_EFI(){
-
-if [[ ${lists_updated} = 1 ]]; then
-sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1' | tr -d "\n"`
-edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
-drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
-
-var2=$pos
-num=0
-while [ $var2 != 0 ] 
-do 
-pnum=${nlist[num]}
-string=`echo ${dlist[$pnum]}`
-dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
-
-if [[ "$edname" = "$dname" ]]; then  enum=$pnum;  var2=1
-        else
-checkit=$( echo "$dname" | grep -w "$edname")
-        if [[ ! $checkit = "" ]]; then  enum=$pnum;  var2=1; fi
-fi
-let "num++"
-let "var2--"
-done
-lists_updated=0
-fi
-}
-
 UNMOUNTED_CHECK(){
 
  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
@@ -2107,6 +2018,42 @@ fi
 }
 ##################################################################################################
 SPIN_OC(){
+
+loader_found=0
+
+FIND_OPENCORE(){
+
+printf '\r\n\n'
+if [[ $loc = "ru" ]]; then
+printf '  Подождите. Ищем загрузочные разделы с OpenCore ...  '
+else
+printf '  Wait. Looking for boot partitions with OpenCore loader...  '
+fi
+
+was_mounted=0; var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
+while [ $var1 != 0 ] 
+do 
+    pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+    if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi; else was_mounted=1; fi
+
+    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
+	if [[ -d "$vname"/EFI/BOOT ]]; then
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
+                					if [[ ${check_loader} = "OpenCore" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi; was_mounted=1; fi   
+	         fi
+	fi
+
+		if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
+		
+    let "num++"
+    let "var1--"
+done
+nogetlist=1
+}
+
 if [[ $loc = "ru" ]]; then printf '\r\033[48C'; else printf '\r\033[50C'; fi
     NEED_PASSWORD
 if [[ ${need_password} = 0 ]]; then
@@ -2121,10 +2068,53 @@ if [[ ${need_password} = 0 ]]; then
     wait $! 2>/dev/null
     trap " " EXIT
 fi
+if [[ $loader_found = 0 ]]; then 
+osascript -e 'tell application "Terminal" to activate' &
+fi
 }
 
 #####################################################################################################
 SPIN_FCLOVER(){
+
+# Определение функции розыска Clover в виде проверки бинарика EFI/BOOT/bootx64.efi 
+##############################################################################
+FIND_CLOVER(){
+
+loader_found=0
+
+printf '\r\n\n'
+if [[ $loc = "ru" ]]; then
+printf '  Подождите. Ищем загрузочные разделы с Clover ...  '
+else
+printf '  Wait. Looking for boot partitions with Clover loader...  '
+fi
+
+was_mounted=0; var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
+while [ $var1 != 0 ] 
+do 
+	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+	if [[ ! $mcheck = "Yes" ]]; then  was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi
+    else
+		was_mounted=1
+    fi
+
+    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+
+	if [[ -d "$vname"/EFI/BOOT ]]; then
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
+                check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
+                    if [[ ${check_loader} = "Clover" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi ; was_mounted=1; fi   
+	        fi
+	fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
+		
+    let "num++"
+    let "var1--"
+done
+nogetlist=1
+}
+
 if [[ $loc = "ru" ]]; then printf '\r\033[48C'; else printf '\r\033[50C'; fi
     NEED_PASSWORD
 if [[ ${need_password} = 0 ]]; then
@@ -2133,16 +2123,49 @@ if [[ ${need_password} = 0 ]]; then
     spin='-\|/'
     i=0
     while :;do let "i++"; i=$(( (i+1) %4 )) ; printf '\e[1m'"\b$1${spin:$i:1}"'\e[0m' ;sleep 0.2;done &
-    trap "kill $!" EXIT 
+    trap "kill $!" EXIT
     FIND_CLOVER
     kill $!
     wait $! 2>/dev/null
     trap " " EXIT
 fi
+if [[ $loader_found = 0 ]]; then 
+osascript -e 'tell application "Terminal" to activate' &
+fi
 }
 #####################################################################################################
 
 SPIN_FLOADERS(){
+
+################################### поиск всех загрузчиков #########################################
+FIND_ALL_LOADERS(){
+printf '\r\n\n'
+if [[ $loc = "ru" ]]; then
+printf '  Подождите. Ищем загрузочные разделы с BOOTx64.efi ...  '
+else
+printf '  Wait. Looking for partitions with BOOTx64.efi loaders ... '
+fi
+
+was_mounted=0; var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
+while [ $var1 != 0 ] 
+do 
+	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
+    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+	if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi; else was_mounted=1; fi
+    FIND_LOADERS   
+    if [[ ! ${loader} = "" ]];then
+       if [[ ! ${lddlist[pnum]} = "" ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+          for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
+       fi
+    ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
+    fi   
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+		
+    let "num++"
+    let "var1--"
+done
+nogetlist=1
+}
     NEED_PASSWORD
 if [[ ${need_password} = 0 ]]; then
     printf '\r\n'
@@ -2156,214 +2179,17 @@ if [[ ${need_password} = 0 ]]; then
     wait $! 2>/dev/null
     trap " " EXIT
 fi
+osascript -e 'tell application "Terminal" to activate' &
 }
 
-################################### поиск всех загрузчиков #########################################
-FIND_ALL_LOADERS(){
-printf '\r\n\n'
-if [[ $loc = "ru" ]]; then
-printf '  Подождите. Ищем загрузочные разделы с BOOTx64.efi ...  '
-else
-printf '  Wait. Looking for partitions with BOOTx64.efi loaders ... '
-fi
-
-was_mounted=0
-var1=$pos
-num=0
-spin='-\|/'
-i=0
-noefi=1
-while [ $var1 != 0 ] 
-do 
-
-	pnum=${nlist[num]}
-	string=`echo ${dlist[$pnum]}`
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-	if [[ ! $mcheck = "Yes" ]]; then 
-
-	was_mounted=0
-
-  	DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi	
-
-	else
-		was_mounted=1
-
-	fi
-                
-            FIND_LOADERS   
-            
-            
-            if [[ ! ${loader} = "" ]];then
-                if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-                fi
-             ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
-            fi
-
-    
-		if [[ "$was_mounted" = 0 ]]; then
-
-	diskutil quiet  umount  force /dev/${string}; mounted=0
-		
-		UNMOUNTED_CHECK		
-
-		fi
-		
-let "num++"
-let "var1--"
-
-done
-
-nogetlist=1
-}
 ###################################################################################################
-
-# Определение функции розыска Clover в виде проверки бинарика EFI/BOOT/bootx64.efi 
-##############################################################################
-FIND_CLOVER(){
-
-printf '\r\n\n'
-if [[ $loc = "ru" ]]; then
-printf '  Подождите. Ищем загрузочные разделы с Clover ...  '
-else
-printf '  Wait. Looking for boot partitions with Clover loader...  '
-fi
-
-was_mounted=0
-var1=$pos
-num=0
-spin='-\|/'
-i=0
-noefi=1
-while [ $var1 != 0 ] 
-do 
-
-	pnum=${nlist[num]}
-	string=`echo ${dlist[$pnum]}`
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-	if [[ ! $mcheck = "Yes" ]]; then 
-
-	was_mounted=0
-
-  	DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi
-
-	else
-		was_mounted=1
-
-	fi
-
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-
-	if [[ -d "$vname"/EFI/BOOT ]]; then
-			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
-
-                					if [[ ${check_loader} = "Clover" ]]; then
-
-                       						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
-							 was_mounted=1
-
-                 fi   
-	   fi
-	fi
-
-
-		if [[ "$was_mounted" = 0 ]]; then
-
-	diskutil quiet  umount  force /dev/${string}; mounted=0
-		
-		UNMOUNTED_CHECK		
-
-		fi
-		
-let "num++"
-let "var1--"
-
-done
-
-nogetlist=1
-
-
-}
-
-FIND_OPENCORE(){
-
-printf '\r\n\n'
-if [[ $loc = "ru" ]]; then
-printf '  Подождите. Ищем загрузочные разделы с OpenCore ...  '
-else
-printf '  Wait. Looking for boot partitions with OpenCore loader...  '
-fi
-
-was_mounted=0
-var1=$pos
-num=0
-spin='-\|/'
-i=0
-noefi=1
-
-while [ $var1 != 0 ] 
-do 
-
-	pnum=${nlist[num]}
-	string=`echo ${dlist[$pnum]}`
-
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
-
-	if [[ ! $mcheck = "Yes" ]]; then 
-
-	was_mounted=0
-
-  	DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi
-
-	else
-		was_mounted=1
-
-	fi
-
-    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-
-	if [[ -d "$vname"/EFI/BOOT ]]; then
-			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
-                					if [[ ${check_loader} = "OpenCore" ]]; then
-                       						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
-							 was_mounted=1
-                 fi   
-	   fi
-	fi
-
-		if [[ "$was_mounted" = 0 ]]; then
-	diskutil quiet  umount  force /dev/${string}; mounted=0
-		
-		UNMOUNTED_CHECK		
-
-		fi
-		
-let "num++"
-let "var1--"
-
-done
-
-nogetlist=1
-
-
-}
-
 # Функция отключения EFI разделов
 
 UNMOUNTS(){
 
 GETARR
 
-var1=$pos
-num=0
-spin='-\|/'
-i=0
-noefi=1
+var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
 
 cd "${ROOT}"
 
@@ -2374,7 +2200,6 @@ do
 	string=`echo ${dlist[$pnum]}`
 
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
-
 
 if [[ $mcheck = "Yes" ]]; then
 	noefi=0
@@ -2406,23 +2231,6 @@ if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
 
 
 }
-
-PRINT_HEADER(){
-if [[ $loc = "ru" ]]; then
-        if [[ $CheckLoaders = 0 ]]; then
-            printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
-        else
-            printf '\n*********           Программа монтирует EFI разделы в Mac OS (X.11 - X.15)           *********\n'
-        fi
-    else
-        if [[ $CheckLoaders = 0 ]]; then
-            printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
-        else
-            printf '\n*********         This program mounts EFI partitions on Mac OS (X.11 - X.15)         *********\n'
-        fi
-	fi
-}
-
 
 CHECK_SANDBOX
 
@@ -2553,66 +2361,11 @@ theme="system"
 GET_THEME
 if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 ############################################################################################
-
-################################ получение имени диска для переименования #####################
-GET_RENAMEHD(){
-
-IFS=';'; rlist=( $(echo "$MountEFIconf" | grep -A 1 "RenamedHD" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n') ); unset IFS
-rcount=${#rlist[@]}
-if [[ ! $rcount = 0 ]]; then
-      for posr in ${!rlist[@]}; do
-            rdrive=$( echo "${rlist[$posr]}" | cut -f1 -d"=" )
-            if [[ "$rdrive" = "$drive" ]]; then drive=$( echo "${rlist[posr]}" | rev | cut -f1 -d"=" | rev ); break; fi
-         done
-fi
-
-}
-##############################################################################################
-
-
-##################### получение имени и версии загрузчика ######################################################################################
-
-GET_LOADER_STRING(){
-                
-               GET_OTHER_LOADERS_STRING
-               
-               if [[ ! "${loader:0:5}" = "Other" ]]; then
-                
-                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
-                    case "${check_loader}" in
-                    "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
-                                if [[ ${revision} = "" ]]; then
-                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
-                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
-                                loader+="${revision:0:4}"
-                                ;;
-  
-                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
-                        ;;
-                    "GNU/Linux" ) loader="GNU/Linux"                                       
-                        ;;
-                    "Refind"    ) loader="refind"                                          
-                        ;;
-                    "Microsoft C" ) loader="Windows"; loader+="®"                           
-                        ;;
-                               *) loader="unrecognized"                                    
-                        ;;
-                    esac
-    
-                    if [[ ${loader} = "unrecognized" ]]; then GET_CONFIG_VERS "ALL"; fi
-                fi
-}
-
-##################################################################################################################################################
-
 SHIFT_UP(){
-if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
+if [[ ! ${lddlist[pnum]} = "" ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+   for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
 fi
 }
-
-
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
@@ -2640,8 +2393,6 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
 fi
 
 }
-
-
 #######################################################################################################################################################
 
 ########################### вывод признаков наличия загрузчика #########################################
@@ -2686,12 +2437,8 @@ fi
 printf "\033[H"; let "correct=lines-7"; if [[ $loc = "ru" ]]; then printf "\r\033[$correct;f\033[49C"; else printf "\r\033[$correct;f\033[51C"; fi
 }
 #################################################################################################
-spinny(){
- let "i++"
-	i=$(( (i+1) %4 ))
-	printf "\b$1${spin:$i:1}"
-}
 
+spinny(){ let "i++"; i=$(( (i+1) %4 )); printf "\b$1${spin:$i:1}"; }
 
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
@@ -2738,7 +2485,17 @@ do
 		
         drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
-        GET_RENAMEHD
+        ################################ получение имени диска для переименования #####################
+        ########GET_RENAMEHD
+        IFS=';'; rlist=( $(echo "$MountEFIconf" | grep -A 1 "RenamedHD" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n') ); unset IFS
+        rcount=${#rlist[@]}
+        if [[ ! $rcount = 0 ]]; then
+         for posr in ${!rlist[@]}; do
+            rdrive=$( echo "${rlist[$posr]}" | cut -f1 -d"=" )
+            if [[ "$rdrive" = "$drive" ]]; then drive=$( echo "${rlist[posr]}" | rev | cut -f1 -d"=" | rev ); break; fi
+         done
+        fi
+        ###################
 		dcorr=${#drive}
 		if [[ ${dcorr} -gt 30 ]]; then dcorr=0; drive="${drive:0:30}"; else let "dcorr=30-dcorr"; fi
 
@@ -2898,8 +2655,6 @@ fi
 printf '\n\n' 
 
 SHOW_LOADERS
-
-
 }
 # Конец определения GETLIST ###########################################################
 
@@ -3070,38 +2825,11 @@ fi
 }
 # Конец определения функции UPDATELIST ######################################################
 
-# Oпределение функции обновления экрана в случае замены файла загрузчика ####################################################
-RECHECK_LOADERS(){
-if [[ ! $CheckLoaders = 0 ]]; then
-    if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
-        let "pauser=3"; update_screen_flag=0
-        for pnum in ${!dlist[@]}
-        do
-        mounted_check=$( df | grep ${dlist[$pnum]} )   
-            if [[ ! $mounted_check = "" ]]; then 
-            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-                    if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-
-                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
-                       if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
-                    fi
-
-                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
-                    mounted_loaders_list[$pnum]=${loader_sum}
-                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
-                    ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
-                    let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
-            fi
-        done
-    else
-        let "pauser=pauser-1"
-    fi
-fi
-}
-#################################################################################################################################
+###################################### обновление на экране списка подключенных ###########################################
+UPDATE_SCREEN(){
 
 ##################### обновление данных буфера экрана при детекте хотплага партиции ###########################
-UPDATE_SCREEN_BUFFER(){
+#UPDATE_SCREEN_BUFFER
 
 var0=$pos; num=0; ch1=0; unset string
 while [ $var0 != 0 ]; do 
@@ -3155,13 +2883,7 @@ while [ $var0 != 0 ]; do
 let "num++"
 let "var0--"
 done
-
-}
-
-###################################### обновление на экране списка подключенных ###########################################
-UPDATE_SCREEN(){
-
-UPDATE_SCREEN_BUFFER
+#############################
 
 printf "\033[H"
 printf "\r\033[8f"
@@ -3207,11 +2929,7 @@ SHOW_LOADERS
 }
 ################################### конец функции обновления списка подключенных  на экране ##################################
 
-ADVANCED_MENUE(){
-
-    order=3; UPDATELIST; GETKEYS
-}
-
+ADVANCED_MENUE(){ order=3; UPDATELIST; GETKEYS; }
 
 ########################### определение функции ввода по 2 байта #########################
 READ_TWO_SYMBOLS(){
@@ -3307,6 +3025,34 @@ TRANS_READ(){
         break
    fi
    done
+}
+################ информация об EFI с этой устаноленной системой ############################
+GET_SYSTEM_EFI(){
+
+if [[ ${lists_updated} = 1 ]]; then
+sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1' | tr -d "\n"`
+edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
+drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
+
+var2=$pos
+num=0
+while [ $var2 != 0 ] 
+do 
+pnum=${nlist[num]}
+string=`echo ${dlist[$pnum]}`
+dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
+dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+
+if [[ "$edname" = "$dname" ]]; then  enum=$pnum;  var2=1
+        else
+checkit=$( echo "$dname" | grep -w "$edname")
+        if [[ ! $checkit = "" ]]; then  enum=$pnum;  var2=1; fi
+fi
+let "num++"
+let "var2--"
+done
+lists_updated=0
+fi
 }
 #############################################################################################################################################
 # Определение функции ожидания и фильтрации ввода с клавиатуры
@@ -3416,52 +3162,35 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 }
 # Конец определения MOUNTS #################################################################
 
-################### ожидание завершения монтирования разделов при хотплаге #################
+############################# корректировка списка разделов с загрузчиками ######################################### 
+CORRECT_LOADERS_LIST(){
 
-WARNING_SYNCHRO(){
-                        SET_TITLE
-                        if [[ $loc = "ru" ]]; then
-                        echo 'SUBTITLE="ОЖИДАНИЕ ГОТОВНОСТИ РАЗДЕЛОВ ! ..."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
-                        else
-                        echo 'SUBTITLE="WAITING FOR COMPLETE MOUNTING !..."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
-                        fi
-                        DISPLAY_NOTIFICATION
-}
+if [[ ! ${lddlist[@]} = 0 ]]; then
+    temp_lddlist=()
+    temp_lddlist=( $( echo ${dlist[@]} ${lddlist[@]} | tr ' ' '\n' | sort | uniq -u ) )
 
-WAIT_SYNCHRO(){
-if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
-new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
-if [[ ! ${#new_rmlist[@]} = 0 ]]; then
-    init_time="$(date +%s)"; usblist=(); warning_sent=0
-    for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
-    if [[ ! ${#usblist[@]} = 0 ]]; then
-        realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
-        if [[ ! ${#realEFI_list[@]} = 0 ]]; then
-        temp_usblist=()
-        for z in ${usblist[@]}; do for y in ${!realEFI_list[@]}; do match=0; if [[ ${z} = ${realEFI_list[y]} ]]; then match=1; break; fi; done; if [[ ${match} = 0 ]]; then temp_usblist+=(${z}); fi; done
-        usblist=(${temp_usblist[@]})
-
-        fi
-    fi
-    if [[ ! ${#usblist[@]} = 0 ]]; then
-        while true; do
-            mounted_list=( $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
-            usb_mounted_list=()
-            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ ${z} = ${y} ]]; then usb_mounted_list+=( ${z} ); break; fi; done; done
-            diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
-            if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
-            exec_time="$(($(date +%s)-init_time))"
-            if [[ ${exec_time} -ge 3 ]] && [[ ${warning_sent} = 0 ]]; then WARNING_SYNCHRO; warning_sent=1; fi
-            if [[ ${exec_time} -ge 30 ]]; then break; fi
-            sleep 0.25
-        done        
-    fi
+    ########################### коррекция списка определённых загрузчиков с уменьшением ###############################
+    #REMOVE_LOADERS_FROM_LIST
+    for x in ${temp_lddlist[@]}; do
+            for y in ${!lddlist[@]}; do
+                if [[ ${x} = ${lddlist[y]} ]]; then            
+                unset 'mounted_loaders_list[y]'; unset 'lddlist[y]'; unset 'ldlist[y]'
+                max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
+                    if [[ ${y} -lt ${max} ]]; then
+                        for ((z=${y};z<=${max};z++)); do
+                            lddlist[z]=${lddlist[$((z+1))]}; ldlist[z]=${ldlist[$((z+1))]}; mounted_loaders_list[z]=${mounted_loaders_list[$((z+1))]}; done
+                        unset 'lddlist[max]'; unset 'ldlist[max]'; unset 'mounted_loaders_list[max]'
+                    fi
+                fi
+            done
+        done
+     ########
 fi
-fi
-if [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi
 synchro=0
+
 }
 
+################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
@@ -3488,7 +3217,22 @@ if [[ ! $nogetlist = 1 ]]; then
         if [[ ! $CheckLoaders = 0 ]]; then col=94; ldcorr=14; else col=80; ldcorr=2;  fi 
         clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 
-	    PRINT_HEADER
+	    ######PRINT_HEADER
+    if [[ $loc = "ru" ]]; then
+        if [[ $CheckLoaders = 0 ]]; then
+            printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
+        else
+            printf '\n*********           Программа монтирует EFI разделы в Mac OS (X.11 - X.15)           *********\n'
+        fi
+    else
+        if [[ $CheckLoaders = 0 ]]; then
+            printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
+        else
+            printf '\n*********         This program mounts EFI partitions on Mac OS (X.11 - X.15)         *********\n'
+        fi
+	fi
+        ####################
+
 fi
         unset nlist
         declare -a nlist
@@ -3496,7 +3240,53 @@ fi
 
  if [[ -f ~/.disk_list.txt ]]; then temp_dlist=( $( cat ~/.disk_list.txt ) ); rm -f  ~/.disk_list.txt; if [[ ! ${dlist[@]} = ${temp_dlist[@]} ]]; then CORRECT_LOADERS_LIST; fi; fi
 
- if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]] || [[ ${synchro} = 3 ]]; then WAIT_SYNCHRO; fi; GETLIST; fi
+ if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]] || [[ ${synchro} = 3 ]]; then 
+
+    ######## WAIT_SYNCHRO
+if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
+new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
+if [[ ! ${#new_rmlist[@]} = 0 ]]; then
+    init_time="$(date +%s)"; usblist=(); warning_sent=0
+    for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
+    if [[ ! ${#usblist[@]} = 0 ]]; then
+        realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
+        if [[ ! ${#realEFI_list[@]} = 0 ]]; then
+        temp_usblist=()
+        for z in ${usblist[@]}; do for y in ${!realEFI_list[@]}; do match=0; if [[ ${z} = ${realEFI_list[y]} ]]; then match=1; break; fi; done; if [[ ${match} = 0 ]]; then temp_usblist+=(${z}); fi; done
+        usblist=(${temp_usblist[@]})
+
+        fi
+    fi
+    if [[ ! ${#usblist[@]} = 0 ]]; then
+        while true; do
+            mounted_list=( $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
+            usb_mounted_list=()
+            for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ ${z} = ${y} ]]; then usb_mounted_list+=( ${z} ); break; fi; done; done
+            diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
+            if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
+            exec_time="$(($(date +%s)-init_time))"
+            if [[ ${exec_time} -ge 3 ]] && [[ ${warning_sent} = 0 ]]; then 
+            #### WARNING_SYNCHRO
+                        SET_TITLE
+                        if [[ $loc = "ru" ]]; then
+                        echo 'SUBTITLE="ОЖИДАНИЕ ГОТОВНОСТИ РАЗДЕЛОВ ! ..."; MESSAGE=""' >> "${HOME}"/.MountEFInoty.sh
+                        else
+                        echo 'SUBTITLE="WAITING FOR COMPLETE MOUNTING !..."; MESSAGE=""' >> "${HOME}"/.MountEFInoty.sh
+                        fi
+                        DISPLAY_NOTIFICATION
+            #################### 
+            warning_sent=1; fi
+            if [[ ${exec_time} -ge 30 ]]; then break; fi
+            sleep 0.25
+        done        
+    fi
+fi
+fi
+if [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi
+synchro=0
+#######################
+
+ fi; GETLIST; fi
 
 	GETKEYS	
 
