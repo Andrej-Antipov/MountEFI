@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 21.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="046"
+s_edit_vers="047"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -50,6 +50,7 @@ s_edit_vers="046"
 # 044 - generic password key name
 # 045 - баг фиксы и улучшении
 # 046 - для github проверка версии
+# 047 - проверка загрузчиков в отключенных папках при запуске
 
 clear
 
@@ -194,6 +195,8 @@ NET_UPDATE_LOADERS(){
         fi
 fi
 }
+
+CONFPATH="${HOME}/.MountEFIconf.plist"
 
 setup_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash" | grep setup |  grep -v grep  | cut -f1 -d " " | sort -u | wc -l )
 
@@ -393,7 +396,7 @@ if [[ $pcount -lt 10 ]]; then let "btheme_corr++"; fi
 
 DELETE_THEME_PRESET(){
 
-plutil -remove Presets."$editing_preset" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+plutil -remove Presets."$editing_preset" "${CONFPATH}"; UPDATE_CACHE
 NN="B,"
 current="$editing_preset"
 strng=$(echo "$MountEFIconf"  | grep -A 1 -e "<key>ThemeLoadersLinks</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' )
@@ -405,11 +408,11 @@ if [[ ! $check = "" ]]; then DEL_THEME_LOADERS; fi
 
 ADD_THEME_PRESET(){
 
-plutil -replace  Presets."$editing_preset" -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-plutil -replace  Presets."$editing_preset".BackgroundColor -string "$editing_BackgroundColor" ${HOME}/.MountEFIconf.plist
-plutil -replace  Presets."$editing_preset".FontName -string "$editing_FontName" ${HOME}/.MountEFIconf.plist
-plutil -replace  Presets."$editing_preset".FontSize -string "$editing_FontSize" ${HOME}/.MountEFIconf.plist
-plutil -replace  Presets."$editing_preset".TextColor -string "$editing_TextColor" ${HOME}/.MountEFIconf.plist
+plutil -replace  Presets."$editing_preset" -xml  '<dict/>'   "${CONFPATH}"
+plutil -replace  Presets."$editing_preset".BackgroundColor -string "$editing_BackgroundColor" "${CONFPATH}"
+plutil -replace  Presets."$editing_preset".FontName -string "$editing_FontName" "${CONFPATH}"
+plutil -replace  Presets."$editing_preset".FontSize -string "$editing_FontSize" "${CONFPATH}"
+plutil -replace  Presets."$editing_preset".TextColor -string "$editing_TextColor" "${CONFPATH}"
 UPDATE_CACHE
 
 }
@@ -423,10 +426,10 @@ SET_THEMES(){
                 for ((i=0; i<$pcount; i++)) do if [[ "$current" = "${plist[$i]}" ]]; then break;  fi ; done           
          
                 if [[ "${i}" -lt "${pmax}" ]]; then let "i++"; else i=0; fi
-                plutil -replace CurrentPreset -string "${plist[$i]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+                plutil -replace CurrentPreset -string "${plist[$i]}" "${CONFPATH}" ; UPDATE_CACHE
            else
                 osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "Basic"'
-                plutil -replace Theme -string built-in ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+                plutil -replace Theme -string built-in "${CONFPATH}"; UPDATE_CACHE
            fi
                 #CUSTOM_SET &
  }
@@ -460,7 +463,7 @@ GET_PRESETS_NAMES
 current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 pnow=$(echo "${plist[@]}" | grep -o "$current")
 if [[ ! "$pnow" =  "$current" ]]; then
-   plutil -replace CurrentPreset -string "${plist[0]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+   plutil -replace CurrentPreset -string "${plist[0]}" "${CONFPATH}" ; UPDATE_CACHE
 fi 
 }
 
@@ -488,147 +491,142 @@ Maximum=`echo "$MountEFIconf" | grep Backups -A 5 | grep -A 1 -e "Maximum</key>"
 
 FILL_CONFIG(){
 
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIconf.plist
-            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIconf.plist
-            echo '<plist version="1.0">' >> ${HOME}/.MountEFIconf.plist
-            echo '<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>AutoMount</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <false/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Timeout2Exit</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>10</integer>' >> ${HOME}/.MountEFIconf.plist
-            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>Backups</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Auto</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Maximum</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <integer>20</integer>' >> ${HOME}/.MountEFIconf.plist
-            echo '	</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>CheckLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>CurrentPreset</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>BlueSky</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Locale</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>auto</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Menue</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>always</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>OpenFinder</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>Presets</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>BlueSky</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{4096, 15458, 40092}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>Menlo Regular</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{56831, 61439, 53247}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>DarkBlueSky</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{8481, 10537, 33667}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{65278, 64507, 0}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>GreenField</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{1028, 12850, 10240}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{61937, 60395, 47288}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>Ocean</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{1028, 12850, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono Regular</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{65535, 65535, 65535}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <key>Tolerance</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '      <dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>BackgroundColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{40092, 40092, 38293}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontName</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>SF Mono</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>FontSize</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>12</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <key>TextColor</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '          <string>{40606, 4626, 0}</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '      </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>RenamedHD</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ShowKeys</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>SysLoadAM</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>Enabled</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>Open</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <false/>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>PartUUIDs</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>Theme</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>built-in</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeLoaders</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>37</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeLoadersLinks</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string> </string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeLoadersNames</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>Clover;OpenCore</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>ThemeProfile</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <string>default</string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <key>UpdateSelfAuto</key>' >> ${HOME}/.MountEFIconf.plist
-            echo '  <true/>' >> ${HOME}/.MountEFIconf.plist
-            echo '	<key>XHashes</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '	<dict>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>CLOVER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>OC_DEV_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>OC_REL_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <key>OTHER_HASHES</key>' >> ${HOME}/.MountEFIconf.plist
-	        echo '           <string></string>' >> ${HOME}/.MountEFIconf.plist
-            echo '  </dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '</dict>' >> ${HOME}/.MountEFIconf.plist
-            echo '</plist>' >> ${HOME}/.MountEFIconf.plist
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> "${CONFPATH}"
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> "${CONFPATH}"
+            echo '<plist version="1.0">' >> "${CONFPATH}"
+            echo '<dict>' >> "${CONFPATH}"
+            echo '	<key>AutoMount</key>' >> "${CONFPATH}"
+            echo '	<dict>' >> "${CONFPATH}"
+            echo '  <key>Enabled</key>' >> "${CONFPATH}"
+            echo '  <false/>' >> "${CONFPATH}"
+            echo '  <key>Open</key>' >> "${CONFPATH}"
+            echo '  <false/>' >> "${CONFPATH}"
+            echo '  <key>PartUUIDs</key>' >> "${CONFPATH}"
+            echo '  <string> </string>' >> "${CONFPATH}"
+            echo '  <key>Timeout2Exit</key>' >> "${CONFPATH}"
+            echo '  <integer>10</integer>' >> "${CONFPATH}"
+            echo '	</dict>' >> "${CONFPATH}"
+            echo '	<key>Backups</key>' >> "${CONFPATH}"
+            echo '	<dict>' >> "${CONFPATH}"
+            echo '  <key>Auto</key>' >> "${CONFPATH}"
+            echo '  <true/>' >> "${CONFPATH}"
+            echo '  <key>Maximum</key>' >> "${CONFPATH}"
+            echo '  <integer>20</integer>' >> "${CONFPATH}"
+            echo '	</dict>' >> "${CONFPATH}"
+            echo '          <key>CheckLoaders</key>' >> "${CONFPATH}"
+            echo '          <true/>' >> "${CONFPATH}"
+            echo '          <key>CurrentPreset</key>' >> "${CONFPATH}"
+            echo '          <string>BlueSky</string>' >> "${CONFPATH}"
+            echo '          <key>Locale</key>' >> "${CONFPATH}"
+            echo '          <string>auto</string>' >> "${CONFPATH}"
+            echo '          <key>Menue</key>' >> "${CONFPATH}"
+            echo '          <string>always</string>' >> "${CONFPATH}"
+            echo '          <key>OpenFinder</key>' >> "${CONFPATH}"
+            echo '          <true/>' >> "${CONFPATH}"
+            echo '          <key>Presets</key>' >> "${CONFPATH}"
+            echo '  <dict>' >> "${CONFPATH}"
+            echo '      <key>BlueSky</key>' >> "${CONFPATH}"
+            echo '      <dict>' >> "${CONFPATH}"
+            echo '          <key>BackgroundColor</key>' >> "${CONFPATH}"
+            echo '          <string>{4096, 15458, 40092}</string>' >> "${CONFPATH}"
+            echo '          <key>FontName</key>' >> "${CONFPATH}"
+            echo '          <string>Menlo Regular</string>' >> "${CONFPATH}"
+            echo '          <key>FontSize</key>' >> "${CONFPATH}"
+            echo '          <string>12</string>' >> "${CONFPATH}"
+            echo '          <key>TextColor</key>' >> "${CONFPATH}"
+            echo '          <string>{56831, 61439, 53247}</string>' >> "${CONFPATH}"
+            echo '      </dict>' >> "${CONFPATH}"
+            echo '      <key>DarkBlueSky</key>' >> "${CONFPATH}"
+            echo '      <dict>' >> "${CONFPATH}"
+            echo '          <key>BackgroundColor</key>' >> "${CONFPATH}"
+            echo '          <string>{8481, 10537, 33667}</string>' >> "${CONFPATH}"
+            echo '          <key>FontName</key>' >> "${CONFPATH}"
+            echo '          <string>SF Mono</string>' >> "${CONFPATH}"
+            echo '          <key>FontSize</key>' >> "${CONFPATH}"
+            echo '          <string>12</string>' >> "${CONFPATH}"
+            echo '          <key>TextColor</key>' >> "${CONFPATH}"
+            echo '          <string>{65278, 64507, 0}</string>' >> "${CONFPATH}"
+            echo '      </dict>' >> "${CONFPATH}"
+            echo '      <key>GreenField</key>' >> "${CONFPATH}"
+            echo '      <dict>' >> "${CONFPATH}"
+            echo '          <key>BackgroundColor</key>' >> "${CONFPATH}"
+            echo '          <string>{1028, 12850, 10240}</string>' >> "${CONFPATH}"
+            echo '          <key>FontName</key>' >> "${CONFPATH}"
+            echo '          <string>SF Mono</string>' >> "${CONFPATH}"
+            echo '          <key>FontSize</key>' >> "${CONFPATH}"
+            echo '          <string>12</string>' >> "${CONFPATH}"
+            echo '          <key>TextColor</key>' >> "${CONFPATH}"
+            echo '          <string>{61937, 60395, 47288}</string>' >> "${CONFPATH}"
+            echo '      </dict>' >> "${CONFPATH}"
+            echo '      <key>Ocean</key>' >> "${CONFPATH}"
+            echo '      <dict>' >> "${CONFPATH}"
+            echo '          <key>BackgroundColor</key>' >> "${CONFPATH}"
+            echo '          <string>{1028, 12850, 65535}</string>' >> "${CONFPATH}"
+            echo '          <key>FontName</key>' >> "${CONFPATH}"
+            echo '          <string>SF Mono Regular</string>' >> "${CONFPATH}"
+            echo '          <key>FontSize</key>' >> "${CONFPATH}"
+            echo '          <string>12</string>' >> "${CONFPATH}"
+            echo '          <key>TextColor</key>' >> "${CONFPATH}"
+            echo '          <string>{65535, 65535, 65535}</string>' >> "${CONFPATH}"
+            echo '      </dict>' >> "${CONFPATH}"
+            echo '      <key>Tolerance</key>' >> "${CONFPATH}"
+            echo '      <dict>' >> "${CONFPATH}"
+            echo '          <key>BackgroundColor</key>' >> "${CONFPATH}"
+            echo '          <string>{40092, 40092, 38293}</string>' >> "${CONFPATH}"
+            echo '          <key>FontName</key>' >> "${CONFPATH}"
+            echo '          <string>SF Mono</string>' >> "${CONFPATH}"
+            echo '          <key>FontSize</key>' >> "${CONFPATH}"
+            echo '          <string>12</string>' >> "${CONFPATH}"
+            echo '          <key>TextColor</key>' >> "${CONFPATH}"
+            echo '          <string>{40606, 4626, 0}</string>' >> "${CONFPATH}"
+            echo '      </dict>' >> "${CONFPATH}"
+            echo '  </dict>' >> "${CONFPATH}"
+            echo '  <key>RenamedHD</key>' >> "${CONFPATH}"
+            echo '  <string> </string>' >> "${CONFPATH}"
+            echo '  <key>ShowKeys</key>' >> "${CONFPATH}"
+            echo '  <true/>' >> "${CONFPATH}"
+            echo '	<key>SysLoadAM</key>' >> "${CONFPATH}"
+	        echo '	<dict>' >> "${CONFPATH}"
+	        echo '           <key>Enabled</key>' >> "${CONFPATH}"
+	        echo '           <false/>' >> "${CONFPATH}"
+	        echo '           <key>Open</key>' >> "${CONFPATH}"
+	        echo '           <false/>' >> "${CONFPATH}"
+	        echo '           <key>PartUUIDs</key>' >> "${CONFPATH}"
+	        echo '           <string> </string>' >> "${CONFPATH}"
+            echo '  </dict>' >> "${CONFPATH}"
+            echo '  <key>Theme</key>' >> "${CONFPATH}"
+            echo '  <string>built-in</string>' >> "${CONFPATH}"
+            echo '  <key>ThemeLoaders</key>' >> "${CONFPATH}"
+            echo '  <string>37</string>' >> "${CONFPATH}"
+            echo '  <key>ThemeLoadersLinks</key>' >> "${CONFPATH}"
+            echo '  <string> </string>' >> "${CONFPATH}"
+            echo '  <key>ThemeLoadersNames</key>' >> "${CONFPATH}"
+            echo '  <string>Clover;OpenCore</string>' >> "${CONFPATH}"
+            echo '  <key>ThemeProfile</key>' >> "${CONFPATH}"
+            echo '  <string>default</string>' >> "${CONFPATH}"
+            echo '  <key>UpdateSelfAuto</key>' >> "${CONFPATH}"
+            echo '  <true/>' >> "${CONFPATH}"
+            echo '	<key>XHashes</key>' >> "${CONFPATH}"
+	        echo '	<dict>' >> "${CONFPATH}"
+	        echo '           <key>CLOVER_HASHES</key>' >> "${CONFPATH}"
+	        echo '           <string></string>' >> "${CONFPATH}"
+	        echo '           <key>OC_DEV_HASHES</key>' >> "${CONFPATH}"
+	        echo '           <string></string>' >> "${CONFPATH}"
+	        echo '           <key>OC_REL_HASHES</key>' >> "${CONFPATH}"
+	        echo '           <string></string>' >> "${CONFPATH}"
+	        echo '           <key>OTHER_HASHES</key>' >> "${CONFPATH}"
+	        echo '           <string></string>' >> "${CONFPATH}"
+            echo '  </dict>' >> "${CONFPATH}"
+            echo '	<key>startupMount</key>' >> "${CONFPATH}"
+	        echo '  <true/>' >> "${CONFPATH}"
+            echo '</dict>' >> "${CONFPATH}"
+            echo '</plist>' >> "${CONFPATH}"
 
 
 }
 ####################################### кэш конфига #####################################################################################
 
-UPDATE_CACHE(){
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then
-MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
-cache=1
-else
-unset MountEFIconf; cache=0
-fi
-}
+UPDATE_CACHE(){ if [[ -f "${CONFPATH}" ]]; then MountEFIconf=$( cat "${CONFPATH}" ); cache=1; else cache=0; fi ; }
 ##########################################################################################################################################
 
 UPDATE_CACHE
@@ -642,7 +640,7 @@ if [[ $reload_check = "Reload" ]]; then
                 launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
         if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm ~/Library/LaunchAgents/MountEFIr.plist; fi
         if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
-        plutil -remove Reload ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -remove Reload "${CONFPATH}"; UPDATE_CACHE
 fi
 
 zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
@@ -662,7 +660,7 @@ if [[ $login = "LoginPassword" ]]; then
             if ! (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
                 security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
             fi
-            plutil -remove LoginPassword ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+            plutil -remove LoginPassword "${CONFPATH}"; UPDATE_CACHE
         fi
 fi
 
@@ -671,106 +669,109 @@ if [[ $cache = 1 ]]; then
 strng=`echo "$MountEFIconf" | grep  "<key>CurrentPreset</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
       if [[ ! $strng = "CurrentPreset" ]]; then
         theme=`echo "$MountEFIconf" |  grep -A 1   "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        rm ${HOME}/.MountEFIconf.plist; unset MountEFIconf; cache=0; deleted=1
+        rm "${CONFPATH}"; unset MountEFIconf; cache=0; deleted=1
     fi
 fi
 
 if [[ ! $cache = 1 ]]; then
         if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+            cp DefaultConf.plist "${CONFPATH}"
         else
              FILL_CONFIG
         fi
 fi
 
 if [[ $deleted = 1 ]]; then
-    plutil -replace Theme -string $theme ${HOME}/.MountEFIconf.plist 
+    plutil -replace Theme -string $theme "${CONFPATH}" 
 fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
+if [[ ! $strng = "ShowKeys" ]]; then plutil -replace ShowKeys -bool YES "${CONFPATH}"; cache=0; fi
 
 strng=`echo "$MountEFIconf"| grep -e "<key>CheckLoaders</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "CheckLoaders" ]]; then plutil -replace CheckLoaders -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
+if [[ ! $strng = "CheckLoaders" ]]; then plutil -replace CheckLoaders -bool NO "${CONFPATH}"; cache=0; fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>AutoMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "AutoMount" ]]; then 
-			plutil -insert AutoMount -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+			plutil -insert AutoMount -xml  '<dict/>'   "${CONFPATH}"
+			plutil -insert AutoMount.Enabled -bool NO "${CONFPATH}"
+			plutil -insert AutoMount.ExitAfterMount -bool NO "${CONFPATH}"
+			plutil -insert AutoMount.Open -bool NO "${CONFPATH}"
+			plutil -insert AutoMount.PartUUIDs -string " " "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>SysLoadAM</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "SysLoadAM" ]]; then 
-			plutil -insert SysLoadAM -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-			plutil -insert SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -insert SysLoadAM.Open -bool NO ${HOME}/.MountEFIconf.plist
-            plutil -insert SysLoadAM.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+			plutil -insert SysLoadAM -xml  '<dict/>'   "${CONFPATH}"
+			plutil -insert SysLoadAM.Enabled -bool NO "${CONFPATH}"
+			plutil -insert SysLoadAM.Open -bool NO "${CONFPATH}"
+            plutil -insert SysLoadAM.PartUUIDs -string " " "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -o "Timeout2Exit" | tr -d '\n'`
 if [[ ! $strng = "Timeout2Exit" ]]; then
-            plutil -insert AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+            plutil -insert AutoMount.Timeout2Exit -integer 5 "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "RenamedHD" ]]; then
-            plutil -insert RenamedHD -string " " ${HOME}/.MountEFIconf.plist
+            plutil -insert RenamedHD -string " " "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>Backups</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "Backups" ]]; then 
-             plutil -insert Backups -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-             plutil -insert Backups.Maximum -integer 10 ${HOME}/.MountEFIconf.plist
+             plutil -insert Backups -xml  '<dict/>'   "${CONFPATH}"
+             plutil -insert Backups.Maximum -integer 10 "${CONFPATH}"
              cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoaders</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeLoaders" ]]; then
-            plutil -insert ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
+            plutil -insert ThemeLoaders -string "37" "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersLinks</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeLoadersLinks" ]]; then
-            plutil -insert ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
+            plutil -insert ThemeLoadersLinks -string " " "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeLoadersNames</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeLoadersNames" ]]; then
-            plutil -insert ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
+            plutil -insert ThemeLoadersNames -string "Clover;OpenCore" "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>ThemeProfile</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "ThemeProfile" ]]; then
-            plutil -insert ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
+            plutil -insert ThemeProfile -string "default" "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf"| grep -e "<key>UpdateSelfAuto</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "UpdateSelfAuto" ]]; then plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist; cache=0; fi
+if [[ ! $strng = "UpdateSelfAuto" ]]; then plutil -replace UpdateSelfAuto -bool YES "${CONFPATH}"; cache=0; fi
 
 strng=`echo "$MountEFIconf" | grep -e "<key>XHashes</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "XHashes" ]]; then 
-			plutil -insert XHashes -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist
-			plutil -insert XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
-			plutil -insert XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
-            plutil -insert XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
-            plutil -insert XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
+			plutil -insert XHashes -xml  '<dict/>'   "${CONFPATH}"
+			plutil -insert XHashes.CLOVER_HASHES -string "" "${CONFPATH}"
+			plutil -insert XHashes.OC_DEV_HASHES -string "" "${CONFPATH}"
+            plutil -insert XHashes.OC_REL_HASHES -string "" "${CONFPATH}"
+            plutil -insert XHashes.OTHER_HASHES -string "" "${CONFPATH}"
             cache=0
 fi
 
 strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO ${HOME}/.MountEFIconf.plist; cache=0; fi
+if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO "${CONFPATH}"; cache=0; fi
+
+strng=`echo "$MountEFIconf"| grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+if [[ ! $strng = "startupMount" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
@@ -780,7 +781,7 @@ if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then GET_BACKUPS_FROM_ICLOUD; fi
             if [[ ! -f ${HOME}/.MountEFIconfBackups.zip ]]; then
             mkdir ${HOME}/.MountEFIconfBackups
             mkdir ${HOME}/.MountEFIconfBackups/1
-            cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1
+            cp "${CONFPATH}" ${HOME}/.MountEFIconfBackups/1
             zip -rX -qq ${HOME}/.MountEFIconfBackups.zip ${HOME}/.MountEFIconfBackups
             rm -R ${HOME}/.MountEFIconfBackups
 fi
@@ -953,8 +954,8 @@ if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
                launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
                if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm ~/Library/LaunchAgents/MountEFIu.plist; fi
                if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
-               plutil -replace UpdateSelfAuto -bool No ${HOME}/.MountEFIconf.plist
-               plutil -remove Updating ${HOME}/.MountEFIconf.plist >>/dev/null 
+               plutil -replace UpdateSelfAuto -bool No "${CONFPATH}"
+               plutil -remove Updating "${CONFPATH}" >>/dev/null 
                UPDATE_CACHE
                if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then
                     autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
@@ -1170,7 +1171,7 @@ if [[ ! $apos = 0 ]]
                        check_uuid=`ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[$posb]}`
                        if [[ $check_uuid = "" ]]; then 
 						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
-						plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
+						plutil -replace AutoMount.PartUUIDs -string "$strng2" "${CONFPATH}"
 						strng1=$strng2
                         cache=0
 						fi
@@ -1179,7 +1180,7 @@ if [[ ! $apos = 0 ]]
 					done
 alist=($strng1); apos=${#alist[@]}
 fi
-if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; am_enabled=0; cache=0; fi
+if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"; am_enabled=0; cache=0; fi
 }
 
 REM_SYS_ABSENT(){
@@ -1194,7 +1195,7 @@ if [[ ! $apos = 0 ]]
                        check_uuid=`ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[$posb]}`
                        if [[ $check_uuid = "" ]]; then 
 						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
-						plutil -replace SysLoadAM.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist
+						plutil -replace SysLoadAM.PartUUIDs -string "$strng2" "${CONFPATH}"
 						strng1=$strng2
                         cache=0
 						fi
@@ -1203,7 +1204,7 @@ if [[ ! $apos = 0 ]]
 					done
 alist=($strng1); apos=${#alist[@]}
 fi
-if [[ $apos = 0 ]]; then plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; sys_am_enabled=0; cache=0; fi
+if [[ $apos = 0 ]]; then plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"; sys_am_enabled=0; cache=0; fi
 }
 
 GET_AUTOMOUNT(){
@@ -1786,7 +1787,7 @@ if [[ $Now = 0 ]]; then Now=1; mkdir ${HOME}/.MountEFIconfBackups/$Now
                 let "fol--"
              done
 fi
-        cp ${HOME}/.MountEFIconf.plist ${HOME}/.MountEFIconfBackups/1/.MountEFIconf.plist
+        cp "${CONFPATH}" ${HOME}/.MountEFIconfBackups/1/.MountEFIconf.plist
         
 }
 
@@ -1806,7 +1807,7 @@ DELETE_BACKUP(){
 }
 
 RESTORE_BACKUP(){
-rm ${HOME}/.MountEFIconf.plist
+rm "${CONFPATH}"
 cp ${HOME}/.MountEFIconfBackups/$inputs/.MountEFIconf.plist ${HOME}
 }
 
@@ -1830,7 +1831,7 @@ CHECK_BUNZIP
 Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
 matched=0
 if [[ ! $Now = 0 ]]; then
-currnt=$(md5 -qq ${HOME}/.MountEFIconf.plist)
+currnt=$(md5 -qq "${CONFPATH}")
 for (( fln=1; fln<=$Now; fln++ ))
 do
 archv=$(md5 -qq ${HOME}/.MountEFIconfBackups/$fln/.MountEFIconf.plist)
@@ -1874,12 +1875,12 @@ hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2
             if [[ ! -d ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup ]]; then 
                 mkdir -p ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup; fi
             if [[ ! -f ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist ]]; then
-                    cp ${HOME}/.MountEFIconf.plist ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup
+                    cp "${CONFPATH}" ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup
             else
                     old_init_v=$( md5 -qq ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup/.MountEFIconf.plist )
-                    new_init_v=$( md5 -qq ${HOME}/.MountEFIconf.plist )
+                    new_init_v=$( md5 -qq "${CONFPATH}" )
                     if [[ ! ${old_init_v} = ${new_init_v} ]]; then 
-                        cp ${HOME}/.MountEFIconf.plist ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup
+                        cp "${CONFPATH}" ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/$hwuuid/init_config_backup
                     fi
             fi
             
@@ -1917,7 +1918,7 @@ Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
 UPDATE_CACHE
 GET_BACKUPS
 if [[ $Now > $Maximum ]]; then
-plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
+plutil -replace Backups.Maximum -integer ${Now} "${CONFPATH}"
 UPDATE_CACHE
 fi
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
@@ -2014,6 +2015,7 @@ sbuf+=$(printf '\033[8;84f'' 7) Показывать подсказки по к�
 sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[11;84f'' F) Искать все загрузчики при запуске = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
             else
 sbuf+=$(printf '\033[1;84f''                                 Menu List                              ')
@@ -2033,6 +2035,7 @@ sbuf+=$(printf '\033[8;84f'' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$s
 sbuf+=$(printf '\033[9;84f'' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[10;84f'' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[11;84f'' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[11;84f'' F) Look for all loaders on run MountEFI = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[12;84f'' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
             fi
 sbuf+=$(printf '\033[13;84f')
@@ -2062,6 +2065,7 @@ SHOW_BACKUP_MENU(){
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
         GET_LOADERS
+        GET_STARTUP_MOUNTS
         GET_AUTOBACKUP
                 
         SET_BSCR
@@ -2313,7 +2317,7 @@ if [[ ${inputs} = [rR] ]]; then
                                     elif [[ "${Now}" -le 50 ]]; then Now=50
 
                         fi
-                        plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
+                        plutil -replace Backups.Maximum -integer ${Now} "${CONFPATH}"
                         UPDATE_CACHE
                         fi
                         fi
@@ -2370,7 +2374,7 @@ if [[  ${inputs}  = [mM] ]]; then
                     if [[ ${get_num} -gt 99 ]]; then unset get_num; fi 2>&-
                     
                     done
-            plutil -replace Backups.Maximum -integer ${get_num} ${HOME}/.MountEFIconf.plist 
+            plutil -replace Backups.Maximum -integer ${get_num} "${CONFPATH}" 
             UPDATE_CACHE
             CHECK_BUNZIP
             Now=$(ls -l ${HOME}/.MountEFIconfBackups | grep ^d | wc -l | tr -d " \t\n")
@@ -2484,26 +2488,26 @@ done
 printf "\033[?25l"
 
 if [[  ${inputs}  = [dD] ]]; then
-			plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -replace AutoMount.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
-            plutil -replace AutoMount.Timeout2Exit -integer 5 ${HOME}/.MountEFIconf.plist
+			plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"
+			plutil -replace AutoMount.ExitAfterMount -bool NO "${CONFPATH}"
+			plutil -replace AutoMount.Open -bool NO "${CONFPATH}"
+			plutil -replace AutoMount.PartUUIDs -string " " "${CONFPATH}"
+            plutil -replace AutoMount.Timeout2Exit -integer 5 "${CONFPATH}"
 			var5=1
             UPDATE_CACHE
 fi
 
 if [[  ${inputs}  = [qQ] ]]; then
 			GET_AUTOMOUNTED
-	if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+	if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"
                 else
-                plutil -replace AutoMount.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+                plutil -replace AutoMount.Enabled -bool YES "${CONFPATH}"
                 GET_SYSTEM_FLAG
                 if [[ "$flag" = "1" ]]; then
                 FORCE_CHECK_PASSWORD "automount"
                 if [[ $mypassword = "" ]]; then ENTER_PASSWORD;  osascript -e 'tell application "Terminal" to activate'; fi
                 FORCE_CHECK_PASSWORD "automount"
-                if [[ $mypassword = "" ]]; then plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist; fi
+                if [[ $mypassword = "" ]]; then plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"; fi
     
                 fi
      fi
@@ -2513,17 +2517,17 @@ fi
 
 if [[  ${inputs}  = [oO] ]]; then
 	if [[ $autom_open = 0 ]]; then 	
-				plutil -replace AutoMount.Open -bool YES ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+				plutil -replace AutoMount.Open -bool YES "${CONFPATH}"; UPDATE_CACHE
 					else
-				plutil -replace AutoMount.Open -bool NO ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+				plutil -replace AutoMount.Open -bool NO "${CONFPATH}"; UPDATE_CACHE
 	fi
 fi
 
 if [[  ${inputs}  = [cC] ]]; then
 	if [[ $autom_exit = 0 ]]; then 	
-				plutil -replace AutoMount.ExitAfterMount -bool YES ${HOME}/.MountEFIconf.plist; UPDATE_CACHE	
+				plutil -replace AutoMount.ExitAfterMount -bool YES "${CONFPATH}"; UPDATE_CACHE	
 					else
-				plutil -replace AutoMount.ExitAfterMount -bool NO ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+				plutil -replace AutoMount.ExitAfterMount -bool NO "${CONFPATH}"; UPDATE_CACHE
 	fi
 fi
 
@@ -2549,7 +2553,7 @@ if [[  ${inputs}  = [tT] ]]; then
                     printf "\r\033[1A"
                     if [[ ${get_num} -gt 999 ]]; then unset get_num; fi 2>&-
                     done
-            plutil -replace AutoMount.Timeout2Exit -integer ${get_num} ${HOME}/.MountEFIconf.plist 
+            plutil -replace AutoMount.Timeout2Exit -integer ${get_num} "${CONFPATH}" 
             UPDATE_CACHE   
             var7=1
             done
@@ -2570,7 +2574,7 @@ if [[ ! $apos = 0 ]]; then
 		 if [[ ${alist[$poi]} = $uuid ]]; then 
             if [[ $unuv = 0 ]]; then 
 							strng2=`echo ${strng1[@]}  |  sed 's/'$uuid'//'`
-							plutil -replace AutoMount.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist	; UPDATE_CACHE						
+							plutil -replace AutoMount.PartUUIDs -string "$strng2" "${CONFPATH}"	; UPDATE_CACHE						
  							vari=1
 							am_check=1
                             screen_buffer3=$( echo "$screen_buffer3" | sed "s/$inputs) auto  /$inputs) ....  /" )
@@ -2586,7 +2590,7 @@ if [[ $am_check = 0 ]]; then
         if [[ $unuv = 0 ]]; then 
 			strng1+=" "
 			strng1+=$uuid
-			plutil -replace AutoMount.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+			plutil -replace AutoMount.PartUUIDs -string "$strng1" "${CONFPATH}" ; UPDATE_CACHE
             screen_buffer3=$( echo "$screen_buffer3" | sed "s/$inputs) ....  /$inputs) auto  /" )
             
         fi
@@ -2651,9 +2655,9 @@ done
 printf "\033[?25l"
 
 if [[  ${inputs}  = [dD] ]]; then
-			plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -replace SysLoadAM.Open -bool NO ${HOME}/.MountEFIconf.plist
-			plutil -replace SysLoadAM.PartUUIDs -string " " ${HOME}/.MountEFIconf.plist
+			plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"
+			plutil -replace SysLoadAM.Open -bool NO "${CONFPATH}"
+			plutil -replace SysLoadAM.PartUUIDs -string " " "${CONFPATH}"
 			var5=1
             UPDATE_CACHE
             inputs="q"
@@ -2662,9 +2666,9 @@ fi
 if [[  ${inputs}  = [qQ] ]]; then
 			GET_SYS_AUTOMOUNTED
 			if [[ ! $apos = 0 ]]; then 
-                plutil -replace SysLoadAM.Enabled -bool YES ${HOME}/.MountEFIconf.plist
+                plutil -replace SysLoadAM.Enabled -bool YES "${CONFPATH}"
                     else
-                plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+                plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"
             fi
                 UPDATE_CACHE
 	  var5=1
@@ -2672,9 +2676,9 @@ fi
 
 if [[  ${inputs}  = [oO] ]]; then
 	if [[ $sys_autom_open = 0 ]]; then 	
-				plutil -replace SysLoadAM.Open -bool YES ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+				plutil -replace SysLoadAM.Open -bool YES "${CONFPATH}"; UPDATE_CACHE
 					else
-				plutil -replace SysLoadAM.Open -bool NO ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+				plutil -replace SysLoadAM.Open -bool NO "${CONFPATH}"; UPDATE_CACHE
 	fi
 fi
 
@@ -2694,7 +2698,7 @@ if [[ ! $apos = 0 ]]; then
 		 if [[ ${alist[$poi]} = $uuid ]]; then 
             if [[ $unuv = 0 ]]; then 
 							strng2=`echo ${strng1[@]}  |  sed 's/'$uuid'//'`
-							plutil -replace SysLoadAM.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist	; UPDATE_CACHE						
+							plutil -replace SysLoadAM.PartUUIDs -string "$strng2" "${CONFPATH}"	; UPDATE_CACHE						
  							vari=1
 							sys_am_check=1
                             screen_buffer3=$( echo "$screen_buffer3" | sed "s/$inputs) auto  /$inputs) ....  /" )
@@ -2710,7 +2714,7 @@ if [[ $sys_am_check = 0 ]]; then
         if [[ $unuv = 0 ]]; then 
 			strng1+=" "
 			strng1+=$uuid
-			plutil -replace SysLoadAM.PartUUIDs -string "$strng1" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE
+			plutil -replace SysLoadAM.PartUUIDs -string "$strng1" "${CONFPATH}" ; UPDATE_CACHE
             screen_buffer3=$( echo "$screen_buffer3" | sed "s/$inputs) ....  /$inputs) auto  /" )
             
         fi
@@ -2731,7 +2735,7 @@ if [[ "${filename_1}" = "MountEFIconfplist" ]]; then
 
 GET_THEME
 old_theme=$theme
-mv -f "${filepath}" ${HOME}/.MountEFIconf.plist
+mv -f "${filepath}" "${CONFPATH}"
 
 UPDATE_CACHE
 CHECK_CONFIG
@@ -2763,7 +2767,7 @@ filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d "
            else
                 GET_THEME
                 old_theme=$theme
-                mv -f ~/.temp2/*/*/"${filename}" ${HOME}/.MountEFIconf.plist
+                mv -f ~/.temp2/*/*/"${filename}" "${CONFPATH}"
                 UPDATE_CACHE
                 CHECK_CONFIG
                 CORRECT_BACKUPS_MAXIMUM
@@ -2780,7 +2784,7 @@ filecounts=$(ls -la ~/.temp2/*/* | grep -o .MountEFIconf.plist | wc -l | tr -d "
                                     elif [[ "${Now}" -le 50 ]]; then Now=50
 
                         fi
-                        plutil -replace Backups.Maximum -integer ${Now} ${HOME}/.MountEFIconf.plist
+                        plutil -replace Backups.Maximum -integer ${Now} "${CONFPATH}"
                     fi
                 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
                 GET_THEME
@@ -2847,7 +2851,7 @@ if folderpath="$(osascript -e 'tell application "Terminal" to return POSIX path 
         folderpath=$(echo -n "${folderpath}" | sed "s/ /\\\ /g" | xargs )
         
         if [[ -f ${HOME}/MountEFIconf.plist ]]; then rm ${HOME}/MountEFIconf.plist; fi
-        cp ${HOME}/.MountEFIconf.plist ${HOME}/MountEFIconf.plist
+        cp "${CONFPATH}" ${HOME}/MountEFIconf.plist
         
         if [[ -f ${HOME}/.MountEFIconf.zip ]]; then rm ${HOME}/.MountEFIconf.zip; fi
         zip -X -qq ${HOME}/.MountEFIconf.zip ${HOME}/MountEFIconf.plist
@@ -2929,7 +2933,7 @@ TRANS_READ(){
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZW]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfF]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -2963,6 +2967,24 @@ if [[ $strng = "false" ]]; then CheckLoaders=0
         ld_set="Да"; ld_corr=16
             else
         ld_set="Yes"; ld_corr=9
+            fi
+fi
+}
+
+GET_STARTUP_MOUNTS(){
+startupMount=1
+if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true"); then
+            if [[ $loc = "ru" ]]; then
+        mld_set="Да"; mld_corr=14
+            else
+        mld_set="Yes"; mld_corr=7
+            fi
+else
+        startupMount=0
+            if [[ $loc = "ru" ]]; then
+        mld_set="Нет"; mld_corr=13
+            else
+        mld_set="No"; mld_corr=8
             fi
 fi
 }
@@ -3024,6 +3046,7 @@ sbuf+=$(printf ' 7) Показывать подсказки по клавиша�
 sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' F) Искать все загрузчики при запуске = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' A) Создать или править псевдонимы физических носителей                         \n')
 sbuf+=$(printf ' B) Резервное сохранение и восстановление настроек                              \n')
@@ -3052,6 +3075,7 @@ sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Y
 sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' F) Look for all loaders on run MountEFI = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' A) Create or edit aliases physical device/media                                \n')
 sbuf+=$(printf ' B) Backup and restore configuration settings                                   \n')
@@ -3112,6 +3136,7 @@ UPDATE_SCREEN(){
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
         GET_LOADERS
+        GET_STARTUP_MOUNTS
         GET_AUTOBACKUP
         CHECK_ICLOUD_BACKUPS
         SET_SCREEN
@@ -3450,9 +3475,9 @@ if [[ ! $rcount = 0 ]]; then
         let "posr++"
         done
         
-        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace RenamedHD -string "$strng" "${CONFPATH}"; UPDATE_CACHE
         else
-         plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+         plutil -replace RenamedHD -string "" "${CONFPATH}"; UPDATE_CACHE
 fi  
 }
 
@@ -3485,7 +3510,7 @@ fi
         done
  
 
-        plutil -replace RenamedHD -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace RenamedHD -string "$strng" "${CONFPATH}"; UPDATE_CACHE
 }
 
 
@@ -3639,7 +3664,7 @@ if [[ $inputs = [rR] ]]; then printf "\r\033[2A"
                 printf "\033[?25l"
                 if [[  $REPLY =~ ^[yY]$ ]]; then
                 SAVE_STRING
-                plutil -replace RenamedHD -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+                plutil -replace RenamedHD -string "" "${CONFPATH}"; UPDATE_CACHE
                 inputs=0
                 else
                     inputs="C"
@@ -3657,7 +3682,7 @@ fi
 if [[ ${inputs} = [zZ] ]]; then 
                          if [[ $bmax > 1 ]]; then 
                                     if [[ ! $bpos = 0 ]]; then 
-                                       let "bpos--"; plutil -replace RenamedHD -string "${backstrings[bpos]}" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; 
+                                       let "bpos--"; plutil -replace RenamedHD -string "${backstrings[bpos]}" "${CONFPATH}"; UPDATE_CACHE; 
                                     fi
                           
                           SHOW_FULL_EFI
@@ -3669,7 +3694,7 @@ fi
 if [[ ${inputs} = [xX] ]]; then 
                          if [[ ! $bmax = 0 ]]; then let "pmax=bmax-1"; fi
                          if [[ $pmax > $bpos ]]; then 
-                                     let "bpos++"; plutil -replace RenamedHD -string "${backstrings[bpos]}" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE; 
+                                     let "bpos++"; plutil -replace RenamedHD -string "${backstrings[bpos]}" "${CONFPATH}"; UPDATE_CACHE; 
                           
                           SHOW_FULL_EFI
                           #inputs=0
@@ -4931,9 +4956,9 @@ if [[ ! tlptr = 0 ]]; then
 for (( i=0; i<$((tlptr-1)); i++ )) do
 strng+="${tllist[i]}"'{'
 done
-plutil -replace ThemeLoadersLinks -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+plutil -replace ThemeLoadersLinks -string "$strng" "${CONFPATH}"; UPDATE_CACHE
 else
-plutil -replace ThemeLoadersLinks -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+plutil -replace ThemeLoadersLinks -string "" "${CONFPATH}"; UPDATE_CACHE
 fi
 }
 
@@ -4943,7 +4968,7 @@ for (( i=0; i<$lptr; i++ )) do
 strng+="${llist[i]}"'{'
 done 
 strng+="$NN""$current"','"$Loaders"','"$new_color"'{'
-plutil -replace ThemeLoadersLinks -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+plutil -replace ThemeLoadersLinks -string "$strng" "${CONFPATH}"; UPDATE_CACHE
 }
 
 SET_THEMES_LOADERS(){
@@ -5014,8 +5039,8 @@ printf "\033[?25h"
                             current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
                             for ((i=0; i<$pcount; i++)); do if [[ "${plist[i]}" = "$current" ]]; then cp_pos=$i; break; fi; done
                             let "max_pos=pcount-1"
-                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
-                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" ${HOME}/.MountEFIconf.plist ; UPDATE_CACHE; fi 
+                            if [[ $inputs = [zZ] ]] && [[ "${cp_pos}" -gt "0" ]]; then let "cp_pos--"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" "${CONFPATH}" ; UPDATE_CACHE; fi 
+                            if [[ $inputs = [xX] ]] && [[ "${cp_pos}" -lt "$max_pos" ]]; then let "cp_pos++"; plutil -replace CurrentPreset -string "${plist[$cp_pos]}" "${CONFPATH}" ; UPDATE_CACHE; fi 
                             currents=$cp_pos; let "currents=currents+5"; printf "\033['$currents';34f""*"
                             if [[ $loc = "ru" ]]; then let "poscur=pcount+18"; else let "poscur=pcount+18"; fi; printf "\033['$poscur';46f"'        '
                             printf "%"80"s"'\n'"%"80"s"
@@ -5033,9 +5058,9 @@ done
                                 fi
                                
                                 if [[ $cancel = 0 ]]; then 
-                                        plutil -replace ThemeLoaders -string "37" ${HOME}/.MountEFIconf.plist
-                                        plutil -replace ThemeLoadersLinks -string " " ${HOME}/.MountEFIconf.plist
-                                        plutil -replace ThemeLoadersNames -string "Clover;OpenCore" ${HOME}/.MountEFIconf.plist
+                                        plutil -replace ThemeLoaders -string "37" "${CONFPATH}"
+                                        plutil -replace ThemeLoadersLinks -string " " "${CONFPATH}"
+                                        plutil -replace ThemeLoadersNames -string "Clover;OpenCore" "${CONFPATH}"
                                         UPDATE_CACHE
                         SET_TITLE
                                         if [[ $loc = "ru" ]]; then
@@ -5071,8 +5096,8 @@ done
                         if [[ "$result" = "For all themes as default bootloaders pointers" ]]; then result=1; fi
                         fi
                         if [[ $result = 1 ]]; then
-                        plutil -replace ThemeLoadersNames -string "$Loaders" ${HOME}/.MountEFIconf.plist
-                        plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
+                        plutil -replace ThemeLoadersNames -string "$Loaders" "${CONFPATH}"
+                        plutil -replace ThemeLoaders -string $new_color "${CONFPATH}"
                         else
                         SET_THEMES_LOADERS "B," "$themename"
                         fi
@@ -5110,8 +5135,8 @@ done
                         if [[ "$result" = "For all themes as default bootloaders pointers" ]]; then result=1; fi
                         fi
                         if [[ $result = 1 ]]; then
-                        plutil -replace ThemeLoadersNames -string "$Loaders" ${HOME}/.MountEFIconf.plist
-                        plutil -replace ThemeLoaders -string $new_color ${HOME}/.MountEFIconf.plist
+                        plutil -replace ThemeLoadersNames -string "$Loaders" "${CONFPATH}"
+                        plutil -replace ThemeLoaders -string $new_color "${CONFPATH}"
                         osascript -e 'tell application "Terminal" to activate' &
                         else
                         SET_THEMES_LOADERS "S," "$themename"
@@ -5176,7 +5201,7 @@ if [[ $inputs = [rR] ]]; then
                         DELETE_THEME_PRESET
                         current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
                         if [[ "$editing_preset" = "$current" ]]; then  pnow=$(echo "$MountEFIconf" | grep -A 2 -e "<key>Presets</key>"  |  awk '(NR == 3)' | sed -e 's/.*>\(.*\)<.*/\1/');
-                                        plutil -replace CurrentPreset -string "$pnow" ${HOME}/.MountEFIconf.plist;  fi 
+                                        plutil -replace CurrentPreset -string "$pnow" "${CONFPATH}";  fi 
                         UPDATE_CACHE
                         GET_PRESETS_COUNTS
                         let "lines=22+pcount"
@@ -5254,19 +5279,19 @@ if [[ $inputs = "" ]]; then inputs="A"; printf "\033[2A"; fi
                         if [[ $inputs = [qQ] ]]; then var9=1; unset inputs 
 
                             if [[ ! "$old_preset" = "$current_preset" ]]; then 
-                        plutil -remove   Presets."$old_preset" ${HOME}/.MountEFIconf.plist
-                        plutil -replace  Presets."$current_preset" -xml  '<dict/>'   ${HOME}/.MountEFIconf.plist  
-                        plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" ${HOME}/.MountEFIconf.plist
-                        plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" ${HOME}/.MountEFIconf.plist
-                        plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" ${HOME}/.MountEFIconf.plist
-                        plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" ${HOME}/.MountEFIconf.plist
+                        plutil -remove   Presets."$old_preset" "${CONFPATH}"
+                        plutil -replace  Presets."$current_preset" -xml  '<dict/>'   "${CONFPATH}"  
+                        plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" "${CONFPATH}"
+                        plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" "${CONFPATH}"
+                        plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" "${CONFPATH}"
+                        plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" "${CONFPATH}"
                         current=`echo "$MountEFIconf" | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-                        if [[ "$old_preset" = "$current" ]]; then  plutil -replace CurrentPreset -string "$current_preset" ${HOME}/.MountEFIconf.plist;  fi 
+                        if [[ "$old_preset" = "$current" ]]; then  plutil -replace CurrentPreset -string "$current_preset" "${CONFPATH}";  fi 
                             else
-                                if [[ ! "$old_BackgroundColor" = "$current_background" ]]; then plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" ${HOME}/.MountEFIconf.plist; fi
-                                if [[ ! "$old_FontName" = "$current_fontname" ]]; then plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" ${HOME}/.MountEFIconf.plist; fi
-                                if [[ ! "$old_FontSize" = "$current_fontsize" ]]; then plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" ${HOME}/.MountEFIconf.plist; fi
-                                if [[ ! "$old_TextColor" = "$current_foreground" ]]; then plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" ${HOME}/.MountEFIconf.plist; fi
+                                if [[ ! "$old_BackgroundColor" = "$current_background" ]]; then plutil -replace  Presets."$current_preset".BackgroundColor -string "$current_background" "${CONFPATH}"; fi
+                                if [[ ! "$old_FontName" = "$current_fontname" ]]; then plutil -replace  Presets."$current_preset".FontName -string "$current_fontname" "${CONFPATH}"; fi
+                                if [[ ! "$old_FontSize" = "$current_fontsize" ]]; then plutil -replace  Presets."$current_preset".FontSize -string "$current_fontsize" "${CONFPATH}"; fi
+                                if [[ ! "$old_TextColor" = "$current_foreground" ]]; then plutil -replace  Presets."$current_preset".TextColor -string "$current_foreground" "${CONFPATH}"; fi
                             fi
                         UPDATE_CACHE
                         fi
@@ -5434,7 +5459,7 @@ echo '}' >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
 echo 'TITLE="MountEFI"' >> ${HOME}/.MountEFIa.sh
 echo 'SOUND="Submarine"' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ ! -f ${HOME}/.MountEFIconf.plist ]]; then' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ ! -f "${CONFPATH}" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'loc=$(locale | grep LANG | sed -e '"'s/.*LANG="'"'"\(.*\)_.*/\1/'"')' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'SUBTITLE="ФАЙЛ КОНФИГУРАЦИИ НЕ НАЙДЕН !"; MESSAGE="Авто-монтирование EFI отменено"' >> ${HOME}/.MountEFIa.sh
@@ -5445,7 +5470,7 @@ echo 'DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
 echo 'exit; fi' >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
 echo 'UPDATE_CACHE(){' >> ${HOME}/.MountEFIa.sh
-echo 'MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )' >> ${HOME}/.MountEFIa.sh
+echo 'MountEFIconf=$( cat "${CONFPATH}" )' >> ${HOME}/.MountEFIa.sh
 echo 'cache=1' >> ${HOME}/.MountEFIa.sh
 echo '}' >> ${HOME}/.MountEFIa.sh
 echo    >> ${HOME}/.MountEFIa.sh
@@ -5476,7 +5501,7 @@ echo '					do' >> ${HOME}/.MountEFIa.sh
 echo '                       check_uuid=`ioreg -c IOMedia -r | tr -d '"'"'"'"'"' | egrep "UUID" | grep -o ${alist[$posb]}`' >> ${HOME}/.MountEFIa.sh
 echo '                       if [[ $check_uuid = "" ]]; then ' >> ${HOME}/.MountEFIa.sh
 echo '                      strng2=`echo ${strng1[@]}  |  sed '"'s/'"'${alist[$posb]}'"'//'"'`' >> ${HOME}/.MountEFIa.sh
-echo '						plutil -replace SysLoadAM.PartUUIDs -string "$strng2" ${HOME}/.MountEFIconf.plist' >> ${HOME}/.MountEFIa.sh
+echo '						plutil -replace SysLoadAM.PartUUIDs -string "$strng2" "${CONFPATH}"' >> ${HOME}/.MountEFIa.sh
 echo '						strng1=$strng2' >> ${HOME}/.MountEFIa.sh
 echo '                        cache=0' >> ${HOME}/.MountEFIa.sh
 echo '						fi' >> ${HOME}/.MountEFIa.sh
@@ -5485,11 +5510,11 @@ echo '					let "var8--"' >> ${HOME}/.MountEFIa.sh
 echo '					done' >> ${HOME}/.MountEFIa.sh
 echo 'alist=($strng1); apos=${#alist[@]}' >> ${HOME}/.MountEFIa.sh
 echo 'fi' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ $apos = 0 ]]; then plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; am_enabled=0; cache=0; fi' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ $apos = 0 ]]; then plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"; am_enabled=0; cache=0; fi' >> ${HOME}/.MountEFIa.sh
 echo '}' >> ${HOME}/.MountEFIa.sh
 echo
 echo 'am_enabled=0' >> ${HOME}/.MountEFIa.sh
-echo 'strng3=`cat ${HOME}/.MountEFIconf.plist | grep SysLoadAM -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'"'\\\n\\\t'"'`' >> ${HOME}/.MountEFIa.sh
+echo 'strng3=`cat "${CONFPATH}" | grep SysLoadAM -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'"'\\\n\\\t'"'`' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ $strng3 = "true" ]]; then am_enabled=1' >> ${HOME}/.MountEFIa.sh
 echo 'REM_ABSENT' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ $cache = 0 ]]; then UPDATE_CACHE; fi' >> ${HOME}/.MountEFIa.sh
@@ -5577,7 +5602,7 @@ echo '                    fi' >> ${HOME}/.MountEFIa.sh
 echo '                DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
 echo '                strng=$(echo "$MountEFIconf" | grep -e "<key>SysLoadAM</key>" | grep key | sed -e '"'s/.*>\(.*\)<.*/\1/'"' | tr -d '"'\t\n'"')' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $strng = "SysLoadAM" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo '                plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist' >> ${HOME}/.MountEFIa.sh
+echo '                plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"' >> ${HOME}/.MountEFIa.sh
 echo '                UPDATE_CACHE' >> ${HOME}/.MountEFIa.sh
 echo '                fi' >> ${HOME}/.MountEFIa.sh
 echo '            exit' >> ${HOME}/.MountEFIa.sh
@@ -5669,8 +5694,8 @@ default_profile=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Termi
 if [[ "$profile" = "default" ]]; then profile="$default_profile"; fi
 for ((i=0; i<9; i++)) do if [[ "$profile" = "${profiles[i]}" ]]; then break; fi; done
 if [[ $i < 9 ]]; then let "i++"; else i=0; fi
-profile="${profiles[i]}"; if  [[ "$profile" = "default_profile" ]]; then plutil -replace ThemeProfile -string "default" ${HOME}/.MountEFIconf.plist
-else plutil -replace ThemeProfile -string "$profile" ${HOME}/.MountEFIconf.plist; fi
+profile="${profiles[i]}"; if  [[ "$profile" = "default_profile" ]]; then plutil -replace ThemeProfile -string "default" "${CONFPATH}"
+else plutil -replace ThemeProfile -string "$profile" "${CONFPATH}"; fi
 UPDATE_CACHE
 }
 
@@ -5874,7 +5899,7 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
             sleep 2
             printf "\033[H"; for (( i=0; i<24; i++ )); do printf ' %.0s' {1..80}; done
             START_UPDATE_SERVICE
-            plutil -replace Updating -bool Yes ${HOME}/.MountEFIconf.plist
+            plutil -replace Updating -bool Yes "${CONFPATH}"
             success=1
             
         fi
@@ -6206,7 +6231,7 @@ IFS=';'; loader_list=( $( echo "$MountEFIconf" | grep XHashes  -A ${AA} | grep -
         strng+="${tlist[y]}"";"
         done
 
-        plutil -replace XHashes.${L2NAME} -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace XHashes.${L2NAME} -string "$strng" "${CONFPATH}"; UPDATE_CACHE
 }
 
 DUPLICATE_FOUND(){
@@ -6260,9 +6285,9 @@ DUPLICATE_FOUND
         for y in ${!tlist[@]}; do
         strng+="${tlist[y]}"";"
         done
-        plutil -replace XHashes.${L2NAME2} -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace XHashes.${L2NAME2} -string "$strng" "${CONFPATH}"; UPDATE_CACHE
         else
-        plutil -replace XHashes.${L2NAME2} -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace XHashes.${L2NAME2} -string "" "${CONFPATH}"; UPDATE_CACHE
       fi
     fi
       
@@ -6474,9 +6499,9 @@ if [[ ! ${#loader_list[@]} = 0 ]]; then
         for y in ${!tlist[@]}; do
         strng+="${tlist[y]}"";"
         done
-        plutil -replace XHashes.${L2NAME} -string "$strng" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace XHashes.${L2NAME} -string "$strng" "${CONFPATH}"; UPDATE_CACHE
         else
-        plutil -replace XHashes.${L2NAME} -string "" ${HOME}/.MountEFIconf.plist; UPDATE_CACHE
+        plutil -replace XHashes.${L2NAME} -string "" "${CONFPATH}"; UPDATE_CACHE
       fi
 fi
 
@@ -6827,19 +6852,19 @@ hashes_string=""
 for i in "${oth_list_back[@]}"; do hashes_string+="${i}"";"; done
 AA=9; LNAME="OTHER_HASHES</key>"; L2NAME="OTHER_HASHES"
 
-plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" "${CONFPATH}"
 hashes_string=""
 for i in ${ocr_list_back[@]}; do hashes_string+="${i}"";"; done
 AA=7; LNAME="OC_REL_HASHES</key>"; L2NAME="OC_REL_HASHES"
-plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" "${CONFPATH}"
 hashes_string=""
 for i in ${ocd_list_back[@]}; do hashes_string+="${i}"";"; done
 AA=5; LNAME="OC_DEV_HASHES</key>"; L2NAME="OC_DEV_HASHES"
-plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" "${CONFPATH}"
 hashes_string=""
 for i in ${clv_list_back[@]}; do hashes_string+="${i}"";"; done
 AA=3; LNAME="CLOVER_HASHES</key>"; L2NAME="CLOVER_HASHES"
-plutil -replace XHashes.${L2NAME} -string "$hashes_string" ${HOME}/.MountEFIconf.plist
+plutil -replace XHashes.${L2NAME} -string "$hashes_string" "${CONFPATH}"
 
 UPDATE_CACHE
 
@@ -6879,10 +6904,10 @@ REM_HASHES(){
 
             BACKUP_LAST_HASHES
 
-			 plutil -replace XHashes.CLOVER_HASHES -string "" ${HOME}/.MountEFIconf.plist
-			 plutil -replace XHashes.OC_DEV_HASHES -string "" ${HOME}/.MountEFIconf.plist
-             plutil -replace XHashes.OC_REL_HASHES -string "" ${HOME}/.MountEFIconf.plist
-             plutil -replace XHashes.OTHER_HASHES -string "" ${HOME}/.MountEFIconf.plist
+			 plutil -replace XHashes.CLOVER_HASHES -string "" "${CONFPATH}"
+			 plutil -replace XHashes.OC_DEV_HASHES -string "" "${CONFPATH}"
+             plutil -replace XHashes.OC_REL_HASHES -string "" "${CONFPATH}"
+             plutil -replace XHashes.OTHER_HASHES -string "" "${CONFPATH}"
 
             UPDATE_CACHE
 
@@ -7075,7 +7100,7 @@ RUN_UNINSTALLER(){
                                         rm -Rf ${HOME}/Library/Mobile\ Documents/com\~apple\~CloudDocs/.MountEFIbackups/Shared; fi
                                     fi
                                 ########################## запуск удаления апплета ##############################
-                                    plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
+                                    plutil -replace Reload -bool Yes "${CONFPATH}"
                                     MEFI_PATH="$( echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
                                     END_UNINSTALLER &                                    
                                 fi
@@ -7129,8 +7154,8 @@ chmod u+x ${HOME}/.MountEFIr.sh
 if [[ -f ${HOME}/.MountEFIr.plist ]]; then mv -f ${HOME}/.MountEFIr.plist ~/Library/LaunchAgents/MountEFIr.plist; fi
 if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIr.plist; fi
 
-plutil -replace EasyEFImode -bool Yes ${HOME}/.MountEFIconf.plist
-plutil -replace Restart -bool Yes ${HOME}/.MountEFIconf.plist
+plutil -replace EasyEFImode -bool Yes "${CONFPATH}"
+plutil -replace Restart -bool Yes "${CONFPATH}"
 
 }
 
@@ -7146,7 +7171,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=35; col=80
+lines=36; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -7169,7 +7194,7 @@ if [[ $inputs = 0 ]]; then
                         if [[ $matched = 0 ]]; then
                              GET_BACKUPS
                                 if [[ $Maximum = 1 ]]; then 
-                                        plutil -replace Backups.Maximum -integer 2 ${HOME}/.MountEFIconf.plist
+                                        plutil -replace Backups.Maximum -integer 2 "${CONFPATH}"
                                         UPDATE_CACHE
                                  fi
                             CHECK_BUNZIP; ADD_BACKUP; UPDATE_ZIP
@@ -7177,9 +7202,9 @@ if [[ $inputs = 0 ]]; then
                     
                    fi
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
-rm -f ${HOME}/.MountEFIconf.plist
+rm -f "${CONFPATH}"
  if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist ${HOME}/.MountEFIconf.plist
+            cp DefaultConf.plist "${CONFPATH}"
         else
              FILL_CONFIG
         fi
@@ -7197,7 +7222,7 @@ if [[ $inputs = 1 ]]; then
                 fi
         fi
     fi
-  plutil -replace Locale -string $locale ${HOME}/.MountEFIconf.plist
+  plutil -replace Locale -string $locale "${CONFPATH}"
   UPDATE_CACHE
 fi
 #############################################################################
@@ -7208,7 +7233,7 @@ if [[ $inputs = 2 ]]; then
         else
             menue="auto"
         fi
-  plutil -replace Menue -string $menue ${HOME}/.MountEFIconf.plist
+  plutil -replace Menue -string $menue "${CONFPATH}"
   UPDATE_CACHE
 fi
 ##############################################################################
@@ -7220,10 +7245,10 @@ if [[ $inputs = 3 ]]; then SET_USER_PASSWORD; fi
 # Открывать папку в Finder ###################################################
 if [[ $inputs = 4 ]]; then 
    if [[ $OpenFinder = 1 ]]; then 
-  plutil -replace OpenFinder -bool NO ${HOME}/.MountEFIconf.plist 
+  plutil -replace OpenFinder -bool NO "${CONFPATH}" 
     UPDATE_CACHE
  else 
-  plutil -replace OpenFinder -bool YES ${HOME}/.MountEFIconf.plist 
+  plutil -replace OpenFinder -bool YES "${CONFPATH}" 
     UPDATE_CACHE
   fi
 fi  
@@ -7235,7 +7260,7 @@ if [[ $inputs = 5 ]]; then
     if [[ ! $theme = "built-in" ]]; then 
         SET_PROFILE
     else
-        plutil -replace Theme -string system ${HOME}/.MountEFIconf.plist
+        plutil -replace Theme -string system "${CONFPATH}"
         UPDATE_CACHE
     fi
         #SET_SYSTEM_THEME
@@ -7249,9 +7274,9 @@ fi
 # Показывать подсказку по клавишам управления  ################################
 if [[ $inputs = 7 ]]; then 
    if [[ $ShowKeys = 1 ]]; then 
-  plutil -replace ShowKeys -bool NO ${HOME}/.MountEFIconf.plist
+  plutil -replace ShowKeys -bool NO "${CONFPATH}"
  else 
-  plutil -replace ShowKeys -bool YES ${HOME}/.MountEFIconf.plist
+  plutil -replace ShowKeys -bool YES "${CONFPATH}"
   fi
   UPDATE_CACHE
 fi  
@@ -7260,7 +7285,7 @@ fi
 # Подключение разделов при запуске программы  ################################
 if [[ $inputs = 8 ]]; then 
    if [[ $autom_enabled = 1 ]]; then 
-  plutil -replace AutoMount.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+  plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"
     UPDATE_CACHE
  else 
   SET_AUTOMOUNT
@@ -7271,7 +7296,7 @@ fi
 # Подключение разделов при запуске системы  ################################
 if [[ $inputs = 9 ]] && [[ "$quick_am" = "1" ]]; then
     if [[ $sys_autom_enabled = 1 ]]; then 
-        plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+        plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"
         UPDATE_CACHE
         REMOVE_SYS_AUTOMOUNT_SERVICE
     else
@@ -7285,7 +7310,7 @@ if [[ $inputs = 9 ]] && [[ "$quick_am" = "1" ]]; then
                     if [[ "$mypassword" = "" ]]; then SET_USER_PASSWORD; fi
                     FORCE_CHECK_PASSWORD "automount"
                     if [[ "$mypassword" = "" ]]; then 
-                    plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
+                    plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"; 
 
                              SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -7310,7 +7335,7 @@ fi
 
 if [[ $inputs = 9 ]]; then 
    if [[ $sys_autom_enabled = 1 ]]; then 
-  plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist
+  plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"
     UPDATE_CACHE
     REMOVE_SYS_AUTOMOUNT_SERVICE
                         SET_TITLE
@@ -7331,7 +7356,7 @@ else
   if [[ "$mypassword" = "" ]]; then SET_USER_PASSWORD; fi
   FORCE_CHECK_PASSWORD "automount"
   if [[ "$mypassword" = "" ]]; then 
-    plutil -replace SysLoadAM.Enabled -bool NO ${HOME}/.MountEFIconf.plist; 
+    plutil -replace SysLoadAM.Enabled -bool NO "${CONFPATH}"; 
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="АВТО-ПОДКЛЮЧЕНИЕ EFI ОТМЕНЕНО."; MESSAGE="Необходимо ввести верный пароль!"' >> ${HOME}/.MountEFInoty.sh
@@ -7358,23 +7383,35 @@ if [[ $inputs = [aA] ]]; then
 fi
 ###############################################################################
 
+# Искать загрузчики при запуске MountEFI  ################################
+if [[ $inputs = [fF] ]]; then 
+   if [[ $startupMount = 1 ]]; then
+  plutil -replace startupMount -bool NO "${CONFPATH}"
+ else 
+ plutil -replace startupMount -bool YES "${CONFPATH}"
+ plutil -replace CheckLoaders -bool YES "${CONFPATH}"
+  fi
+UPDATE_CACHE
+fi  
+###############################################################################
+
 # Искать загрузчики при подключении разделов  ################################
 if [[ $inputs = [lL] ]]; then 
    if [[ $CheckLoaders = 1 ]]; then 
-  plutil -replace CheckLoaders -bool NO ${HOME}/.MountEFIconf.plist
-  UPDATE_CACHE
+  plutil -replace CheckLoaders -bool NO "${CONFPATH}"
+  plutil -replace startupMount -bool NO "${CONFPATH}"
  else 
-  plutil -replace CheckLoaders -bool YES ${HOME}/.MountEFIconf.plist
-  UPDATE_CACHE
+  plutil -replace CheckLoaders -bool YES "${CONFPATH}"
   fi
+UPDATE_CACHE
 fi  
 ###############################################################################
 
 if [[ $inputs = [cC] ]]; then 
 if [[ $Autobackup = 1 ]]; then 
-  plutil -replace Backups.Auto -bool NO ${HOME}/.MountEFIconf.plist 
+  plutil -replace Backups.Auto -bool NO "${CONFPATH}" 
  else 
-  plutil -replace Backups.Auto -bool YES ${HOME}/.MountEFIconf.plist
+  plutil -replace Backups.Auto -bool YES "${CONFPATH}"
   fi
  UPDATE_CACHE
 fi
@@ -7396,7 +7433,7 @@ if [[ $inputs = [qQ] ]]; then
                         if [[ $matched = 0 ]]; then
                              GET_BACKUPS
                                 if [[ $Maximum = 1 ]]; then 
-                                        plutil -replace Backups.Maximum -integer 2 ${HOME}/.MountEFIconf.plist
+                                        plutil -replace Backups.Maximum -integer 2 "${CONFPATH}"
                                         UPDATE_CACHE
                                 fi
                             CHECK_BUNZIP; ADD_BACKUP; UPDATE_ZIP
@@ -7503,7 +7540,7 @@ fi
 #############################################################################
 if [[ $inputs = [sS] ]]; then 
    if [[ $AutoUpdate = 1 ]]; then 
-  plutil -replace UpdateSelfAuto -bool No ${HOME}/.MountEFIconf.plist
+  plutil -replace UpdateSelfAuto -bool No "${CONFPATH}"
   DISABLE_AUTOUPDATE
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
@@ -7513,7 +7550,7 @@ if [[ $inputs = [sS] ]]; then
                         fi
                         DISPLAY_NOTIFICATION 
  else 
-  plutil -replace UpdateSelfAuto -bool YES ${HOME}/.MountEFIconf.plist
+  plutil -replace UpdateSelfAuto -bool YES "${CONFPATH}"
                         SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="Авто-обновление программы ВКЛЮЧЕНО !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
@@ -7535,7 +7572,7 @@ fi
 ##############################################################################
 
 if [[ $inputs = R ]]; then 
-        plutil -replace Reload -bool Yes ${HOME}/.MountEFIconf.plist
+        plutil -replace Reload -bool Yes "${CONFPATH}"
         UPDATE_CACHE
         START_RELOAD_SERVICE 
         if [[ $par = "-r" ]]; then exit 1; else  EXIT_PROG; fi
