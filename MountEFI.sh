@@ -3129,6 +3129,7 @@ choice="±"
 printf '\033[1B'
 while [[ $choice = "±" ]]
 do
+if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ ! $CheckLoaders = 0 ]] && [[ ! $startup = 0 ]]; then choice=$ch; startup=0; break; fi
 IFS="±"; read -rn1 -t 1 choice ; unset IFS; sym=2
 if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; else TRANS_READ; fi
 CHECK_HOTPLUG_DISKS
@@ -3237,9 +3238,7 @@ GET_USER_PASSWORD
 
 GET_CONFIG_HASHES
 
-STARTUP_FIND_LOADERS
-
-chs=0
+chs=0; startup=1
 
 nogetlist=0
 
@@ -3328,7 +3327,7 @@ synchro=0
 #######################
 
  fi; GETLIST; fi
-
+    
 	GETKEYS	
 
 # Если нажата клавиша выхода из программы
