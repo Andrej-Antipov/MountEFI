@@ -2,10 +2,12 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 21.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
-edit_vers="056"
+edit_vers="057"
+
+if [[ $(ps xao tty,command | grep -v grep | grep "MountEFI"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "MountEFI" | wc -l |  bc ) = 0 ]]; then rm -f "${HOME}//Library/Application Support/MountEFI/visible" "${HOME}//Library/Application Support/MountEFI/invisible"; fi
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -73,6 +75,7 @@ if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
 kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " ")
 rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
 fi
+
 
 if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then
     MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )   
@@ -1686,8 +1689,20 @@ EXIT_PROGRAM
 else
 
 
+if [[ -f "${HOME}//Library/Application Support/MountEFI/invisible" ]]; then
+    osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to true'
+    rm -f "${HOME}//Library/Application Support/MountEFI/invisible"
+    touch  "${HOME}//Library/Application Support/MountEFI/visible"
+elif [[ -f "${HOME}//Library/Application Support/MountEFI/visible" ]]; then
+    osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
+    rm -f "${HOME}//Library/Application Support/MountEFI/visible"
+    touch "${HOME}//Library/Application Support/MountEFI/invisible"
+else
+
 i=16; while [[ ! $i = 0 ]]; do MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | wc -l | bc)
 if [ "${MountEFI_count}" -lt "1" ]; then break; else sleep 0.25; let "i--"; if [[ $((i%2)) = 0 ]]; then osascript -e 'tell application "Terminal" to activate'; fi; fi; done
+fi
+
 
 if [ "${MountEFI_count}" -lt "1" ]; then 
 
