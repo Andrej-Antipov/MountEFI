@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -6020,7 +6020,7 @@ fi
     current_vers=$(echo "$prog_vers" | tr -d "." )
     if [[ "$latest_edit" = "0071" ]]; then last_e=8; else last_e=$(echo $latest_edit | bc); fi
     vers_e=$(echo $edit_vers | bc)
-    if [[ "${current_vers}" -ge "${latest_release}" ]] && [[ "${last_e}" -le "${vers_e}" ]]; then
+    if [[ $( echo "${latest_release}000+${last_e}" | bc) -le $( echo "${current_vers}000+${vers_e}"  | bc) ]]; then
       if [[ "${latest_release}" = "000" ]] || [[ "$latest_edit" = "000" ]]; then
             if [[ $breaked = 1 ]]; then
                 if [[ $loc = "ru" ]]; then
@@ -6037,7 +6037,7 @@ fi
             fi
       else  
         if [[ $loc = "ru" ]]; then
-        printf '\e[40m\e[1;33m   Версия и редакция программы новейшие. \e[0m'
+        printf '\e[40m\e[1;33m   Обновление версии или редакции этой программы не требуется. \e[0m'
         else
         printf '\e[40m\e[1;33m   The version of the program and its edition are the latest. \e[0m'
         fi

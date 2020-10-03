@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 30.09.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -14,26 +14,13 @@ printf "\033[?25l"
 cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 
 CONFPATH="${HOME}/.MountEFIconf.plist"
+SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
+
+if [[ ! -f "${HOME}//Library/Application Support/MountEFI/invisible" ]]; then touch "${HOME}//Library/Application Support/MountEFI/visible"; fi
+
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f "${HOME}"/.MountEFIconf.plist ]]; then rm "${CONFPATH}"; fi
-fi
-
-zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
-
-efimounter=$(echo 0x7a 0x78 | xxd -r)
-
-if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
-    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
-    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
-    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
-fi
-
-
-if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
-    if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
-    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
-    fi
 fi
 
 ####################################### кэш конфига #####################################################################################
@@ -149,6 +136,11 @@ if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.pli
 if [[ -d "${HOME}"/.MountEFIupdates ]]; then rm -Rf "${HOME}"/.MountEFIupdates; fi
 upd=1
 fi
+
+
+zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+
+efimounter=$(echo 0x7a 0x78 | xxd -r)
 
 ##################################### Инициализация нового конфига и правка старого ###################################################
 
@@ -409,10 +401,19 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
     strng=`echo "$MountEFIconf"| grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
     if [[ ! $strng = "startupMount" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
 
+    strng=`echo "$MountEFIconf"| grep -e "<key>MountEFIonLoginRUN</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+    if [[ ! $strng = "MountEFIonLoginRUN" ]]; then plutil -replace MountEFIonLoginRUN -bool NO "${CONFPATH}"; cache=0; fi
+
     if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
     
     if [[ ! -d "${HOME}"/Library/Application\ Support/MountEFI/validconf ]]; then mkdir -p "${HOME}"/Library/Application\ Support/MountEFI/validconf; fi
     rm -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/*; touch "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
+
+    if (security find-generic-password -a ${USER} -s efimounter -w) >/dev/null 2>&1; then
+    mypassword=$(security find-generic-password -a ${USER} -s efimounter -w)
+    security delete-generic-password -a ${USER} -s efimounter >/dev/null 2>&1
+    security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
+    fi
 
 fi
 #############################################################################################################################################
@@ -471,6 +472,13 @@ if [[ -f "$ROOT"/version.txt ]]; then
 fi   
 }
 
+################################ reset password ############################################
+if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RESET" ]; then 
+    if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2>&1; then
+    security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
+    fi
+fi
+#############################################################################################
 SAVE_LOADERS_STACK(){
 
 if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi
@@ -533,12 +541,14 @@ if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
 fi
 	
 osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
+rm -f "${HOME}//Library/Application Support/MountEFI/visible" "${HOME}//Library/Application Support/MountEFI/invisible"
 TERMINATE &
 if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
 else
    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
  fi
 }
+
 
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
@@ -1419,7 +1429,7 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
         current_vers=$(echo "$prog_vers" | tr -d "." ); vers_e=$(echo $edit_vers | bc)
         autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
         last_e=$(echo ${autoupdate_list[1]} | bc)
-    if [[ "${current_vers}" -lt "${autoupdate_list[0]}" ]] || [[ "${last_e}" -gt "${vers_e}" ]]; then
+    if [[ $( echo "${autoupdate_list[0]}000+${last_e}" | bc) -gt $( echo "${current_vers}000+${vers_e}"  | bc) ]]; then
       if [[ ! -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]] || [[ ! $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then
         if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
            if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
@@ -1545,12 +1555,21 @@ fi
 }
 ##########################################################################################################################
 
-MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep MountEFI | wc -l)
+if [[ ! -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
+MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | grep -v "MountEFIrl" | wc -l)
 setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
 # Возвращает в переменной TTYcount 0 если наш терминал один
 
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
-if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
+if [ ${MountEFI_count} -gt 3 ]; then  
+     if [[ "$(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}')" = "false" ]]; then
+        osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to true' 
+        rm -f "${HOME}//Library/Application Support/MountEFI/invisible"; touch "${HOME}//Library/Application Support/MountEFI/visible"
+        exit 1
+     else
+        osascript -e 'tell application "Terminal" to activate'; exit 1; fi
+    fi
+fi
 
 ################ восстановить состояние после перезагрузки из схранения в файлах ##################################################
 
@@ -3129,7 +3148,6 @@ choice="±"
 printf '\033[1B'
 while [[ $choice = "±" ]]
 do
-if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ ! $CheckLoaders = 0 ]] && [[ ! $startup = 0 ]]; then choice=$ch; startup=0; break; fi
 IFS="±"; read -rn1 -t 1 choice ; unset IFS; sym=2
 if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; else TRANS_READ; fi
 CHECK_HOTPLUG_DISKS
@@ -3238,7 +3256,9 @@ GET_USER_PASSWORD
 
 GET_CONFIG_HASHES
 
-chs=0; startup=1
+STARTUP_FIND_LOADERS
+
+chs=0
 
 nogetlist=0
 
@@ -3327,7 +3347,7 @@ synchro=0
 #######################
 
  fi; GETLIST; fi
-    
+
 	GETKEYS	
 
 # Если нажата клавиша выхода из программы
