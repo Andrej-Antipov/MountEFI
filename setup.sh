@@ -225,6 +225,17 @@ if [[ -f ~/.zsh_history ]]; then cat  ~/.zsh_history | sed -n '/setup/!p' >> ~/n
 fi
 }
 
+MOUNT_EFI_WINDOW_UP(){ 
+if $(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
+if [[ $(osascript -e 'tell application "Terminal" to get the frontmost  of every window whose name contains "MountEFI"' | awk '{print $NF}') = "false" ]]; then
+osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
+if [[ !  $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then
+osascript -e 'tell application "Terminal" to activate'
+sleep 0.5
+fi
+fi 
+}
+
 # Выход из программы с проверкой - выгружать терминал из трея или нет
 EXIT_PROG(){
 CLEAR_HISTORY
@@ -235,7 +246,7 @@ if [[ ${TTYc} = 0  ]]; then osascript -e 'tell application "Terminal" to close f
 fi
 }
 
-if [ "${setup_count}" -gt "1" ]; then osascript -e 'tell application "Terminal" to activate'; EXIT_PROG; fi
+if [ "${setup_count}" -gt "1" ]; then MOUNT_EFI_WINDOW_UP; EXIT_PROG; fi
 
 ##########################################################################################################################################
 
@@ -1109,7 +1120,7 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2
         
     fi
 
-osascript -e 'tell application "Terminal" to activate'
+MOUNT_EFI_WINDOW_UP
 
 }
 
@@ -2530,7 +2541,7 @@ if [[  ${inputs}  = [qQ] ]]; then
                 GET_SYSTEM_FLAG
                 if [[ "$flag" = "1" ]]; then
                 FORCE_CHECK_PASSWORD "automount"
-                if [[ $mypassword = "" ]]; then ENTER_PASSWORD;  osascript -e 'tell application "Terminal" to activate'; fi
+                if [[ $mypassword = "" ]]; then ENTER_PASSWORD;  MOUNT_EFI_WINDOW_UP; fi
                 FORCE_CHECK_PASSWORD "automount"
                 if [[ $mypassword = "" ]]; then plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"; fi
     
@@ -5142,7 +5153,7 @@ done
                         if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi & 
                         lines=$oldlines
                         UPDATE_PRESETS_LIST
-                        osascript -e 'tell application "Terminal" to activate' &
+                        MOUNT_EFI_WINDOW_UP &
                           
         fi
 
@@ -5150,7 +5161,7 @@ done
                         SET_INPUT
                         if result=$(ASK_SYSTEM_THEME); then
                                             osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$result"'"'
-                                            osascript -e 'tell application "Terminal" to activate' &
+                                            MOUNT_EFI_WINDOW_UP &
                         oldlines=$lines; lines=32
                         clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
                         UPDATE_CACHE
@@ -5169,7 +5180,7 @@ done
                         if [[ $result = 1 ]]; then
                         plutil -replace ThemeLoadersNames -string "$Loaders" "${CONFPATH}"
                         plutil -replace ThemeLoaders -string $new_color "${CONFPATH}"
-                        osascript -e 'tell application "Terminal" to activate' &
+                        MOUNT_EFI_WINDOW_UP &
                         else
                         SET_THEMES_LOADERS "S," "$themename"
                         fi
@@ -5178,14 +5189,14 @@ done
                         fi  2>/dev/null
                         fi
                         else
-                        osascript -e 'tell application "Terminal" to activate' &
+                        MOUNT_EFI_WINDOW_UP &
                         fi 2>/dev/null
                         unset inputs
                         GET_THEME
                         if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
                         lines=$oldlines
                         UPDATE_PRESETS_LIST
-                        osascript -e 'tell application "Terminal" to activate' &
+                        MOUNT_EFI_WINDOW_UP &
             fi  
 
         if [[ $inputs = "" ]]; then printf "\033[2A"; fi
@@ -7049,7 +7060,7 @@ unset inputs
 
 SHOW_HASHES_SCREEN
 
-osascript -e 'tell application "Terminal" to activate' &
+MOUNT_EFI_WINDOW_UP &
 
 done
 

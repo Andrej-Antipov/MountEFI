@@ -973,9 +973,20 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         fi
     fi
 fi
-osascript -e 'tell application "Terminal" to activate'
+MOUNT_EFI_WINDOW_UP
 }
 
+
+MOUNT_EFI_WINDOW_UP(){ 
+if $(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
+if [[ $(osascript -e 'tell application "Terminal" to get the frontmost  of every window whose name contains "MountEFI"' | awk '{print $NF}') = "false" ]]; then
+osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
+if [[ !  $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then
+osascript -e 'tell application "Terminal" to activate'
+sleep 0.5
+fi
+fi 
+}
 
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
@@ -1567,7 +1578,7 @@ if [ ${MountEFI_count} -gt 3 ]; then
         rm -f "${HOME}//Library/Application Support/MountEFI/invisible"; touch "${HOME}//Library/Application Support/MountEFI/visible"
         exit 1
      else
-        osascript -e 'tell application "Terminal" to activate'; exit 1; fi
+        MOUNT_EFI_WINDOW_UP; exit 1; fi
     fi
 fi
 
@@ -1656,7 +1667,7 @@ if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then
         if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
     if [[ $auto_timeout = 0 ]]; then EXIT_PROGRAM
                 else
-              osascript -e 'tell application "Terminal" to activate'
+              MOUNT_EFI_WINDOW_UP
               COUNTDOWN $auto_timeout
             if [[ $demo = "±" ]]; then  EXIT_PROGRAM
         fi
@@ -2096,7 +2107,7 @@ if [[ ${need_password} = 0 ]]; then
     trap " " EXIT
 fi
 if [[ $loader_found = 0 ]]; then 
-osascript -e 'tell application "Terminal" to activate' &
+MOUNT_EFI_WINDOW_UP &
 fi
 }
 
@@ -2157,7 +2168,7 @@ if [[ ${need_password} = 0 ]]; then
     trap " " EXIT
 fi
 if [[ $loader_found = 0 ]]; then 
-osascript -e 'tell application "Terminal" to activate' &
+MOUNT_EFI_WINDOW_UP &
 fi
 }
 #####################################################################################################
@@ -2207,7 +2218,7 @@ if [[ ${need_password} = 0 ]]; then
     wait $! 2>/dev/null
     trap " " EXIT
 fi
-osascript -e 'tell application "Terminal" to activate' &
+MOUNT_EFI_WINDOW_UP &
 }
 
 STARTUP_FIND_LOADERS(){
@@ -2296,7 +2307,7 @@ CHECK_SANDBOX
 	
 if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
-osascript -e 'tell application "Terminal" to activate' &
+MOUNT_EFI_WINDOW_UP &
 
 rmlist=(); posrm=0
 
