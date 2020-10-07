@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="048"
+s_edit_vers="047"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -51,7 +51,6 @@ s_edit_vers="048"
 # 045 - баг фиксы и улучшении
 # 046 - для github проверка версии
 # 047 - проверка загрузчиков в отключенных папках при запуске
-# 048 - запуск и автозапуск апплета MountEFI в скрытый режим
 
 clear
 
@@ -2046,7 +2045,7 @@ sbuf+=$(printf '\033[7;84f'' 6) Пресет "'"$itheme_set"'" из '$pcount' в
 fi
 sbuf+=$(printf '\033[8;84f'' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
+#sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' F) Искать все загрузчики при запуске = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
@@ -2068,7 +2067,7 @@ fi
 sbuf+=$(printf '\033[8;84f'' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[9;84f'' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[10;84f'' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf '\033[10;84f'' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
+#sbuf+=$(printf '\033[10;84f'' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[11;84f'' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[11;84f'' F) Look for all loaders on run MountEFI = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[12;84f'' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
@@ -2099,7 +2098,7 @@ SHOW_BACKUP_MENU(){
         GET_SHOWKEYS
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
-        GET_MEFI_LOGIN_RUN
+        #GET_MEFI_LOGIN_RUN
         GET_LOADERS
         GET_STARTUP_MOUNTS
         GET_AUTOBACKUP
@@ -2969,7 +2968,7 @@ TRANS_READ(){
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFnN]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfF]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -3081,9 +3080,9 @@ fi
 sbuf+=$(printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
-if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-sbuf+=$(printf ' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
-fi
+#if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+#sbuf+=$(printf ' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
+#fi
 sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' F) Искать все загрузчики при запуске = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
@@ -3113,9 +3112,9 @@ fi
 sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
-if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-sbuf+=$(printf ' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
-fi
+#if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+#sbuf+=$(printf ' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
+#fi
 sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' F) Look for all loaders on run MountEFI = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
@@ -3177,7 +3176,7 @@ UPDATE_SCREEN(){
         GET_AUTOUPDATE
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
-        GET_MEFI_LOGIN_RUN
+        #GET_MEFI_LOGIN_RUN
         GET_LOADERS
         GET_STARTUP_MOUNTS
         GET_AUTOBACKUP
@@ -7219,40 +7218,31 @@ echo '  <integer>1</integer>' >> ${HOME}/.MountEFIrl.plist
 echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIrl.plist
 echo '  <array>' >> ${HOME}/.MountEFIrl.plist
 echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MountEFIrl.sh</string>' >> ${HOME}/.MountEFIrl.plist
-#echo '      <string>bar</string>' >> ${HOME}/.MountEFIrl.plist
 echo '  </array>' >> ${HOME}/.MountEFIrl.plist
 echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIrl.plist
 echo '  <true/>' >> ${HOME}/.MountEFIrl.plist
-#echo '  <key>EnableGlobbing</key>' >> ${HOME}/.MountEFIrl.plist
-#echo '  <true/>' >> ${HOME}/.MountEFIrl.plist
 echo '</dict>' >> ${HOME}/.MountEFIrl.plist
 echo '</plist>' >> ${HOME}/.MountEFIrl.plist
 
 
-echo '#!/bin/bash' >> ${HOME}/.MountEFIrl.sh
-echo '' >> ${HOME}/.MountEFIrl.sh
-#echo 'onLogout(){ ' >> ${HOME}/.MountEFIrl.sh#echo 'if [[ ! $(osascript -e '"'tell application "'"Terminal"'" to get the visible  of every window whose name contains "'"MountEFI"'"'"' | awk '"'{print "'$'"NF}'"') = "" ]]; then' >> ${HOME}/.MountEFIrl.sh
-#echo 'kill $(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d'"' '"') && osascript -e '"'tell application "'"Terminal"'" to close (every window whose name contains "'"MountEFI"'")'"'; fi ; exit' >> ${HOME}/.MountEFIrl.sh#echo '; }' >> ${HOME}/.MountEFIrl.sh
+echo "#!/bin/bash" >> ${HOME}/.MountEFIrl.sh
+echo "" >> ${HOME}/.MountEFIrl.sh
+echo 'if [[ ! -f "'"/Users/$(whoami)/Library/Application Support/MountEFI/runlock"'" ]]; then ' >> ${HOME}/.MountEFIrl.sh
+echo "osascript -e 'tell application "'"Terminal"'" to close (every window whose name contains "'"MountEFI"'")'" >> ${HOME}/.MountEFIrl.sh
+echo "if [[ -f "'"${HOME}/Library/Application Support/MountEFI/invisible"'" ]]; then osascript -e 'quit app "'"terminal.app"'"'" >> ${HOME}/.MountEFIrl.sh
+echo 'rm -f "'"${HOME}/Library/Application Support/MountEFI/invisible"'"; fi' >> ${HOME}/.MountEFIrl.sh
+echo 'fi' >> ${HOME}/.MountEFIrl.sh
 echo 'if [[ $(ps xao tty,command | grep -v grep | grep "'"MountEFI"'"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "'"MountEFI"'" | grep -v "'"MountEFIrl"'" | wc -l |  bc ) = 0 ]]; then' >> ${HOME}/.MountEFIrl.sh
 echo 'rm -f "'"/Users/andrej/Library/Application Support/MountEFI/invisible"'" "'"/Users/andrej/Library/Application Support/MountEFI/visible"'"' >> ${HOME}/.MountEFIrl.sh
 echo 'plutil -replace EasyEFImode -bool NO "'${CONFPATH}'"' >> ${HOME}/.MountEFIrl.sh
-echo "osascript <<EOD" >> ${HOME}/.MountEFIrl.sh
-echo 'set posixMountEFIPath to "'${MEFI_PATH}'"' >> ${HOME}/.MountEFIrl.sh
-echo '    tell application posixMountEFIPath to run' >> ${HOME}/.MountEFIrl.sh
-echo 'EOD' >> ${HOME}/.MountEFIrl.sh
+
+echo "osascript -e 'set posixMountEFIPath to "'"'${MEFI_PATH}'"'"' -e ' tell application posixMountEFIPath to run'" >> ${HOME}/.MountEFIrl.sh
 echo '' >> ${HOME}/.MountEFIrl.sh
-#echo 'sleep 1.5' >> ${HOME}/.MountEFIrl.sh
-echo 'i=30; while [[ ! $i = 0 ]]; do if [[ ! $(ps xao tty,command | grep -v grep | grep "'"MountEFI"'"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "'"MountEFI"'" | grep -v "'"MountEFIrl"'" | wc -l |  bc ) = 0 ]]; then ' >> ${HOME}/.MountEFIrl.sh
-#echo "osascript -e 'tell application "'"Terminal"'" to set visible of (every window whose name contains "'"MountEFI"'")  to false" >> ${HOME}/.MountEFIrl.sh
+echo 'i=60; while [[ ! $i = 0 ]]; do if [[ ! $(ps xao tty,command | grep -v grep | grep "'"MountEFI"'"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "'"MountEFI"'" | grep -v "'"MountEFIrl"'" | wc -l |  bc ) = 0 ]]; then ' >> ${HOME}/.MountEFIrl.sh
 echo "osascript -e 'tell application "'"Terminal"'" to set visible of (every window whose name contains "'"MountEFI"'")  to false'; break; else let $((i--)); fi; done" >> ${HOME}/.MountEFIrl.sh
 echo 'touch "'"${HOME}/Library/Application Support/MountEFI/invisible"'"' >> ${HOME}/.MountEFIrl.sh
 echo '' >> ${HOME}/.MountEFIrl.sh
 echo 'fi' >> ${HOME}/.MountEFIrl.sh
-#echo "trap 'onLogout' SIGINT SIGHUP SIGTERM" >> ${HOME}/.MountEFIrl.sh
-#echo 'while true; do' >> ${HOME}/.MountEFIrl.sh
-#echo '   sleep 86400 &' >> ${HOME}/.MountEFIrl.sh
-#echo '    wait $!' >> ${HOME}/.MountEFIrl.sh
-#echo 'done' >> ${HOME}/.MountEFIrl.sh
 echo 'exit' >> ${HOME}/.MountEFIrl.sh
 
 
@@ -7263,6 +7253,7 @@ mv -f ${HOME}/.MountEFIrl.sh "${HOME}/Library/Application Support/MountEFI/Mount
 if [[ -f ${HOME}/.MountEFIrl.plist ]]; then mv -f ${HOME}/.MountEFIrl.plist ~/Library/LaunchAgents/MountEFIrl.plist; fi
 if [[ ! $(launchctl list | grep "MEFIlouncher.job" | cut -f3 | grep -x "MEFIlouncher.job") ]]; then 
     SET_TITLE
+    touch "/Users/$(whoami)/Library/Application Support/MountEFI/runlock"
     if launchctl load -w ~/Library/LaunchAgents/MountEFIrl.plist ; then
                     if [[ $loc = "ru" ]]; then
                 echo 'SUBTITLE="Добавлен в автозапуск."; MESSAGE="После запуска окно будет скрыто !"' >> ${HOME}/.MountEFInoty.sh
@@ -7280,6 +7271,8 @@ if [[ ! $(launchctl list | grep "MEFIlouncher.job" | cut -f3 | grep -x "MEFIloun
 
     fi
 fi
+
+rm -f "/Users/$(whoami)/Library/Application Support/MountEFI/runlock"
 
 }
 
@@ -7308,7 +7301,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=37; col=80
+lines=36; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -7521,16 +7514,16 @@ fi
 ###############################################################################
 
 # Автологин #############################################################
-if [[ $inputs = [nN] ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-    if [[ $mefi_on_login = 1 ]]; then
-    plutil -replace MountEFIonLoginRUN -bool NO "${CONFPATH}"
-    STOP_RUN_ON_LOGIN_SERVICE
-    else
-    plutil -replace MountEFIonLoginRUN -bool YES "${CONFPATH}"
-    START_RUN_ON_LOGIN_SERVICE
-    fi
-UPDATE_CACHE
-fi   
+#if [[ $inputs = [nN] ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+#    if [[ $mefi_on_login = 1 ]]; then
+#    plutil -replace MountEFIonLoginRUN -bool NO "${CONFPATH}"
+#    STOP_RUN_ON_LOGIN_SERVICE
+#    else
+#    plutil -replace MountEFIonLoginRUN -bool YES "${CONFPATH}"
+#    START_RUN_ON_LOGIN_SERVICE
+#    fi
+#UPDATE_CACHE
+#fi   
 #########################################################################
 
 # Искать загрузчики при запуске MountEFI  ################################
