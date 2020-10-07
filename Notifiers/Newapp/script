@@ -7,6 +7,50 @@ export LANG=en_US.UTF-8
 prog_vers="1.8.0"
 edit_vers="057"
 
+if [[ $(ps xao tty,command | grep -v grep | grep "MountEFI"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "MountEFI" | wc -l |  bc ) = 0 ]]; then rm -f "${HOME}//Library/Application Support/MountEFI/visible" "${HOME}//Library/Application Support/MountEFI/invisible"; fi
+
+if [[ ! $(launchctl list | grep "MEFIlogout.job" | cut -f3 | grep -x "MEFIlogout.job") ]]; then
+
+### LOGOUT_HOOK
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MEFIlogout.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIrl.plist
+echo '<plist version="1.0">' >> ${HOME}/.MEFIlogout.plist
+echo '<dict>' >> ${HOME}/.MEFIlogout.plist
+echo '  <key>Label</key>' >> ${HOME}/.MEFIlogout.plist
+echo '  <string>MEFIlogout.job</string>' >> ${HOME}/.MEFIlogout.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MEFIlogout.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MEFIlogout.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MEFIlogout.plist
+echo '  <array>' >> ${HOME}/.MEFIlogout.plist
+echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MEFIlogout.sh</string>' >> ${HOME}/.MEFIlogout.plist
+echo '  </array>' >> ${HOME}/.MEFIlogout.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MEFIlogout.plist
+echo '  <true/>' >> ${HOME}/.MEFIlogout.plist
+echo '  <key>EnableGlobbing</key>' >> ${HOME}/.MEFIlogout.plist
+echo '  <true/>' >> ${HOME}/.MEFIlogout.plist
+echo '</dict>' >> ${HOME}/.MEFIlogout.plist
+echo '</plist>' >> ${HOME}/.MEFIlogout.plist
+
+echo "#!/bin/bash" >> ${HOME}/.MEFIlogout.sh
+echo "" >> ${HOME}/.MEFIlogout.sh
+echo 'onLogout(){ ' >> ${HOME}/.MEFIlogout.sh
+echo 'touch /Users/'"$(whoami)"'/Library/Application Support/MountEFI/logout' >> ${HOME}/.MEFIlogout.sh
+echo '}' >> ${HOME}/.MEFIlogout.sh
+echo '' >> ${HOME}/.MEFIlogout.sh
+echo "trap 'onLogout' SIGINT SIGHUP SIGTERM" >> ${HOME}/.MEFIlogout.sh
+echo 'while true; do' >> ${HOME}/.MEFIlogout.sh
+echo '   sleep 86400 &' >> ${HOME}/.MEFIlogout.sh
+echo '    wait $!' >> ${HOME}/.MEFIlogout.sh
+echo 'done' >> ${HOME}/.MEFIlogout.sh
+
+chmod u+x ${HOME}/.MountEFIrl.sh
+
+#mv -f ${HOME}/.MEFIlogout.sh "${HOME}/Library/Application Support/MountEFI/MEFIlogout.sh"
+#mv -f ${HOME}/.MEFIlogout.plist ~/Library/LaunchAgents/MEFIlogout.plist
+#launchctl load -w ~/Library/LaunchAgents/MountEFIrl.plist
+
+fi
+
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
 
@@ -535,6 +579,8 @@ if [[ $strng = "false" ]]; then OpenFinder=0; fi
 
 CORRECT_OC_VERS(){
 case "${md5_full}" in
+58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
+5ef1fc5a81e8e4e6aeb504c91d4a1d7786652faf1a336a446b187ae283d2cc9a ) oc_revision=.62d;;
 75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
 58c4b4a88f8c41f84683bdf4afa3e77c3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
 58c4b4a88f8c41f84683bdf4afa3e77c5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
@@ -580,6 +626,7 @@ if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
 ############## oc_hashes_strings 29 #################
+5ef1fc5a81e8e4e6aeb504c91d4a1d77 ) oc_revision=.62x;;
 75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
 58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
 bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60x;;
@@ -613,20 +660,6 @@ e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
                                 *)     oc_revision=""
                     esac
 fi
-
-################ no_release_hashes ##################
-#if [[ ${oc_revision} = "" ]]; then 
-            
-#                 case "${md5_loader}" in
-#ab9dcb265ab350bfe2695820394f269c ) oc_revision=.55n
-#;;
-#d3c0c19a82e9dbbf5e457ef85f8ad3b5 ) oc_revision=.55®
-#;;
-#13dd9af6c5289520dc7fad69299dd4c9 ) oc_revision=.55ð
-#;;
-#                                *)     oc_revision=""
-#                    esac
-#fi
 
 }
 
@@ -1683,22 +1716,36 @@ done
 
 EXIT_PROGRAM
 
-fi
 
-MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | wc -l | bc)
+else
 
 MOUNT_EFI_WINDOW_UP(){ 
-if $(osascript -e 'tell application "Terminal" to get the miniaturized of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
-osascript -e 'tell application "Terminal" to set miniaturized of (every window whose name contains "MountEFI")  to false'; fi
 if $(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
 if [[ $(osascript -e 'tell application "Terminal" to get the frontmost  of every window whose name contains "MountEFI"' | awk '{print $NF}') = "false" ]]; then
 osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
 if [[ !  $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then
 osascript -e 'tell application "Terminal" to activate'
-sleep 0.6
+sleep 0.5
 fi
 fi 
 }
+
+if [[ -f "${HOME}//Library/Application Support/MountEFI/invisible" ]]; then
+    osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to true'
+    rm -f "${HOME}//Library/Application Support/MountEFI/invisible"
+    touch  "${HOME}//Library/Application Support/MountEFI/visible"
+elif [[ -f "${HOME}//Library/Application Support/MountEFI/visible" ]]; then
+    osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
+    if [[ $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then 
+    osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
+    rm -f "${HOME}//Library/Application Support/MountEFI/visible"
+    touch "${HOME}//Library/Application Support/MountEFI/invisible"
+    fi
+else
+
+i=16; while [[ ! $i = 0 ]]; do MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | wc -l | bc)
+if [ "${MountEFI_count}" -lt "1" ]; then break; else sleep 0.25; let "i--"; if [[ $((i%2)) = 0 ]]; then MOUNT_EFI_WINDOW_UP; fi; fi; done
+fi
 
 
 if [ "${MountEFI_count}" -lt "1" ]; then 
@@ -1708,7 +1755,7 @@ if [ "${MountEFI_count}" -lt "1" ]; then
     app_path="$(ps xao command | grep -i "MountEFI" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)"
     open -a Terminal "$app_path"./../Resources/MountEFI
 else
-   MOUNT_EFI_WINDOW_UP
+    MOUNT_EFI_WINDOW_UP
 fi
 
-
+fi
