@@ -10,47 +10,47 @@ edit_vers="057"
 #if [[ $(ps xao tty,command | grep -v grep | grep "MountEFI"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "MountEFI" | wc -l |  bc ) = 0 ]]; then 
 #rm -f "${HOME}//Library/Application Support/MountEFI/visible" "${HOME}//Library/Application Support/MountEFI/invisible"; fi
 
-if [[ ! $(launchctl list | grep "MEFIlogout.job" | cut -f3 | grep -x "MEFIlogout.job") ]]; then
+#if [[ ! $(launchctl list | grep "MEFIlogout.job" | cut -f3 | grep -x "MEFIlogout.job") ]]; then
 
 ### LOGOUT_HOOK
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MEFIlogout.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIrl.plist
-echo '<plist version="1.0">' >> ${HOME}/.MEFIlogout.plist
-echo '<dict>' >> ${HOME}/.MEFIlogout.plist
-echo '  <key>Label</key>' >> ${HOME}/.MEFIlogout.plist
-echo '  <string>MEFIlogout.job</string>' >> ${HOME}/.MEFIlogout.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MEFIlogout.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MEFIlogout.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MEFIlogout.plist
-echo '  <array>' >> ${HOME}/.MEFIlogout.plist
-echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MEFIlogout.sh</string>' >> ${HOME}/.MEFIlogout.plist
-echo '  </array>' >> ${HOME}/.MEFIlogout.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MEFIlogout.plist
-echo '  <true/>' >> ${HOME}/.MEFIlogout.plist
-echo '  <key>EnableGlobbing</key>' >> ${HOME}/.MEFIlogout.plist
-echo '  <true/>' >> ${HOME}/.MEFIlogout.plist
-echo '</dict>' >> ${HOME}/.MEFIlogout.plist
-echo '</plist>' >> ${HOME}/.MEFIlogout.plist
+#echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MEFIlogout.plist
+#echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIrl.plist
+#echo '<plist version="1.0">' >> ${HOME}/.MEFIlogout.plist
+#echo '<dict>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <key>Label</key>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <string>MEFIlogout.job</string>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <key>Nicer</key>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <integer>1</integer>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <key>ProgramArguments</key>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <array>' >> ${HOME}/.MEFIlogout.plist
+#echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MEFIlogout.sh</string>' >> ${HOME}/.MEFIlogout.plist
+#echo '  </array>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <key>RunAtLoad</key>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <true/>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <key>EnableGlobbing</key>' >> ${HOME}/.MEFIlogout.plist
+#echo '  <true/>' >> ${HOME}/.MEFIlogout.plist
+#echo '</dict>' >> ${HOME}/.MEFIlogout.plist
+#echo '</plist>' >> ${HOME}/.MEFIlogout.plist
 
-echo "#!/bin/bash" >> ${HOME}/.MEFIlogout.sh
-echo "" >> ${HOME}/.MEFIlogout.sh
-echo 'onLogout(){ ' >> ${HOME}/.MEFIlogout.sh
-echo 'touch /Users/'"$(whoami)"'/Library/Application Support/MountEFI/logout' >> ${HOME}/.MEFIlogout.sh
-echo '}' >> ${HOME}/.MEFIlogout.sh
-echo '' >> ${HOME}/.MEFIlogout.sh
-echo "trap 'onLogout' SIGINT SIGHUP SIGTERM" >> ${HOME}/.MEFIlogout.sh
-echo 'while true; do' >> ${HOME}/.MEFIlogout.sh
-echo '   sleep 86400 &' >> ${HOME}/.MEFIlogout.sh
-echo '    wait $!' >> ${HOME}/.MEFIlogout.sh
-echo 'done' >> ${HOME}/.MEFIlogout.sh
+#echo "#!/bin/bash" >> ${HOME}/.MEFIlogout.sh
+#echo "" >> ${HOME}/.MEFIlogout.sh
+#echo 'onLogout(){ ' >> ${HOME}/.MEFIlogout.sh
+#echo 'touch /Users/'"$(whoami)"'/Library/Application Support/MountEFI/logout' >> ${HOME}/.MEFIlogout.sh
+#echo '}' >> ${HOME}/.MEFIlogout.sh
+#echo '' >> ${HOME}/.MEFIlogout.sh
+#echo "trap 'onLogout' SIGINT SIGHUP SIGTERM" >> ${HOME}/.MEFIlogout.sh
+#echo 'while true; do' >> ${HOME}/.MEFIlogout.sh
+#echo '   sleep 86400 &' >> ${HOME}/.MEFIlogout.sh
+#echo '    wait $!' >> ${HOME}/.MEFIlogout.sh
+#echo 'done' >> ${HOME}/.MEFIlogout.sh
 
-chmod u+x ${HOME}/.MountEFIrl.sh
+#chmod u+x ${HOME}/.MountEFIrl.sh
 
 #mv -f ${HOME}/.MEFIlogout.sh "${HOME}/Library/Application Support/MountEFI/MEFIlogout.sh"
 #mv -f ${HOME}/.MEFIlogout.plist ~/Library/LaunchAgents/MEFIlogout.plist
 #launchctl load -w ~/Library/LaunchAgents/MountEFIrl.plist
 
-fi
+#fi
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
