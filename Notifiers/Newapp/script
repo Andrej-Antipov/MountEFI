@@ -1679,14 +1679,7 @@ MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  
 #winPropList=( $(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*|miniaturized:[a-z]*" | cut -f2 -d:)); echo "visible = ${winPropList[0]}"; echo "frontmost = ${winPropList[1]}"; echo "miniaturized = ${winPropList[2]}"
 
 MOUNT_EFI_WINDOW_UP(){ 
-winPropList=($(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*|miniaturized:[a-z]*" | cut -f2 -d:))
-if ${winPropList[2]} ; then osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
-#; osascript -e 'tell application "Terminal" to activate'
-else
-    if ${winPropList[0]} ; then 
-    if [[ ${winPropList[1]} = "false" ]]; then osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
-    fi 
-fi
+osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
 osascript -e 'tell application "Terminal" to activate'
 }
 
