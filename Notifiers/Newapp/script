@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 06.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
 edit_vers="057"
@@ -1676,17 +1676,18 @@ fi
 
 MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | wc -l | bc)
 
+#winPropList=( $(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*|miniaturized:[a-z]*" | cut -f2 -d:)); echo "visible = ${winPropList[0]}"; echo "frontmost = ${winPropList[1]}"; echo "miniaturized = ${winPropList[2]}"
+
 MOUNT_EFI_WINDOW_UP(){ 
-if $(osascript -e 'tell application "Terminal" to get the miniaturized of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
-osascript -e 'tell application "Terminal" to set miniaturized of (every window whose name contains "MountEFI")  to false'; fi
-if $(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
-if [[ $(osascript -e 'tell application "Terminal" to get the frontmost  of every window whose name contains "MountEFI"' | awk '{print $NF}') = "false" ]]; then
-osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
-if [[ !  $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then
-osascript -e 'tell application "Terminal" to activate'
-sleep 0.6
+winPropList=($(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*|miniaturized:[a-z]*" | cut -f2 -d:))
+if ${winPropList[2]} ; then osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
+#; osascript -e 'tell application "Terminal" to activate'
+else
+    if ${winPropList[0]} ; then 
+    if [[ ${winPropList[1]} = "false" ]]; then osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
+    fi 
 fi
-fi 
+osascript -e 'tell application "Terminal" to activate'
 }
 
 
@@ -1697,7 +1698,7 @@ if [ "${MountEFI_count}" -lt "1" ]; then
     app_path="$(ps xao command | grep -i "MountEFI" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)"
     open -a Terminal "$app_path"./../Resources/MountEFI
 else
-   MOUNT_EFI_WINDOW_UP
+    MOUNT_EFI_WINDOW_UP
 fi
 
 
