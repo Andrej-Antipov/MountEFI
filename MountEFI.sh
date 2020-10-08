@@ -979,10 +979,7 @@ MOUNT_EFI_WINDOW_UP
 
 
 MOUNT_EFI_WINDOW_UP(){ 
-winPropList=($(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*" | cut -f2 -d:))
-if ${winPropList[0]} ; then 
-    if ! ${winPropList[1]}; then osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
-    fi 
+osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
 osascript -e 'tell application "Terminal" to activate'
 }
 
