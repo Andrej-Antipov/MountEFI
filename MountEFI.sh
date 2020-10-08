@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -17,7 +17,7 @@ cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
-#if [[ ! -f "${HOME}//Library/Application Support/MountEFI/invisible" ]]; then touch "${HOME}//Library/Application Support/MountEFI/visible"; fi
+if [[ ! -f "${HOME}//Library/Application Support/MountEFI/invisible" ]]; then touch "${HOME}//Library/Application Support/MountEFI/visible"; fi
 
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
@@ -979,14 +979,11 @@ MOUNT_EFI_WINDOW_UP
 
 
 MOUNT_EFI_WINDOW_UP(){ 
-if $(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
-if [[ $(osascript -e 'tell application "Terminal" to get the frontmost  of every window whose name contains "MountEFI"' | awk '{print $NF}') = "false" ]]; then
-osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
-if [[ !  $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then
+winPropList=($(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*" | cut -f2 -d:))
+if ${winPropList[0]} ; then 
+    if ! ${winPropList[1]}; then osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
+    fi 
 osascript -e 'tell application "Terminal" to activate'
-sleep 0.5
-fi
-fi 
 }
 
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
@@ -2252,6 +2249,7 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
   fi
 fi
+MOUNT_EFI_WINDOW_UP &
 }
 
 
