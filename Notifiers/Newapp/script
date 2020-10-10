@@ -1700,27 +1700,24 @@ EXIT_PROGRAM
 
 fi
 
-
-MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | wc -l | bc)
-
-#winPropList=( $(osascript -e 'tell application "Terminal" to get Properties of every window whose name contains "MountEFI"' | egrep -o "visible:[a-z]*|frontmost:[a-z]*|miniaturized:[a-z]*" | cut -f2 -d:)); echo "visible = ${winPropList[0]}"; echo "frontmost = ${winPropList[1]}"; echo "miniaturized = ${winPropList[2]}"
-
 MOUNT_EFI_WINDOW_UP(){ 
 osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
 osascript -e 'tell application "Terminal" to activate'
 sleep 0.6
 }
 
+i=4; while [[ ! $i = 0 ]]; do MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | wc -l | bc)
+if [ "${MountEFI_count}" -lt "1" ]; then break; else sleep 0.25; let "i--"; fi; done
 
 if [ "${MountEFI_count}" -lt "1" ]; then 
 
 	if [[ $(cat ~/.MountEFIconf.plist | grep -A 1 -e "EasyEFImode</key>" | grep -o true) = "true" ]] && [[ $(echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n') = "Updating" ]]; then RESTART_APP; fi
 
     app_path="$(ps xao command | grep -i "MountEFI" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)"
-    sleep 0.5
     open -a Terminal "$app_path"./../Resources/MountEFI
 else
-   MOUNT_EFI_WINDOW_UP
+    MOUNT_EFI_WINDOW_UP
 fi
+
 
 
