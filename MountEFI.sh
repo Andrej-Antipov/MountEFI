@@ -2429,12 +2429,6 @@ theme="system"
 GET_THEME
 if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
 ############################################################################################
-SHIFT_UP(){
-if [[ ! ${lddlist[pnum]} = "" ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-   for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
-fi
-}
-
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
@@ -2450,7 +2444,6 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
                 if [[ ${md5_loader} = "" ]]; then loader=""; else
                    if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
-                    SHIFT_UP
                     mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
                     GET_LOADER_STRING
                   fi
@@ -3345,6 +3338,7 @@ fi
 fi
 CORRECT_LOADERS_LIST
 synchro=0
+MOUNT_EFI_WINDOW_UP &
 #######################
 
  fi; GETLIST; fi
