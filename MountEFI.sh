@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 08.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="057"
+edit_vers="058"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -2434,6 +2434,7 @@ if [[ ! ${lddlist[pnum]} = "" ]]; then max=0; for y in ${!mounted_loaders_list[@
    for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
 fi
 }
+
 ##################### проверка на загрузчик после монтирования ##################################################################################
 FIND_LOADERS(){
 
@@ -2455,7 +2456,7 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
                   fi
                 fi
             else
-                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then SHIFT_UP; loader="empty"; mounted_loaders_list[pnum]=0; fi
+                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then  loader="empty"; mounted_loaders_list[pnum]=0; lflag=1; fi
             fi
     fi
 fi
@@ -2616,13 +2617,9 @@ do
         spinny
 
         if [[ ! $CheckLoaders = 0 ]]; then FIND_LOADERS 
-        if [[ ! ${loader} = "" ]];then
-            if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-            fi
+            if [[ ! ${loader} = "" ]];then
              ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}
-        fi
+            fi
         fi
                 
     spinny
@@ -2912,10 +2909,6 @@ while [ $var0 != 0 ]; do
         FIND_LOADERS
 
         if [[ ! ${lflag} = 0 ]]; then 
-            if [[ ! ${lddlist[$((chs-1))]} = "" ]]; then 
-                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y>$((chs-1));y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-            fi
              ldlist[$((chs-1))]="$loader"; lddlist[$((chs-1))]=${dlist[$((chs-1))]}
         fi
 
@@ -3233,30 +3226,28 @@ if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounte
 ############################# корректировка списка разделов с загрузчиками ######################################### 
 CORRECT_LOADERS_LIST(){
 
-if [[ ! ${lddlist[@]} = 0 ]]; then
-    temp_lddlist=()
-    temp_lddlist=( $( echo ${dlist[@]} ${lddlist[@]} | tr ' ' '\n' | sort | uniq -u ) )
+           temp_lddlist=(); temp_ldlist=(); temp_mllist=()
 
-    ########################### коррекция списка определённых загрузчиков с уменьшением ###############################
-    #REMOVE_LOADERS_FROM_LIST
-    for x in ${temp_lddlist[@]}; do
-            for y in ${!lddlist[@]}; do
-                if [[ ${x} = ${lddlist[y]} ]]; then            
-                unset 'mounted_loaders_list[y]'; unset 'lddlist[y]'; unset 'ldlist[y]'
-                max=0; for z in ${!lddlist[@]}; do if [[ ${max} -lt ${z} ]]; then max=${z}; fi; done
-                    if [[ ${y} -lt ${max} ]]; then
-                        for ((z=${y};z<=${max};z++)); do
-                            lddlist[z]=${lddlist[$((z+1))]}; ldlist[z]=${ldlist[$((z+1))]}; mounted_loaders_list[z]=${mounted_loaders_list[$((z+1))]}; done
-                        unset 'lddlist[max]'; unset 'ldlist[max]'; unset 'mounted_loaders_list[max]'
-                    fi
-                fi
-            done
+    for k in ${!dlist[@]}; do
+        for y in ${!lddlist[@]}; do
+        if [[ ${dlist[k]} = ${lddlist[y]} ]]; then
+                temp_ldlist[k]=${ldlist[y]}
+                temp_lddlist[k]=${lddlist[y]}
+                temp_mllist[k]=${mounted_loaders_list[y]}
+                break
+        fi
         done
-     ########
-fi
+    done
+    
+    ldlist=(); lddlist=(); mounted_loaders_list=()
+    for k in ${!temp_lddlist[@]}; do lddlist[k]=${temp_lddlist[k]}; done
+    for k in ${!temp_ldlist[@]}; do ldlist[k]=${temp_ldlist[k]}; done
+    for k in ${!temp_mllist[@]}; do mounted_loaders_list[k]=${temp_mllist[k]}; done
+
 synchro=0
 
 }
+
 
 ################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################
@@ -3352,7 +3343,7 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     fi
 fi
 fi
-if [[ ${synchro} = 3 ]]; then CORRECT_LOADERS_LIST; fi
+CORRECT_LOADERS_LIST
 synchro=0
 #######################
 
