@@ -17,9 +17,6 @@ cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
-if [[ ! -f "${HOME}//Library/Application Support/MountEFI/invisible" ]]; then touch "${HOME}//Library/Application Support/MountEFI/visible"; fi
-
-
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f "${HOME}"/.MountEFIconf.plist ]]; then rm "${CONFPATH}"; fi
 fi
@@ -1573,7 +1570,6 @@ if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/
 if [ ${MountEFI_count} -gt 3 ]; then  
      if [[ "$(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}')" = "false" ]]; then
         osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to true' 
-        rm -f "${HOME}//Library/Application Support/MountEFI/invisible"; touch "${HOME}//Library/Application Support/MountEFI/visible"
         exit 1
      else
         MOUNT_EFI_WINDOW_UP; exit 1; fi
