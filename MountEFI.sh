@@ -1561,20 +1561,12 @@ fi
 }
 ##########################################################################################################################
 
-if [[ ! -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
-MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep -ow "MountEFI" | grep -v "MountEFIrl" | wc -l)
+MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep MountEFI | wc -l)
 setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
 # Возвращает в переменной TTYcount 0 если наш терминал один
 
 if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
-if [ ${MountEFI_count} -gt 3 ]; then  
-     if [[ "$(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}')" = "false" ]]; then
-        osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to true' 
-        exit 1
-     else
-        MOUNT_EFI_WINDOW_UP; exit 1; fi
-    fi
-fi
+if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
 
 ################ восстановить состояние после перезагрузки из схранения в файлах ##################################################
 
