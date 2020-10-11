@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -225,14 +225,7 @@ fi
 }
 
 MOUNT_EFI_WINDOW_UP(){ 
-if $(osascript -e 'tell application "Terminal" to get the visible  of every window whose name contains "MountEFI"' | awk '{print $NF}') ; then 
-if [[ $(osascript -e 'tell application "Terminal" to get the frontmost  of every window whose name contains "MountEFI"' | awk '{print $NF}') = "false" ]]; then
-osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'; fi
-if [[ !  $(osascript -e 'tell application "System Events" to get the name of first application process whose frontmost is true') = "Terminal" ]]; then
 osascript -e 'tell application "Terminal" to activate'
-sleep 0.5
-fi
-fi 
 }
 
 # Выход из программы с проверкой - выгружать терминал из трея или нет
@@ -7204,7 +7197,7 @@ plutil -replace Restart -bool Yes "${CONFPATH}"
 
 }
 
-START_RUN_ON_LOGIN_SERVICE(){
+START_RUN_AT_LOGIN_SERVICE(){
 MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//'  |  xargs)"
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIrl.plist
