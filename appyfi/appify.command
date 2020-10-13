@@ -91,7 +91,8 @@ if [[ ! -d ../MountEFI.app ]]; then
                 elif [[ -f ../MountEFI.app/Contents/Resources/script ]]; then 
                     cat ../MountEFI.app/Contents/Resources/script | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > .script
                     if [[ -s .script ]]; then mv -f .script ../MountEFI.app/Contents/Resources/script; chmod +x ../MountEFI.app/Contents/Resources/script; fi
-            fi 
+            fi
+            if [[ -f ../Notifiers/MEFIScA.sh ]]; then cp -a ../Notifiers/MEFIScA.sh ../MountEFI.app/Contents/Resources/MEFIScA.sh; fi
             touch ../MountEFI.app
             rm -f .document.wflow
 fi
@@ -146,6 +147,8 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                     cp -a Notifiers/Oldapp/document.wflow Updates/$current_vers/$edit_vers
                     #cp -a Notifiers/Oldapp/Info.plist Updates/$current_vers/$edit_vers
                 fi
+
+                if [[ -f Notifiers/MEFIScA.sh ]]; then cp -a Notifiers/MEFIScA.sh Updates/$current_vers/$edit_vers/ ; fi
 
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
                 if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
