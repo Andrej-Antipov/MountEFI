@@ -27,35 +27,23 @@ echo "$1" >> "${SERVFOLD_PATH}"/MEFIScA/debug.log
 
 touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
 
-if [[ -d "${SERVFOLD_PATH}"/MEFIScA ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
+if [[ -d "${SERVFOLD_PATH}"/MEFIScA ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; fi
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
 
 if [[ -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
 mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack
-
-if [[ ! ${#dlist[@]} = 0 ]]; then 
-            #touch "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/AllDiskNameList
-            max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
             for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist; done
 fi
-
-if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
-            #touch "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/MountedLoadersList
-            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
             for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list; done
 fi
-
-if [[ ! ${#ldlist[@]} = 0 ]]; then 
-            #touch "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/LoaderNameList
-            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
             for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist; done
 fi
-
-if [[ ! ${#lddlist[@]} = 0 ]]; then 
-            #touch "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/DiskNameList
-            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
             for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist; done
 fi
 }
@@ -65,33 +53,6 @@ IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentSt
 ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
 lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
 if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
-}
-
-
-##################### получение имени и версии загрузчика ######################################################################################
-
-GET_LOADER_STRING(){                              
-               if [[ ! "${loader:0:5}" = "Other" ]]; then                
-                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
-                    case "${check_loader}" in
-                    "Clover"    ) loader="Clover"
-                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
-                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
-                                loader+="${revision:0:4}"
-                                ;;
-  
-                    "OpenCore"  )  loader="OpenCore"
-                        ;;
-                    "GNU/Linux" ) loader="GNU/Linux"                                       
-                        ;;
-                    "Refind"    ) loader="refind"                                          
-                        ;;
-                    "Microsoft C" ) loader="Windows"; loader+="®"                           
-                        ;;
-                               *) loader="unrecognized"                                    
-                        ;;
-                    esac  
-                fi
 }
 
 ##################################################################################################################################################
@@ -258,9 +219,7 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG_PARTS(){
-#echo "old_puid_count = $old_puid_count" >> ~/Desktop/test.txt
 pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-#echo "puid_count = $puid_count" >> ~/Desktop/test.txt
         if [[ ! $old_puid_count = $puid_count ]]; then
                 
                if [[  $old_puid_count -lt $puid_count ]]; then                        
@@ -299,13 +258,11 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
 
 CHECK_HOTPLUG_DISKS(){
 
-#echo "old_uuid_count = $old_uuid_count" >> ~/Desktop/test.txt
- 
                        RECHECK_LOADERS
 
 hotplug=0
 ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'` ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-#echo "uuid_count = $uuid_count" >> ~/Desktop/test.txt
+
         if [[ ! $old_uuid_count = $uuid_count ]]; then
             if [[  $old_uuid_count -lt $uuid_count ]]; then 
                 synchro=1
