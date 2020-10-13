@@ -2271,7 +2271,7 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
     fi
   else
-      i=64; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.5; let "i--"; 
+      i=32; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.5; let "i--"; 
       if [[ $i = 61 ]]; then MSG_WAIT &
       wpid=$(($!+2)); fi
       if [[ $i = 0 ]]; then break; fi; done
@@ -3208,7 +3208,7 @@ if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
-if [[ ${choice} = [W] ]];  then EASYEFI_RESTART_APP; fi
+if [[ ${choice} = [W] ]];  then MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; EASYEFI_RESTART_APP; fi
 fi
 else
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
