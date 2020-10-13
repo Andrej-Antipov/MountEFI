@@ -2,10 +2,10 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 10.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
-edit_vers="057"
+edit_vers="058"
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -164,6 +164,32 @@ if [[ -f "$ROOT"/version.txt ]]; then
                     MSG_SANDBOX
     fi
 fi   
+}
+
+DISPLAY_MESSAGE1(){
+osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null
+}
+
+DISPLAY_MESSAGE(){
+osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null
+}
+
+MSG_TIMEOUT(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Время ожидания вышло !"'
+else
+MESSAGE='"The waiting time is up!"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+}
+
+MSG_WAIT(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Ожидание конца подготовки данных .... !"' 
+else
+MESSAGE='"Waiting for the end of data synchro ....!"' 
+fi
+DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 }
 
 CHECK_SANDBOX
@@ -853,8 +879,10 @@ GETLIST(){
 
 GET_LOADERS
 CheckLoaders=1
-if [[ ! $CheckLoaders = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); else lname=""; fi 
-
+if [[ ! $CheckLoaders = 0 ]]; then 
+if [[ ! $mefisca = 1 ]]; then 
+mounted_loaders_list=(); ldlist=(); lddlist=(); else lname=""; fi 
+fi
 UPDATE_SCREEN
 }
 
@@ -1574,10 +1602,63 @@ synchro=0
 
 }
 
+###################### GET MEFIScA DATA ########################################
+GET_DATA_STACK(){
+if [[ $mefisca = 1 ]]; then
+      i=32; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.5; let "i--"; 
+      if [[ $i = 61 ]]; then MSG_WAIT &
+      wpid=$(($!+2)); fi
+      if [[ $i = 0 ]]; then break; fi; done
+      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+      if [[ $i = 0 ]]; then MSG_TIMEOUT; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+ if [[ ! $i = 0 ]]; then 
+ i=8; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+ IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list | tr '\n' ';' ) )
+ ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
+ lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
+ if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
+ CORRECT_LOADERS_HASH_LINKS
+ rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
+ fi
+fi
+}
 
+CHECK_MEFIScA(){
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
+mefisca=1; old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+else mefisca=0; fi
+}
+
+MEFIScA_DATA(){
+if [[ $mefisca = 1 ]]; then 
+    if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
+    true
+    else
+            rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
+            if [[ -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
+            mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack
+            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist; done
+            fi
+            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list; done
+            fi
+            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist; done
+            fi
+            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist; done
+            fi
+            touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
+            old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+    fi
+fi
+}
 ################################### INIT ##################################################
 if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
    kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
+
+SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 GET_FLAG
 UPDATE_CACHE
@@ -1600,6 +1681,7 @@ fi
 GET_CONFIG_HASHES
 GET_LOCALE 
 GET_APP_ICON
+CHECK_MEFIScA
 
 hotplug_flag=0
 
@@ -1623,7 +1705,7 @@ if [[ ${pos} = 1 ]]; then KILL_DIALOG; ONE_EFI_FOUND; if [[ $cansel = 0 ]]; then
 fi
 
 mefi_stack_got=0
-if [[ ${rst} = 0 ]]; then GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; UPDATE_SCREEN; fi
+if [[ ${rst} = 0 ]]; then GET_DATA_STACK; GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; GET_DATA_STACK; UPDATE_SCREEN; fi
 kill $mspid
 KILL_DIALOG
 while true; do
@@ -1649,8 +1731,8 @@ if [[ ${result_names} = "false" ]]; then break; fi
             advanced            ) menu_mode=1 ; SETCONF_MENUMODE ;;
             упрощённый          ) menu_mode=0 ; SETCONF_MENUMODE ;;
             simple              ) menu_mode=0 ; SETCONF_MENUMODE ;;
-            terminal            ) RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
-            терминала           ) RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
+            terminal            ) MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
+            терминала           ) MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
             Авто-подключение    ) SETUP_AUTOMOUNT ;;
             auto-mount          ) SETUP_AUTOMOUNT ;;
         esac
@@ -1693,6 +1775,8 @@ fi
 if [[ ${hotplug_flag} = 1 ]]; then GETARR; hotplug_flag=0; CORRECT_LOADERS_LIST; fi
 
 UPDATE_SCREEN
+
+MEFIScA_DATA
 
 done
 
