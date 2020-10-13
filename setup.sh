@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 08.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="047"
+s_edit_vers="048"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -51,6 +51,7 @@ s_edit_vers="047"
 # 045 - баг фиксы и улучшении
 # 046 - для github проверка версии
 # 047 - проверка загрузчиков в отключенных папках при запуске
+# 048 - проверка загрузчиков в виде сервиса MEFIScA
 
 clear
 
@@ -2041,7 +2042,7 @@ sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске M
 #sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf '\033[11;84f'' F) Искать все загрузчики при запуске = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков (экспериментально) = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
             else
 sbuf+=$(printf '\033[1;84f''                                 Menu List                              ')
@@ -2062,7 +2063,7 @@ sbuf+=$(printf '\033[9;84f'' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"
 sbuf+=$(printf '\033[10;84f'' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 #sbuf+=$(printf '\033[10;84f'' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[11;84f'' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf '\033[11;84f'' F) Look for all loaders on run MountEFI = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[11;84f'' F) Bootloader search service (experimental) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[12;84f'' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
             fi
 sbuf+=$(printf '\033[13;84f')
@@ -3003,16 +3004,16 @@ GET_STARTUP_MOUNTS(){
 startupMount=1
 if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true"); then
             if [[ $loc = "ru" ]]; then
-        mld_set="Да"; mld_corr=14
+        mld_set="Да"; mld_corr=3
             else
-        mld_set="Yes"; mld_corr=7
+        mld_set="Yes"; mld_corr=3
             fi
 else
         startupMount=0
             if [[ $loc = "ru" ]]; then
-        mld_set="Нет"; mld_corr=13
+        mld_set="Нет"; mld_corr=2
             else
-        mld_set="No"; mld_corr=8
+        mld_set="No"; mld_corr=4
             fi
 fi
 }
@@ -3073,11 +3074,10 @@ fi
 sbuf+=$(printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
-#if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-#sbuf+=$(printf ' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
-#fi
 sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf ' F) Искать все загрузчики при запуске = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+if [[ -f "$ROOT"/MEFIScA.sh ]]; then
+sbuf+=$(printf ' F) Сервис поиска загрузчиков (экспериментально) = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+fi
 sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' A) Создать или править псевдонимы физических носителей                         \n')
 sbuf+=$(printf ' B) Резервное сохранение и восстановление настроек                              \n')
@@ -3105,11 +3105,10 @@ fi
 sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
-#if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-#sbuf+=$(printf ' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
-#fi
 sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf ' F) Look for all loaders on run MountEFI = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+if [[ -f "$ROOT"/MEFIScA.sh ]]; then
+sbuf+=$(printf ' F) Bootloader search service (experimental) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+fi
 sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' A) Create or edit aliases physical device/media                                \n')
 sbuf+=$(printf ' B) Backup and restore configuration settings                                   \n')
@@ -7198,88 +7197,58 @@ plutil -replace Restart -bool Yes "${CONFPATH}"
 }
 
 START_RUN_AT_LOGIN_SERVICE(){
-MEFI_PATH="$(echo "${ROOT}" | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//'  |  xargs)"
 
-echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MountEFIrl.plist
-echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MountEFIrl.plist
-echo '<plist version="1.0">' >> ${HOME}/.MountEFIrl.plist
-echo '<dict>' >> ${HOME}/.MountEFIrl.plist
-echo '  <key>Label</key>' >> ${HOME}/.MountEFIrl.plist
-echo '  <string>MEFIlouncher.job</string>' >> ${HOME}/.MountEFIrl.plist
-echo '  <key>Nicer</key>' >> ${HOME}/.MountEFIrl.plist
-echo '  <integer>1</integer>' >> ${HOME}/.MountEFIrl.plist
-echo '  <key>ProgramArguments</key>' >> ${HOME}/.MountEFIrl.plist
-echo '  <array>' >> ${HOME}/.MountEFIrl.plist
-echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MountEFIrl.sh</string>' >> ${HOME}/.MountEFIrl.plist
-echo '  </array>' >> ${HOME}/.MountEFIrl.plist
-echo '  <key>RunAtLoad</key>' >> ${HOME}/.MountEFIrl.plist
-echo '  <true/>' >> ${HOME}/.MountEFIrl.plist
-echo '</dict>' >> ${HOME}/.MountEFIrl.plist
-echo '</plist>' >> ${HOME}/.MountEFIrl.plist
+if [[ -f "$ROOT/MEFIScA.sh" ]]; then
 
+mkdir -p "${HOME}"/Library/"Application Support"/MountEFI/MEFIScA
+cp -a "$ROOT/MEFIScA.sh" "${HOME}"/Library/"Application Support"/MountEFI/MEFIScA/
+chmod +x "${HOME}/Library/Application Support/MountEFI/MEFIScA/MEFIScA.sh"
 
-echo "#!/bin/bash" >> ${HOME}/.MountEFIrl.sh
-echo "" >> ${HOME}/.MountEFIrl.sh
-echo 'if [[ ! -f "'"/Users/$(whoami)/Library/Application Support/MountEFI/runlock"'" ]]; then ' >> ${HOME}/.MountEFIrl.sh
-echo "osascript -e 'tell application "'"Terminal"'" to close (every window whose name contains "'"MountEFI"'")'" >> ${HOME}/.MountEFIrl.sh
-echo "if [[ -f "'"${HOME}/Library/Application Support/MountEFI/invisible"'" ]]; then osascript -e 'quit app "'"terminal.app"'"'" >> ${HOME}/.MountEFIrl.sh
-echo 'rm -f "'"${HOME}/Library/Application Support/MountEFI/invisible"'"; fi' >> ${HOME}/.MountEFIrl.sh
-echo 'fi' >> ${HOME}/.MountEFIrl.sh
-echo 'if [[ $(ps xao tty,command | grep -v grep | grep "'"MountEFI"'"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "'"MountEFI"'" | grep -v "'"MountEFIrl"'" | wc -l |  bc ) = 0 ]]; then' >> ${HOME}/.MountEFIrl.sh
-echo 'rm -f "'"/Users/andrej/Library/Application Support/MountEFI/invisible"'" "'"/Users/andrej/Library/Application Support/MountEFI/visible"'"' >> ${HOME}/.MountEFIrl.sh
-echo 'plutil -replace EasyEFImode -bool NO "'${CONFPATH}'"' >> ${HOME}/.MountEFIrl.sh
+echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MEFIScA.plist
+echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MEFIScA.plist
+echo '<plist version="1.0">' >> ${HOME}/.MEFIScA.plist
+echo '<dict>' >> ${HOME}/.MEFIScA.plist
+echo '  <key>Label</key>' >> ${HOME}/.MEFIScA.plist
+echo '  <string>MEFIScA.job</string>' >> ${HOME}/.MEFIScA.plist
+echo '  <key>Nicer</key>' >> ${HOME}/.MEFIScA.plist
+echo '  <integer>1</integer>' >> ${HOME}/.MEFIScA.plist
+echo '  <key>ProgramArguments</key>' >> ${HOME}/.MEFIScA.plist
+echo '  <array>' >> ${HOME}/.MEFIScA.plist
+echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MEFIScA/MEFIScA.sh</string>' >> ${HOME}/.MEFIScA.plist
+echo '  </array>' >> ${HOME}/.MEFIScA.plist
+echo '  <key>RunAtLoad</key>' >> ${HOME}/.MEFIScA.plist
+echo '  <true/>' >> ${HOME}/.MEFIScA.plist
+echo '</dict>' >> ${HOME}/.MEFIScA.plist
+echo '</plist>' >> ${HOME}/.MEFIScA.plist
 
-echo "osascript -e 'set posixMountEFIPath to "'"'${MEFI_PATH}'"'"' -e ' tell application posixMountEFIPath to run'" >> ${HOME}/.MountEFIrl.sh
-echo '' >> ${HOME}/.MountEFIrl.sh
-echo 'i=60; while [[ ! $i = 0 ]]; do if [[ ! $(ps xao tty,command | grep -v grep | grep "'"MountEFI"'"| egrep ttys[0-9]* | grep /bin/bash | egrep -w "'"MountEFI"'" | grep -v "'"MountEFIrl"'" | wc -l |  bc ) = 0 ]]; then ' >> ${HOME}/.MountEFIrl.sh
-echo "osascript -e 'tell application "'"Terminal"'" to set visible of (every window whose name contains "'"MountEFI"'")  to false'; break; else let $((i--)); fi; done" >> ${HOME}/.MountEFIrl.sh
-echo 'touch "'"${HOME}/Library/Application Support/MountEFI/invisible"'"' >> ${HOME}/.MountEFIrl.sh
-echo '' >> ${HOME}/.MountEFIrl.sh
-echo 'fi' >> ${HOME}/.MountEFIrl.sh
-echo 'exit' >> ${HOME}/.MountEFIrl.sh
-
-
-chmod u+x ${HOME}/.MountEFIrl.sh
-
-mv -f ${HOME}/.MountEFIrl.sh "${HOME}/Library/Application Support/MountEFI/MountEFIrl.sh"
-
-if [[ -f ${HOME}/.MountEFIrl.plist ]]; then mv -f ${HOME}/.MountEFIrl.plist ~/Library/LaunchAgents/MountEFIrl.plist; fi
-if [[ ! $(launchctl list | grep "MEFIlouncher.job" | cut -f3 | grep -x "MEFIlouncher.job") ]]; then 
+  if [[ -f ${HOME}/.MEFIScA.plist ]]; then mv -f ${HOME}/.MEFIScA.plist ~/Library/LaunchAgents/MEFIScA.plist; fi
     SET_TITLE
-    touch "/Users/$(whoami)/Library/Application Support/MountEFI/runlock"
-    if launchctl load -w ~/Library/LaunchAgents/MountEFIrl.plist ; then
+    launchctl load -w ~/Library/LaunchAgents/MEFIScA.plist 2>/dev/null
+  if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${HOME}"/Library/"Application Support"/MountEFI/MEFIScA/MEFIScA.sh ]]; then 
                     if [[ $loc = "ru" ]]; then
-                echo 'SUBTITLE="Добавлен в автозапуск."; MESSAGE="После запуска окно будет скрыто !"' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="Поисковый сервис установлен."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     else
-                echo 'SUBTITLE="Added to autostart at login."; MESSAGE="Window is hidden on startup !"' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="Loaders searching sevice started."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     fi
                 DISPLAY_NOTIFICATION
-    else
-                if [[ $loc = "ru" ]]; then
-                echo 'SUBTITLE="ОШИБКА запуска сервиса!"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
-                    else
-                echo 'SUBTITLE="ERROR SETUP RUN AT LOGIN "; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
-                    fi
-                DISPLAY_NOTIFICATION
-
-    fi
+   fi
 fi
-
-rm -f "/Users/$(whoami)/Library/Application Support/MountEFI/runlock"
 
 }
 
 STOP_RUN_ON_LOGIN_SERVICE(){
-if [[ $(launchctl list | grep "MEFIlouncher.job" | cut -f3 | grep -x "MEFIlouncher.job") ]]; then launchctl unload -w ~/Library/LaunchAgents/MountEFIrl.plist; fi
-rm -f  ~/Library/LaunchAgents/MountEFIrl.plist
-rm -f "${HOME}/Library/Application Support/MountEFI/MountEFIrl.sh"
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then
+launchctl unload -w ~/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+rm -f  ~/Library/LaunchAgents/MEFIScA.plist
+rm -Rf "${HOME}/Library/Application Support/MountEFI/MEFIScA"
  SET_TITLE
                     if [[ $loc = "ru" ]]; then
-                echo 'SUBTITLE="Автозапуск отменён"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="Поисковый сервис удалён"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     else
-                echo 'SUBTITLE="Autostart disabled!"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="Loaders searching service disabled"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     fi
                 DISPLAY_NOTIFICATION
+fi
 }
 
 
@@ -7523,9 +7492,11 @@ fi
 if [[ $inputs = [fF] ]]; then 
    if [[ $startupMount = 1 ]]; then
   plutil -replace startupMount -bool NO "${CONFPATH}"
+  STOP_RUN_ON_LOGIN_SERVICE
  else 
  plutil -replace startupMount -bool YES "${CONFPATH}"
  plutil -replace CheckLoaders -bool YES "${CONFPATH}"
+ START_RUN_AT_LOGIN_SERVICE
   fi
 UPDATE_CACHE
 fi  
@@ -7536,6 +7507,7 @@ if [[ $inputs = [lL] ]]; then
    if [[ $CheckLoaders = 1 ]]; then 
   plutil -replace CheckLoaders -bool NO "${CONFPATH}"
   plutil -replace startupMount -bool NO "${CONFPATH}"
+  STOP_RUN_ON_LOGIN_SERVICE
  else 
   plutil -replace CheckLoaders -bool YES "${CONFPATH}"
   fi

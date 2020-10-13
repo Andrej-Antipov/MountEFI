@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -108,6 +108,7 @@ if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info
         fi
 SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
 if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
+if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"; fi
 
 #IF_NEW_APPLET
             TARGET="${ROOT}/../../../MountEFI.app/Contents"
@@ -505,7 +506,7 @@ fi
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
 #############################################################################################################################
 MyTTY=$(tty | tr -d " dev/\n")
-MyPID=$(ps -x | grep -v grep  | grep -m1 MountEFI | xargs | cut -f1 -d' ')
+MyPID=$(ps -x | grep -v grep  | grep  "MountEFI$" | xargs | cut -f1 -d' ')
 MyZPID=$(ps | grep -v grep  | grep $MyTTY | grep zsh | xargs | cut -f1 -d' ')
 term=$(ps);  MyTTYcount=$(echo "$term" | egrep -o $MyTTY | wc -l | bc)
 ##############################################################################################################################
@@ -539,8 +540,7 @@ if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
 fi
 	
 osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
-rm -f "${HOME}//Library/Application Support/MountEFI/visible" "${HOME}//Library/Application Support/MountEFI/invisible"
-TERMINATE &
+#TERMINATE &
 if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
 else
    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
@@ -2207,11 +2207,48 @@ fi
 MOUNT_EFI_WINDOW_UP &
 }
 
+GET_DATA_STACK(){
+i=8; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list | tr '\n' ';' ) )
+ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
+lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
+CORRECT_LOADERS_HASH_LINKS
+rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
+}
+
+DISPLAY_MESSAGE1(){
+osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null
+}
+
+DISPLAY_MESSAGE(){
+osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null
+}
+
+MSG_TIMEOUT(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Время ожидания вышло !"'
+else
+MESSAGE='"The waiting time is up!"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+}
+
+MSG_WAIT(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Ожидание конца подготовки данных .... !"' 
+else
+MESSAGE='"Waiting for the end of data synchro ....!"' 
+fi
+DISPLAY_MESSAGE >>/dev/null 2>/dev/null
+}
+
 STARTUP_FIND_LOADERS(){
 if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ ! $CheckLoaders = 0 ]]; then
+  if [[ ! $mefisca = 1 ]]; then
     if [[ ! $flag = 0 ]]; then NEED_PASSWORD; fi
     if  [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then ENTER_PASSWORD; IF_UNLOCK_SAFE_MODE; fi
-  if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
+    if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
     for i in ${!dlist[@]}; do 
     pnum=${nlist[i]}; 
         string=${dlist[$pnum]}
@@ -2232,7 +2269,17 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
             fi
         fi   
     done
-  fi
+    fi
+  else
+      i=64; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.5; let "i--"; 
+      if [[ $i = 61 ]]; then MSG_WAIT &
+      wpid=$(($!+2)); fi
+      if [[ $i = 0 ]]; then break; fi; done
+      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+      if [[ $i = 0 ]]; then MSG_TIMEOUT
+      rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+      if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
+  fi      
 fi
 MOUNT_EFI_WINDOW_UP &
 }
@@ -2966,8 +3013,7 @@ if [[ $ShowKeys = 1 ]]; then
 fi
   
 SHOW_LOADERS
-
-                      
+MEFIScA_DATA
 }
 ################################### конец функции обновления списка подключенных  на экране ##################################
 
@@ -3229,15 +3275,62 @@ synchro=0
 
 }
 
+CHECK_MEFIScA(){
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
+mefisca=1; old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+else mefisca=0; fi
+}
+
+MEFIScA_DATA(){
+if [[ $mefisca = 1 ]]; then 
+    if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
+    true
+    else
+            rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
+            if [[ -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
+            mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack
+            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist; done
+            fi
+            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list; done
+            fi
+            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist; done
+            fi
+            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist; done
+            fi
+            touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
+            old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+    fi
+fi
+}
+
+GET_LOADERS_FROM_NEW_PARTS(){
+if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
+    for i in ${!dlist[@]}; do pnum=${nlist[i]}; string=${dlist[$pnum]}
+        for z in ${new_remlist[@]}; do 
+        if [[ $string = $z ]]; then
+            DO_MOUNT
+            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+            FIND_LOADERS
+            if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
+            diskutil quiet  umount force /dev/${string}
+            fi
+        fi
+        done
+    done
+fi
+}
 
 ################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
 ############################ MAIN MAIN MAIN ################################################
 GET_USER_PASSWORD
-
 GET_CONFIG_HASHES
-
+CHECK_MEFIScA
 STARTUP_FIND_LOADERS
 
 chs=0
@@ -3285,11 +3378,13 @@ fi
  if [[ ! $nogetlist = 1  ]]; then if [[ ${synchro} = 1 ]] || [[ ${synchro} = 3 ]]; then 
 
     ######## WAIT_SYNCHRO
+new_remlist=()
 if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     init_time="$(date +%s)"; usblist=(); warning_sent=0
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
+    new_remlist=(${usblist[@]})
     if [[ ! ${#usblist[@]} = 0 ]]; then
         realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
         if [[ ! ${#realEFI_list[@]} = 0 ]]; then
@@ -3325,12 +3420,14 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
 fi
 fi
 CORRECT_LOADERS_LIST
+GET_LOADERS_FROM_NEW_PARTS
 synchro=0
 MOUNT_EFI_WINDOW_UP &
 #######################
 
  fi; GETLIST; fi
 
+    MEFIScA_DATA
 	GETKEYS	
 
 # Если нажата клавиша выхода из программы
