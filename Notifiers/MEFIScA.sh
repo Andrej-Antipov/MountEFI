@@ -650,9 +650,7 @@ while true; do
             SAVE_LOADERS_STACK
             touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
-            echo "1" ~/Desktop/test.txt
             while [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; do sleep 1.5; done
-            echo "2" ~/Desktop/test.txt
             GET_MOUNTEFI_STACK
         else
             if [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
