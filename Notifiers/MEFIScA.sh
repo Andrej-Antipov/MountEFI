@@ -322,7 +322,7 @@ GET_LOADERS_FROM_NEW_PARTS(){
 if [[ ! ${#new_remlist[@]} = 0 ]]; then
     for i in ${!dlist[@]}; do pnum=${nlist[i]}; string=${dlist[$pnum]}
         for z in ${new_remlist[@]}; do 
-        if [[ $string = $z ]]; then
+        if [[ $string = $z ]] && [[ $(df | grep ${string}) = "" ]]; then
             DO_MOUNT
             if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
             FIND_LOADERS
