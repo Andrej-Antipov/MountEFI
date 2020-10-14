@@ -1547,6 +1547,15 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]] && [[ "$check_str" = "true" ]]; then
+i=64; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 60 ]]; then 
+      MSG_WAIT &
+      wpid=$(($!+2)); fi
+      if [[ $i = 0 ]]; then break; fi; done
+      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+      rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
+      if [[ $i = 0 ]]; then MSG_TIMEOUT; fi       
+fi
 if [[ ! "$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")" = "$check_str" ]]; then STARTUP_FIND_LOADERS; fi
 if [[ ${CheckLoaders} = 0 ]]; then 
     mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
@@ -1558,6 +1567,7 @@ CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
                     START_AUTOUPDATE &
 fi
+MOUNT_EFI_WINDOW_UP &
 }
 ##########################################################################################################################
 
@@ -2271,8 +2281,8 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
     fi
   else
-      i=32; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.5; let "i--"; 
-      if [[ $i = 61 ]]; then MSG_WAIT &
+      i=64; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
+      if [[ $i = 60 ]]; then MSG_WAIT &
       wpid=$(($!+2)); fi
       if [[ $i = 0 ]]; then break; fi; done
       if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
