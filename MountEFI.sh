@@ -1670,7 +1670,7 @@ msg=$1
 
 if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     declare -a layouts_names
-    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';') 2>/dev/null
+    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory 2>/dev/null | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';') 
     IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 
     for i in ${!layouts_names[@]}; do
@@ -1687,7 +1687,7 @@ if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
 
         if [[ ! $keyboard = "0" ]] && [[ -f "${ROOT}/xkbswitch" ]]; then "${ROOT}"/xkbswitch -se $keyboard
             elif [[ ! "${msg}" = "silent" ]]; then
-            current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
+            current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources 2>/dev/null | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 
             case "${current_layout}" in 
                  "ABC"                )  ;;
                  "US Extended"        )  ;;
