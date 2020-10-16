@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 16.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1536,6 +1536,12 @@ if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.j
 fi
 }
 
+CHECK_MEFIScA(){
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
+mefisca=1; old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+else mefisca=0; fi
+}
+
 ############## обновление даных после выхода из скрипта настроек #########################################################
 
 REFRESH_SETUP(){
@@ -2238,7 +2244,7 @@ DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 
 MSG_WAIT(){
 if [[ $loc = "ru" ]]; then
-MESSAGE='"Ожидание конца подготовки данных .... !"' 
+MESSAGE='"Подготовка данных о загрузчиках ... !"' 
 else
 MESSAGE='"Waiting for the end of data synchro ....!"' 
 fi
@@ -3275,12 +3281,6 @@ CORRECT_LOADERS_LIST(){
 
 synchro=0
 
-}
-
-CHECK_MEFIScA(){
-if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
-mefisca=1; old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
-else mefisca=0; fi
 }
 
 MEFIScA_DATA(){

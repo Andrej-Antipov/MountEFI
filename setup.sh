@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 16.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -226,6 +226,7 @@ fi
 }
 
 MOUNT_EFI_WINDOW_UP(){ 
+osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
 osascript -e 'tell application "Terminal" to activate'
 }
 
@@ -1146,7 +1147,7 @@ SET_INPUT(){
 
 if [[ -f ~/Library/Preferences/com.apple.HIToolbox.plist ]]; then
     declare -a layouts_names
-    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
+    layouts=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleInputSourceHistory 2>>/dev/null | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/' | tr  '\n' ';')
     IFS=";"; layouts_names=($layouts); unset IFS; num=${#layouts_names[@]}
 
     for i in ${!layouts_names[@]}; do
@@ -1168,7 +1169,7 @@ fi
 }
 
 REM_ABSENT(){
-strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 alist=($strng1); apos=${#alist[@]}
 if [[ ! $apos = 0 ]]
 	then
@@ -7269,6 +7270,7 @@ if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
 UPDATE_SCREEN
+MOUNT_EFI_WINDOW_UP
 GET_INPUT
 else SET_LOCALE; inputs="9"; fi
 # УСТАНОВКИ ПО УМОЛЧАНИЮ   #####################################################
@@ -7475,28 +7477,22 @@ if [[ $inputs = [aA] ]]; then
 fi
 ###############################################################################
 
-# Автологин #############################################################
-#if [[ $inputs = [nN] ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-#    if [[ $mefi_on_login = 1 ]]; then
-#    plutil -replace MountEFIonLoginRUN -bool NO "${CONFPATH}"
-#    STOP_RUN_ON_LOGIN_SERVICE
-#    else
-#    plutil -replace MountEFIonLoginRUN -bool YES "${CONFPATH}"
-#    START_RUN_ON_LOGIN_SERVICE
-#    fi
-#UPDATE_CACHE
-#fi   
-#########################################################################
-
 # Искать загрузчики при запуске MountEFI  ################################
 if [[ $inputs = [fF] ]]; then 
    if [[ $startupMount = 1 ]]; then
   plutil -replace startupMount -bool NO "${CONFPATH}"
   STOP_RUN_ON_LOGIN_SERVICE
  else 
- plutil -replace startupMount -bool YES "${CONFPATH}"
- plutil -replace CheckLoaders -bool YES "${CONFPATH}"
- START_RUN_AT_LOGIN_SERVICE
+    GET_SYSTEM_FLAG
+    if [[ ! $flag = 0 ]]; then
+    GET_USER_PASSWORD
+    if [[ $mypassword = 0 ]]; then ENTER_PASSWORD; fi    
+    fi
+    if [[ ! $mypassword = 0 ]] || [[ $flag = 0 ]]; then
+    plutil -replace startupMount -bool YES "${CONFPATH}"
+    plutil -replace CheckLoaders -bool YES "${CONFPATH}"
+    START_RUN_AT_LOGIN_SERVICE
+    fi
   fi
 UPDATE_CACHE
 fi  
