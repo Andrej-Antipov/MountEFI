@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 16.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 18.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="048"
+s_edit_vers="049"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -52,6 +52,7 @@ s_edit_vers="048"
 # 046 - для github проверка версии
 # 047 - проверка загрузчиков в отключенных папках при запуске
 # 048 - проверка загрузчиков в виде сервиса MEFIScA
+# 049 - в фукцию очистки добавлено удалене MEFIScA
 
 clear
 
@@ -7114,22 +7115,24 @@ RUN_UNINSTALLER(){
                                     if [[ ! $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
                                     kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " "); fi                                    
                                     if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
-                                        launchctl unload -w ~/Library/LaunchAgents/MountEFIu.plist; fi
+                                        launchctl unload -w "${HOME}"/Library/LaunchAgents/MountEFIu.plist; fi
                                     if [[ $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.job") ]]; then 
-                                        launchctl unload -w ~/Library/LaunchAgents/MountEFIr.plist; fi
+                                        launchctl unload -w "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
                                     security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
-                                    if [[ $(launchctl list | grep "MEFIlouncher.job" | cut -f3 | grep -x "MEFIlouncher.job") ]]; then 
-                                        launchctl unload -w ~/Library/LaunchAgents/MountEFIrl.plist; fi
+                                    if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then 
+                                        launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+                                    fi
                                 ########################## локальная очистка файлы ################################
-                                    if [[ -f ~/.MountEFIu.sh ]]; then rm ~/.MountEFIu.sh; fi
-                                    if [[ -f ~/.MountEFIr.sh ]]; then rm ~/.MountEFIr.sh; fi
-                                    if [[ -d ~/Library/Application\ Support/MountEFI ]]; then rm -Rf ~/Library/Application\ Support/MountEFI; fi 
-                                    if [[ -d ~/.MountEFIupdates ]]; then rm -Rf ~/.MountEFIupdates; fi
-                                    if [[ -f ~/Library/LaunchAgents/MountEFIu.plist ]]; then rm  ~/Library/LaunchAgents/MountEFIu.plist; fi                                  
-                                    if [[ -f ~/Library/LaunchAgents/MountEFIr.plist ]]; then rm  ~/Library/LaunchAgents/MountEFIr.plist; fi
-                                    if [[ -f ~/Library/LaunchAgents/MountEFIrl.plist ]]; then rm -f ~/Library/LaunchAgents/MountEFIrl.plist; fi
-                                    if [[ -f ~/.MountEFIconfBackups.zip ]]; then rm ~/.MountEFIconfBackups.zip; fi
-                                    if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
+                                    if [[ -f "${HOME}"/.MountEFIu.sh ]]; then rm "${HOME}"/.MountEFIu.sh; fi
+                                    if [[ -f "${HOME}"/.MountEFIr.sh ]]; then rm "${HOME}"/.MountEFIr.sh; fi
+                                    if [[ -d "${HOME}"/Library/Application\ Support/MountEFI ]]; then rm -Rf "${HOME}"/Library/Application\ Support/MountEFI; fi 
+                                    if [[ -d "${HOME}"/.MountEFIupdates ]]; then rm -Rf "${HOME}"/.MountEFIupdates; fi
+                                    if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIu.plist ]]; then rm  "${HOME}"/Library/LaunchAgents/MountEFIu.plist; fi                                  
+                                    if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIr.plist ]]; then rm  "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
+                                    if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIrl.plist ]]; then rm -f "${HOME}"/Library/LaunchAgents/MountEFIrl.plist; fi
+                                    if [[ -f "${HOME}"/Library/LaunchAgents/MEFIScA.plist ]]; then rm -f "${HOME}"/Library/LaunchAgents/MEFIScA.plist; fi
+                                    if [[ -f "${HOME}"/.MountEFIconfBackups.zip ]]; then rm "${HOME}"/.MountEFIconfBackups.zip; fi
+                                    if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi
                                 ########################## полная очистка iCloud ################################
                                     if [[ "${RESULT}" = "2" ]]; then  
                                     hwuuid=$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" \n')
@@ -7238,8 +7241,7 @@ fi
 }
 
 STOP_RUN_ON_LOGIN_SERVICE(){
-if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then
-launchctl unload -w ~/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then launchctl unload -w ~/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
 rm -f  ~/Library/LaunchAgents/MEFIScA.plist
 rm -Rf "${HOME}/Library/Application Support/MountEFI/MEFIScA"
  SET_TITLE
