@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="049"
+s_edit_vers="050"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -53,6 +53,7 @@ s_edit_vers="049"
 # 047 - проверка загрузчиков в отключенных папках при запуске
 # 048 - проверка загрузчиков в виде сервиса MEFIScA
 # 049 - в фукцию очистки добавлено удалене MEFIScA
+# 050 - функция MEFIScA получила статус beta
 
 clear
 
@@ -2044,7 +2045,7 @@ sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске M
 #sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков (экспериментально) = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков (бета)             = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
             else
 sbuf+=$(printf '\033[1;84f''                                 Menu List                              ')
@@ -2065,7 +2066,7 @@ sbuf+=$(printf '\033[9;84f'' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"
 sbuf+=$(printf '\033[10;84f'' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 #sbuf+=$(printf '\033[10;84f'' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[11;84f'' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf '\033[11;84f'' F) Bootloader search service (experimental) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[11;84f'' F) Bootloader auto search service (beta) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[12;84f'' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
             fi
 sbuf+=$(printf '\033[13;84f')
@@ -3006,16 +3007,16 @@ GET_STARTUP_MOUNTS(){
 startupMount=1
 if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true"); then
             if [[ $loc = "ru" ]]; then
-        mld_set="Да"; mld_corr=3
+        mld_set="Да"; mld_corr=10
             else
-        mld_set="Yes"; mld_corr=3
+        mld_set="Yes"; mld_corr=6
             fi
 else
         startupMount=0
             if [[ $loc = "ru" ]]; then
-        mld_set="Нет"; mld_corr=2
+        mld_set="Нет"; mld_corr=9
             else
-        mld_set="No"; mld_corr=4
+        mld_set="No"; mld_corr=7
             fi
 fi
 }
@@ -3078,7 +3079,7 @@ sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
 if [[ -f "$ROOT"/MEFIScA.sh ]]; then
-sbuf+=$(printf ' F) Сервис поиска загрузчиков (экспериментально) = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' F) Сервис авто поиска загрузчиков (бета) = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
 fi
 sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' A) Создать или править псевдонимы физических носителей                         \n')
@@ -3109,7 +3110,7 @@ sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
 if [[ -f "$ROOT"/MEFIScA.sh ]]; then
-sbuf+=$(printf ' F) Bootloader search service (experimental) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' F) Bootloader auto search service (beta) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
 fi
 sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' A) Create or edit aliases physical device/media                                \n')
@@ -7232,7 +7233,7 @@ echo '</plist>' >> ${HOME}/.MEFIScA.plist
                     if [[ $loc = "ru" ]]; then
                 echo 'SUBTITLE="Поисковый сервис установлен."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     else
-                echo 'SUBTITLE="Loaders searching sevice started."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="Bootloaders searching service started."; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     fi
                 DISPLAY_NOTIFICATION
    fi
@@ -7248,7 +7249,7 @@ rm -Rf "${HOME}/Library/Application Support/MountEFI/MEFIScA"
                     if [[ $loc = "ru" ]]; then
                 echo 'SUBTITLE="Поисковый сервис удалён"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     else
-                echo 'SUBTITLE="Loaders searching service disabled"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
+                echo 'SUBTITLE="Bootloaders searching service disabled"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                     fi
                 DISPLAY_NOTIFICATION
 fi
