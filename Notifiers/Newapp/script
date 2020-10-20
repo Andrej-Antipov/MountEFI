@@ -2,10 +2,10 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
-edit_vers="058"
+edit_vers="059"
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -724,14 +724,6 @@ GET_LOADER_STRING(){
                 fi
 }
 
-
-SHIFT_UP(){
-if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y>pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
-fi
-}
-
 FIND_LOADERS(){
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
@@ -744,13 +736,12 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
                         else
                             if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""
                                 else
-                                    #SHIFT_UP
                                     mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
                                     GET_LOADER_STRING
                   fi
                 fi
             else
-                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then SHIFT_UP; loader="empty"; mounted_loaders_list[pnum]=0; fi
+                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then loader="empty"; mounted_loaders_list[pnum]=0; fi
             fi
     fi
 }
@@ -1474,11 +1465,14 @@ if [[ ! $pos = 0 ]]; then
 	done
 fi
 
+new_remlist=()
+
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
 
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     init_time="$(date +%s)"; usblist=(); warning_sent=0
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
+    new_remlist=(${usblist[@]})
     if [[ ! ${#usblist[@]} = 0 ]]; then
         realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
         if [[ ! ${#realEFI_list[@]} = 0 ]]; then
@@ -1514,6 +1508,11 @@ fi
 fi
 if [[ $hotplug = 1 ]]; then
 echo "${msgpid}" > ~/Library/Application\ Support/MountEFI/hotplugFlag
+if [[ $mefisca = 1 ]] && [[ ${synchro} = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
+    rm -f ~/Library/Application\ Support/MountEFI/new_remlist
+    max=0; for y in ${!new_remlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo ${new_remlist[h]} >> ~/Library/Application\ Support/MountEFI/new_remlist; done
+fi
 pkill  "System Events"
 break
 fi
@@ -1654,6 +1653,31 @@ if [[ $mefisca = 1 ]]; then
     fi
 fi
 }
+
+GET_LOADERS_FROM_NEW_PARTS(){
+if [[ $mefisca = 1 ]]; then
+if [[ -f ~/Library/Application\ Support/MountEFI/new_remlist ]]; then 
+IFS=';'; new_remlist=( $(cat ~/Library/Application\ Support/MountEFI/new_remlist | tr '\n' ';' ) ); unset IFS
+rm -f ~/Library/Application\ Support/MountEFI/new_remlist
+fi
+ if [[ ! ${#new_remlist[@]} = 0 ]]; then
+    NEED_PASSWORD
+    for i in ${!dlist[@]}; do pnum=${nlist[i]}; string=${dlist[$pnum]}
+        for z in ${new_remlist[@]}; do 
+        if [[ $string = $z ]] && [[ $(df | grep ${string}) = "" ]]; then
+            DO_MOUNT
+            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+            FIND_LOADERS
+            if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
+            diskutil quiet  umount force /dev/${string}
+            fi
+        fi
+        done
+    done
+ fi
+fi
+}
+
 ################################### INIT ##################################################
 if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
    kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
@@ -1772,7 +1796,7 @@ if [[ ! ${#disk_mount_list[@]} = "0" ]]; then
         fi
     fi
 fi
-if [[ ${hotplug_flag} = 1 ]]; then GETARR; hotplug_flag=0; CORRECT_LOADERS_LIST; fi
+if [[ ${hotplug_flag} = 1 ]]; then GETARR; hotplug_flag=0; CORRECT_LOADERS_LIST; GET_LOADERS_FROM_NEW_PARTS; fi
 
 UPDATE_SCREEN
 
