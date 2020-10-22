@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 14.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.8.0"
@@ -24,10 +24,11 @@ DEBLOG(){
 echo "$1" >> "${SERVFOLD_PATH}"/MEFIScA/debug.log
 }
 
-
-touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
-
-if [[ -d "${SERVFOLD_PATH}"/MEFIScA ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; fi
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/reloadFlag ]]; then reloadFlag=1; rm -f "${SERVFOLD_PATH}"/MEFIScA/reloadFlag; else 
+    reloadFlag=0
+    touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
+    if [[ -d "${SERVFOLD_PATH}"/MEFIScA ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; fi
+fi
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
@@ -598,13 +599,16 @@ while true; do
 
         WAIT_SYNCHRO
         GETLIST
-        if [[ $startup = 0 ]]; then STARTUP_FIND_LOADERS; startup=1; fi
+        if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then STARTUP_FIND_LOADERS; startup=1; fi
 
     while true; do
         sleep 0.9
         if [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; then 
+          if [[ ! $reloadFlag = 1 ]]; then
             rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             SAVE_LOADERS_STACK
+            reloadFlag=0
+          fi
             touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
             while [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; do sleep 1.5; done
