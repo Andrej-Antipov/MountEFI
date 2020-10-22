@@ -126,7 +126,8 @@ if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"
                 fi
                 osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' &
             fi
-            if [[ $i = 0 ]]; then break; fi; else break; fi; done     
+            if [[ $i = 0 ]]; then break; fi; else break; fi; done
+            touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag     
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
             sleep 0.5
             launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
@@ -2306,8 +2307,8 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
     fi
   else
-      i=64; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
-      if [[ $i = 60 ]]; then MSG_WAIT &
+      i=96; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
+      if [[ $i = 92 ]]; then MSG_WAIT &
       wpid=$(($!+2)); fi
       if [[ $i = 0 ]]; then break; fi; done
       if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
