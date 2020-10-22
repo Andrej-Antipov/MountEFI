@@ -128,7 +128,6 @@ if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"
             fi
             if [[ $i = 0 ]]; then break; fi; else break; fi; done     
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-            echo "unload MEFISCA" >> ~/Desktop/temp.txt
             sleep 0.5
             launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
        else
