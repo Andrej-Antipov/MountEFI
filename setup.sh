@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 20.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 27.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="050"
+s_edit_vers="051"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -54,6 +54,7 @@ s_edit_vers="050"
 # 048 - проверка загрузчиков в виде сервиса MEFIScA
 # 049 - в фукцию очистки добавлено удалене MEFIScA
 # 050 - функция MEFIScA получила статус beta
+# 051 - коррекция состояния MEFIScA после замены конфига 
 
 clear
 
@@ -2042,10 +2043,10 @@ sbuf+=$(printf '\033[7;84f'' 6) Пресет "'"$itheme_set"'" из '$pcount' в
 fi
 sbuf+=$(printf '\033[8;84f'' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
-#sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
+#sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков (бета)             = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков (бета) = "'$mld_set'"'"%"$mld_corr"s"'     (Да, Нет)        \n')
 sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
             else
 sbuf+=$(printf '\033[1;84f''                                 Menu List                              ')
@@ -7255,6 +7256,17 @@ rm -Rf "${HOME}/Library/Application Support/MountEFI/MEFIScA"
 fi
 }
 
+CORRECT_STATE_ON_LOGIN_SERVICE(){
+if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true"); then
+    if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "false|true"); then
+        if [[ $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then START_RUN_AT_LOGIN_SERVICE
+           if [[ $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; UPDATE_CACHE; fi  
+        fi
+    fi
+else
+    STOP_RUN_ON_LOGIN_SERVICE
+fi
+}
 
 ###############################################################################
 ################### MAIN ######################################################
@@ -7307,6 +7319,7 @@ rm -f "${CONFPATH}"
         fi
     fi
     UPDATE_CACHE
+    CORRECT_STATE_ON_LOGIN_SERVICE
 fi
 
 # ВЫБОР ЛОКАЛИ ##################################################################
@@ -7608,6 +7621,7 @@ if [[ $inputs = [bB] ]]; then SET_BACKUPS; UPDATE_CACHE; CORRECT_CURRENT_PRESET
     UPDATE_CACHE
     need_restart=0
     fi
+    CORRECT_STATE_ON_LOGIN_SERVICE
 fi
 
 ##############################################################################
