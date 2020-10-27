@@ -446,10 +446,6 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
     security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
     fi
 
-    if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true"); then
-        if [[ $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
-    fi
-
 fi
 #############################################################################################################################################
 
