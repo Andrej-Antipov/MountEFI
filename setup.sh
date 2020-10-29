@@ -5798,7 +5798,7 @@ if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' Ð
 GET_SYSTEM_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
 if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1100" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+if [[ "${macos}" -gt "1199" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 

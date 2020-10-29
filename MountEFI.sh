@@ -1,10 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
 edit_vers="059"
+serv_vers="002"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -73,6 +74,37 @@ if [[ $reload_check = "Reload" ]]; then par="-s"; fi
 
 #################### CHECK UPDATE ###################################################################################
 
+IF_RELOAD_MEFISCA(){
+    if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then 
+      if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
+         if [[ ! $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh | grep 'serv_vers="[0-9]*"' | cut -f2 -d= | tr -d '"' ) = "$serv_vers" ]]; then
+            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
+            i=32; while true; do if [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; then sleep 0.25; let "i--"; 
+            if [[ $i = 28 ]]; then
+                icon_string=""
+                if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
+                icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
+                fi 
+                if [[ $loc = "ru" ]]; then
+                MESSAGE='"Перезапуск поискового сервиса для обновления !"'
+                else
+                MESSAGE='"Restarting bootloaders searching service for update!"'
+                fi
+                osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' &
+            fi
+            if [[ $i = 0 ]]; then break; fi; else break; fi; done
+            touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag     
+            launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+            sleep 0.5
+            launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+         fi
+      else
+           launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+           rm -f ${HOME}"/Library/LaunchAgents/MEFIScA.plist"
+      fi
+    fi
+}
+
 upd=0
 update_check=`echo "$MountEFIconf"| grep -o "Updating"`
 if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
@@ -108,35 +140,7 @@ if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info
         fi
 SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
 if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
-if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"
-# if reload mefisca
-    if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then 
-       if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
-            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
-            i=32; while true; do if [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; then sleep 0.25; let "i--"; 
-            if [[ $i = 28 ]]; then
-                icon_string=""
-                if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
-                icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
-                fi 
-                if [[ $loc = "ru" ]]; then
-                MESSAGE='"Перезапуск поискового сервиса для обновления !"'
-                else
-                MESSAGE='"Restarting bootloaders searching service for update!"'
-                fi
-                osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' &
-            fi
-            if [[ $i = 0 ]]; then break; fi; else break; fi; done
-            touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag     
-            launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-            sleep 0.5
-            launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-       else
-           launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-           rm -f ${HOME}"/Library/LaunchAgents/MEFIScA.plist"
-       fi
-    fi
-fi
+if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"; IF_RELOAD_MEFISCA; fi
 
 #IF_NEW_APPLET
             TARGET="${ROOT}/../../../MountEFI.app/Contents"
@@ -446,6 +450,9 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
     security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
     fi
 
+
+    IF_RELOAD_MEFISCA
+
 fi
 #############################################################################################################################################
 
@@ -582,9 +589,8 @@ else
 
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1100" ]] || [[ "${macos}" -lt "1011" ]]; then 
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}; if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "${macos}" -gt "1199" ]] || [[ "${macos}" -lt "1011" ]]; then 
 ############## ERROR_OS_VERSION
 if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
 ##############################
