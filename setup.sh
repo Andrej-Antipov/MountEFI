@@ -1,11 +1,11 @@
-#!/bin/bash
+v#!/bin/bash
 
-#  Created by Андрей Антипов on 27.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="051"
+s_edit_vers="052"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -55,6 +55,7 @@ s_edit_vers="051"
 # 049 - в фукцию очистки добавлено удалене MEFIScA
 # 050 - функция MEFIScA получила статус beta
 # 051 - коррекция состояния MEFIScA после замены конфига 
+# 052 - улучшение проверки ручного обновления
 
 clear
 
@@ -5948,6 +5949,7 @@ fi
 GET_LATEST_RELEASE(){
 latest_release=$(curl -s --max-time 30 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
 if [[ -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
+latest_release=${latest_release::3}
 echo "${latest_release}" > ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt
 }
 
