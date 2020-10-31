@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 31.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="059"
+edit_vers="060"
 serv_vers="002"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
@@ -2112,7 +2112,9 @@ do
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
 					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
-                					if [[ ${check_loader} = "OpenCore" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi; was_mounted=1; fi   
+                        if [[ ${check_loader} = "OpenCore" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi; was_mounted=1
+                        if [[ ! $ldrname = "" ]]; then break; fi
+                        fi   
 	         fi
 	fi
 
@@ -2174,7 +2176,9 @@ do
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
                 check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
-                    if [[ ${check_loader} = "Clover" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi ; was_mounted=1; fi   
+                    if [[ ${check_loader} = "Clover" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi ; was_mounted=1
+                    if [[ ! $ldrname = "" ]]; then break; fi
+                    fi   
 	        fi
 	fi
     if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
@@ -2941,9 +2945,9 @@ if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
 
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$schs'   ( U,E,A,S,I или Q ):  '; printf '                            '
+printf '  Введите число от 0 до '$schs' ( P,U,E,A,S,I или Q ):  '; printf '                            '
 			else
-printf '  Enter a number from 0 to '$schs'  ( U,E,A,S,I or Q ):  ';  printf '                         '
+printf '  Enter a number from 0 to '$schs' ( P,U,E,A,S,I or Q ):  ';  printf '                         '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -3189,6 +3193,33 @@ lists_updated=0
 fi
 }
 #############################################################################################################################################
+OPEN_PLIST(){
+sl=5; onekey="±"; ldrname=""
+    if [[ $loc = "ru" ]]; then
+printf '\r  Открыть config.plist ( номер EFI, O, C или Enter ):   ' ; printf '                           '
+			else
+printf '\r  Edit config.plist - ( EFI number, O, C или Enter ):   ' ; printf '                          '
+    fi
+printf "\r\033[54C"
+while true; do
+    IFS="±"; read -rn1 -t1 onekey; unset IFS; sym=2; let "sl--"
+    case $onekey in 
+      [0-9])  if [[ ${onekey} -ge 0 && ${onekey} -le $ch ]]; then chs=$onekey; MOUNTS
+              if [[ $mcheck = "Yes" ]]; then sleep 0.5; open "$vname"/EFI/*/config.plist 2>/dev/null; fi; fi; break ;;
+     [cCoO])  if [[ $onekey = [cC] ]]; then ldrname="Clover"; else ldrname="OpenCo"; fi
+              if [[ $mefisca = 1 ]]; then 
+                    for ii in ${!dlist[@]}; do if [[ "${ldlist[$ii]::6}" = "$ldrname" ]]; then chs=$((ii+1)); MOUNTS              
+                    if [[ $mcheck = "Yes" ]]; then sleep 0.5; open "$vname"/EFI/*/config.plist 2>/dev/null; break; fi; fi; done
+              else
+                  printf '                               '; if [[ $ldrname = "Clover" ]]; then SPIN_FCLOVER; else SPIN_OC; fi
+                  if [[ $loader_found = 1 ]]; then sleep 0.5; open "$vname"/EFI/*/config.plist 2>/dev/null; fi
+              fi
+              ldrname=""; break ;;
+    esac
+    if [[ $sl -lt 1 ]] || [[ ! $onekey = "±" ]]; then break; fi
+done
+}
+#############################################################################################################################################
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
 unset choice
@@ -3200,16 +3231,16 @@ printf "\r\n\033[1A"
 if [[ $order = 3 ]]; then 
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs'   ( O,C,S,I  или  Q ):   ' ; printf '                           '
+printf '  Введите число от 0 до '$schs' ( P,O,C,S,I  или  Q ):   ' ; printf '                           '
 			else
-printf '  Enter a number from 0 to '$schs'  ( O,C,S,I  or  Q ):   ' ; printf '                          '
+printf '  Enter a number from 0 to '$schs' ( P,O,C,S,I  or  Q ):   ' ; printf '                          '
     fi
         else
             let "schs=$ch-1"
             if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$schs'   ( U,E,A,S,I или Q ):      ' ; printf '                        '
+printf '  Введите число от 0 до '$schs' ( P,U,E,A,S,I или Q ):      ' ; printf '                        '
 			else
-printf '  Enter a number from 0 to '$schs'  ( U,E,A,S,I or Q ):      ' ; printf '                      '
+printf '  Enter a number from 0 to '$schs' ( P,U,E,A,S,I or Q ):      ' ; printf '                      '
     fi
 fi
 printf '\n\n'
@@ -3238,7 +3269,7 @@ printf "\033[?25l\033[1D "
 if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; UPDATELIST; choice=0; else choice="V"; fi; fi
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
-if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaA]$ ]]; then  unset choice; fi
+if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaApP]$ ]]; then  unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
@@ -3246,8 +3277,9 @@ if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
+if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; if [[ ! $onekey = [0-9] ]]; then UPDATELIST; fi; fi
 else
-if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVW]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpP]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [oO] ]]; then  printf '                               '; SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_FCLOVER; choice="0"; order=4; fi
@@ -3255,6 +3287,7 @@ if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [W] ]];  then MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; EASYEFI_RESTART_APP; fi
+if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; if [[ ! $onekey = [0-9] ]]; then UPDATELIST; fi; fi
 fi
 else
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
@@ -3290,7 +3323,11 @@ fi
 string=${strng0}
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then open "$vname"; fi; fi
+if [[ $mcheck = "Yes" ]]; then 
+    if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
+        if [[ $ldrname = "" ]];then open "$vname"; else open "$vname/EFI"; fi
+    fi
+fi
  nogetlist=1
 
 }
@@ -3373,9 +3410,7 @@ GET_CONFIG_HASHES
 CHECK_MEFIScA
 STARTUP_FIND_LOADERS
 
-chs=0
-
-nogetlist=0
+chs=0; nogetlist=0; ldrname=""
 
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 

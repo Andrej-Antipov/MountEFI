@@ -1,4 +1,4 @@
-v#!/bin/bash
+#!/bin/bash
 
 #  Created by Андрей Антипов on 30.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
