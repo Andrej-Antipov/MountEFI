@@ -491,11 +491,6 @@ sh "${HOME}"/.MountEFInoty.sh
 rm "${HOME}"/.MountEFInoty.sh
 }
 
-ERROR_MSG(){
-osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "OK"}  giving up after 110' >>/dev/null 2>/dev/null
-EXIT_PROGRAM
-}
-
 WARNING_MSG(){
 if [[ $loc = "ru" ]]; then
 osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Продолжить", "Прекратить" } default button "Прекратить" giving up after 110'  2>/dev/null
