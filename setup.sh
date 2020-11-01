@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="052"
+s_edit_vers="053"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -56,6 +56,7 @@ s_edit_vers="052"
 # 050 - функция MEFIScA получила статус beta
 # 051 - коррекция состояния MEFIScA после замены конфига 
 # 052 - улучшение проверки ручного обновления
+# 053 - коррекция в контроле версии Мак OC
 
 clear
 
@@ -1379,14 +1380,9 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 	                 fi
 var0=$pos; num1=0 ; ch=0; unset screen_buffer3
 
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
-        vmacos="Disk Size:"
-    else
-        vmacos="Total Size:"
-fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
 if [[ $loc = "ru" ]]; then
     printf '\n\n\n      0)  поиск разделов .....    '
@@ -1502,14 +1498,9 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 	                 fi
 var0=$pos; num1=0 ; ch=0; unset screen_buffer3
 
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
-        vmacos="Disk Size:"
-    else
-        vmacos="Total Size:"
-fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
 if [[ $loc = "ru" ]]; then
     printf '\n\n\n      0)  поиск разделов .....    '
@@ -3293,14 +3284,9 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 	                 fi
 var0=$pos; num=0 ; ch=0; unset screen_buffer1; unset screen_buffer2
 
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
-        vmacos="Disk Size:"
-    else
-        vmacos="Total Size:"
-fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
 if [[ $loc = "ru" ]]; then
     printf '\n\n\n     0)  поиск разделов .....      '
@@ -4474,19 +4460,15 @@ let "chn--";
 
 UPDATE_FONTS_LIST(){
 
-macos=`sw_vers -productVersion`
-macos=`echo ${macos//[^0-9]/}`
-macos=${macos:0:4}
-if [[ "$macos" = "1014" ]] || [[ "$macos" = "1013" ]] || [[ "$macos" = "1012" ]] || [[ "$macos" = "1015" ]]; then
-       
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
+if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "$macos" = "1011" ]]; then 
+fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
+Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;Osaka-Mono"
+else     
 fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
 Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;SF Mono Light;SF Mono Light Italic;SF Mono Medium;SF Mono Medium Italic;SF Mono Regular;\
 SF Mono Regular Italic;SF Mono Semibold;SF Mono Semibold Italic;SF Mono Bold;SF Mono Bold Italic;SF Mono Heavy;SF Mono Heavy Italic;"
-
-else 
-
-fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
-Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;Osaka-Mono"
 fi
 
 IFS=';' 
@@ -5791,15 +5773,27 @@ if [[ -f ~/.other_loaders_list.txt ]]; then cp -f ~/.other_loaders_list.txt ~/.o
 if [[ -f ~/.disk_list.txt ]]; then cp -f ~/.disk_list.txt ~/.disk_list.txt.back; fi
 }
 
-ERROR_OS_VERSION(){
-SET_LOCALE
-if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+WARNING_MSG(){
+if [[ $loc = "ru" ]]; then
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Продолжить", "Прекратить" } default button "Прекратить" giving up after 110'  2>/dev/null
+else
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Continue", "Abort" } default button "Abort" giving up after 110'  2>/dev/null
+fi
 }
 
 GET_SYSTEM_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1199" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}; if [[ ${#macos} = 3 ]]; then macos+="0"; fi
+if [[ "${macos}" -gt "1101" ]] || [[ "${macos}" -lt "1011" ]]; then 
+    if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
+############## ERROR_OS_VERSION
+        if [[ $loc = "ru" ]]; then 
+        error_message='"Работа программы не проверялась с этой\nверсией Mac OS : '$(sw_vers -productVersion)' !\nПосле подтверждения работа программы\nбудет продолжена, но корректное исполнение функций не гарантируется.\n"'
+        else error_message='"This program has not been tested\non Mac OS version: '$(sw_vers -productVersion)' !\nAfter confirmation, the execution will continue\nBut the correct execution is not guaranteed."'; fi
+        warn_answer=$(echo $(WARNING_MSG) | egrep -o "button returned:Continue,|Abort,|Продолжить,|Прекратить," | tr -d ',' | cut -f2 -d:)
+        if [[ "$warn_answer" = "Продолжить" || "$warn_answer" = "Continue" ]]; then plutil -replace UnsupportedExecution -string $(sw_vers -productVersion | tr -d .) "${CONFPATH}"; UPDATE_CACHE; else EXIT_PROGRAM; fi
+##############################
+    fi
+fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
 

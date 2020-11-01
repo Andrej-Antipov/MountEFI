@@ -491,9 +491,12 @@ sh "${HOME}"/.MountEFInoty.sh
 rm "${HOME}"/.MountEFInoty.sh
 }
 
-ERROR_MSG(){
-osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "OK"}  giving up after 4' >>/dev/null 2>/dev/null
-EXIT_PROGRAM
+WARNING_MSG(){
+if [[ $loc = "ru" ]]; then
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Продолжить", "Прекратить" } default button "Прекратить" giving up after 110'  2>/dev/null
+else
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Continue", "Abort" } default button "Abort" giving up after 110'  2>/dev/null
+fi
 }
 
 CHECK_SANDBOX(){
@@ -590,10 +593,16 @@ else
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}; if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1199" ]] || [[ "${macos}" -lt "1011" ]]; then 
+if [[ "${macos}" -gt "1101" ]] || [[ "${macos}" -lt "1011" ]]; then 
+    if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
-if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+        if [[ $loc = "ru" ]]; then 
+        error_message='"Работа программы не проверялась с этой\nверсией Mac OS : '$(sw_vers -productVersion)' !\nПосле подтверждения работа программы\nбудет продолжена, но корректное исполнение функций не гарантируется.\n"'
+        else error_message='"This program has not been tested\non Mac OS version: '$(sw_vers -productVersion)' !\nAfter confirmation, the execution will continue\nBut the correct execution is not guaranteed."'; fi
+        warn_answer=$(echo $(WARNING_MSG) | egrep -o "button returned:Continue,|Abort,|Продолжить,|Прекратить," | tr -d ',' | cut -f2 -d:)
+        if [[ "$warn_answer" = "Продолжить" || "$warn_answer" = "Continue" ]]; then plutil -replace UnsupportedExecution -string $(sw_vers -productVersion | tr -d .) "${CONFPATH}"; UPDATE_CACHE; else EXIT_PROGRAM; fi
 ##############################
+    fi
 fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
 }
