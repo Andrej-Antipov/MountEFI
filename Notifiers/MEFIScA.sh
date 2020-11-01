@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 31.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 01.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.8.0"
 edit_vers="060"
-serv_vers="002"
+serv_vers="003"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -33,7 +33,7 @@ fi
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
-
+rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
 if [[ -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
 mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack
 if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
@@ -48,6 +48,7 @@ fi
 if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
             for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist; done
 fi
+touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
 }
 
 GET_MOUNTEFI_STACK(){
@@ -600,18 +601,13 @@ while true; do
 
         WAIT_SYNCHRO
         GETLIST
-        if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then STARTUP_FIND_LOADERS; startup=1; fi
+
+        if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then STARTUP_FIND_LOADERS; startup=1; fi; reloadFlag=0
 
     while true; do
         sleep 0.9
         if [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; then 
-          if [[ ! $reloadFlag = 1 ]]; then
-            rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             SAVE_LOADERS_STACK
-            reloadFlag=0
-          fi
-            touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
-            rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
             while [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; do sleep 1.5; done
             GET_MOUNTEFI_STACK
         else
