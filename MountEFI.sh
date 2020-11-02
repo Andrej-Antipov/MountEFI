@@ -1603,7 +1603,7 @@ GET_THEME_LOADERS
 GET_LOADERS
 if [[ ! "$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")" = "$check_str" ]]; then STARTUP_FIND_LOADERS; fi
 if [[ ${CheckLoaders} = 0 ]]; then 
-    mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; UPDATE_SCREEN; fi
+    mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
 rm -f ~/.other_loaders_list.txt
 if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
     SAVE_LOADERS_STACK
