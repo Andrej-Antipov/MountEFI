@@ -294,10 +294,7 @@ fi
 }
 
 GET_LOADERS(){
-CheckLoaders=0
-strng=$( echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t')
-if [[ $strng = "true" ]]; then CheckLoaders=1
-fi
+if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|false"); then CheckLoaders=1; else CheckLoaders=0; fi
 }
 
 GET_FLAG(){
@@ -762,8 +759,6 @@ vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 
 ##############################################################################################################################################################
 UPDATE_SCREEN(){
 
-#DBG "UPDATE_SCREEN 1"
-
 ask_efi_list=(); num=0; unset string; sata_lines=0; usb_lines=0; usb_screen_buffer=""; screen_buffer=""; var0=$pos; ldname=0
 
 while [[ $var0 != 0 ]]; do
@@ -795,13 +790,9 @@ while [[ $var0 != 0 ]]; do
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
     CHECK_USB
 
-        if [[ ! $CheckLoaders = 0 ]]; then FIND_LOADERS 
+        if [[ $CheckLoaders = 1 ]]; then FIND_LOADERS 
           if [[ $mefi_stack_got = 0 ]]; then
             if [[ ! ${loader} = "" ]];then
-#                if [[ ! ${lddlist[pnum]} = "" ]]; then
-#                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-#                      for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-#                fi
                 ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}
             fi
           fi
@@ -872,18 +863,11 @@ unset IFS
 
 if [[ $mefi_stack_got = 1 ]]; then mefi_stack_got=0; fi
 
-#DBG "UPDATE_SCREEN 2"
-
 }
 
 
 GETLIST(){
-
-#DBG "GET_LIST"
-
-GET_LOADERS
-CheckLoaders=1
-if [[ ! $CheckLoaders = 0 ]]; then 
+if [[ $CheckLoaders = 1 ]]; then 
 if [[ ! $mefisca = 1 ]]; then 
 mounted_loaders_list=(); ldlist=(); lddlist=(); else lname=""; fi 
 fi
@@ -903,9 +887,11 @@ if [[ ${ldname} = 1 ]]; then
     efi_prompt_list+='"'"*********************************** дополнительно *****************************************"'"'","
         efi_prompt_list+='"                                  Отключить все подключенные EFI разделы  "'","
     if [[ ${menu_mode} = 1 ]]; then
+      if [[ $CheckLoaders = 1 ]]; then
         efi_prompt_list+='"                                  Найти и подключить разделы с OpenCore  "'","
         efi_prompt_list+='"                                  Найти и подключить разделы с Clover  "'","
         efi_prompt_list+='"                                  Проверить все BOOTx64.efi в разделах EFI  "'","
+      fi
 #        efi_prompt_list+='"                                  Авто-подключение EFI при входе в систему  "'","
         efi_prompt_list+='"                                  Переключить в режим окна терминала  "'","
         efi_prompt_list+='"                                  Включить упрощённый режим управления  "'
@@ -916,9 +902,11 @@ else
     efi_prompt_list+='"'"*************************************** additionally: ****************************************"'"'","
         efi_prompt_list+='"                                       Unmount ALL mounted EFI partitions  "'","
     if [[ ${menu_mode} = 1 ]]; then
+      if [[ $CheckLoaders = 1 ]]; then
         efi_prompt_list+='"                                       Find and mount EFI partitions with OpenCore  "'","
         efi_prompt_list+='"                                       Find and mount EFI partitions with Clover  "'","
         efi_prompt_list+='"                                       Searching all BOOTx64.efi in EFI partitions "'","
+      fi
 #        efi_prompt_list+='"                                       EFI auto-mount on login  "'","
         efi_prompt_list+='"                                       Switch to terminal window mode  "'","
         efi_prompt_list+='"                                       Switch menu to simple management mode "'
@@ -932,9 +920,11 @@ if [[ $loc = "ru" ]]; then
 efi_prompt_list+='"'"***************************** дополнительно: ******************************"'"'","
             efi_prompt_list+='"                          Отключить все подключенные EFI разделы  "'","
         if [[ ${menu_mode} = 1 ]]; then
+          if [[ $CheckLoaders = 1 ]]; then
             efi_prompt_list+='"                          Найти и подключить разделы с OpenCore  "'","
             efi_prompt_list+='"                          Найти и подключить разделы с Clover  "'","
             efi_prompt_list+='"                          Проверить все BOOTx64.efi в разделах EFI  "'","
+          fi
 #            efi_prompt_list+='"                          Авто-подключение EFI при входе в систему  "'","
             efi_prompt_list+='"                          Переключить в режим окна терминала  "'","
             efi_prompt_list+='"                          Включить упрощённый режим управления  "'
@@ -945,9 +935,11 @@ else
 efi_prompt_list+='"'"******************************* additionally: *********************************"'"'","
             efi_prompt_list+='"                                Unmount ALL mounted EFI partitions  "'","
         if [[ ${menu_mode} = 1 ]]; then
+          if [[ $CheckLoaders = 1 ]]; then
             efi_prompt_list+='"                                Find and mount EFI partitions with OpenCore  "'","
             efi_prompt_list+='"                                Find and mount EFI partitions with Clover  "'","
             efi_prompt_list+='"                                Searching all BOOTx64.efi in EFI partitions "'","
+          fi
 #            efi_prompt_list+='"                                EFI auto-mount on login  "'","
             efi_prompt_list+='"                                Switch to terminal window mode  "'","
             efi_prompt_list+='"                                Switch menu to simple management mode "'
@@ -1086,13 +1078,7 @@ while [ $var1 != 0 ]; do
 
     FIND_LOADERS
 
-    if [[ ! ${loader} = "" ]];then
-#       if [[ ! ${lddlist[pnum]} = "" ]]; then
-#              max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-#              for ((y=$((max+1));y>pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-#       fi
-             ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
-    fi
+    if [[ ! ${loader} = "" ]];then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
 
     if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
@@ -1388,7 +1374,7 @@ fi
 
 if [[ $hotplug = 0 ]]; then synchro=0
 ###### recheck loaders #############################
-    if [[ ! $CheckLoaders = 0 ]]; then
+    if [[ $CheckLoaders = 1 ]]; then
         for pnum in ${!dlist[@]}
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
@@ -1535,7 +1521,7 @@ exit
 }
 
 RECHECK_LOADERS(){
-if [[ ! $CheckLoaders = 0 ]] && [[ -f ~/Library/Application\ Support/MountEFI/recheckLoadersFlag ]]; then
+if [[ $CheckLoaders = 1 ]] && [[ -f ~/Library/Application\ Support/MountEFI/recheckLoadersFlag ]]; then
 		update_screen_flag=0
         for pnum in ${!dlist[@]}
         do
@@ -1727,7 +1713,7 @@ MEFI_MD5=$(md5 -qq "$ROOT"/MountEFI); if [[ ! -f "${SERVFOLD_PATH}"/validconf/${
 
 GET_FLAG
 UPDATE_CACHE
-
+GET_LOADERS
 CHANGE_PSW
 
 menu_mode=0
