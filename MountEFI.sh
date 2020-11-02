@@ -457,10 +457,7 @@ fi
 #############################################################################################################################################
 
 GET_LOADERS(){
-CheckLoaders=1
-strng=`echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then CheckLoaders=0
-fi
+if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|false"); then CheckLoaders=1; else CheckLoaders=0; fi
 }
 
 GET_APP_ICON(){
@@ -1626,7 +1623,6 @@ if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" 
 ################ восстановить состояние после перезагрузки из схранения в файлах ##################################################
 
 GET_MOUNTEFI_STACK(){
-
 if [[ -f ~/.MountEFIst/.mounted_loaders_list ]] && [[ -f ~/.MountEFIst/.ldlist ]] && [[ -f ~/.MountEFIst/.lddlist ]]; then
 mounted_loaders_list_string=$( cat ~/.MountEFIst/.mounted_loaders_list | tr '\n' ';' )
 ldlist_string=$( cat ~/.MountEFIst/.ldlist | tr '\n' ';' )
@@ -3294,7 +3290,7 @@ if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_
 if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
-if [[ ${choice} = [W] ]];  then MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; EASYEFI_RESTART_APP; fi
+if [[ ${choice} = [W] ]];  then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; if [[ ! $onekey = [0-9] ]]; then UPDATELIST; fi; fi
 fi
 else
