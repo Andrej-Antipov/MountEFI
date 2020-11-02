@@ -432,9 +432,6 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
     strng=`echo "$MountEFIconf"| grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
     if [[ ! $strng = "startupMount" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
 
-    strng=`echo "$MountEFIconf"| grep -e "<key>MountEFIonLoginRUN</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-    if [[ ! $strng = "MountEFIonLoginRUN" ]]; then plutil -replace MountEFIonLoginRUN -bool NO "${CONFPATH}"; cache=0; fi
-
     if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true"); then
         if [[ $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
     fi
@@ -1026,12 +1023,10 @@ osascript -e 'tell application "Terminal" to activate'
 
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
-am_enabled=0
-strng3=`cat "${CONFPATH}" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | grep true | tr -d "<>/"'\n\t'`
-if [[ $strng3 = "true" ]]; then am_enabled=1
+if $(echo "$MountEFIconf" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | egrep -o "true|false"); then am_enabled=1
 
     ################ REM_ABSENT
-    strng1=`echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+    strng1=$(echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
     alist=($strng1); apos=${#alist[@]}
     if [[ ! $apos = 0 ]]
 	     then
@@ -1056,19 +1051,17 @@ if [[ $strng3 = "true" ]]; then am_enabled=1
 
     if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
+else am_enabled=0
+
 fi
 
 if [[ ! $am_enabled = 0 ]]; then 
     if [[ ! $apos = 0 ]]; then
         ENTER_PASSWORD
 
-        autom_open=0
-        strng3=`echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | grep true | tr -d "<>/"'\n\t'`
-        if [[ $strng3 = "true" ]]; then autom_open=1; fi
+        if $(echo "$MountEFIconf" | grep AutoMount -A 7 | grep -A 1 -e "Open</key>" | egrep -o "true|false"); then autom_open=1; else autom_open=0; fi
 
-        autom_exit=0
-        strng3=`echo "$MountEFIconf" | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | grep true | tr -d "<>/"'\n\t'`
-        if [[ $strng3 = "true" ]]; then autom_exit=1; fi
+        if $(echo "$MountEFIconf" | grep AutoMount -A 5 | grep -A 1 -e "ExitAfterMount</key>" | egrep -o "true|false"); then autom_exit=1; else autom_exit=0; fi
 
         var9=$apos
         posa=0
@@ -1108,9 +1101,7 @@ if [ "$1" = "-m" ] || [ "$1" = "-M" ]  || [ "$1" = "-menue" ]  || [ "$1" = "-MEN
 ###########################################################################################################################################
 
 ################################## параметр OpenFinder ####################################################################################
-OpenFinder=1
-strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then OpenFinder=0; fi
+if $(echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | egrep -o "true|false"); then OpenFinder=1; else OpenFinder=0; fi
 ###########################################################################################################################################
 # Определение функций кастомизации интерфейса #############################################
 ############################################################################################
@@ -1273,6 +1264,8 @@ if [[ ${oc_revision} = "" ]]; then
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
 case "${md5_full}" in
+cbdc9e74d27453c2f3afaec2ca84f34819758cfb7f8f157959bf608fc76a069d ) oc_revision=.63r;;
+5ee87cfa50c502249abb6e3480bfdaa0aee0e2713f267fa907bb4e1250af71f7 ) oc_revision=.63d;;
 58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
 5ef1fc5a81e8e4e6aeb504c91d4a1d7786652faf1a336a446b187ae283d2cc9a ) oc_revision=.62d;;
 75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
@@ -1307,7 +1300,9 @@ fi
 if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
-############## oc_hashes_strings 29 #################
+############## oc_hashes_strings 33 #################
+cbdc9e74d27453c2f3afaec2ca84f348 ) oc_revision=.63x;;
+5ee87cfa50c502249abb6e3480bfdaa0 ) oc_revision=.63x;;
 5ef1fc5a81e8e4e6aeb504c91d4a1d77 ) oc_revision=.62x;;
 75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
 58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
@@ -1508,13 +1503,6 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
             
 MEFI_PATH="${ROOT}""/MountEFI"
 
-#if [[ -d ~/.MountEFIupdates/UpdateService ]] && [[ -f ~/.MountEFIupdates/UpdateService/MountEFIu.sh ]] && [[ -f "${HOME}"/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then 
-#    cat ~/.MountEFIupdates/UpdateService/MountEFIu.sh | sed s'/ProgPath="\/MountEFI"/ProgPath="'$(echo ${MEFI_PATH} | sed s'/\//\\\//g')'"/' >> ~/.MountEFIupdates/UpdateService/.MountEFIu.sh
-#    plutil -remove ProgramArguments.0  ~/.MountEFIupdates/UpdateService/MountEFIu.plist
-#    plutil -insert ProgramArguments.0 -string ''"${HOME}"'/.MountEFIupdates/UpdateService/.MountEFIu.sh' ~/.MountEFIupdates/UpdateService/MountEFIu.plist
-#    if [[ -f "${HOME}"/.MountEFIupdates/UpdateService/MountEFIu.plist ]]; then mv -f "${HOME}"/.MountEFIupdates/UpdateService/MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
-#    chmod u+x "${HOME}"/.MountEFIupdates/UpdateService/.MountEFIu.sh
-#else
     echo '<?xml version="1.0" encoding="UTF-8"?>' >> "${HOME}"/.MountEFIu.plist
     echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> "${HOME}"/.MountEFIu.plist
     echo '<plist version="1.0">' >> "${HOME}"/.MountEFIu.plist
@@ -1568,7 +1556,6 @@ MEFI_PATH="${ROOT}""/MountEFI"
     chmod u+x "${HOME}"/.MountEFIu.sh
 
     if [[ -f "${HOME}"/.MountEFIu.plist ]]; then mv -f "${HOME}"/.MountEFIu.plist ~/Library/LaunchAgents/MountEFIu.plist; fi
-#fi
 
 if [[ ! $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then launchctl load -w ~/Library/LaunchAgents/MountEFIu.plist; fi
            
@@ -3197,28 +3184,56 @@ lists_updated=0
 fi
 }
 #############################################################################################################################################
+STORE_CONFIG_PATH(){
+plutil -replace OpenedPlistPartUUID -string $(echo "$(ioreg -c IOMedia -r | tr -d '"|+{}\t')" | sed '/Statistics =/d'  | egrep -A12 -B12 "UUID =" | grep -A12 -B12 $1 | grep -m 1 UUID | awk '{print $NF}') "${CONFPATH}"
+UPDATE_CACHE
+}
+
+SHOW_MSG(){
+osascript -e 'display dialog '"${error_message}"' '"${icon_string}"' buttons { "OK"} default button "OK" giving up after 3' >/dev/null 2>/dev/null
+}
+
+WARNING_NO_PARTS(){
+if [[ $loc = "ru" ]]; then
+error_message='"Диск с запрошенным config.plist\nСкорее всего был отключен от Mac"'        
+else
+error_message='"The disk with the requested config.plist\nmost likely was disconnected from this Mac"'        
+fi
+SHOW_MSG &
+}
+
 OPEN_PLIST(){
 sl=5; onekey="±"; ldrname=""
     if [[ $loc = "ru" ]]; then
-printf '\r  Открыть config.plist ( номер EFI, O, C или Enter ):   ' ; printf '                           '
+printf '\r  Открыть config.plist ( номер EFI, O, C, L или Enter ):   ' ; printf '                           '
 			else
-printf '\r  Edit config.plist - ( EFI number, O, C или Enter ):   ' ; printf '                          '
+printf '\r  Edit config.plist - ( EFI number, O, C, L или Enter ):   ' ; printf '                          '
     fi
-printf "\r\033[54C"
+printf "\r\033[57C"
 while true; do
     IFS="±"; read -rn1 -t1 onekey; unset IFS; sym=2; let "sl--"
     case $onekey in 
-      [0-9])  if [[ ${onekey} -ge 0 && ${onekey} -le $ch ]]; then chs=$onekey; MOUNTS
-              if [[ $mcheck = "Yes" ]]; then sleep 0.5; open "$vname"/EFI/*/config.plist 2>/dev/null; fi; fi; break ;;
+      [0-9])  if [[ ${onekey} -ge 0 && ${onekey} -le $ch ]]; then chs=$onekey; MOUNTS 
+              if [[ $mcheck = "Yes" ]]; then sleep 0.5; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${string} ; fi; fi; fi; break ;;
      [cCoO])  if [[ $onekey = [cC] ]]; then ldrname="Clover"; else ldrname="OpenCo"; fi
               if [[ $mefisca = 1 ]]; then 
                     for ii in ${!dlist[@]}; do if [[ "${ldlist[$ii]::6}" = "$ldrname" ]]; then chs=$((ii+1)); MOUNTS              
-                    if [[ $mcheck = "Yes" ]]; then sleep 0.5; open "$vname"/EFI/*/config.plist 2>/dev/null; break; fi; fi; done
+                    if [[ $mcheck = "Yes" ]]; then sleep 0.8; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${dlist[ii]} ; fi; break; fi; fi; done
               else
                   printf '                               '; if [[ $ldrname = "Clover" ]]; then SPIN_FCLOVER; else SPIN_OC; fi
-                  if [[ $loader_found = 1 ]]; then sleep 0.5; open "$vname"/EFI/*/config.plist 2>/dev/null; fi
+                  if [[ $loader_found = 1 ]]; then sleep 0.5; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${string} ; fi; fi
               fi
               ldrname=""; break ;;
+       [lL])  lopUUID=$(echo "$MountEFIconf"| grep -A1 "OpenedPlistPartUUID</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
+              if [[ ! ${lopUUID} = "" ]]; then
+                if [[ $(ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${lopUUID}) = "" ]]; then WARNING_NO_PARTS; else
+                    BSDname=$(ioreg -c IOMedia -r | tr -d '"' | egrep -A12 -B12  "UUID" | grep -A12 -B12 ${lopUUID} | grep "BSD Name" | awk '{print $NF}')
+                    if [[ $BSDname = "" ]]; then WARNING_NO_PARTS; else
+                        for ii in ${!dlist[@]}; do if [[ ${dlist[ii]} = $BSDname ]]; then chs=$((ii+1)); MOUNTS
+                        if [[ $mcheck = "Yes" ]]; then sleep 0.8; open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; break; fi; fi; done
+                    fi
+                fi
+              fi ; break ;;
     esac
     if [[ $sl -lt 1 ]] || [[ ! $onekey = "±" ]]; then break; fi
 done

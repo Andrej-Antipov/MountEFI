@@ -786,9 +786,6 @@ if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO "${
 strng=`echo "$MountEFIconf"| grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "startupMount" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
 
-strng=`echo "$MountEFIconf"| grep -e "<key>MountEFIonLoginRUN</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
-if [[ ! $strng = "MountEFIonLoginRUN" ]]; then plutil -replace MountEFIonLoginRUN -bool NO "${CONFPATH}"; cache=0; fi
-
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
 #############################################################################################################################################
@@ -874,7 +871,6 @@ printf "\033[10B"
 GET_UUID_S(){
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 uuids_iomedia=`echo "$ioreg_iomedia" | sed '/Statistics =/d'  | egrep -A12 -B12 "UUID ="`
-
 }
 
 
@@ -1310,24 +1306,6 @@ if [[ $strng = "true" ]]; then sys_autom_enabled=1
         sys_am_set="Нет"; sys_am_corr=11
             else
         sys_am_set="No"; sys_am_corr=10
-            fi
-fi
-}
-
-GET_MEFI_LOGIN_RUN(){
-mefi_on_login=0
-if $(echo "$MountEFIconf" | grep -A 1 -e "MountEFIonLoginRUN</key>" | egrep -o "false|true"); then
-        mefi_on_login=1
-            if [[ $loc = "ru" ]]; then
-        mefi_set="Да"; mefi_corr=8
-            else
-        mefi_set="Yes"; mefi_corr=12
-            fi
-    else
-            if [[ $loc = "ru" ]]; then
-        mefi_set="Нет"; mefi_corr=7
-            else
-        mefi_set="No"; mefi_corr=13
             fi
 fi
 }
@@ -2090,7 +2068,6 @@ SHOW_BACKUP_MENU(){
         GET_SHOWKEYS
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
-        #GET_MEFI_LOGIN_RUN
         GET_LOADERS
         GET_STARTUP_MOUNTS
         GET_AUTOBACKUP
@@ -3166,7 +3143,6 @@ UPDATE_SCREEN(){
         GET_AUTOUPDATE
         GET_AUTOMOUNT
         CHECK_SYS_AUTOMOUNT_SERVICE
-        #GET_MEFI_LOGIN_RUN
         GET_LOADERS
         GET_STARTUP_MOUNTS
         GET_AUTOBACKUP
