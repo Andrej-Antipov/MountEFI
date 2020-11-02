@@ -68,6 +68,8 @@ if [[ ${oc_revision} = "" ]]; then
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
 case "${md5_full}" in
+cbdc9e74d27453c2f3afaec2ca84f34819758cfb7f8f157959bf608fc76a069d ) oc_revision=.63r;;
+5ee87cfa50c502249abb6e3480bfdaa0aee0e2713f267fa907bb4e1250af71f7 ) oc_revision=.63d;;
 58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
 5ef1fc5a81e8e4e6aeb504c91d4a1d7786652faf1a336a446b187ae283d2cc9a ) oc_revision=.62d;;
 75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
@@ -102,7 +104,9 @@ fi
 if [[ ${oc_revision} = "" ]]; then
 
 case "${md5_loader}" in
-############## oc_hashes_strings 29 #################
+############## oc_hashes_strings 33 #################
+cbdc9e74d27453c2f3afaec2ca84f348 ) oc_revision=.63x;;
+5ee87cfa50c502249abb6e3480bfdaa0 ) oc_revision=.63x;;
 5ef1fc5a81e8e4e6aeb504c91d4a1d77 ) oc_revision=.62x;;
 75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
 58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
