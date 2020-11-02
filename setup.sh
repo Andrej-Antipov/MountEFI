@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 01.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="053"
+s_edit_vers="054"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -57,6 +57,7 @@ s_edit_vers="053"
 # 051 - коррекция состояния MEFIScA после замены конфига 
 # 052 - улучшение проверки ручного обновления
 # 053 - коррекция в контроле версии Мак OC
+# 054 - обработка ожидания для MEFIScA
 
 clear
 
@@ -203,6 +204,7 @@ fi
 }
 
 CONFPATH="${HOME}/.MountEFIconf.plist"
+SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 setup_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash" | grep setup |  grep -v grep  | cut -f1 -d " " | sort -u | wc -l )
 
@@ -7198,6 +7200,32 @@ plutil -replace Restart -bool Yes "${CONFPATH}"
 
 }
 
+DISPLAY_MESSAGE1(){
+osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null
+}
+
+DISPLAY_MESSAGE(){
+osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null
+}
+
+MSG_TIMEOUT(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Время ожидания вышло !"'
+else
+MESSAGE='"The waiting time is up!"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+}
+
+MSG_WAIT(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Подготовка данных о загрузчиках ... !"' 
+else
+MESSAGE='"Waiting for the end of data synchro ....!"' 
+fi
+DISPLAY_MESSAGE >>/dev/null 2>/dev/null
+}
+
 START_RUN_AT_LOGIN_SERVICE(){
 
 if [[ -f "$ROOT/MEFIScA.sh" ]]; then
@@ -7235,7 +7263,14 @@ echo '</plist>' >> ${HOME}/.MEFIScA.plist
                 DISPLAY_NOTIFICATION
    fi
 fi
-
+      GET_APP_ICON
+      i=16; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
+      i=96; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
+      if [[ $i = 92 ]]; then MSG_WAIT &
+      wpid=$(($!+2)); fi
+      if [[ $i = 0 ]]; then break; fi; done
+      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+      if [[ $i = 0 ]]; then MSG_TIMEOUT; fi
 }
 
 STOP_RUN_ON_LOGIN_SERVICE(){
