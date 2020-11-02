@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 01.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1603,7 +1603,7 @@ GET_THEME_LOADERS
 GET_LOADERS
 if [[ ! "$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")" = "$check_str" ]]; then STARTUP_FIND_LOADERS; fi
 if [[ ${CheckLoaders} = 0 ]]; then 
-    mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
+    mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; UPDATE_SCREEN; fi
 rm -f ~/.other_loaders_list.txt
 if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
     SAVE_LOADERS_STACK
@@ -2268,10 +2268,10 @@ MOUNT_EFI_WINDOW_UP &
 
 GET_DATA_STACK(){
 i=8; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
-IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list | tr '\n' ';' ) )
-ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
-lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
-if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
+IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
+ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
+lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist 2>/dev/null | tr '\n' ';' ) ); fi;  unset IFS
 CORRECT_LOADERS_HASH_LINKS
 }
 
@@ -2336,7 +2336,7 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
       if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
       if [[ $i = 0 ]]; then MSG_TIMEOUT
       rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
-      if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
+      if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi   
   fi      
 fi
 MOUNT_EFI_WINDOW_UP &
@@ -3372,20 +3372,17 @@ if [[ $mefisca = 1 ]]; then
     true
     else
             rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
-            if [[ -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
-            mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack
-            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist; done
-            fi
-            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list; done
-            fi
-            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist; done
-            fi
-            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist; done
-            fi
+            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
+            pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
+            touch dlist
+            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
+            touch mounted_loaders_list
+            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> mounted_loaders_list; done; fi
+            touch ldlist
+            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ldlist; done; fi
+            touch lddlist
+            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
+            popd >/dev/null 2>/dev/null
             touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
     fi
