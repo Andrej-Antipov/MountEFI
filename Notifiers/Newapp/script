@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 01.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
 edit_vers="060"
@@ -1646,20 +1646,17 @@ if [[ $mefisca = 1 ]]; then
     true
     else
             rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
-            if [[ -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; fi
-            mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack
-            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist; done
-            fi
-            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list; done
-            fi
-            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist; done
-            fi
-            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist; done
-            fi
+            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
+            pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
+            touch dlist
+            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
+            touch mounted_loaders_list
+            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> mounted_loaders_list; done; fi
+            touch ldlist
+            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ldlist; done; fi
+            touch lddlist
+            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
+            popd >/dev/null 2>/dev/null
             touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
     fi
