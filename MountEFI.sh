@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="060"
+edit_vers="061"
 serv_vers="003"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
@@ -3204,6 +3204,25 @@ SHOW_MSG &
 
 OPEN_PLIST(){
 sl=5; onekey="±"; ldrname=""
+if [[ $ShowKeys = 1 ]]; then
+    line_pointer=$((10+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
+    printf '\r\033['$line_pointer'f'
+    	     if [[ $loc = "ru" ]]; then
+	printf '\n      O  -  открыть первый по списку config.plist OpenCore     \n'
+	printf '      C  -  открыть первый по списку config.plist Сlover  \n'
+    printf '      0-'$schs' - открыть config.plist на разделе (томе) номер... \n'
+    printf '      L  -  открыть config.plist который был открыт ранее.        \n'
+	printf '      ** возврат в главное меню через 5 сек или любой клавишей.  \n\n\n'
+    #printf '                                                    \n' 
+			else
+	printf '\n      O  -  open the first on the list OpenCore config.plist     \n' 
+	printf '      С  -  open the first on the list Clover config.plist       \n'
+    printf '      0-'$schs' - open config.plist on partition (volume) number... \n'
+    printf '      L  - open the config.plist that was last opened            \n'
+	printf '      ** return to the main menu after 5 seconds or by any key. \n\n\n'
+    #printf '                                                    \n' 
+	     fi
+fi
     if [[ $loc = "ru" ]]; then
 printf '\r  Открыть config.plist ( номер EFI, O, C, L или Enter ):   ' ; printf '                           '
 			else
