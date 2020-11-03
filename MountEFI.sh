@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="061"
+edit_vers="060"
 serv_vers="003"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
@@ -2765,7 +2765,7 @@ if [[ $ShowKeys = 1 ]]; then
 
 	 if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   подключить EFI диска этой системы     \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы  EFI \n'
+	printf '      U  -   отключить ВСЕ подключенные разделы EFI  \n'
     printf '      A  -   настроить авто-подключение EFI          \n'
     printf '      I  -   дополнительное меню                     \n'
 	printf '      Q  -   закрыть окно и выход из программы     \n\n'
@@ -2895,7 +2895,7 @@ if [[ $ShowKeys = 1 ]]; then
 if [[ ! $order = 3 ]]; then
 	     if [[ $loc = "ru" ]]; then
 	printf '\n      E  -   подключить EFI диска этой системы     \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы  EFI \n'
+	printf '      U  -   отключить ВСЕ подключенные разделы EFI  \n'
     printf '      A  -   настроить авто-подключение EFI          \n'
     printf '      I  -   дополнительное меню                     \n'
 	printf '      Q  -   закрыть окно и выход из программы\n\n'
@@ -2913,13 +2913,13 @@ if [[ ! $order = 3 ]]; then
 	printf '\n      C  -   найти и подключить EFI с загрузчиком Clover \n'
 	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
 	printf '      S  -   вызвать экран настройки MountEFI \n'
-    printf '      I  -   главное меню                     \n'
+    printf '      P  -   открыть config.plist с EFI раздела            \n'
     printf '      V  -   посмотреть версию программы    \n\n' 
 			else
 	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
 	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
 	printf '      S  -   call MountEFI setup screen\n'
-    printf '      I  -   main menu                      \n'
+    printf '      P  -   open config.plist from EFI partition          \n'
     printf '      V  -   view the program version       \n\n' 
 	     fi
 fi
@@ -2938,7 +2938,7 @@ if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
 let "schs=$ch-1"
 printf '  Введите число от 0 до '$((schs+1))' ( P,U,E,A,S,I или Q ):  '; printf '                            '
 			else
-printf '  Enter a number from 0 to '$((schs+1))' ( P,U,E,A,S,I or Q ):  ';  printf '                         '
+printf '   Enter a num from 0 to '$((schs+1))' ( P,U,E,A,S,I or Q ):  ';  printf '                         '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -3072,15 +3072,14 @@ printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
 printf "\r\n\033[3A\033['$pos_corr'C"
-if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 IFS="±"; read   -n 1 -t 1  choice1 ; unset IFS 
 if [[ $choice1 = "" ]]; then printf "\033[1A"; choice1="±"; else choice=$choice1; TRANS_READ; choice1=$choice; fi
 if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
             else
         if [[ ! $order = 3 ]]; then
-            if [[ $choice1 = [uUqQeEiIvVsSoOaA] ]]; then choice=${choice1}; break; fi
+            if [[ $choice1 = [uUqQeEiIvVsSoOaApPlL] ]]; then choice=${choice1}; break; fi
                     else
-             if [[ $choice1 = [qQcCoOsSiIvVW] ]]; then choice=${choice1}; break; fi
+             if [[ $choice1 = [qQcCoOsSiIvVWpPlL] ]]; then choice=${choice1}; break; fi
         fi
  
 fi
@@ -3104,7 +3103,6 @@ else
 printf '\n  ! Press the second digit or press <Enter>  '
 fi
 printf "\r\n\033[4A\033['$pos_corr'C"$choice
-if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 
 CHECK_HOTPLUG_DISKS
 if [[ $hotplug = 1 ]]; then break; fi
@@ -3203,36 +3201,59 @@ SHOW_MSG &
 }
 
 OPEN_PLIST(){
-sl=5; onekey="±"; ldrname=""
+sl=5; choice="±"; ldrname=""; line_pointer=$((10+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
 if [[ $ShowKeys = 1 ]]; then
-    line_pointer=$((10+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
     printf '\r\033['$line_pointer'f'
     	     if [[ $loc = "ru" ]]; then
 	printf '\n      O  -  открыть первый по списку config.plist OpenCore     \n'
 	printf '      C  -  открыть первый по списку config.plist Сlover  \n'
     printf '      0-'$schs' - открыть config.plist на разделе (томе) номер... \n'
     printf '      L  -  открыть config.plist который был открыт ранее.        \n'
+    if [[ ${ch} -le 9 ]]; then
 	printf '      ** возврат в главное меню через 5 сек или любой клавишей.  \n\n\n'
-    #printf '                                                    \n' 
+    else
+    printf '                                                                 \n\n\n'
+    fi 
 			else
 	printf '\n      O  -  open the first on the list OpenCore config.plist     \n' 
 	printf '      С  -  open the first on the list Clover config.plist       \n'
     printf '      0-'$schs' - open config.plist on partition (volume) number... \n'
     printf '      L  - open the config.plist that was last opened            \n'
+    if [[ ${ch} -le 9 ]]; then
 	printf '      ** return to the main menu after 5 seconds or by any key. \n\n\n'
-    #printf '                                                    \n' 
+    else
+    printf '                                                                 \n\n\n'
+    fi 
 	     fi
+    line_pointer=$((line_pointer+3))
 fi
+line_pointer=$((line_pointer+3))
+if [[ ${ch} -le 9 ]]; then cur_pos=57; else cur_pos=48; fi
+printf '\r\033['$line_pointer'f'
+for i in 1 2; do printf '                                                                                \n'; done
     if [[ $loc = "ru" ]]; then
-printf '\r  Открыть config.plist ( номер EFI, O, C, L или Enter ):   ' ; printf '                           '
-			else
-printf '\r  Edit config.plist - ( EFI number, O, C, L или Enter ):   ' ; printf '                          '
+        if [[ ${ch} -le 9 ]]; then
+printf '\r  Открыть config.plist ( номер EFI, O, C, L или Enter ):   ' ; printf '                     \n'
+        else
+printf '\r  Открыть config.plist ( номер EFI, O, C, L ):   ' ; printf '                               \n'
+        fi
+	else
+         if [[ ${ch} -le 9 ]]; then
+printf '\r  Edit config.plist - ( EFI number, O, C, L или Enter ):   ' ; printf '                     \n'
+         else cur_pos=50
+printf '\r    Edit config.plist - ( EFI number, O, C, L ):   ' ; printf '                             \n'
+        fi
     fi
-printf "\r\033[57C"
+for i in 1 2 3; do printf '                                                                                \n'; done
+printf "\033[4A\r\033['$cur_pos'C"
 while true; do
-    IFS="±"; read -rn1 -t1 onekey; unset IFS; sym=2; let "sl--"; choice1=$choice; choice=$onekey; TRANS_READ; onekey=$choice; choice=$choice1
+    if [[ ${ch} -le 9 ]]; then
+    IFS="±"; read -rn1 -t1 choice; unset IFS; sym=2; let "sl--"; TRANS_READ
+    else READ_TWO_SYMBOLS $cur_pos; fi; onekey=$choice; if [[ ! $choice = "±" ]]; then choice="P"; fi
+    if [[ $onekey = 0 ]]; then break; fi; if [[ ! $(echo $onekey | egrep -o "[0-9]{1,3}") = "" ]]; then keynum=$(echo $onekey | egrep -o "[0-9]{1,3}"); onekey="number"; fi
     case $onekey in 
-      [0-9])  if [[ ${onekey} -ge 0 && ${onekey} -le $ch ]]; then chs=$onekey; MOUNTS 
+     number)  onekey=$keynum
+              if [[ ${onekey} -ge 0 && ${onekey} -lt $ch ]]; then chs=$onekey; MOUNTS 
               if [[ $mcheck = "Yes" ]]; then sleep 0.5; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${string} ; fi; fi; fi; break ;;
      [cCoO])  if [[ $onekey = [cC] ]]; then ldrname="Clover"; else ldrname="OpenCo"; fi
               if [[ $mefisca = 1 ]]; then 
@@ -3254,9 +3275,11 @@ while true; do
                 fi
               fi ; break ;;
     esac
-    if [[ $sl -lt 1 ]] || [[ ! $onekey = "±" ]]; then break; fi
+    if [[ $sl -lt 1 ]] || [[ ! $choice = "±" ]]; then break; fi
 done
 }
+
+ARMM_TIMER(){ if [[ $order = 3 ]]; then armm=$((armm-1)); if [[ $armm -lt 1 ]]; then choice="I"; fi; fi; }
 #############################################################################################################################################
 # Определение функции ожидания и фильтрации ввода с клавиатуры
 GETKEYS(){
@@ -3266,19 +3289,19 @@ if [[ $order = 2 ]]; then
 order=0
 fi
 printf "\r\n\033[1A"
-if [[ $order = 3 ]]; then 
+if [[ $order = 3 ]]; then armm=5
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до '$((schs+1))' ( P,O,C,S,I  или  Q ):   ' ; printf '                           '
 			else
-printf '  Enter a number from 0 to '$((schs+1))' ( P,O,C,S,I  or  Q ):   ' ; printf '                          '
+printf '   Enter a num from 0 to '$((schs+1))' ( P,O,C,S,I  or  Q ):   ' ; printf '                          '
     fi
         else
             let "schs=$ch-1"
             if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до '$((schs+1))' ( P,U,E,A,S,I или Q ):      ' ; printf '                        '
 			else
-printf '  Enter a number from 0 to '$((schs+1))' ( P,U,E,A,S,I or Q ):      ' ; printf '                      '
+printf '   Enter a num from 0 to '$((schs+1))' ( P,U,E,A,S,I or Q ):      ' ; printf '                      '
     fi
 fi
 printf '\n\n'
@@ -3286,21 +3309,20 @@ printf '                                                                        
 printf '                                                                                '
 printf "\r\n\033[2A\033[49C"
 printf "\033[3A"
-if [[ ! $loc = "ru" ]]; then printf "\033[2C"; fi
 if [[ ${ch} -le 9 ]]; then
 printf "\033[?25h"
 choice="±"
 printf '\033[1B'
 while [[ $choice = "±" ]]
 do
-IFS="±"; read -rn1 -t 1 choice ; unset IFS; sym=2
+IFS="±"; read -rn1 -t 1 choice ; unset IFS; sym=2; ARMM_TIMER
 if [[ $choice = "" ]]; then printf "\033[?25l"'\033[1A'"\033[?25h"; else TRANS_READ; fi
 CHECK_HOTPLUG_DISKS
 CHECK_HOTPLUG_PARTS
 done
 SET_INPUT "message"
 else
-if [[ $CheckLoaders = 1 ]]; then printf '\033[1B' ; fi
+printf '\033[1B'
 READ_TWO_SYMBOLS; sym=2
 fi
 printf "\033[?25l\033[1D "
@@ -3315,7 +3337,7 @@ if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
-if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; if [[ ! $onekey = [0-9] ]]; then UPDATELIST; fi; fi
+if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 else
 if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpP]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
@@ -3325,7 +3347,7 @@ if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [W] ]];  then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
-if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; if [[ ! $onekey = [0-9] ]]; then UPDATELIST; fi; fi
+if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4;  UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 fi
 else
 ! [[ ${choice} -ge 0 && ${choice} -le $ch  ]] && unset choice 
@@ -3344,7 +3366,6 @@ if [[ $chs = 0 ]]; then nogetlist=0; fi
 MOUNTS(){
 
 let "num=chs-1"
-
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 strng0=${string}
