@@ -2116,9 +2116,10 @@ let "b_lines=b_lines+23"
 }
 
 ##############################################################################################################
+SOFT_CLEAR(){ clear && printf '\e[3J' && printf "\033[0;0H" ; }
 
 SET_BACKUPS(){
-clear && printf '\e[3J' && printf "\033[0;0H"
+SOFT_CLEAR
 if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
 unzip  -o -qq ${HOME}/.MountEFIconfBackups.zip -d ~/.temp
 mv ~/.temp/*/*/.MountEFIconfBackups ~/.MountEFIconfBackups
@@ -2128,7 +2129,7 @@ var5=0
 while [[ $var5 = 0 ]]; do
 unset bbuf
 SHOW_BACKUPS
-clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+SOFT_CLEAR ; echo "$bbuf"
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s""%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[7A"
 printf "\r\033[45C"
@@ -2199,7 +2200,7 @@ if [[ ${inputs} = [vV] ]]; then
                 SET_INPUT
                 printf "\033[?25l"
                 SHOW_BACKUPS "double"
-                clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+                SOFT_CLEAR ; echo "$bbuf"
                 echo "$bbuf"
                 vart=0; plines=6; bptr=1; let "ilines=Now+9"
                 printf '\033['$plines';10f''*'
@@ -2218,7 +2219,7 @@ if [[ ${inputs} = [vV] ]]; then
                                printf '\033['$plines';10f''   '
                                if [[ "${bptr}" -gt "1" ]]; then let "bptr--"; else let "bptr=Now"; fi
                                let "plines=bptr+5"
-                               #clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+                               #SOFT_CLEAR ; echo "$bbuf"
                                printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
                                printf '\033['$plines';10f''*  '
                                printf '\033['$ilines';46f'
@@ -2228,7 +2229,7 @@ if [[ ${inputs} = [vV] ]]; then
                                printf '\033['$plines';10f''   '
                                if [[ "${bptr}" -lt "$Now" ]]; then let "bptr++"; else let "bptr=1"; fi
                                let "plines=bptr+5"
-                               #clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+                               #SOFT_CLEAR ; echo "$bbuf"
                                printf '\033['$plines';10f''*  '
                                printf '\033['$ilines';46f'
                                SHOW_BACKUP_DATA &
@@ -2456,7 +2457,7 @@ var5=0
  
 while [ $var5 != 1 ] 
 do
-clear && printf '\e[3J' && printf "\033[0;0H" 
+SOFT_CLEAR 
 UPDATE_AUTOEFI
 printf '\n'
 UPDATE_KEYS_INFO
@@ -2604,7 +2605,7 @@ fi
 	fi				
 fi
 done
-clear
+SOFT_CLEAR
 unset inputs
 }
 
@@ -2623,7 +2624,7 @@ var5=0
  
 while [ $var5 != 1 ] 
 do
-clear && printf '\e[3J' && printf "\033[0;0H" 
+SOFT_CLEAR 
 UPDATE_SYS_AUTOEFI
 printf '\n'
 UPDATE_SYS_KEYS_INFO
@@ -2728,8 +2729,8 @@ fi
 	fi				
 fi
 done
-
 unset inputs
+SOFT_CLEAR
 }
 
 SET_PLIST(){
@@ -2897,20 +2898,20 @@ fi
 
 SET_CODE_BASE(){
 current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
-sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y W)
+sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y W f F)
             case "${current_layout}" in 
 
-                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
+                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
                                              ;;
-                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
+                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
                                              ;;
-                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab d0a8)
+                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab d0a8 d184 d0a4)
                                              ;;
-                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
+                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
                                              ;;
-                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
+                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
                                              ;;
-                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6)
+                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
                                              ;;
                                           *) code_base=()
                                              ;;
@@ -3841,7 +3842,7 @@ if [[ ! ${inputs} =~ ^[0vVdDrRqQcCzZxX]+$ ]]; then
 
 else
 
-if [[ $inputs = 0 ]]; then GET_FULL_EFI; clear && printf '\e[3J' && printf "\033[0;0H"; SHOW_FULL_EFI
+if [[ $inputs = 0 ]]; then GET_FULL_EFI; SOFT_CLEAR; SHOW_FULL_EFI
 fi                
 fi
 UPDATE_FULL_EFI
@@ -3851,7 +3852,7 @@ done
 unset slist
 unset inputs
 
-clear
+SOFT_CLEAR
 }
 ############################## конец определения функции псевдонимов ##################################
 
@@ -5414,7 +5415,7 @@ printf "\033['$currents';34f""*"
 done
 CORRECT_CURRENT_PRESET
 lines=$oldlines
-clear      
+SOFT_CLEAR      
 }
 
 ############################## сервис автозапуска ##########################################################################
@@ -6199,7 +6200,7 @@ let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  R)  Remove ALL hash
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  U)  Undo last hashes changes                  ')
 let "bb++"; bbuf+=$(printf '\033['$bb';0f''                  Q)  Quit to the setup menu                    ')
                    fi
-clear && printf '\e[3J' && printf "\033[0;0H" ; echo "$bbuf"
+SOFT_CLEAR ; echo "$bbuf"
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s""%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[7A"
 printf "\r\033[45C"
@@ -7001,7 +7002,7 @@ done
 
                     case ${inputs} in
 
-        [qQ] ) clear && printf '\e[3J' && printf "\033[0;0H"; break;;
+        [qQ] ) SOFT_CLEAR; break;;
 
         [aA] )  SET_INPUT; ADD_HASHES "Clover" ;;
 
@@ -7032,6 +7033,8 @@ SHOW_HASHES_SCREEN
 MOUNT_EFI_WINDOW_UP &
 
 done
+
+SOFT_CLEAR
 
 }
 

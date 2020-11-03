@@ -3130,11 +3130,11 @@ printf "\033[?25l"
 SET_CODE_BASE(){
 current_language=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/')
 if [[ "${current_language}" = "Russian - Phonetic" ]]; then
-    code_base=( d18f d0af d0b5 d095 d183 d0a3 d0b8 d098 d0be d09e d0b0 d090 d181 d0a1 d186 d0a6 d0b2 d092 d0a8)
-    sym_base=( q Q e E u U i I o O a A s S c C v V W)
+    code_base=( d18f d0af d0b5 d095 d183 d0a3 d0b8 d098 d0be d09e d0b0 d090 d181 d0a1 d186 d0a6 d0b2 d092 d0a8 d0bf d09f d0bb d09b)
+    sym_base=( q Q e E u U i I o O a A s S c C v V W p P l L)
 elif [[ "${current_language}" = "RussianWin" ]] || [[ "${current_language}" = "Russian" ]] || [[ "${current_language}" = "Ukrainian-PC" ]] || [[ "${current_language}" = "Ukrainian" ]] || [[ "${current_language}" = "Byelorussian" ]]; then
-    code_base=( d0b9 d099 d0bc d09c d0b3 d093 d188 d0a8 d189 d0a9 d184 d0a4 d18b d0ab d183 d0a3 d181 d0a1 d0b8 d098 d196 d086 d19e d08e d0a6) 
-    sym_base=( q Q v V u U i I o O a A s S e E c C s S s S o O W)
+    code_base=( d0b9 d099 d0bc d09c d0b3 d093 d188 d0a8 d189 d0a9 d184 d0a4 d18b d0ab d183 d0a3 d181 d0a1 d0b8 d098 d196 d086 d19e d08e d0a6 d0b7 d097 d0b4 d094) 
+    sym_base=( q Q v V u U i I o O a A s S e E c C s S s S o O W p P l L)
 else
     code_base=()
     sym_base=()
@@ -3211,7 +3211,7 @@ printf '\r  Edit config.plist - ( EFI number, O, C, L или Enter ):   ' ; prin
     fi
 printf "\r\033[57C"
 while true; do
-    IFS="±"; read -rn1 -t1 onekey; unset IFS; sym=2; let "sl--"
+    IFS="±"; read -rn1 -t1 onekey; unset IFS; sym=2; let "sl--"; choice1=$choice; choice=$onekey; TRANS_READ; onekey=$choice; choice=$choice1
     case $onekey in 
       [0-9])  if [[ ${onekey} -ge 0 && ${onekey} -le $ch ]]; then chs=$onekey; MOUNTS 
               if [[ $mcheck = "Yes" ]]; then sleep 0.5; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${string} ; fi; fi; fi; break ;;
