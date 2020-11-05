@@ -1,14 +1,13 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
 edit_vers="061"
-serv_vers="004"
+serv_vers="005"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
-
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
@@ -79,20 +78,6 @@ IF_RELOAD_MEFISCA(){
       if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
          if [[ ! $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh | grep 'serv_vers="[0-9]*"' | cut -f2 -d= | tr -d '"' ) = "$serv_vers" ]]; then
             cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
-            i=32; while true; do if [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; then sleep 0.25; let "i--"; 
-            if [[ $i = 28 ]]; then
-                icon_string=""
-                if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
-                icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
-                fi 
-                if [[ $loc = "ru" ]]; then
-                MESSAGE='"Перезапуск поискового сервиса для обновления !"'
-                else
-                MESSAGE='"Restarting bootloaders searching service for update!"'
-                fi
-                osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' &
-            fi
-            if [[ $i = 0 ]]; then break; fi; else break; fi; done
             touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag     
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
             sleep 0.5
@@ -1594,7 +1579,7 @@ fi
 CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
                     START_AUTOUPDATE &
-fi
+fi 
 MOUNT_EFI_WINDOW_UP &
 }
 ##########################################################################################################################
@@ -2249,7 +2234,7 @@ MOUNT_EFI_WINDOW_UP &
 }
 
 GET_DATA_STACK(){
-i=8; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
 IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
 ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
 lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
@@ -2311,14 +2296,12 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
     fi
   else
-      i=140; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
-      if [[ $i = 136 ]]; then MSG_WAIT &
-      wpid=$(($!+2)); fi
-      if [[ $i = 0 ]]; then break; fi; done
-      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
-      if [[ $i = 0 ]]; then MSG_TIMEOUT
-      rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
-      if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi   
+        i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
+        wpid=$(($!+2)); fi; if [[ $i = 0 ]]; then break; fi; done 
+        if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+        if [[ $i = 0 ]]; then MSG_TIMEOUT
+        rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+      if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi    
   fi      
 fi
 MOUNT_EFI_WINDOW_UP &
@@ -3332,7 +3315,7 @@ if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaApP]$ ]]; then  unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
-if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
+if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi
@@ -3343,7 +3326,7 @@ if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpP]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
 if [[ ${choice} = [oO] ]]; then  printf '                               '; SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_FCLOVER; choice="0"; order=4; fi
-if [[ ${choice} = [qQ] ]]; then choice=$ch; fi
+if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [W] ]];  then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
@@ -3422,7 +3405,6 @@ if [[ $mefisca = 1 ]]; then
     if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
     true
     else
-            rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
             pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
             touch dlist
@@ -3434,7 +3416,6 @@ if [[ $mefisca = 1 ]]; then
             touch lddlist
             if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
             popd >/dev/null 2>/dev/null
-            touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
     fi
 fi
@@ -3457,6 +3438,8 @@ if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
 fi
 }
 
+CLIENT_READY(){ if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; }
+
 ################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
@@ -3464,6 +3447,7 @@ fi
 GET_USER_PASSWORD
 GET_CONFIG_HASHES
 CHECK_MEFIScA
+CLIENT_READY
 STARTUP_FIND_LOADERS
 
 chs=0; nogetlist=0; ldrname=""

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -58,7 +58,7 @@ s_edit_vers="055"
 # 052 - улучшение проверки ручного обновления
 # 053 - коррекция в контроле версии Мак OC
 # 054 - обработка ожидания для MEFIScA
-# 055 - MEFIScA wait time correction
+# 055 - увеличено время таймера для синхронизации
 
 clear
 
