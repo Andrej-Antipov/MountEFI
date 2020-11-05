@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.8.0"
-edit_vers="060"
-serv_vers="003"
+edit_vers="061"
+serv_vers="004"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -54,6 +54,15 @@ IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentSt
 ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
 lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
 if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
+for i in ${!mounted_loaders_list[@]}; do old_mounted[i]=${mounted_loaders_list[i]}; done
+for i in ${!ldlist[@]}; do old_ldlist[i]="${ldlist[i]}"; done
+for i in ${!dlist[@]}; do old_dlist[i]=${dlist[i]}; done
+for i in ${!lddlist[@]}; do old_lddlist[i]=${lddlist[i]}; done
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+old_uuid_count=$uuid_count
+
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring)
 }
 
 ##################################################################################################################################################
@@ -150,8 +159,7 @@ GET_LOADER_STRING(){
                     check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"
-                                if [[ ${revision} = "" ]]; then
-                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
                                 if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
                                 loader+="${revision:0:4}"
                                 ;;
@@ -181,17 +189,16 @@ if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-
                     if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
-                       if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
+                       if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then echo "••1••" ; old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
-
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
+                    echo "${mounted_loaders_list[$pnum]} != ${loader_sum}"
                     touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
                     mounted_loaders_list[$pnum]=${loader_sum}
                     if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
                     ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
-                    let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
+                    let "chs=pnum+1"; UPDATE_SCREEN; update_screen_flag=1; break; fi
             fi
         done
     else
@@ -341,6 +348,7 @@ fi
 }
 
 WAIT_SYNCHRO(){
+new_remlist=()
 if [[ ${synchro} = 1 ]] || [[ ${synchro} = 3 ]]; then
 if [[ ${synchro} = 3 ]]; then new_rmlist=( ${rmlist[@]} ); sleep 0.25; else
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
@@ -349,15 +357,15 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
     new_remlist=(${usblist[@]})
     if [[ ! ${#usblist[@]} = 0 ]]; then
+        sleep 0.1
         realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
         if [[ ! ${#realEFI_list[@]} = 0 ]]; then
         temp_usblist=()
         for z in ${usblist[@]}; do for y in ${!realEFI_list[@]}; do match=0; if [[ ${z} = ${realEFI_list[y]} ]]; then match=1; break; fi; done; if [[ ${match} = 0 ]]; then temp_usblist+=(${z}); fi; done
         usblist=(${temp_usblist[@]})
-
         fi
     fi
-    if [[ ! ${#usblist[@]} = 0 ]]; then
+    if [[ ! ${#usblist[@]} = 0 ]]; then exec_time=0
         while true; do
             mounted_list=( $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
             usb_mounted_list=()
@@ -365,9 +373,9 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
             diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
             if [[ ${#diff_usb[@]} = 0 ]]; then break; fi
             exec_time="$(($(date +%s)-init_time))"
-            if [[ ${exec_time} -ge 30 ]]; then break; fi
+            if [[ ${exec_time} -ge 36 ]]; then break; fi
             sleep 0.25
-        done        
+        done
     fi
 fi
 fi
@@ -380,6 +388,8 @@ synchro=0
 
 ###################### движок детекта EFI разделов ####################################################
 GETARR(){
+
+past_rmlist=( ${rmlist[@]} )
 
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
@@ -400,7 +410,7 @@ dmlist=(); for (( i=0; i<$pos; i++ )) do dmlist+=( $( echo ${dlist[i]} | rev | c
 dmlist=( $(echo "${dmlist[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') ); posd=${#dmlist[@]}
 
 # get list of usb drives
-past_rmlist=( ${rmlist[@]} ); rmlist=(); posrm=0
+rmlist=(); posrm=0; 
 if [[ ! $pusb = 0 ]]; then usbnames=(); for (( i=0; i<$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]} | cut -f3 -d=)"; usbnames+=( "${usbname}" ); done
 
 for (( i=0; i<$posd; i++ )); do
@@ -416,12 +426,6 @@ posrm=${#rmlist[@]}; if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
 
 # подготовка данных для вычисления hotplug
-ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
-
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
-
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos; num=0; dnum=0; unset nlist; unset rnlist
 	while [[ ! $var0 = 0 ]] 
@@ -449,6 +453,12 @@ if [[ ! $pos = 0 ]]; then
 		let "num++"
 	done
 fi
+
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
+
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 }
 
 ############################################ конец движка детекта EFI ###############################################
@@ -487,29 +497,36 @@ DO_MOUNT(){
 }
 
 STARTUP_FIND_LOADERS(){
+
 if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
     echo "$mypassword" | sudo -S printf ""
     for i in ${!dlist[@]}; do 
     pnum=${nlist[i]}; 
         string=${dlist[$pnum]}
-
-        if [[ $(df | grep ${string}) = "" ]]; then 
+        old_dlist[pnum]=${dlist[pnum]}
+        if [[ $(df | grep ${string}) = "" ]]; then was_mounted=0
         
             if [[ $flag = 0 ]]; then diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
             elif ! sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null; then 
             sleep 0.5
             sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
             fi
+        else 
+            was_mounted=1
+        fi
             if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
             
-            FIND_LOADERS
+                FIND_LOADERS
 
-            if [[ ! ${loader} = "" ]];then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
-            diskutil quiet  umount force /dev/${string}
+                if [[ ! ${loader} = "" ]]; then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
+                if [[ $was_mounted = 0 ]]; then diskutil quiet  umount force /dev/${string}; fi
             fi
-        fi   
+            old_ldlist[pnum]=${ldlist[pnum]}
+            if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then old_oc_revision[pnum]=${ldlist[0]:8}; fi  
     done
 fi
+old_mounted=(${mounted_loaders_list[@]}); old_lddlist=(${lddlist[@]})
+
 }
 
 GET_PASSWORD(){
@@ -522,21 +539,6 @@ GET_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
 if [[ ${#macos} = 3 ]]; then macos+="0"; fi
 if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; GET_PASSWORD; fi
-}
-
-SHOW_DATA(){
-if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
-    true
-else
-        #rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate;
-        echo ${dlist[@]}
-        echo ${mounted_loaders_list[@]}
-        echo ${ldlist[@]}
-        echo ${lddlist[@]}  
-        old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
-        #SAVE_LOADERS_STACK
-        #touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
-fi
 }
 
 UPDATE_SCREEN(){
@@ -585,10 +587,10 @@ done
 if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA; fi
 
 nlist=(); dlist=(); mounted_loaders_list=(); ldlist=(); lddlist=()
-ld_dlist=(); old_mounted=(); old_ldlist=(); old_lddlist=()
-old_oc_revision=()
+old_dlist=(); old_mounted=(); old_ldlist=(); old_lddlist=()
+old_oc_revision=(); past_rmlist=(); rmlist=()
 
-lists_updated=0; synchro=0; recheckLDs=0; startup=0
+lists_updated=0; synchro=0; startup=0
 
 IF_UNLOCK_SAFE_MODE
 
@@ -598,12 +600,10 @@ GET_FLAG
 
 while true; do
 
-        nlist=(); rmlist=(); posrm=0
         GETARR
-
         WAIT_SYNCHRO
         GETLIST
-
+        
         if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then STARTUP_FIND_LOADERS; startup=1; fi
 
     while true; do
@@ -616,8 +616,7 @@ while true; do
             if [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
             CHECK_HOTPLUG_DISKS
             CHECK_HOTPLUG_PARTS
-            if [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; then  touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; break; fi
-        #SHOW_DATA
+            if [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; then update_screen_flag=0;  touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; break; fi
         fi
     done
 done
