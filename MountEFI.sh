@@ -4,8 +4,8 @@
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
-edit_vers="060"
-serv_vers="003"
+edit_vers="061"
+serv_vers="004"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -609,8 +609,7 @@ GET_LOADER_STRING(){
                     check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
-                                if [[ ${revision} = "" ]]; then
-                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
                                 if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
                                 loader+="${revision:0:4}"
                                 ;;
@@ -2312,8 +2311,8 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
     fi
   else
-      i=96; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
-      if [[ $i = 92 ]]; then MSG_WAIT &
+      i=140; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
+      if [[ $i = 136 ]]; then MSG_WAIT &
       wpid=$(($!+2)); fi
       if [[ $i = 0 ]]; then break; fi; done
       if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
@@ -3205,8 +3204,8 @@ sl=5; choice="±"; ldrname=""; line_pointer=$((10+${#dlist[@]}+$(if [[ ! ${#usb_
 if [[ $ShowKeys = 1 ]]; then
     printf '\r\033['$line_pointer'f'
     	     if [[ $loc = "ru" ]]; then
-	printf '\n      O  -  открыть первый по списку config.plist OpenCore     \n'
-	printf '      C  -  открыть первый по списку config.plist Сlover  \n'
+	printf '\n      O  -  открыть первый по списку config.plist OpenCore      \n'
+	printf '      C  -  открыть первый по списку config.plist Сlover        \n'
     printf '      0-'$schs' - открыть config.plist на разделе (томе) номер... \n'
     printf '      L  -  открыть config.plist который был открыт ранее.        \n'
     if [[ ${ch} -le 9 ]]; then
@@ -3261,7 +3260,7 @@ while true; do
                     if [[ $mcheck = "Yes" ]]; then sleep 0.8; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${dlist[ii]} ; fi; break; fi; fi; done
               else
                   printf '                               '; if [[ $ldrname = "Clover" ]]; then SPIN_FCLOVER; else SPIN_OC; fi
-                  if [[ $loader_found = 1 ]]; then sleep 0.5; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${string} ; fi; fi
+                  if [[ $loader_found = 1 ]]; then sleep 0.8; if open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; then STORE_CONFIG_PATH ${string} ; fi; fi
               fi
               ldrname=""; break ;;
        [lL])  lopUUID=$(echo "$MountEFIconf"| grep -A1 "OpenedPlistPartUUID</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
@@ -3279,6 +3278,7 @@ while true; do
 done
 }
 
+############################## таймер возврата из вспомогательного в главное меню ########################################################## 
 ARMM_TIMER(){ if [[ $order = 3 ]]; then armm=$((armm-1)); if [[ $armm -lt 1 ]]; then choice="I"; fi; fi; }
 #############################################################################################################################################
 # Определение функции ожидания и фильтрации ввода с клавиатуры
@@ -3289,7 +3289,7 @@ if [[ $order = 2 ]]; then
 order=0
 fi
 printf "\r\n\033[1A"
-if [[ $order = 3 ]]; then armm=5
+if [[ $order = 3 ]]; then armm=5 #############  значение задержки для таймера автовозврата в главное меню в секундах ########################
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
 printf '  Введите число от 0 до '$((schs+1))' ( P,O,C,S,I  или  Q ):   ' ; printf '                           '
@@ -3517,6 +3517,7 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
     new_remlist=(${usblist[@]})
     if [[ ! ${#usblist[@]} = 0 ]]; then
+        sleep 0.1
         realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "<class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
         if [[ ! ${#realEFI_list[@]} = 0 ]]; then
         temp_usblist=()
@@ -3544,7 +3545,7 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
                         DISPLAY_NOTIFICATION
             #################### 
             warning_sent=1; fi
-            if [[ ${exec_time} -ge 30 ]]; then break; fi
+            if [[ ${exec_time} -ge 36 ]]; then break; fi
             sleep 0.25
         done        
     fi

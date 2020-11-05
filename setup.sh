@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="054"
+s_edit_vers="055"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -58,6 +58,7 @@ s_edit_vers="054"
 # 052 - улучшение проверки ручного обновления
 # 053 - коррекция в контроле версии Мак OC
 # 054 - обработка ожидания для MEFIScA
+# 055 - MEFIScA wait time correction
 
 clear
 
@@ -7244,8 +7245,8 @@ echo '</plist>' >> ${HOME}/.MEFIScA.plist
 fi
       GET_APP_ICON
       i=16; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
-      i=96; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
-      if [[ $i = 92 ]]; then MSG_WAIT &
+      i=140; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
+      if [[ $i = 136 ]]; then MSG_WAIT &
       wpid=$(($!+2)); fi
       if [[ $i = 0 ]]; then break; fi; done
       if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
