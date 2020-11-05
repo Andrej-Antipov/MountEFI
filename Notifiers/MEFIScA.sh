@@ -1,41 +1,33 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.8.0"
 edit_vers="061"
-serv_vers="004"
+serv_vers="005"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
-
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
+MEFIScA_PATH="${SERVFOLD_PATH}/MEFIScA"
+STACK_PATH="${MEFIScA_PATH}/MEFIscanAgentStack"
 
-zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+WAITFLAG_ON(){ touch "${MEFIScA_PATH}"/WaitSynchro; }
+WAITFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/WaitSynchro; }
+RELOADFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/reloadFlag; }
+CLIENT_READY(){ -f "${MEFIScA_PATH}"/clientReady; }
+CLIENT_ONLINE(){ [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 && CLIENT_READY ]] || [[ ! $(launchctl list | grep -o "MountEFIr.job") = "" ]]; }
+HOTPLUG(){ [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; }
 
-efimounter=$(echo 0x7a 0x78 | xxd -r)
-
-ERRLOG(){
-echo "$1" >> "${SERVFOLD_PATH}"/MEFIScA/error.log
-}
-
-DEBLOG(){
-echo "$1" >> "${SERVFOLD_PATH}"/MEFIScA/debug.log
-}
-
-if [[ -f "${SERVFOLD_PATH}"/MEFIScA/reloadFlag ]]; then reloadFlag=1; rm -f "${SERVFOLD_PATH}"/MEFIScA/reloadFlag; else 
-    reloadFlag=0
-    touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
-    if [[ -d "${SERVFOLD_PATH}"/MEFIScA ]]; then rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; fi
-fi
+if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF
+else reloadFlag=0; WAITFLAG_ON; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
-    rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
-    if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
-    pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
+    if [[ ! -d "${STACK_PATH}" ]]; then mkdir -p "${STACK_PATH}"; else rm -Rf "${STACK_PATH}"/*; fi
+    pushd "${STACK_PATH}" >/dev/null 2>/dev/null
     touch dlist
     if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
     touch mounted_loaders_list
@@ -45,24 +37,20 @@ SAVE_LOADERS_STACK(){
     touch lddlist
     if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
     popd >/dev/null 2>/dev/null
-    touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
-touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
+    WAITFLAG_OFF
 }
 
 GET_MOUNTEFI_STACK(){
-IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list | tr '\n' ';' ) )
-ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
-lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
-if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
+rm -f "${MEFIScA_PATH}"/clientReady
+IFS=';'; mounted_loaders_list=( $(cat "${STACK_PATH}"/mounted_loaders_list | tr '\n' ';' ) )
+ldlist=( $(cat "${STACK_PATH}"/ldlist | tr '\n' ';' ) )
+lddlist=( $(cat "${STACK_PATH}"/lddlist | tr '\n' ';' ) )
+if [[ -f "${STACK_PATH}"/dlist ]]; then dlist=( $(cat "${STACK_PATH}"/dlist | tr '\n' ';' ) ); fi;  unset IFS
 for i in ${!mounted_loaders_list[@]}; do old_mounted[i]=${mounted_loaders_list[i]}; done
 for i in ${!ldlist[@]}; do old_ldlist[i]="${ldlist[i]}"; done
 for i in ${!dlist[@]}; do old_dlist[i]=${dlist[i]}; done
 for i in ${!lddlist[@]}; do old_lddlist[i]=${lddlist[i]}; done
-ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-old_uuid_count=$uuid_count
-
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring)
+STORE_HOTPLUG_STATE
 }
 
 ##################################################################################################################################################
@@ -193,12 +181,10 @@ if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
                        if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then echo "••1••" ; old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
-                    echo "${mounted_loaders_list[$pnum]} != ${loader_sum}"
-                    touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro
                     mounted_loaders_list[$pnum]=${loader_sum}
                     if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
                     ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
-                    let "chs=pnum+1"; UPDATE_SCREEN; update_screen_flag=1; break; fi
+                    let "chs=pnum+1"; UPDATE_SCREEN; update_screen_flag=1; WAITFLAG_ON; break; fi
             fi
         done
     else
@@ -228,6 +214,14 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
     fi
 }
 #######################################################################################################################################################
+
+STORE_HOTPLUG_STATE(){
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
+
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
+}
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG_PARTS(){
@@ -277,12 +271,12 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
 
         if [[ ! $old_uuid_count = $uuid_count ]]; then
             if [[  $old_uuid_count -lt $uuid_count ]]; then 
-                synchro=1
+                synchro=1; WAITFLAG_ON
                ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
                     disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
                 else
-                    synchro=3
+                    synchro=3; WAITFLAG_ON
             fi
                 diff_uuid=()
                 IFS=';'; diff_uuid=(`echo ${uuid_list[@]} ${old_uuid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posui=${#diff_uuid[@]}
@@ -454,12 +448,12 @@ if [[ ! $pos = 0 ]]; then
 	done
 fi
 
-ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
-
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
+STORE_HOTPLUG_STATE
 }
+
+zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
+
+efimounter=$(echo 0x7a 0x78 | xxd -r)
 
 ############################################ конец движка детекта EFI ###############################################
 
@@ -584,7 +578,7 @@ done
 
 ############################################################## INIT #####################################################
 
-if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA; fi
+if [[ ! -d "${MEFIScA_PATH}" ]]; then mkdir -p "${MEFIScA_PATH}"; fi
 
 nlist=(); dlist=(); mounted_loaders_list=(); ldlist=(); lddlist=()
 old_dlist=(); old_mounted=(); old_ldlist=(); old_lddlist=()
@@ -605,18 +599,17 @@ while true; do
         GETLIST
         
         if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then STARTUP_FIND_LOADERS; startup=1; fi
-
     while true; do
-        sleep 0.9
-        if [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; then 
+        sleep 0.8
+        if CLIENT_ONLINE; then 
             if [[ ! $reloadFlag = 1 ]]; then SAVE_LOADERS_STACK; else reloadFlag=0; fi
-            while [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; do sleep 1.5; done
+            while CLIENT_ONLINE; do sleep 0.8; done
             GET_MOUNTEFI_STACK
         else
-            if [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+            if [[ -f "${MEFIScA_PATH}"/WaitSynchro ]]; then WAITFLAG_OFF; fi
             CHECK_HOTPLUG_DISKS
             CHECK_HOTPLUG_PARTS
-            if [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; then update_screen_flag=0;  touch "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; break; fi
+            if HOTPLUG; then update_screen_flag=0 ; break; fi
         fi
     done
 done
