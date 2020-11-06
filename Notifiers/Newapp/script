@@ -2,11 +2,12 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 02.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
-edit_vers="060"
-serv_vers="003"
+edit_vers="061"
+serv_vers="005"
+
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -1607,14 +1608,12 @@ synchro=0
 ###################### GET MEFIScA DATA ########################################
 GET_DATA_STACK(){
 if [[ $mefisca = 1 ]]; then
-      i=32; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.5; let "i--"; 
-      if [[ $i = 61 ]]; then MSG_WAIT &
-      wpid=$(($!+2)); fi
-      if [[ $i = 0 ]]; then break; fi; done
-      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
-      if [[ $i = 0 ]]; then MSG_TIMEOUT; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
+        wpid=$(($!+2)); fi; if [[ $i = 0 ]]; then break; fi; done 
+        if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+        if [[ $i = 0 ]]; then MSG_TIMEOUT
+        rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
  if [[ ! $i = 0 ]]; then 
- i=8; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
  IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list | tr '\n' ';' ) )
  ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
  lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
@@ -1635,7 +1634,6 @@ if [[ $mefisca = 1 ]]; then
     if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
     true
     else
-            rm -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
             pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
             touch dlist
@@ -1647,7 +1645,6 @@ if [[ $mefisca = 1 ]]; then
             touch lddlist
             if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
             popd >/dev/null 2>/dev/null
-            touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate
             old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
     fi
 fi
@@ -1682,16 +1679,6 @@ IF_RELOAD_MEFISCA(){
       if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
          if [[ ! $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh | grep 'serv_vers="[0-9]*"' | cut -f2 -d= | tr -d '"' ) = "$serv_vers" ]]; then
             cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
-            i=32; while true; do if [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate ]]; then sleep 0.25; let "i--"; 
-            if [[ $i = 28 ]]; then
-                if [[ $loc = "ru" ]]; then
-                MESSAGE='"Перезапуск поискового сервиса для обновления !"'
-                else
-                MESSAGE='"Restarting bootloaders searching service for update!"'
-                fi
-                osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' &
-            fi
-            if [[ $i = 0 ]]; then break; fi; else break; fi; done
             touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag     
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
             sleep 0.5
@@ -1703,6 +1690,9 @@ IF_RELOAD_MEFISCA(){
       fi
     fi
 }
+
+CLIENT_READY(){ if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; }
+CLIENT_DONE(){ if [[ $mefisca = 1 ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; }
 
 ################################### INIT ##################################################
 if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
@@ -1736,7 +1726,7 @@ fi
 GET_CONFIG_HASHES
 GET_LOCALE 
 CHECK_MEFIScA
-
+CLIENT_READY
 hotplug_flag=0
 
 ############################################################################################
@@ -1777,7 +1767,7 @@ kill ${hotplug_pid}
 
 if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
    kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
-if [[ ${result_names} = "false" ]]; then break; fi
+if [[ ${result_names} = "false" ]]; then CLIENT_DONE; break; fi
 
     modename=$(echo "${result_names}" | egrep -o "расширенный|advanced|упрощённый|simple|terminal|терминала|Авто-подключение|auto-mount")
         case ${modename} in
@@ -1785,8 +1775,8 @@ if [[ ${result_names} = "false" ]]; then break; fi
             advanced            ) menu_mode=1 ; SETCONF_MENUMODE ;;
             упрощённый          ) menu_mode=0 ; SETCONF_MENUMODE ;;
             simple              ) menu_mode=0 ; SETCONF_MENUMODE ;;
-            terminal            ) MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
-            терминала           ) MEFIScA_DATA; touch "${SERVFOLD_PATH}"/MEFIScA/StackUptoDate; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
+            terminal            ) MEFIScA_DATA; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
+            терминала           ) MEFIScA_DATA; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
             Авто-подключение    ) SETUP_AUTOMOUNT ;;
             auto-mount          ) SETUP_AUTOMOUNT ;;
         esac
