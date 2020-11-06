@@ -2254,19 +2254,21 @@ MSG_TIMEOUT(){
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Время ожидания вышло !"'
 else
-MESSAGE='"The waiting time is up!"'
+MESSAGE='"The waiting time is up !"'
 fi
 DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 }
 
 MSG_WAIT(){
 if [[ $loc = "ru" ]]; then
-MESSAGE='"Подготовка данных о загрузчиках ... !"' 
+MESSAGE='"Подготовка данных о загрузчиках .... !"' 
 else
-MESSAGE='"Waiting for the end of data synchro ....!"' 
+MESSAGE='"Waiting for the end of data synchro .... !"' 
 fi
 DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 }
+
+KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
 
 STARTUP_FIND_LOADERS(){
 if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ ! $CheckLoaders = 0 ]]; then
@@ -2297,8 +2299,8 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     fi
   else
         i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
-        wpid=$(($!+2)); fi; if [[ $i = 0 ]]; then break; fi; done 
-        if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+        fi; if [[ $i = 0 ]]; then break; fi; done 
+        KILL_DIALOG
         if [[ $i = 0 ]]; then MSG_TIMEOUT
         rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
       if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi    
