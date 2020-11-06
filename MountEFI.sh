@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -1569,7 +1569,9 @@ if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
 GET_THEME_LOADERS
 GET_LOADERS
-if [[ ! "$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")" = "$check_str" ]]; then STARTUP_FIND_LOADERS; fi
+if [[ $mefisca = 1 ]]; then 
+    if [[ ! "$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")" = "$check_str" ]]; then CLIENT_READY; STARTUP_FIND_LOADERS; fi
+fi
 if [[ ${CheckLoaders} = 0 ]]; then 
     mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
 rm -f ~/.other_loaders_list.txt
@@ -2234,12 +2236,12 @@ MOUNT_EFI_WINDOW_UP &
 }
 
 GET_DATA_STACK(){
-i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
 IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
 ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
 lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
 if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist 2>/dev/null | tr '\n' ';' ) ); fi;  unset IFS
 CORRECT_LOADERS_HASH_LINKS
+rm -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady
 }
 
 DISPLAY_MESSAGE1(){
@@ -2254,7 +2256,7 @@ MSG_TIMEOUT(){
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Время ожидания вышло !"'
 else
-MESSAGE='"The waiting time is up !"'
+MESSAGE='"The waiting time is up!"'
 fi
 DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 }
@@ -2266,6 +2268,15 @@ else
 MESSAGE='"Waiting for the end of data synchro .... !"' 
 fi
 DISPLAY_MESSAGE >>/dev/null 2>/dev/null
+}
+
+MSG_SERV_READY_ERR(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Поисковый агент не ответил !"'
+else
+MESSAGE='"No answer from serching agent !"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 }
 
 KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
@@ -2298,12 +2309,16 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     done
     fi
   else
+    if [[ $rst = 0 ]]; then
+        i=96; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
+        if [[ $i = 0 ]]; then MSG_SERV_READY_ERR; fi
         i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
         fi; if [[ $i = 0 ]]; then break; fi; done 
         KILL_DIALOG
         if [[ $i = 0 ]]; then MSG_TIMEOUT
         rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
-      if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi    
+        if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
+    fi    
   fi      
 fi
 MOUNT_EFI_WINDOW_UP &
@@ -3440,7 +3455,7 @@ if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
 fi
 }
 
-CLIENT_READY(){ if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; }
+CLIENT_READY(){ if [[ $mefisca = 1 ]] && [[ $rst = 0 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; }
 
 ################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################

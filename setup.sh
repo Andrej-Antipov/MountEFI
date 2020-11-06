@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -58,7 +58,7 @@ s_edit_vers="055"
 # 052 - улучшение проверки ручного обновления
 # 053 - коррекция в контроле версии Мак OC
 # 054 - обработка ожидания для MEFIScA
-# 055 - увеличено время таймера для синхронизации
+# 055 - коррекция команды завершения диалога поиска
 
 clear
 
@@ -7192,19 +7192,21 @@ MSG_TIMEOUT(){
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Время ожидания вышло !"'
 else
-MESSAGE='"The waiting time is up!"'
+MESSAGE='"The waiting time is up !"'
 fi
 DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 }
 
 MSG_WAIT(){
 if [[ $loc = "ru" ]]; then
-MESSAGE='"Подготовка данных о загрузчиках ... !"' 
+MESSAGE='"Подготовка данных о загрузчиках .... !"' 
 else
-MESSAGE='"Waiting for the end of data synchro ....!"' 
+MESSAGE='"Waiting for the end of data synchro .... !"' 
 fi
 DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 }
+
+KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
 
 START_RUN_AT_LOGIN_SERVICE(){
 
@@ -7245,11 +7247,11 @@ echo '</plist>' >> ${HOME}/.MEFIScA.plist
 fi
       GET_APP_ICON
       i=16; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
-      i=140; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; 
-      if [[ $i = 136 ]]; then MSG_WAIT &
-      wpid=$(($!+2)); fi
+      i=96; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--";  
+      if [[ $i = 92 ]]; then MSG_WAIT &
+      fi
       if [[ $i = 0 ]]; then break; fi; done
-      if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+      KILL_DIALOG
       if [[ $i = 0 ]]; then MSG_TIMEOUT; fi
 }
 
