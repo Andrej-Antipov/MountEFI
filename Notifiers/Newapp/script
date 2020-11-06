@@ -2,12 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
 edit_vers="061"
 serv_vers="005"
-
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -183,7 +182,7 @@ MSG_TIMEOUT(){
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Время ожидания вышло !"'
 else
-MESSAGE='"The waiting time is up!"'
+MESSAGE='"The waiting time is up !"'
 fi
 DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 }
@@ -192,7 +191,7 @@ MSG_WAIT(){
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Ожидание конца подготовки данных .... !"' 
 else
-MESSAGE='"Waiting for the end of data synchro ....!"' 
+MESSAGE='"Waiting for the end of data synchro .... !"' 
 fi
 DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 }
@@ -1097,10 +1096,7 @@ KILL_DIALOG
 fi
 }
 
-KILL_DIALOG(){
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
-}
+KILL_DIALOG(){ if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi; }
 
 EXIT_PROGRAM(){
 KILL_DIALOG
@@ -1131,8 +1127,6 @@ mefi_stack_got=1
 fi
 
 rm -Rf ~/.MountEFIst
-
-#DBG "GET MEFI STACK"
 
 if [[ -f ~/.hashes_list.txt.back ]]; then mv -f ~/.hashes_list.txt.back ~/.hashes_list.txt; fi
 if [[ -f ~/.other_loaders_list.txt.back ]]; then mv -f ~/.other_loaders_list.txt.back ~/.other_loaders_list.txt; fi
@@ -1605,12 +1599,15 @@ synchro=0
 
 }
 
+KILL_DIALOG2(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+
 ###################### GET MEFIScA DATA ########################################
 GET_DATA_STACK(){
 if [[ $mefisca = 1 ]]; then
+if [[ ${rst} = 0 ]]; then i=64; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done; fi
 i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
-        wpid=$(($!+2)); fi; if [[ $i = 0 ]]; then break; fi; done 
-        if [[ ! $wpid = "" ]]; then kill $wpid 2>/dev/null; fi 
+        fi; if [[ $i = 0 ]]; then break; fi; done 
+        KILL_DIALOG2
         if [[ $i = 0 ]]; then MSG_TIMEOUT
         rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
  if [[ ! $i = 0 ]]; then 
@@ -1619,6 +1616,7 @@ i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; le
  lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
  if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
  CORRECT_LOADERS_HASH_LINKS
+ rm -f "${MEFIScA_PATH}/ServerGetReady"
  fi
 fi
 }
@@ -1735,7 +1733,7 @@ hotplug_flag=0
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Поиск EFI разделов .... !"'
 else
-MESSAGE='"Searching for EFI partitions ....!"'
+MESSAGE='"Searching for EFI partitions .... !"'
 fi
 MESSAGE_SEARCH &
 mspid=$(($!+2))
@@ -1751,7 +1749,7 @@ fi
 mefi_stack_got=0
 if [[ ${rst} = 0 ]]; then GET_DATA_STACK; GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; GET_DATA_STACK; UPDATE_SCREEN; fi
 kill $mspid
-KILL_DIALOG
+KILL_DIALOG2
 while true; do
 #################### MAIN MENU #####################
 START_CHECK_HOTPLUG &
