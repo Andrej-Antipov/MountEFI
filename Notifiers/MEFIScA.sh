@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.8.0"
@@ -14,19 +14,22 @@ SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 MEFIScA_PATH="${SERVFOLD_PATH}/MEFIScA"
 STACK_PATH="${MEFIScA_PATH}/MEFIscanAgentStack"
 
-WAITFLAG_ON(){ touch "${MEFIScA_PATH}"/WaitSynchro; }
+WAITFLAG_ON(){ if [[ -f "${MEFIScA_PATH}"/clientReady ]]; then touch "${MEFIScA_PATH}"/WaitSynchro; fi; }
 WAITFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/WaitSynchro; }
+SERVER_GET_READY(){ touch "${MEFIScA_PATH}/ServerGetReady"; }
+SERVER_READY_OFF(){ rm -f "${MEFIScA_PATH}/ServerGetReady"; }
 RELOADFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/reloadFlag; }
-CLIENT_READY(){ -f "${MEFIScA_PATH}"/clientReady; }
-CLIENT_ONLINE(){ [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 && CLIENT_READY ]] || [[ ! $(launchctl list | grep -o "MountEFIr.job") = "" ]]; }
+CLIENT_READY(){ [[ -f "${MEFIScA_PATH}"/clientReady ]]; }
+CLIENT_ONLINE(){ [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]] && CLIENT_READY || [[ ! $(launchctl list | grep -o "MountEFIr.job") = "" ]]; }
 HOTPLUG(){ [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; }
 
 if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF
-else reloadFlag=0; WAITFLAG_ON; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
+else reloadFlag=0; touch "${MEFIScA_PATH}"/WaitSynchro; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
     if [[ ! -d "${STACK_PATH}" ]]; then mkdir -p "${STACK_PATH}"; else rm -Rf "${STACK_PATH}"/*; fi
+    sleep 0.125; WAITFLAG_ON; SERVER_GET_READY
     pushd "${STACK_PATH}" >/dev/null 2>/dev/null
     touch dlist
     if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
@@ -276,7 +279,7 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
                     disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
                     IFS=';'; ilist=($disk_images); unset IFS; posi=${#ilist[@]}
                 else
-                    synchro=3; WAITFLAG_ON
+                    synchro=3; WAIFLAG_ON
             fi
                 diff_uuid=()
                 IFS=';'; diff_uuid=(`echo ${uuid_list[@]} ${old_uuid_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ';'`); unset IFS; posui=${#diff_uuid[@]}
@@ -491,36 +494,37 @@ DO_MOUNT(){
 }
 
 STARTUP_FIND_LOADERS(){
-
-if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
-    echo "$mypassword" | sudo -S printf ""
-    for i in ${!dlist[@]}; do 
-    pnum=${nlist[i]}; 
-        string=${dlist[$pnum]}
-        old_dlist[pnum]=${dlist[pnum]}
-        if [[ $(df | grep ${string}) = "" ]]; then was_mounted=0
+if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
+    if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
+        echo "$mypassword" | sudo -S printf ""
+        for i in ${!dlist[@]}; do 
+        pnum=${nlist[i]}; 
+            string=${dlist[$pnum]}
+            old_dlist[pnum]=${dlist[pnum]}
+            if [[ $(df | grep ${string}) = "" ]]; then was_mounted=0
         
-            if [[ $flag = 0 ]]; then diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
-            elif ! sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null; then 
-            sleep 0.5
-            sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
+                if [[ $flag = 0 ]]; then diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
+                elif ! sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null; then 
+                sleep 0.5
+                sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
+                fi
+            else 
+                was_mounted=1
             fi
-        else 
-            was_mounted=1
-        fi
-            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+                if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
             
-                FIND_LOADERS
+                    FIND_LOADERS
 
-                if [[ ! ${loader} = "" ]]; then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
-                if [[ $was_mounted = 0 ]]; then diskutil quiet  umount force /dev/${string}; fi
-            fi
-            old_ldlist[pnum]=${ldlist[pnum]}
-            if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then old_oc_revision[pnum]=${ldlist[0]:8}; fi  
-    done
+                    if [[ ! ${loader} = "" ]]; then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
+                    if [[ $was_mounted = 0 ]]; then diskutil quiet  umount force /dev/${string}; fi
+                fi
+                old_ldlist[pnum]=${ldlist[pnum]}
+                if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then old_oc_revision[pnum]=${ldlist[0]:8}; fi  
+        done
+    fi
+    old_mounted=(${mounted_loaders_list[@]}); old_lddlist=(${lddlist[@]})
+    startup=1; WAITFLAG_OFF
 fi
-old_mounted=(${mounted_loaders_list[@]}); old_lddlist=(${lddlist[@]})
-
 }
 
 GET_PASSWORD(){
@@ -571,8 +575,10 @@ while [ $var0 != 0 ]; do
     fi                
 	let "num++"; let "var0--"
 done
-
 }
+
+CLIENT_IS_ONLINE(){ if [[ ! $reloadFlag = 1 ]]; then SAVE_LOADERS_STACK; else reloadFlag=0; fi; while CLIENT_ONLINE; do sleep 0.5; done; GET_MOUNTEFI_STACK; SERVER_READY_OFF; }
+CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then update_screen_flag=0 ; break; fi; }
 
 # Конец определения GETLIST ###########################################################
 
@@ -583,7 +589,6 @@ if [[ ! -d "${MEFIScA_PATH}" ]]; then mkdir -p "${MEFIScA_PATH}"; fi
 nlist=(); dlist=(); mounted_loaders_list=(); ldlist=(); lddlist=()
 old_dlist=(); old_mounted=(); old_ldlist=(); old_lddlist=()
 old_oc_revision=(); past_rmlist=(); rmlist=()
-
 lists_updated=0; synchro=0; startup=0
 
 IF_UNLOCK_SAFE_MODE
@@ -598,18 +603,10 @@ while true; do
         WAIT_SYNCHRO
         GETLIST
         
-        if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then STARTUP_FIND_LOADERS; startup=1; fi
-    while true; do
-        sleep 0.8
-        if CLIENT_ONLINE; then 
-            if [[ ! $reloadFlag = 1 ]]; then SAVE_LOADERS_STACK; else reloadFlag=0; fi
-            while CLIENT_ONLINE; do sleep 0.8; done
-            GET_MOUNTEFI_STACK
-        else
-            if [[ -f "${MEFIScA_PATH}"/WaitSynchro ]]; then WAITFLAG_OFF; fi
-            CHECK_HOTPLUG_DISKS
-            CHECK_HOTPLUG_PARTS
-            if HOTPLUG; then update_screen_flag=0 ; break; fi
-        fi
-    done
+        STARTUP_FIND_LOADERS
+
+        while true; do
+            sleep 0.4; if CLIENT_ONLINE; then CLIENT_IS_ONLINE; else sleep 0.4; if CLIENT_ONLINE; then CLIENT_IS_ONLINE; fi; fi
+            CLIENT_IS_OFFLINE
+        done
 done
