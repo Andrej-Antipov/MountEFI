@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 08.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.8.0"
 edit_vers="061"
@@ -16,10 +16,12 @@ osascript -e 'tell application "Terminal" to activate'
 if [[ $(ps xao command | grep -i "MountEFI$" | grep -v grep | wc -l | bc) = 2 ]]; then MOUNT_EFI_WINDOW_UP &
 fi
 
-TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
-DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
+logfile="${HOME}/Desktop/temp.txt"
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> "${logfile}" 2>/dev/null; }
+DBG(){ if $DEBUG; then TSP; echo $1 >> "${logfile}" 2>/dev/null; fi;  }
 CONFPATH="${HOME}/.MountEFIconf.plist"
 DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+DEBUG_MODE(){ if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; }
 DBG "SCRIPT: start applet ___________________________________________________"
 
 RESTART_APP(){
@@ -125,13 +127,8 @@ else
 fi
 }
 
-UPDATE_CACHE(){
-cache=1
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
+UPDATE_CACHE(){ cache=1; if [[ -f ${HOME}/.MountEFIconf.plist ]]; then MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist ); else unset MountEFIconf; cache=0; fi; }
 #elif [[ -f ~/Library/Application\ Support/EasyEFI/EasyEFIconf.plist ]]; then MountEFIconf=$( cat ~/Library/Application\ Support/EasyEFI/EasyEFIconf.plist )
-else unset MountEFIconf; cache=0
-fi
-}
 
 GET_APP_ICON(){
 icon_string=""
@@ -880,6 +877,9 @@ if [[ ${ldname} = 1 ]]; then
     if [[ $loc = "ru" ]]; then
     efi_prompt_list+='"'"                                                                                "'"'","
     efi_prompt_list+='"'"*********************************** дополнительно *****************************************"'"'","
+    if $DEBUG && [[ ${menu_mode} = 1 ]]; then
+        efi_prompt_list+='"                                              • Отключить лог ( DEBUG ) • "'","
+    fi
         efi_prompt_list+='"                                  Отключить все подключенные EFI разделы  "'","
     if [[ ${menu_mode} = 1 ]]; then
       if [[ $CheckLoaders = 1 ]]; then
@@ -895,6 +895,9 @@ if [[ ${ldname} = 1 ]]; then
     fi
 else
     efi_prompt_list+='"'"*************************************** additionally: ****************************************"'"'","
+    if $DEBUG && [[ ${menu_mode} = 1 ]]; then
+        efi_prompt_list+='"                                            • Disable log (DEBUG mode) • "'","
+    fi
         efi_prompt_list+='"                                       Unmount ALL mounted EFI partitions  "'","
     if [[ ${menu_mode} = 1 ]]; then
       if [[ $CheckLoaders = 1 ]]; then
@@ -913,6 +916,9 @@ else
 efi_prompt_list+='"'"                                                                         "'"'","
 if [[ $loc = "ru" ]]; then
 efi_prompt_list+='"'"***************************** дополнительно: ******************************"'"'","
+        if $DEBUG && [[ ${menu_mode} = 1 ]]; then
+            efi_prompt_list+='"                                    • Отключить лог ( DEBUG ) • "'","
+        fi
             efi_prompt_list+='"                          Отключить все подключенные EFI разделы  "'","
         if [[ ${menu_mode} = 1 ]]; then
           if [[ $CheckLoaders = 1 ]]; then
@@ -928,6 +934,9 @@ efi_prompt_list+='"'"***************************** дополнительно: *
         fi
 else
 efi_prompt_list+='"'"******************************* additionally: *********************************"'"'","
+        if $DEBUG && [[ ${menu_mode} = 1 ]]; then
+            efi_prompt_list+='"                                     • Disable log (DEBUG mode) • "'","
+        fi
             efi_prompt_list+='"                                Unmount ALL mounted EFI partitions  "'","
         if [[ ${menu_mode} = 1 ]]; then
           if [[ $CheckLoaders = 1 ]]; then
@@ -944,11 +953,13 @@ efi_prompt_list+='"'"******************************* additionally: *************
 fi
 fi
 
+if $DEBUG; then deb_mode=" • DEBUG is ON • "; else deb_mode=""; fi
+
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
 tell application "System Events"    activate
 set ThemeList to {$efi_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) / Список EFI (ESP) разделов:"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed OK button name {"Поехали!"} cancel button name {"Выход"}
+set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) $deb_mode/ Список EFI (ESP) разделов:"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed OK button name {"Поехали!"} cancel button name {"Выход"}
 end tell
 EOD
 
@@ -957,7 +968,7 @@ else
 osascript <<EOD
 tell application "System Events"    activate
 set ThemeList to {$efi_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) / EFI (ESP) partition list"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed cancel button name {"Exit"}
+set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) $deb_mode/ EFI (ESP) partition list:"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed cancel button name {"Exit"}
 end tell
 EOD
 
@@ -1755,6 +1766,7 @@ if [[ $mefisca = 1 ]]; then
     if [[ -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart; else touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi
 fi 
 }
+
 CLIENT_DONE(){ if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientDown; DBG "SCRIPT CLIENT DONE"; fi; }
 
 ################################### INIT ##################################################
@@ -1828,7 +1840,7 @@ if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') =
    kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
 if [[ ${result_names} = "false" ]]; then CLIENT_DONE; break; fi
 
-    modename=$(echo "${result_names}" | egrep -o "расширенный|advanced|упрощённый|simple|terminal|терминала|Авто-подключение|auto-mount")
+    modename=$(echo "${result_names}" | egrep -o "расширенный|advanced|упрощённый|simple|terminal|терминала|Авто-подключение|auto-mount|DEBUG")
         case ${modename} in
             расширенный         ) menu_mode=1 ; SETCONF_MENUMODE ;;
             advanced            ) menu_mode=1 ; SETCONF_MENUMODE ;;
@@ -1838,6 +1850,7 @@ if [[ ${result_names} = "false" ]]; then CLIENT_DONE; break; fi
             терминала           ) MEFIScA_DATA; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
             Авто-подключение    ) SETUP_AUTOMOUNT ;;
             auto-mount          ) SETUP_AUTOMOUNT ;;
+            DEBUG               ) DEBUG_MODE ;;
         esac
 
 if [[ ${modename} = "" ]]; then
