@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="055"
+s_edit_vers="057"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -59,8 +59,19 @@ s_edit_vers="055"
 # 053 - коррекция в контроле версии Мак OC
 # 054 - обработка ожидания для MEFIScA
 # 055 - коррекция команды завершения диалога поиска
+# 056 - получение данных от MEFIScA перенесено в setup
+# 057 - скрыть перезапуск если не из апплета
 
 clear
+
+
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
+DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
+
+CONFPATH="${HOME}/.MountEFIconf.plist"
+SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
+
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 
@@ -204,10 +215,9 @@ NET_UPDATE_LOADERS(){
 fi
 }
 
-CONFPATH="${HOME}/.MountEFIconf.plist"
-SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
-
 setup_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash" | grep setup |  grep -v grep  | cut -f1 -d " " | sort -u | wc -l )
+
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/clientDown ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientDown; fi
 
 par="$1"
 quick_am=0
@@ -5751,6 +5761,9 @@ if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.j
 if [[ -f ~/.hashes_list.txt ]]; then cp -f ~/.hashes_list.txt ~/.hashes_list.txt.back; fi
 if [[ -f ~/.other_loaders_list.txt ]]; then cp -f ~/.other_loaders_list.txt ~/.other_loaders_list.txt.back; fi
 if [[ -f ~/.disk_list.txt ]]; then cp -f ~/.disk_list.txt ~/.disk_list.txt.back; fi
+
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientRestart; sleep 0.5; fi
+
 }
 
 WARNING_MSG(){
@@ -7178,6 +7191,8 @@ if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.j
 plutil -replace EasyEFImode -bool Yes "${CONFPATH}"
 plutil -replace Restart -bool Yes "${CONFPATH}"
 
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientRestart; sleep 0.5; fi
+
 }
 
 DISPLAY_MESSAGE1(){
@@ -7206,7 +7221,37 @@ fi
 DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 }
 
+
 KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+
+GET_DATA_STACK(){
+i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+DBG "SETUP START data get, waited $((8-i)) cycle of 8"
+IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
+ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
+lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
+oc_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/oc_list 2>/dev/null | tr '\n' ';' ) )
+DBG "SETUP oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist 2>/dev/null | tr '\n' ';' ) ); fi;  unset IFS
+DBG "Client STOP data get"
+rm -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady "${SERVFOLD_PATH}"/MEFIScA/clientReady
+DBG " SETUP Remove ServerGetReady" ; DBG " SETUP Remove сlientReady"
+SAVE_LOADERS_STACK
+}
+
+SAVE_LOADERS_STACK(){
+if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi; mkdir "${HOME}"/.MountEFIst
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.mounted_loaders_list; max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${HOME}"/.MountEFIst/.mounted_loaders_list; done; fi
+if [[ ! ${#ldlist[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.ldlist; max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${HOME}"/.MountEFIst/.ldlist; done; fi
+if [[ ! ${#lddlist[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.lddlist; max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${HOME}"/.MountEFIst/.lddlist; done; fi
+if [[ ! ${#oc_list[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.oc_list; max=0; for y in ${!oc_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo "${oc_list[h]}" >> "${HOME}"/.MountEFIst/.oc_list; done; fi
+DBG "Данные сохранены в служебную папку"
+}
+
 
 START_RUN_AT_LOGIN_SERVICE(){
 
@@ -7247,12 +7292,26 @@ echo '</plist>' >> ${HOME}/.MEFIScA.plist
 fi
       GET_APP_ICON
       i=16; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
+      DBG "SETUP ожидание WaitSynchro заняло $((16-i)) циклов"
       i=96; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--";  
       if [[ $i = 92 ]]; then MSG_WAIT &
       fi
       if [[ $i = 0 ]]; then break; fi; done
       KILL_DIALOG
+      DBG "SETUP ожидание WaitSynchro OFF заняло $((96-i)) циклов"
       if [[ $i = 0 ]]; then MSG_TIMEOUT; fi
+      touch "${SERVFOLD_PATH}"/MEFIScA/clientReady
+      i=96; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
+      DBG "CLIENT waiting ServerGetReady was $((96-i)) cycles"
+
+      i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
+        fi; if [[ $i = 0 ]]; then break; fi; done 
+        KILL_DIALOG
+        if [[ $i = 0 ]]; then MSG_TIMEOUT
+        rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+        DBG "CLIENT waiting WaitSychro gone off was $((240-i)) cycles"
+        if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
+
 }
 
 STOP_RUN_ON_LOGIN_SERVICE(){
@@ -7287,6 +7346,7 @@ fi
 
 SET_INPUT
 GET_SYSTEM_FLAG
+rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart
 theme="system"
 var4=0
 cd "${ROOT}"

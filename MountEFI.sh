@@ -1,13 +1,17 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
 edit_vers="061"
-serv_vers="005"
+serv_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
+DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
+
+DBG "CLIENT started +++++++++++++++++++++++++++++++++++++++++++++++++"
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
@@ -16,6 +20,10 @@ cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
+
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/clientDown ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientDown; fi
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f "${HOME}"/.MountEFIconf.plist ]]; then rm "${CONFPATH}"; fi
@@ -66,31 +74,13 @@ if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
 fi
 
 if [[ $(echo "$MountEFIconf"| grep -e "<key>NO_RETURN_EASYEFI</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/') = "NO_RETURN_EASYEFI" ]]; then
-        rst=1; plutil -remove NO_RETURN_EASYEFI "${CONFPATH}"; UPDATE_CACHE; fi
+        rst=1; no_ret=1; plutil -remove NO_RETURN_EASYEFI "${CONFPATH}"; UPDATE_CACHE; else no_ret=0; fi
 
 reload_check=`echo "$MountEFIconf"| grep -o "Reload"`
 if [[ $reload_check = "Reload" ]]; then par="-s"; fi
 
 #################### CHECK UPDATE ###################################################################################
-
-IF_RELOAD_MEFISCA(){
-    if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then 
-      if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
-         if [[ ! $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh | grep 'serv_vers="[0-9]*"' | cut -f2 -d= | tr -d '"' ) = "$serv_vers" ]]; then
-            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
-            touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag     
-            launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-            sleep 0.5
-            launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-         fi
-      else
-           launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
-           rm -f ${HOME}"/Library/LaunchAgents/MEFIScA.plist"
-      fi
-    fi
-}
-
-upd=0
+upd=0; mfupd=0
 update_check=`echo "$MountEFIconf"| grep -o "Updating"`
 if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
         if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then 
@@ -125,7 +115,7 @@ if [[ $update_check = "Updating" ]] && [[ -f ../../../MountEFI.app/Contents/Info
         fi
 SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
 if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
-if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"; IF_RELOAD_MEFISCA; fi
+if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"; fi
 
 #IF_NEW_APPLET
             TARGET="${ROOT}/../../../MountEFI.app/Contents"
@@ -150,14 +140,33 @@ if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}";
             fi
 
 if [[ -d "${HOME}"/.MountEFIupdates ]]; then rm -Rf "${HOME}"/.MountEFIupdates; fi
-upd=1
+upd=1; mfupd=1
 fi
-
+DBG "CLENT Update detect = $upd"
 
 zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/' | cut -f2 -d"=" | tr -d '" ' | cut -f2-4 -d '-' | tr -d - | rev)
 
 efimounter=$(echo 0x7a 0x78 | xxd -r)
 
+####################################### блок перезапуска поискового агента ########################################################################################################
+GET_APP_ICON(){ icon_string=""; if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
+   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'; fi ; }
+DISPLAY_MESSAGE1(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null; }
+MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания вышло !"'; else MESSAGE='"The waiting time is up !"'; fi; DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null; }
+DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null; }
+MSG_WAIT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Подготовка данных о загрузчиках .... !"' ; else MESSAGE='"Waiting for the end of data synchro .... !"' ; fi; DISPLAY_MESSAGE >>/dev/null 2>/dev/null; }
+KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+
+POSTCONTROL_RELAUNCH_MEFIScA(){
+            launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+            sleep 0.5
+            launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
+            DBG "CLIENT: MEFIScA was relounched for relevant client version"
+            i=16; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+            i=140; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 128 ]]; then GET_APP_ICON; MSG_WAIT &
+            fi; if [[ $i = 0 ]]; then break; fi; done; KILL_DIALOG ; if [[ $i = 0 ]]; then GET_APP_ICON; MSG_TIMEOUT; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+#            DBG "CLIENT ••• wait WaitSynchro OFF $((140-i)) cycles"
+}
 ##################################### Инициализация нового конфига и правка старого ###################################################
 
 MEFI_MD5=$(md5 -qq MountEFI)
@@ -432,29 +441,50 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
     security add-generic-password -a ${USER} -s ${!efimounter} -w "${mypassword}" >/dev/null 2>&1
     fi
 
+    ####################################### IF_RELOAD_MEFIScA ############################################
+        DBG "Проверям наличие поискового агента"
+    if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] && [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then  
+         if [[ $(launchctl list | grep "MEFIScA.job" | awk '{print $1}'| grep -o "[0-9]*") = "" ]] || [[ ! $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh | grep 'serv_vers="[0-9]*"' | cut -f2 -d= | tr -d '"' ) = "$serv_vers" ]]; then
+            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
+            touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag    
+            POSTCONTROL_RELAUNCH_MEFIScA
+         fi
+      else
+          DBG " CLIENT проверяет должен ли быть запущен MEFIScA"
+          if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ -f "${ROOT}"/MEFIScA.sh ]]; then
+            DBG "CLIENT агент должен быть запущен. Запуск."
+            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA; fi
+            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
 
-    IF_RELOAD_MEFISCA
+            echo '<?xml version="1.0" encoding="UTF-8"?>' >> ${HOME}/.MEFIScA.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ${HOME}/.MEFIScA.plist
+            echo '<plist version="1.0">' >> ${HOME}/.MEFIScA.plist
+            echo '<dict>' >> ${HOME}/.MEFIScA.plist
+            echo '  <key>Label</key>' >> ${HOME}/.MEFIScA.plist
+            echo '  <string>MEFIScA.job</string>' >> ${HOME}/.MEFIScA.plist
+            echo '  <key>Nicer</key>' >> ${HOME}/.MEFIScA.plist
+            echo '  <integer>1</integer>' >> ${HOME}/.MEFIScA.plist
+            echo '  <key>ProgramArguments</key>' >> ${HOME}/.MEFIScA.plist
+            echo '  <array>' >> ${HOME}/.MEFIScA.plist
+            echo '      <string>/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MEFIScA/MEFIScA.sh</string>' >> ${HOME}/.MEFIScA.plist
+            echo '  </array>' >> ${HOME}/.MEFIScA.plist
+            echo '  <key>RunAtLoad</key>' >> ${HOME}/.MEFIScA.plist
+            echo '  <true/>' >> ${HOME}/.MEFIScA.plist
+            echo '</dict>' >> ${HOME}/.MEFIScA.plist
+            echo '</plist>' >> ${HOME}/.MEFIScA.plist
 
+            mv -f ${HOME}/.MEFIScA.plist ~/Library/LaunchAgents/MEFIScA.plist
+            DBG "CLIENT поисковый агент запущен"
+            POSTCONTROL_RELAUNCH_MEFIScA
+          fi 
+    fi
+    ##########################################################################################################
 fi
 #############################################################################################################################################
 
-GET_LOADERS(){
-if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|false"); then CheckLoaders=1; else CheckLoaders=0; fi
-}
+GET_LOADERS(){ if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|false"); then CheckLoaders=1; else CheckLoaders=0; fi; }
 
-GET_APP_ICON(){
-icon_string=""
-if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
-   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'
-fi 
-}
-
-SET_TITLE(){
-echo '#!/bin/bash'  >> "${HOME}"/.MountEFInoty.sh
-echo '' >> "${HOME}"/.MountEFInoty.sh
-echo 'TITLE="MountEFI"' >> "${HOME}"/.MountEFInoty.sh
-echo 'SOUND="Submarine"' >> "${HOME}"/.MountEFInoty.sh
-}
+SET_TITLE(){ echo '#!/bin/bash'  >> "${HOME}"/.MountEFInoty.sh; echo '' >> "${HOME}"/.MountEFInoty.sh; echo 'TITLE="MountEFI"' >> "${HOME}"/.MountEFInoty.sh; echo 'SOUND="Submarine"' >> "${HOME}"/.MountEFInoty.sh; }
 
 DISPLAY_NOTIFICATION(){
 
@@ -500,28 +530,15 @@ if [ "$1" = "-r" ] || [ "$1" = "-R" ]  || [ "$1" = "-reset" ]  || [ "$1" = "-RES
 fi
 #############################################################################################
 SAVE_LOADERS_STACK(){
-
-if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi
-mkdir "${HOME}"/.MountEFIst
-
-if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
-            touch "${HOME}"/.MountEFIst/.mounted_loaders_list
-            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${HOME}"/.MountEFIst/.mounted_loaders_list; done
-fi
-
-if [[ ! ${#ldlist[@]} = 0 ]]; then 
-            touch "${HOME}"/.MountEFIst/.ldlist
-            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${HOME}"/.MountEFIst/.ldlist; done
-fi
-
-if [[ ! ${#lddlist[@]} = 0 ]]; then 
-            touch "${HOME}"/.MountEFIst/.lddlist
-            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${HOME}"/.MountEFIst/.lddlist; done
-fi
-
+if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi; mkdir "${HOME}"/.MountEFIst
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.mounted_loaders_list; max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> "${HOME}"/.MountEFIst/.mounted_loaders_list; done; fi
+if [[ ! ${#ldlist[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.ldlist; max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> "${HOME}"/.MountEFIst/.ldlist; done; fi
+if [[ ! ${#lddlist[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.lddlist; max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> "${HOME}"/.MountEFIst/.lddlist; done; fi
+if [[ ! ${#oc_list[@]} = 0 ]]; then touch "${HOME}"/.MountEFIst/.oc_list; max=0; for y in ${!oc_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h<=max;h++)); do echo "${oc_list[h]}" >> "${HOME}"/.MountEFIst/.oc_list; done; fi
 }
 
 #запоминаем на каком терминале и сколько процессов у нашего скрипта
@@ -831,6 +848,8 @@ if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.j
 plutil -replace EasyEFImode -bool Yes "${CONFPATH}"
 plutil -replace Restart -bool Yes "${CONFPATH}"
 
+if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientRestart; sleep 0.5; fi
+
 SAVE_LOADERS_STACK
 
 EXIT_PROGRAM
@@ -857,7 +876,7 @@ if [[ ! $upd = 0 ]]; then
                         echo 'SUBTITLE="Update completed !"; MESSAGE="MountEFI v'${prog_vers}' edit v'${edit_vers}'"' >> "${HOME}"/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION
-        if [[ $rst = 2 ]]; then EASYEFI_RESTART_APP; fi
+        if [[ $rst = 2 ]]; then if [[ -d "${SERVFOLD_PATH}"/MEFIScA ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientUpdated; fi; EASYEFI_RESTART_APP; fi
     else
                         col=80; SHOW_VERSION -u
     fi
@@ -1191,9 +1210,9 @@ then
     printf '\n\n************     This program mounts EFI partitions on Mac OS (X.11 - X.15)    *************\n'
 
     printf '\n\n This program is designed to quickly detect and mount EFI / ESP partitions\n'
-    printf ' The program checks the version of the operating system, and if necessary, requests a password\n'
-    printf ' Because High Sierra and newer require administrator privileges to connect partitions\n'
-    printf ' If a password is not required, it will not be requested. \n'
+    printf ' The program checks the version of the operating system, and if necessary, requests the password\n'
+    printf ' Because High Sierra and newer require administrator privileges to mount partitions\n'
+    printf ' If the password is not required, it will not be requested. \n'
     printf ' The algorithm of the program is as follows:\n'
     printf ' Having found one EFI partition, the program immediately connects it. If there are two or more\n'
     printf ' partitions, when multiple disks with GUIDs are installed in the system, the program will \n'
@@ -1220,7 +1239,6 @@ lists_updated=0
 synchro=0
 recheckLDs=0
 old_oc_revision=()
-
 GET_APP_ICON
 
 GET_FLAG
@@ -1242,12 +1260,13 @@ oc_revision=""
 
 GET_CONFIG_VERS "OpenCore"
 
+oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"
+
 ######  уточняем версию через хэши BOOTx64.efi + OpenCore.efi ######
 if [[ ${oc_revision} = "" ]]; then
-    md5_full="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
-case "${md5_full}" in
+case "${oc_list[pnum]}" in
 cbdc9e74d27453c2f3afaec2ca84f34819758cfb7f8f157959bf608fc76a069d ) oc_revision=.63r;;
 5ee87cfa50c502249abb6e3480bfdaa0aee0e2713f267fa907bb4e1250af71f7 ) oc_revision=.63d;;
 58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
@@ -1557,133 +1576,6 @@ mefisca=1; old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); ol
 else mefisca=0; fi
 }
 
-############## обновление даных после выхода из скрипта настроек #########################################################
-
-REFRESH_SETUP(){
-check_str=$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")
-CHECK_MEFIScA
-UPDATE_CACHE
-GET_LOCALE
-strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
-if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
-GET_USER_PASSWORD
-GET_THEME_LOADERS
-GET_LOADERS
-if [[ $mefisca = 1 ]]; then 
-    if [[ ! "$(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true")" = "$check_str" ]]; then CLIENT_READY; STARTUP_FIND_LOADERS; fi
-fi
-if [[ ${CheckLoaders} = 0 ]]; then 
-    mounted_loaders_list=(); ldlist=(); lddlist=();  else CORRECT_LOADERS_HASH_LINKS; fi
-rm -f ~/.other_loaders_list.txt
-if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then
-    SAVE_LOADERS_STACK
-fi
-CHECK_AUTOUPDATE
-if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
-                    START_AUTOUPDATE &
-fi 
-MOUNT_EFI_WINDOW_UP &
-}
-##########################################################################################################################
-
-MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep MountEFI | wc -l)
-setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
-# Возвращает в переменной TTYcount 0 если наш терминал один
-
-if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
-if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
-
-################ восстановить состояние после перезагрузки из схранения в файлах ##################################################
-
-GET_MOUNTEFI_STACK(){
-if [[ -f ~/.MountEFIst/.mounted_loaders_list ]] && [[ -f ~/.MountEFIst/.ldlist ]] && [[ -f ~/.MountEFIst/.lddlist ]]; then
-mounted_loaders_list_string=$( cat ~/.MountEFIst/.mounted_loaders_list | tr '\n' ';' )
-ldlist_string=$( cat ~/.MountEFIst/.ldlist | tr '\n' ';' )
-lddlist_string=$( cat ~/.MountEFIst/.lddlist | tr '\n' ';' )
-IFS=';' mounted_loaders_list=(${mounted_loaders_list_string}); ldlist=(${ldlist_string}); lddlist=(${lddlist_string}); unset IFS
-fi
-
-rm -Rf ~/.MountEFIst
-
-if [[ -f ~/.hashes_list.txt.back ]]; then mv -f ~/.hashes_list.txt.back ~/.hashes_list.txt; fi
-if [[ -f ~/.other_loaders_list.txt.back ]]; then mv -f ~/.other_loaders_list.txt.back ~/.other_loaders_list.txt; fi
-if [[ -f ~/.disk_list.txt.back ]]; then mv -f ~/.disk_list.txt.back ~/.disk_list.txt; fi
-
-}
-######################## сохранение данных для перезагрузки ###################################################################
-
-############################################# сохранене данных для коррекции после setup ##########################################
-SAVE_EFIes_STATE(){
-OldAutoUpdate=${AutoUpdate}
-if [[ ! $CheckLoaders = 0 ]]; then
-    rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
-    rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
-        if [[ ! ${#lddlist[@]} = 0 ]]; then
-        for h in ${!lddlist[@]}; do 
-            if [[ ! ${mounted_loaders_list[h]} = 0 ]]; then
-                loader=""; oc_revision=""; revision=""
-                md5_loader=${mounted_loaders_list[h]}; GET_CONFIG_VERS "ALL"                            
-                            if [[ ! ${loader} = "" ]]; then
-                            echo "${mounted_loaders_list[h]}" >> ~/.hashes_list.txt
-                            fi
-            fi
-        done
-        fi
-    rm -f ~/.other_loaders_list.txt
-    if [[ ! ${#oth_list[@]} = 0 ]]; then
-        touch ~/.other_loaders_list.txt
-        for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
-    fi
-
-    SAVE_LOADERS_STACK
-fi
-}
-###################################################################################################################################
-############################### обработка условия после перезагрузки ###############################################################
-
-if [ "$par" = "-s" ]; then par=""; cd "$(dirname "$0")"; GET_MOUNTEFI_STACK; upd=1; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then SAVE_LOADERS_STACK;  EXIT_PROGRAM; fi
-##########################################################################################################################
-
-####### Выход по опции авто-монтирования c проверкой таймаута    ####################################################
-if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then 
-        
-        ########################## обратный отсчёт для автомонтирования ##########################################################
-        COUNTDOWN(){ 
-        printf '\n\n\n'
-        local t=$1 remaining=$1;
-        SECONDS=0; demo="±"
-        while sleep .01; do
-                if [[ $loc = "ru" ]]; then
-            printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
-                    else
-            printf '\rPress any key to stop the countdown. Exit timeout: '"$remaining"' '
-                fi
-            read -t 1 -n1 demo
-                if [[ ! $demo = "±" ]]; then  break; fi
-            if (( (remaining=t-SECONDS) <=0 )); then
-                if [[ $loc = "ru" ]]; then
-            printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
-                    else
-            printf '\rPress any key to stop the countdown. Exit timeout: '"$remaining"' '
-                fi
-                break;
-            fi;
-        done
-        }
-        #############################################################################################################################
-
-        auto_timeout=0
-        strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
-        if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
-    if [[ $auto_timeout = 0 ]]; then EXIT_PROGRAM
-                else
-              MOUNT_EFI_WINDOW_UP
-              COUNTDOWN $auto_timeout
-            if [[ $demo = "±" ]]; then  EXIT_PROGRAM
-        fi
-    fi
-fi
-
 ##################### Детект раскладки  и переключение на латиницу  ####################################################################################################
 
 SET_INPUT(){
@@ -1744,6 +1636,243 @@ fi
 
 ##################################################################################################################################################################
 
+############## обновление даных после выхода из скрипта настроек #########################################################
+
+REFRESH_SETUP(){
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+CHECK_MEFIScA
+UPDATE_CACHE
+GET_LOCALE
+strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
+if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
+GET_USER_PASSWORD
+GET_THEME_LOADERS
+GET_LOADERS
+if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); oc_list=(); elif [[ $(launchctl list | grep -o "MountEFIr.job") = "" ]]; then GET_MOUNTEFI_STACK; fi
+rm -f ~/.other_loaders_list.txt
+#if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then SAVE_LOADERS_STACK; fi
+CHECK_AUTOUPDATE
+if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
+                    START_AUTOUPDATE &
+fi 
+MOUNT_EFI_WINDOW_UP &
+SET_INPUT
+}
+##########################################################################################################################
+
+MountEFI_count=$(ps -xa -o tty,pid,command|  grep "/bin/bash"  |  grep -v grep  | rev | cut -f1 -d '/' | rev | grep MountEFI | wc -l)
+setup_count=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep | rev | cut -f1 -d '/' | rev | grep setup | sort -u | wc -l | xargs)
+# Возвращает в переменной TTYcount 0 если наш терминал один
+
+if [ "${setup_count}" -gt "0" ]; then  spid=$(ps -o pid,command  |  grep  "/bin/bash" |  grep -v grep| grep setup | xargs | cut -f1 -d " "); kill ${spid}; fi
+if [ ${MountEFI_count} -gt 3 ]; then  osascript -e 'tell application "Terminal" to activate';  EXIT_PROGRAM; fi
+
+################ восстановить состояние после перезагрузки из схранения в файлах ##################################################
+
+GET_MOUNTEFI_STACK(){
+DBG "CLIENT: GET_MOUNT_EFI_STACK"
+if [[ -d ~/.MountEFIst ]]; then
+#DBG "CLIENT: FOLDER PRESENT"
+IFS=';'; mounted_loaders_list=( $(cat "${HOME}"/.MountEFIst/.mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
+ldlist=( $(cat "${HOME}"/.MountEFIst/.ldlist 2>/dev/null | tr '\n' ';' ) )
+#DBG "CLIENT: ldlist = $(for i in ${ldlist[@]}; do printf "$i "; done)"
+lddlist=( $(cat "${HOME}"/.MountEFIst/.lddlist 2>/dev/null | tr '\n' ';' ) )
+#DBG "CLIENT: lddlist = $(for i in ${lddlist[@]}; do printf "$i "; done)"
+oc_list=( $(cat "${HOME}"/.MountEFIst/.oc_list 2>/dev/null | tr '\n' ';' ) ); unset IFS
+#DBG "CLIENT oc_list got .MountEFIst = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+#DBG "CLIENT: dlist = $(for i in ${dlist[@]}; do printf "$i "; done)"
+CORRECT_LOADERS_HASH_LINKS
+fi
+
+rm -Rf ~/.MountEFIst
+
+if [[ -f ~/.hashes_list.txt.back ]]; then mv -f ~/.hashes_list.txt.back ~/.hashes_list.txt; fi
+if [[ -f ~/.other_loaders_list.txt.back ]]; then mv -f ~/.other_loaders_list.txt.back ~/.other_loaders_list.txt; fi
+if [[ -f ~/.disk_list.txt.back ]]; then mv -f ~/.disk_list.txt.back ~/.disk_list.txt; fi
+
+}
+######################## сохранение данных для перезагрузки ###################################################################
+
+############################################# сохранене данных для коррекции после setup ##########################################
+SAVE_EFIes_STATE(){
+OldAutoUpdate=${AutoUpdate}
+if [[ ! $CheckLoaders = 0 ]]; then
+    rm -f ~/.disk_list.txt; touch ~/.disk_list.txt; echo ${dlist[@]} >> ~/.disk_list.txt
+    rm -f ~/.hashes_list.txt; touch ~/.hashes_list.txt
+        if [[ ! ${#lddlist[@]} = 0 ]]; then
+        for h in ${!lddlist[@]}; do 
+            if [[ ! ${mounted_loaders_list[h]} = 0 ]]; then
+                loader=""; oc_revision=""; revision=""
+                md5_loader=${mounted_loaders_list[h]}; GET_CONFIG_VERS "ALL"                            
+                            if [[ ! ${loader} = "" ]]; then
+                            echo "${mounted_loaders_list[h]}" >> ~/.hashes_list.txt
+                            fi
+            fi
+        done
+        fi
+    rm -f ~/.other_loaders_list.txt
+    if [[ ! ${#oth_list[@]} = 0 ]]; then
+        touch ~/.other_loaders_list.txt
+        for h in "${oth_list[@]}"; do echo "${h}" >> ~/.other_loaders_list.txt; done
+    fi
+
+    SAVE_LOADERS_STACK
+fi
+}
+###################################################################################################################################
+GET_DATA_STACK(){
+#i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+DBG "CLIENT START data get, waited $((8-i)) cycle of 8"
+IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
+ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
+lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
+oc_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/oc_list 2>/dev/null | tr '\n' ';' ) )
+#DBG "CLIENT oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist 2>/dev/null | tr '\n' ';' ) ); fi;  unset IFS
+DBG "Client STOP data get"
+CORRECT_LOADERS_HASH_LINKS
+rm -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady "${SERVFOLD_PATH}"/MEFIScA/clientReady
+#DBG " CLIENT Remove ServerGetReady" ; DBG " CLIENT Remove сlientReady"
+}
+
+
+MSG_SERV_READY_ERR(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Поисковый агент не ответил. !\nПринудительный перезапуск .... !"'
+else
+MESSAGE='"Searching agent not answer. !\nRelaunching forced .... !"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+}
+
+MSG_WARN_SERV_READY(){
+if [[ $loc = "ru" ]]; then
+MESSAGE='"Ожидаем ответ от поискового агента .... !"'
+else
+MESSAGE='"Wait for loader searching agent answer  .... !"'
+fi
+DISPLAY_MESSAGE >>/dev/null 2>/dev/null
+}
+
+GET_MEFIScA_DATA(){
+     mfupd=0
+     if [[ $mrel = 0 ]]; then
+        i=96; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; 
+        if [[ $i = 80 ]]; then MSG_WARN_SERV_READY &
+        fi
+        if [[ $i -lt 1 ]]; then break; fi; done
+        DBG "CLIENT waiting ServerGetReady was $((96-i)) cycles"
+        if [[ $i = 0 ]]; then KILL_DIALOG; MSG_SERV_READY_ERR; touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag; POSTCONTROL_RELAUNCH_MEFIScA; fi
+        i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
+        fi; if [[ $i = 0 ]]; then break; fi; done; KILL_DIALOG; if [[ $i = 0 ]]; then MSG_TIMEOUT; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+        DBG "CLIENT waiting WaitSychro gone off was $((240-i)) cycles"
+     else
+        mrel=0; i=""
+     fi   
+        if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
+}
+
+STARTUP_FIND_LOADERS(){
+if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ ! $CheckLoaders = 0 ]]; then
+  if [[ ! $mefisca = 1 ]]; then
+    if [[ ! $flag = 0 ]]; then NEED_PASSWORD; fi
+    if  [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then ENTER_PASSWORD; IF_UNLOCK_SAFE_MODE; fi
+    if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
+    for i in ${!dlist[@]}; do 
+    pnum=${nlist[i]}; 
+        string=${dlist[$pnum]}
+
+        if [[ $(df | grep ${string}) = "" ]]; then 
+        
+            if [[ $flag = 0 ]]; then diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
+            elif ! sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null; then 
+            sleep 0.5
+            sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
+            fi
+            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+            
+            FIND_LOADERS
+
+            if [[ ! ${loader} = "" ]];then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
+            diskutil quiet  umount  force /dev/${string}
+            fi
+        fi   
+    done
+    fi
+  else
+#     DBG "CLIENT +++++ check if GET_DATA rst=$rst, upd=$upd, no_ret=$no_ret"
+     if [[ $rst = 0 ]] || ([[ $rst = 1 && $mfupd = 1 && $no_ret = 1 ]]); then GET_MEFIScA_DATA; fi    
+  fi
+#DBG "CLIENT oc_list after start find loaders = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"      
+fi
+MOUNT_EFI_WINDOW_UP &
+}
+
+MEFIScA_DATA(){
+if [[ $mefisca = 1 ]]; then 
+    if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
+    true
+    else
+            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
+            pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
+            touch dlist
+            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
+            touch mounted_loaders_list
+            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> mounted_loaders_list; done; fi
+            touch ldlist
+            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ldlist; done; fi
+            touch lddlist
+            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
+            touch oc_list
+            if [[ ! ${#oc_list[@]} = 0 ]]; then max=0; for y in ${!oc_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${oc_list[h]} >> oc_list; done; fi
+            popd >/dev/null 2>/dev/null
+            old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+    fi
+fi
+}
+############################### обработка условия после перезагрузки ###############################################################
+mrel=0
+if [ "$par" = "-s" ]; then par=""; mrel=1; cd "$(dirname "$0")"; upd=1; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then EXIT_PROGRAM; fi
+##########################################################################################################################
+#DBG "Quit from Setup upd = $upd, rel = $rel, par = $par; rst = $rst"
+####### Выход по опции авто-монтирования c проверкой таймаута    ####################################################
+if [[ $am_enabled = 1 ]] && [[  ! $apos = 0 ]] && [[ $autom_exit = 1 ]]; then 
+        ########################## обратный отсчёт для автомонтирования ##########################################################
+        COUNTDOWN(){ 
+        printf '\n\n\n'
+        local t=$1 remaining=$1;
+        SECONDS=0; demo="±"
+        while sleep .01; do
+                if [[ $loc = "ru" ]]; then
+            printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
+                    else
+            printf '\rPress any key to stop the countdown. Exit timeout: '"$remaining"' '
+                fi
+            read -t 1 -n1 demo
+                if [[ ! $demo = "±" ]]; then  break; fi
+            if (( (remaining=t-SECONDS) <=0 )); then
+                if [[ $loc = "ru" ]]; then
+            printf '\rНажмите любую клавишу для прерывания. Автовыход через: '"$remaining"' '
+                    else
+            printf '\rPress any key to stop the countdown. Exit timeout: '"$remaining"' '
+                fi
+                break;
+            fi;
+        done
+        }
+        #############################################################################################################################
+
+        auto_timeout=0
+        strng=`echo "$MountEFIconf" | grep AutoMount -A 11 | grep -A 1 -e "Timeout2Exit</key>"  | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+        if [[ ! $strng = "" ]]; then auto_timeout=$strng; fi
+    if [[ $auto_timeout = 0 ]]; then EXIT_PROGRAM
+                else
+              MOUNT_EFI_WINDOW_UP
+              COUNTDOWN $auto_timeout
+            if [[ $demo = "±" ]]; then  EXIT_PROGRAM
+        fi
+    fi
+fi
 
 ######################################################################################################################
 SET_INPUT "silent"
@@ -2235,96 +2364,6 @@ fi
 MOUNT_EFI_WINDOW_UP &
 }
 
-GET_DATA_STACK(){
-IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
-ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
-lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
-if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist 2>/dev/null | tr '\n' ';' ) ); fi;  unset IFS
-CORRECT_LOADERS_HASH_LINKS
-rm -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady
-}
-
-DISPLAY_MESSAGE1(){
-osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null
-}
-
-DISPLAY_MESSAGE(){
-osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null
-}
-
-MSG_TIMEOUT(){
-if [[ $loc = "ru" ]]; then
-MESSAGE='"Время ожидания вышло !"'
-else
-MESSAGE='"The waiting time is up!"'
-fi
-DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
-}
-
-MSG_WAIT(){
-if [[ $loc = "ru" ]]; then
-MESSAGE='"Подготовка данных о загрузчиках .... !"' 
-else
-MESSAGE='"Waiting for the end of data synchro .... !"' 
-fi
-DISPLAY_MESSAGE >>/dev/null 2>/dev/null
-}
-
-MSG_SERV_READY_ERR(){
-if [[ $loc = "ru" ]]; then
-MESSAGE='"Поисковый агент не ответил !"'
-else
-MESSAGE='"No answer from serching agent !"'
-fi
-DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
-}
-
-KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
-
-STARTUP_FIND_LOADERS(){
-if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|true") && [[ ! $CheckLoaders = 0 ]]; then
-  if [[ ! $mefisca = 1 ]]; then
-    if [[ ! $flag = 0 ]]; then NEED_PASSWORD; fi
-    if  [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then ENTER_PASSWORD; IF_UNLOCK_SAFE_MODE; fi
-    if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
-    for i in ${!dlist[@]}; do 
-    pnum=${nlist[i]}; 
-        string=${dlist[$pnum]}
-
-        if [[ $(df | grep ${string}) = "" ]]; then 
-        
-            if [[ $flag = 0 ]]; then diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
-            elif ! sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null; then 
-            sleep 0.5
-            sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
-            fi
-            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
-            
-            FIND_LOADERS
-
-            if [[ ! ${loader} = "" ]];then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
-            diskutil quiet  umount  force /dev/${string}
-            fi
-        fi   
-    done
-    fi
-  else
-    if [[ $rst = 0 ]]; then
-        i=96; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
-        if [[ $i = 0 ]]; then MSG_SERV_READY_ERR; fi
-        i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
-        fi; if [[ $i = 0 ]]; then break; fi; done 
-        KILL_DIALOG
-        if [[ $i = 0 ]]; then MSG_TIMEOUT
-        rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
-        if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
-    fi    
-  fi      
-fi
-MOUNT_EFI_WINDOW_UP &
-}
-
-
 ###################################################################################################
 # Функция отключения EFI разделов
 
@@ -2387,7 +2426,7 @@ rmlist=(); posrm=0
 
 GETARR
 
-if [[ ! $upd = 0 ]] || [[ ! $rst = 0 ]]; then GET_MOUNTEFI_STACK; CORRECT_LOADERS_HASH_LINKS; upd=0; else mounted_loaders_list=(); ldlist=(); lddlist=(); fi
+if [[ ! $upd = 0 ]] || [[ ! $rst = 0 ]]; then GET_MOUNTEFI_STACK; upd=0; else mounted_loaders_list=(); ldlist=(); lddlist=(); oc_list=(); fi
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
@@ -2788,6 +2827,7 @@ fi
 printf '\n\n' 
 
 SHOW_LOADERS
+#DBG "CLIENT oc_list after GETLIST = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
 }
 # Конец определения GETLIST ###########################################################
 
@@ -2953,7 +2993,7 @@ if [[ $CheckLoaders = 1 ]]; then
         fi
 fi
 
-
+#DBG "CLIENT oc_list after UPDATELIST = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
 
 }
 # Конец определения функции UPDATELIST ######################################################
@@ -3277,7 +3317,15 @@ while true; do
     if [[ $sl -lt 1 ]] || [[ ! $choice = "±" ]]; then break; fi
 done
 }
-
+###########################################################################################################################################
+SHOW_DEBUG(){ 
+if $DEBUG; then
+ret_line==$((18+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
+DBG "CLIENT: lines = $lines ________________"
+debug_line=$((lines-1)); printf '\r\033['$debug_line'f • logging in ~/Desktop/temp.txt'
+printf '\r\033['$ret_line'f\033[48C '
+fi
+}
 ############################## таймер возврата из вспомогательного в главное меню ########################################################## 
 ARMM_TIMER(){ if [[ $order = 3 ]]; then armm=$((armm-1)); if [[ $armm -lt 1 ]]; then choice="I"; fi; fi; }
 #############################################################################################################################################
@@ -3313,6 +3361,7 @@ if [[ ${ch} -le 9 ]]; then
 printf "\033[?25h"
 choice="±"
 printf '\033[1B'
+SHOW_DEBUG
 while [[ $choice = "±" ]]
 do
 IFS="±"; read -rn1 -t 1 choice ; unset IFS; sym=2; ARMM_TIMER
@@ -3323,6 +3372,7 @@ done
 SET_INPUT "message"
 else
 printf '\033[1B'
+SHOW_DEBUG
 READ_TWO_SYMBOLS; sym=2
 fi
 printf "\033[?25l\033[1D "
@@ -3330,23 +3380,24 @@ if [[ ${choice} = $ch ]]; then if [[ $CheckLoaders = 1 ]]; then SPIN_FLOADERS; U
 if [[ ! ${choice} =~ ^[0-9]+$ ]]; then
 if [[ ! $order = 3 ]]; then
 if [[ ! $choice =~ ^[0-9uUqQeEiIvVsSaApP]$ ]]; then  unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [uU] ]]; then unset nlist; UNMOUNTS; choice="R"; order=4; fi
-if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; fi
+if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientDown; DBG "CLIENT DONE"; fi; fi
 if [[ ${choice} = [eE] ]]; then GET_SYSTEM_EFI; let "choice=enum+1"; fi
 if [[ ${choice} = [iI] ]]; then ADVANCED_MENUE; fi
 if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./setup -a "${ROOT}"; else bash ./setup.sh -a "${ROOT}" 2>/dev/null; fi;  REFRESH_SETUP; choice="0"; order=4; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 else
-if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpP]$ ]]; then unset choice; fi
-if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; else rm -Rf ~/.MountEFIst; fi
+if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpPD]$ ]]; then unset choice; fi
+if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  printf '                               '; SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_FCLOVER; choice="0"; order=4; fi
-if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; fi
+if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientDown; DBG "CLIENT DONE"; fi; fi
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [W] ]];  then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
+if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${HOME}"/.MountEFIconf.plist; UPDATE_CACHE; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4;  UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 fi
 else
@@ -3395,7 +3446,7 @@ fi
 ############################# корректировка списка разделов с загрузчиками ######################################### 
 CORRECT_LOADERS_LIST(){
 
-           temp_lddlist=(); temp_ldlist=(); temp_mllist=()
+           temp_lddlist=(); temp_ldlist=(); temp_mllist=(); temp_oc_list=()
 
     for k in ${!dlist[@]}; do
         for y in ${!lddlist[@]}; do
@@ -3403,39 +3454,19 @@ CORRECT_LOADERS_LIST(){
                 temp_ldlist[k]=${ldlist[y]}
                 temp_lddlist[k]=${lddlist[y]}
                 temp_mllist[k]=${mounted_loaders_list[y]}
+                temp_oc_list[k]=${oc_list[y]}
                 break
         fi
         done
     done
     
-    ldlist=(); lddlist=(); mounted_loaders_list=()
+    ldlist=(); lddlist=(); mounted_loaders_list=(); oc_list=()
     for k in ${!temp_lddlist[@]}; do lddlist[k]=${temp_lddlist[k]}; done
     for k in ${!temp_ldlist[@]}; do ldlist[k]=${temp_ldlist[k]}; done
     for k in ${!temp_mllist[@]}; do mounted_loaders_list[k]=${temp_mllist[k]}; done
+    for k in ${!temp_oc_list[@]}; do oc_list[k]=${temp_oc_list[k]}; done
 
 synchro=0
-
-}
-
-MEFIScA_DATA(){
-if [[ $mefisca = 1 ]]; then 
-    if [[ ${old_dlist[@]} = ${dlist[@]} ]] && [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] && [[ ${old_ldlist[@]} = ${ldlist[@]} ]] && [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
-    true
-    else
-            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
-            pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack >/dev/null 2>/dev/null
-            touch dlist
-            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
-            touch mounted_loaders_list
-            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${mounted_loaders_list[h]} >> mounted_loaders_list; done; fi
-            touch ldlist
-            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ldlist; done; fi
-            touch lddlist
-            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
-            popd >/dev/null 2>/dev/null
-            old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
-    fi
-fi
 }
 
 GET_LOADERS_FROM_NEW_PARTS(){
@@ -3454,8 +3485,8 @@ if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
     done
 fi
 }
-
-CLIENT_READY(){ if [[ $mefisca = 1 ]] && [[ $rst = 0 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi; }
+#   mrel - флаг перезапуска из функции setup (reload), mfupd - флаг выполненного обновления, rst - флаг перезагрузки (restart), no_ret - флаг не возвращаться в EasyEFI mode
+CLIENT_READY(){ if [[ $mefisca = 1 && $mrel = 0 ]]; then if [[ $rst = 0  || $mfupd = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; DBG "CLIENT Ready"; else rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart; DBG "CLIENT does not want to be Ready"; fi; fi; }
 
 ################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################
