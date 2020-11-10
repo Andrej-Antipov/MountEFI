@@ -20,6 +20,7 @@ TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.
 DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
 CONFPATH="${HOME}/.MountEFIconf.plist"
 DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+DBG "SCRIPT: start applet ___________________________________________________"
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -101,6 +102,14 @@ if [[ $(cat ~/.MountEFIconf.plist | grep -A 1 -e "EasyEFImode</key>" | grep -o t
 pkill ScriptMonitor
 
 ROOT="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)./../Resources"
+
+######################## подготовка данных для вычисления hotplug ###################
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
+
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
+#####################################################################################
 
 if [[ -f "${HOME}/Library/Application Support/MountEFI"/MEFIScA/clientDown ]]; then rm -f "${HOME}/Library/Application Support/MountEFI"/MEFIScA/clientDown; fi
 
@@ -359,13 +368,6 @@ if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
 
 # подготовка данных для вычисления размеров
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
-
-# подготовка данных для вычисления hotplug
-ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
-
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
 }
 
