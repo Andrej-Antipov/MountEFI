@@ -1,35 +1,50 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 06.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.8.0"
 edit_vers="061"
-serv_vers="005"
+serv_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
+
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
+DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
 
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 MEFIScA_PATH="${SERVFOLD_PATH}/MEFIScA"
 STACK_PATH="${MEFIScA_PATH}/MEFIscanAgentStack"
 
-WAITFLAG_ON(){ if [[ -f "${MEFIScA_PATH}"/clientReady ]]; then touch "${MEFIScA_PATH}"/WaitSynchro; fi; }
-WAITFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/WaitSynchro; }
-SERVER_GET_READY(){ touch "${MEFIScA_PATH}/ServerGetReady"; }
-SERVER_READY_OFF(){ rm -f "${MEFIScA_PATH}/ServerGetReady"; }
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+
+WAITFLAG_ON(){ if [[ -f "${MEFIScA_PATH}"/clientReady ]]; then touch "${MEFIScA_PATH}"/WaitSynchro; DBG "MEFIScA WAIT ON"; fi; }
+WAITFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/WaitSynchro; DBG "MEFIScA WAIT OFF"; }
+WAIT_CLIENT_DOWN(){ DBG "MEFIScA wait Client Down"; while WAIT_CLIENT_OFFLINE ; do sleep 0.5; done; DBG "MEFISCA client seems DOWN:"; }
+SERVER_GET_READY(){ touch "${MEFIScA_PATH}/ServerGetReady"; DBG "SERVER GET READY"; }
+SERVER_READY_OFF(){ rm -f "${MEFIScA_PATH}/ServerGetReady"; DBG "SERVER READY OFF, ONLINE"; }
 RELOADFLAG_OFF(){ rm -f "${MEFIScA_PATH}"/reloadFlag; }
 CLIENT_READY(){ [[ -f "${MEFIScA_PATH}"/clientReady ]]; }
-CLIENT_ONLINE(){ [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]] && CLIENT_READY || [[ ! $(launchctl list | grep -o "MountEFIr.job") = "" ]]; }
+CLIENT_NOT_DOWN(){ [[ ! -f "${MEFIScA_PATH}"/clientDown ]]; }
+CLIENT_RESTARTING(){ [[ -f "${MEFIScA_PATH}"/clientRestart ]]; }
+CLEAR_PROHIBITION_FLAGS(){ "${MEFIScA_PATH}"/ClientHotplugReady "${MEFIScA_PATH}"/StackUptoDate; }
+CLIENT_RUN(){ [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | wc -l | bc) = 0 ]]; }
+WAIT_CLIENT_OFFLINE(){ CLIENT_RESTARTING || ( CLIENT_RUN && CLIENT_NOT_DOWN ); }
+CLIENT_ONLINE(){ CLIENT_RUN && CLIENT_READY; }
 HOTPLUG(){ [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; }
+GET_OC_LIST_ITEM(){ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"; }
 
-if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF
-else reloadFlag=0; touch "${MEFIScA_PATH}"/WaitSynchro; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
+if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF; else reloadFlag=0; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
+touch "${MEFIScA_PATH}"/WaitSynchro; DBG "MEFIScA WAIT ON"
+
+DBG "MEFIScA launch up v.008-003"
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
     if [[ ! -d "${STACK_PATH}" ]]; then mkdir -p "${STACK_PATH}"; else rm -Rf "${STACK_PATH}"/*; fi
     sleep 0.125; WAITFLAG_ON; SERVER_GET_READY
+    DBG "MEFIScA start data pass" ~/Desktop/temp.txt
     pushd "${STACK_PATH}" >/dev/null 2>/dev/null
     touch dlist
     if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${dlist[h]}" >> dlist; done; fi
@@ -39,21 +54,28 @@ SAVE_LOADERS_STACK(){
     if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo "${ldlist[h]}" >> ldlist; done; fi
     touch lddlist
     if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${lddlist[h]} >> lddlist; done; fi
+    touch oc_list
+    if [[ ! ${#oc_list[@]} = 0 ]]; then max=0; for y in ${!oc_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h<=max;h++)); do echo ${oc_list[h]} >> oc_list; done; fi
     popd >/dev/null 2>/dev/null
+    DBG "MEFIScA stop data pass"
     WAITFLAG_OFF
 }
 
 GET_MOUNTEFI_STACK(){
-rm -f "${MEFIScA_PATH}"/clientReady
+DBG "MEFIsCA start data get"
+rm -f "${MEFIScA_PATH}"/clientReady "${MEFIScA_PATH}"/clientDown "${MEFIScA_PATH}"/clientRestart
 IFS=';'; mounted_loaders_list=( $(cat "${STACK_PATH}"/mounted_loaders_list | tr '\n' ';' ) )
 ldlist=( $(cat "${STACK_PATH}"/ldlist | tr '\n' ';' ) )
 lddlist=( $(cat "${STACK_PATH}"/lddlist | tr '\n' ';' ) )
+oc_list=( $(cat "${STACK_PATH}"/oc_list 2>/dev/null | tr '\n' ';' ) )
+#DBG "MEFIScA oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
 if [[ -f "${STACK_PATH}"/dlist ]]; then dlist=( $(cat "${STACK_PATH}"/dlist | tr '\n' ';' ) ); fi;  unset IFS
 for i in ${!mounted_loaders_list[@]}; do old_mounted[i]=${mounted_loaders_list[i]}; done
 for i in ${!ldlist[@]}; do old_ldlist[i]="${ldlist[i]}"; done
 for i in ${!dlist[@]}; do old_dlist[i]=${dlist[i]}; done
 for i in ${!lddlist[@]}; do old_lddlist[i]=${lddlist[i]}; done
 STORE_HOTPLUG_STATE
+DBG "MEFIsCA stop data get"
 }
 
 ##################################################################################################################################################
@@ -64,10 +86,9 @@ oc_revision=""
 
 ######  уточняем версию через хэши BOOTx64.efi + OpenCore.efi ######
 if [[ ${oc_revision} = "" ]]; then
-    md5_full="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
-case "${md5_full}" in
+case "${oc_list[pnum]}" in
 cbdc9e74d27453c2f3afaec2ca84f34819758cfb7f8f157959bf608fc76a069d ) oc_revision=.63r;;
 5ee87cfa50c502249abb6e3480bfdaa0aee0e2713f267fa907bb4e1250af71f7 ) oc_revision=.63d;;
 58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
@@ -146,7 +167,7 @@ fi
 
 ##################### проверка на загрузчик после монтирования ##################################################################################
 GET_LOADER_STRING(){                              
-               if [[ ! "${loader:0:5}" = "Other" ]]; then                
+               if [[ ! "${loader:0:5}" = "Other" ]]; then             
                     check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"
@@ -155,7 +176,7 @@ GET_LOADER_STRING(){
                                 loader+="${revision:0:4}"
                                 ;;
   
-                    "OpenCore"  ) GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
+                    "OpenCore"  ) GET_OC_LIST_ITEM; GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
                         ;;
                     "GNU/Linux" ) loader="GNU/Linux"                                       
                         ;;
@@ -180,7 +201,7 @@ if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
+                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_LIST_ITEM; GET_OC_VERS
                        if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then echo "••1••" ; old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
@@ -200,19 +221,15 @@ FIND_LOADERS(){
 
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
-
 vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
-
-			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
-                if [[ ${md5_loader} = "" ]]; then loader=""; else
-                   if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
-                    mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
-                    GET_LOADER_STRING
-                  fi
+			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then 
+                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )            
+                if [[ ${md5_loader} = "" ]]; then loader=""
+                    #elif [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""
+                        else mounted_loaders_list[$pnum]="${md5_loader}"
+                            lflag=1; GET_LOADER_STRING
                 fi
-            else
-                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then loader="empty"; mounted_loaders_list[pnum]=0; fi
+            elif [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then loader="empty"; mounted_loaders_list[pnum]=0
             fi
     fi
 }
@@ -305,7 +322,7 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
 ############################# корректировка списка разделов с загрузчиками ######################################### 
 CORRECT_LOADERS_LIST(){
 
-           temp_lddlist=(); temp_ldlist=(); temp_mllist=()
+           temp_lddlist=(); temp_ldlist=(); temp_mllist=(); temp_oc_list=()
 
     for k in ${!dlist[@]}; do
         for y in ${!lddlist[@]}; do
@@ -313,18 +330,19 @@ CORRECT_LOADERS_LIST(){
                 temp_ldlist[k]=${ldlist[y]}
                 temp_lddlist[k]=${lddlist[y]}
                 temp_mllist[k]=${mounted_loaders_list[y]}
+                temp_oc_list[k]=${oc_list[y]}
                 break
         fi
         done
     done
     
-    ldlist=(); lddlist=(); mounted_loaders_list=()
+    ldlist=(); lddlist=(); mounted_loaders_list=(); oc_list=()
     for k in ${!temp_lddlist[@]}; do lddlist[k]=${temp_lddlist[k]}; done
     for k in ${!temp_ldlist[@]}; do ldlist[k]=${temp_ldlist[k]}; done
     for k in ${!temp_mllist[@]}; do mounted_loaders_list[k]=${temp_mllist[k]}; done
+    for k in ${!temp_oc_list[@]}; do oc_list[k]=${temp_oc_list[k]}; done
 
 synchro=0
-
 }
 
 GET_LOADERS_FROM_NEW_PARTS(){
@@ -494,11 +512,26 @@ DO_MOUNT(){
 }
 
 STARTUP_FIND_LOADERS(){
+if [[ $startup = 0 ]] && [[ $reloadFlag = 1 ]]; then
+DBG "M: Reload detected"
+GET_MOUNTEFI_STACK; reloadFlag=0
+match=0; for i in ${ldlist[@]}; do if [[ ${i::8} = "OpenCore" ]]; then match=1; break; fi; done
+    if [[ $match = 1 ]] && [[ ! ${#oc_list[@]} = 0 ]]; then 
+#    echo "reload" > "${MEFIScA_PATH}"/serverRflag; DBG "MEFIScA Reload flag SET UP"
+    DBG "M: OpenCore found in ldlist" 
+    for pnum in ${!ldlist[@]}; do if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"; ldlist[pnum]="${loader}"; DBG "M: OC corection loader = $loader"; fi; done
+    startup=1; sendData=1; WAITFLAG_OFF
+    fi
+fi
+
 if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
+#    echo "restart" > "${MEFIScA_PATH}"/serverRflag; DBG "MEFIScA Restart flag SET UP"
+    DBG "MEFIScA Поиск загрузчиков при первом запуске"
     if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
         echo "$mypassword" | sudo -S printf ""
+#        DBG "MEFIScA mypassword = $mypassword, flag = $flag"
         for i in ${!dlist[@]}; do 
-        pnum=${nlist[i]}; 
+        pnum=${nlist[i]}
             string=${dlist[$pnum]}
             old_dlist[pnum]=${dlist[pnum]}
             if [[ $(df | grep ${string}) = "" ]]; then was_mounted=0
@@ -523,7 +556,7 @@ if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
         done
     fi
     old_mounted=(${mounted_loaders_list[@]}); old_lddlist=(${lddlist[@]})
-    startup=1; WAITFLAG_OFF
+    startup=1; sendData=1; WAITFLAG_OFF
 fi
 }
 
@@ -577,8 +610,8 @@ while [ $var0 != 0 ]; do
 done
 }
 
-CLIENT_IS_ONLINE(){ if [[ ! $reloadFlag = 1 ]]; then SAVE_LOADERS_STACK; else reloadFlag=0; fi; while CLIENT_ONLINE; do sleep 0.5; done; GET_MOUNTEFI_STACK; SERVER_READY_OFF; }
-CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then update_screen_flag=0 ; break; fi; }
+CLIENT_IS_ONLINE(){  DBG "MEFIScA клиент онлайн"; SAVE_LOADERS_STACK;  while CLIENT_ONLINE; do sleep 0.5; done; DBG "MEFIScA клиент сам по себе"; WAIT_CLIENT_DOWN; GET_MOUNTEFI_STACK; SERVER_READY_OFF; }
+CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then DBG "MEFIScA Hotplug detected: $hotplug $update_screen_flag"; update_screen_flag=0 ; break; fi; }
 
 # Конец определения GETLIST ###########################################################
 
@@ -586,15 +619,17 @@ CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then 
 
 if [[ ! -d "${MEFIScA_PATH}" ]]; then mkdir -p "${MEFIScA_PATH}"; fi
 
-nlist=(); dlist=(); mounted_loaders_list=(); ldlist=(); lddlist=()
+nlist=(); dlist=(); mounted_loaders_list=(); ldlist=(); lddlist=(); oc_list=()
 old_dlist=(); old_mounted=(); old_ldlist=(); old_lddlist=()
 old_oc_revision=(); past_rmlist=(); rmlist=()
 lists_updated=0; synchro=0; startup=0
 
 IF_UNLOCK_SAFE_MODE
-
 GET_FLAG
 
+CLEAR_PROHIBITION_FLAGS
+
+unset aa
 ################################################################ MAIN ######################################################
 
 while true; do
@@ -605,8 +640,8 @@ while true; do
         
         STARTUP_FIND_LOADERS
 
-        while true; do
-            sleep 0.4; if CLIENT_ONLINE; then CLIENT_IS_ONLINE; else sleep 0.4; if CLIENT_ONLINE; then CLIENT_IS_ONLINE; fi; fi
-            CLIENT_IS_OFFLINE
-        done
+    while true; do
+        sleep 0.4; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; else sleep 0.4; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; fi; fi
+        if [[ $aa = "" ]]; then DBG "MEFIScA ONLINE"; aa=0; fi; CLIENT_IS_OFFLINE
+    done
 done
