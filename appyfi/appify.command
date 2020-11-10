@@ -139,6 +139,7 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
             if ls Updates/$current_vers/$edit_vers/* 2>/dev/null >/dev/null; then
             if [[ -d Notifiers/Newapp ]]; then 
                     cp -a Notifiers/Newapp Updates/$current_vers/$edit_vers; rm -f Updates/$current_vers/$edit_vers/document.wflow
+                    plutil -replace CFBundleShortVersionString -string "$vers" Updates/$current_vers/$edit_vers/Newapp/Info.plist
                     cat Updates/$current_vers/$edit_vers/Newapp/script | sed s'/edit_vers="[0-9]*"/edit_vers="'$edit_vers'"/' > Updates/$current_vers/$edit_vers/Newapp/.script
                     if [[ -s Updates/$current_vers/$edit_vers/Newapp/.script ]]; then mv -f Updates/$current_vers/$edit_vers/Newapp/.script Updates/$current_vers/$edit_vers/Newapp/script; fi
                     rm -f Updates/$current_vers/$edit_vers/.script; chmod +x Updates/$current_vers/$edit_vers/Newapp/script
