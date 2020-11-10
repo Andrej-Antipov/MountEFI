@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 08.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI #########################################################################################################################
 prog_vers="1.8.0"
@@ -12,8 +12,9 @@ serv_vers="008"
 clear  && printf '\e[3J'
 printf "\033[?25l"
 
-TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
-DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
+logfile="${HOME}/Desktop/temp.txt"
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> "${logfile}" 2>/dev/null; }
+DBG(){ if $DEBUG; then TSP; echo $1 >> "${logfile}" 2>/dev/null; fi;  }
 
 cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 
@@ -3323,9 +3324,11 @@ done
 ###########################################################################################################################################
 SHOW_DEBUG(){ 
 if $DEBUG; then
-ret_line==$((18+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
+ret_line=$((18+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
+if [[ $ShowKeys = 0 ]]; then let "ret_line=ret_line-3"; fi
 DBG "CLIENT: lines = $lines ________________"
-printf '\r\033['$lines'f • log is ~/Desktop/temp.txt'
+posit_corr=$(((col-22-${#logfile})/2)); if [[ $posit_corr -lt 0 ]]; then posit_corr=0; fi
+printf '\r\033['$lines'f\e['$posit_corr'C\e[38;5;220mDEBUG is ON • log: >> '"${logfile::$((col-1))}"'\e[0m'
 printf '\r\033['$ret_line'f\033[48C '
 fi
 }
@@ -3400,7 +3403,7 @@ if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then touch "$
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [W] ]];  then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
-if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${HOME}"/.MountEFIconf.plist; UPDATE_CACHE; order=4; UPDATELIST; fi
+if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4;  UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 fi
 else
