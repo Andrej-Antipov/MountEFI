@@ -8,13 +8,12 @@ edit_vers="061"
 serv_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
-TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
-DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
-
-DBG "CLIENT started +++++++++++++++++++++++++++++++++++++++++++++++++"
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
+
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> ~/Desktop/temp.txt; }
+DBG(){ if $DEBUG; then TSP; echo $1 >> ~/Desktop/temp.txt; fi;  }
 
 cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 
@@ -23,11 +22,21 @@ SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
 
+DBG "CLIENT started +++++++++++++++++++++++++++++++++++++++++++++++++"
+
 if [[ -f "${SERVFOLD_PATH}"/MEFIScA/clientDown ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientDown; fi
 
 if [ "$1" = "-d" ] || [ "$1" = "-D" ]  || [ "$1" = "-default" ]  || [ "$1" = "-DEFAULT" ]; then 
 if [[ -f "${HOME}"/.MountEFIconf.plist ]]; then rm "${CONFPATH}"; fi
 fi
+
+# подготовка данных для вычисления hotplug
+DBG "CLIENT: hotplug data preparation"
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
+
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
 ####################################### кэш конфига #####################################################################################
 
@@ -2002,12 +2011,6 @@ if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
 # подготовка данных для вычисления размеров
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
 
-# подготовка данных для вычисления hotplug
-ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
-
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 }
 ############################## USB ##############################
 CHECK_USB(){ if [[ ! $posrm = 0 ]]; then usb=0; for (( i=0; i<=$posrm; i++ )); do if [[ "${dstring}" = "${rmlist[$i]}" ]]; then usb=1; break; fi; done ; fi ; }
@@ -3322,7 +3325,7 @@ SHOW_DEBUG(){
 if $DEBUG; then
 ret_line==$((18+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
 DBG "CLIENT: lines = $lines ________________"
-debug_line=$((lines-1)); printf '\r\033['$debug_line'f • logging in ~/Desktop/temp.txt'
+printf '\r\033['$lines'f • log is ~/Desktop/temp.txt'
 printf '\r\033['$ret_line'f\033[48C '
 fi
 }
