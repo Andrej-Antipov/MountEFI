@@ -2,12 +2,13 @@
 
 #  Created by Андрей Антипов on 11.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
-############################################################################## Mount EFI #########################################################################################################################
+############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.8.0"
 edit_vers="061"
 serv_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
+
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
@@ -2573,8 +2574,141 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
 fi
 
 }
-#######################################################################################################################################################
 
+COLOR_MODE(){
+#######################################################################################################################################################
+################################################### блок установки модификации цветного вывода ######################################################
+# cm        # список модификаторов цвета
+# cm_ptr   # список указателей на элементы списка модификаторов cm
+cm=() 
+cm_ptr=( \
+head_ast \
+head_str \
+head_os \
+head_X \
+head_sch \
+head_upd_sch \
+head_upd_sch_num \
+head_upd_sch_br \
+head_upd_sch_sp \
+head_num_sch \
+head_sch_br \
+head_pls \
+head_pls_str \
+head_pls_qts \
+head_sata \
+head_usb \
+dots_line1 \
+dots_line2 \
+dots_line3 \
+num_sata \
+num_usb \
+mount_pls \
+mount_dot \
+dn_sata \
+dn_usb \
+dn_bsd_sata \
+pn_size_sata \
+pn_size_msata \
+dn_bsd_usb \
+pn_size_usb \
+pn_size_musb \
+sata_bsd \
+sata_bsp \
+usb_bsd \
+usb_bsp \
+pn_size \
+kh_str \
+curs_str \
+curs_num_1 \
+curs_num_2 \
+ld_unrec \
+ld_oc \
+ld_cl \
+ld_wn \
+ld_rf \
+ld_gb \
+ld_oth \
+cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_ast cl_str cl_conf clr) 
+
+for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
+
+Black="\e[0m\e[30m"  Cyan="\e[0m\e[36m"  LightBlue="\e[0m\e[94m" Red="\e[0m\e[31m" LightGray="\e[0m\e[37m" LightMagenta="\e[0m\e[95m"
+Green="\e[0m\e[32m" DarkGray="\e[0m\e[90m" LightCyan="\e[0m\e[96m" Yellow="\e[0m\e[33m" LightRed="\e[0m\e[91m" White="\e[0m\e[97m"
+Blue="\e[0m\e[34m" LightGreen="\e[0m\e[92m" Magenta="\e[0m\e[35m" LightYellow="\e[0m\e[93m"
+BBlack="\e[0m\e[1;30m" BCyan="\e[0m\e[1;36m" BLightBlue="\e[0m\e[1;94m" BRed="\e[0m\e[1;31m" BLightGray="\e[0m\e[1;37m"
+BLightMagenta="\e[0m\e[1;95m" BGreen="\e[0m\e[1;32m" BDarkGray="\e[0m\e[1;90m" BLightCyan="\e[0m\e[1;96m" BYellow="\e[0m\e[1;33m"
+BLightRed="\e[0m\e[1;91m" BWhite="\e[0m\e[1;97m" BBlue="\e[0m\e[1;34m" BLightGreen="\e[0m\e[1;92m" BMagenta="\e[0m\e[1;35m" 
+BLightYellow="\e[0m\e[1;93m" DBlack="\e[0m\e[2;30m" DCyan="\e[0m\e[2;36m" DLightBlue="\e[0m\e[2;94m" DRed="\e[0m\e[2;31m"
+DLightGray="\e[0m\e[2;37m" DLightMagenta="\e[0m\e[2;95m" DGreen="\e[0m\e[2;32m" DDarkGray="\e[0m\e[2;90m" DLightCyan="\e[0m\e[2;96m"
+DYellow="\e[0m\e[2;33m" DLightRed="\e[0m\e[2;91m" DWhite="\e[0m\e[2;97m" DBlue="\e[0m\e[2;34m" DLightGreen="\e[0m\e[2;92m" 
+DMagenta="\e[0m\e[2;35m" DLightYellow="\e[0m\e[2;93m" cOFF="\e[0m" Dim="\e[0m\e[2m" Bright="\e[0m\e[1m" Orange="\e[38;5;222m" Limon="\e[38;5;116m"
+ForSATA="\e[38;5;228m" 
+
+cm[head_ast]="$Dim"                 # звёздочки заголовка
+cm[head_str]="$Cyan"                # строка заголовка
+cm[head_os]="$Green"                # версия мак ос арабскими
+cm[head_X]="$LightMagenta"          # версия мак ос латинскими
+cm[head_sch]="$LightGray"           # строка "повторить поиск раздела"
+cm[head_upd_sch]="$LightGray"       # строка поиска (по клавише 0)
+cm[head_upd_sch_num]="$BCyan"       # цифра ноль в строке поиса по 0
+cm[head_upd_sch_br]="$LightGray"    # скобка строки поиска по 0
+cm[head_upd_sch_sp]="$LightGray"    # спинер строки поиска по 0
+cm[head_num_sch]="$BLightCyan"      # цифра 0 строки повторения поиска
+cm[head_sch_br]="$LightGray"        # скобка у строки повторения поиска
+cm[head_pls]="$cOFF"                # цвет + у строки "подключенные"
+cm[head_pls_str]="$LightGray"       # цвет строки "подключенные"
+cm[head_pls_qts]="$DCyan"           # кавычки строки "подключенные"
+cm[head_sata]="$ForSATA"            # цвет слова SATA
+cm[head_usb]="$Limon"               # цвет слова USB
+cm[dots_line1]="$LightGray"         # первый сверху ряд точек
+cm[dots_line2]="$LightGray"         # второй сверху ряд точек
+cm[dots_line3]="$LightGray"         # третий сверху ряд точек
+cm[num_sata]="$LightYellow"         # числа для sata
+cm[num_usb]="$LightCyan"            # числа для usb
+cm[mount_pls]="$Magenta"            # цвет плюса для примонтированных
+cm[mount_dot]="$LightGray"          # цвет точек для отключенных
+cm[dn_sata]="$LightYellow"          # имена дисков sata              
+cm[dn_usb]="$LightCyan"             # имена дисков usb
+cm[dn_bsd_sata]="$LightYellow"      # имя BSD для SATA
+cm[pn_size_sata]="$Orange"          # размер раздела для SATA
+cm[pn_size_msata]="$LightYellow"    # размерность раздела для SATA
+cm[dn_bsd_usb]="$LightCyan"         # имя BSD для USB
+cm[pn_size_usb]="$Limon"            # размер раздела для USB
+cm[pn_size_musb]="$LightCyan"       # размерность раздела для USB
+cm[sata_bsd]="$Orange"              # имя BSD номер диска SATA
+cm[sata_bsp]="$Orange"              # имя BSD номер тома SATA
+cm[usb_bsd]="$Limon"                # имя BSD номер диска USB
+cm[usb_bsp]="$Limon"                # имя BSD номер тома USB
+cm[kh_str]="$LightGray"             # текст подсказок по клавишам
+cm[curs_str]="$LightGray"           # строка подсказок перед кусором
+cm[curs_num_1]="$BLightCyan"        # первое число строки подсказки
+cm[curs_num_2]="$BLightYellow"      # втоое число строки подсказки
+cm[ld_unrec]="$Red"                 # загрузчик не распознан
+cm[ld_oc]="$Limon"                  # загрузчик OpenCore
+cm[ld_cl]="$Green"                  # загрузчик Clover
+cm[ld_wn]="$LightBlue"              # загрузчик Windows
+cm[ld_rf]="$LightRed"               # загрузчик Refind
+cm[ld_gb]="$LightYellow"            # загрузчик Grub
+cm[ld_oth]="$LightMagenta"          # загрузчик из списка Other
+cm[cl_Q]="$LightMagenta"            # цвет букв Q строки подсказки
+cm[cl_P]="$BLightBlue"              # буква P
+cm[cl_U]="$BCyan"                   # буква U
+cm[cl_E]="$BLightYellow"            # буква E
+cm[cl_A]="$BRed"                    # буква A
+cm[cl_S]="$BLightMagenta"           # буква S
+cm[cl_I]="$BLightGreen"             # буква I
+cm[cl_V]="$BGreen"                  # буква V
+cm[cl_C]="$BLightGreen"             # буква C
+cm[cl_O]="$BLightCyan"              # буква O
+cm[cl_L]="$BYellow"                 # буква L
+cm[cl_ast]="$Yellow"                # цвет звёздочек подсказки функции P                   
+cm[cl_str]="$Cyan"                  # цвет строки после звёздочек
+cm[cl_conf]="$LightMagenta"         # цвет config,plist в строке функции P
+cm[clr]="$cOFF"                     # конец применения цвета
+###########################################################################################################################################################
+}
+CHECK_CM(){ if $(cat "${CONFPATH}" | grep -A1 "GUIcolorMode</key>" | egrep -o "false|true"); then cm_check=1; COLOR_MODE; else cm_check=0; fi }; CHECK_CM
 ########################### вывод признаков наличия загрузчика #########################################
 SHOW_LOADERS(){
 if [[ $CheckLoaders = 1 ]]; then
@@ -2590,26 +2724,25 @@ printf "\033[H"
                         else
                         let "line=ldnlist[pointer]+11"
                         fi
-
-                        if [[ "${ldlist[$pointer]:0:6}" = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
+                        if [[ "${ldlist[$pointer]:0:6}" = "Clover" ]]; then printf "\r\033[$line;f\033['$c_clov'C"'\e['$themeldrs'm'"${cm[ld_cl]}${Clover}"" "; if [[ ! "${ldlist[$pointer]:6:10}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:6:10}"" "; fi; printf '\e[0m'
                                 elif [[ "${ldlist[$pointer]:0:12}" = "unrecognized" ]]; then
                                      c_unr=47
                                      if [[ $loc = "ru" ]]; then Unrec="Не распознан"; else Unrec="Unrecognized"; fi
-                                     printf "\033[$line;f\033['$c_unr'C"'\e['$themeldrs'm'"${Unrec}"" "; printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_unr'C"'\e['$themeldrs'm'"${cm[ld_unrec]}${Unrec}"" "; printf '\e[0m'
                                 elif [[ "${ldlist[$pointer]:0:5}" = "Other" ]]; then
                                      Other="${ldlist[$pointer]:5}"; ooc=${#Other}; let "c_oth=(13-ooc)/2+46"; printf "\033[$line;f\033[47C""             "
-                                     printf "\033[$line;f\033['$c_oth'C"'\e['$themeldrs'm'"${Other}"" "; printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_oth'C"'\e['$themeldrs'm'"${cm[ld_oth]}${Other}"" "; printf '\e[0m'
                                 elif [[ "${ldlist[$pointer]:0:9}" = "GNU/Linux" ]]; then
                                      Linux="GNU/Linux"; c_lin=49
-                                     printf "\033[$line;f\033['$c_lin'C"'\e['$themeldrs'm'"${Linux}"" "; printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_lin'C"'\e['$themeldrs'm'"${cm[ld_gb]}${Linux}"" "; printf '\e[0m'
                                 elif [[ "${ldlist[$pointer]:0:6}" = "refind" ]]; then
                                      Refind="rEFInd"; c_ref=51
-                                     printf "\033[$line;f\033['$c_ref'C"'\e['$themeldrs'm'"${Refind}"" "; printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_ref'C"'\e['$themeldrs'm'"${cm[ld_rf]}${Refind}"" "; printf '\e[0m'
                                 elif [[ "${ldlist[$pointer]:0:7}" = "Windows" ]]; then
                                      Windows="Windows"; c_win=47
-                                     printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${Windows}"" ";  printf "\r\033[54C${ldlist[$pointer]:7:9}""  MS ";  printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_win'C"'\e['$themeldrs'm'"${cm[ld_wn]}${Windows}"" ";  printf "\r\033[54C${ldlist[$pointer]:7:9}""  MS ";  printf '\e[0m'
                                 elif [[ "${ldlist[$pointer]:0:8}" = "OpenCore" ]]; then
-                                     printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
+                                     printf "\033[$line;f\033['$c_oc'C"'\e['$themeldrs'm'"${cm[ld_oc]}${OpenCore}"" "; if [[ ! "${ldlist[$pointer]:8:13}" = "" ]]; then printf "\r\033[55C${ldlist[$pointer]:8:13}"" "; fi; printf '\e[0m'
                         fi 
                     done
     fi                       
@@ -2618,7 +2751,7 @@ printf "\033[H"; let "correct=lines-7"; if [[ $loc = "ru" ]]; then printf "\r\03
 }
 #################################################################################################
 
-spinny(){ let "i++"; i=$(( (i+1) %4 )); printf "\b$1${spin:$i:1}"; }
+spinny(){ let "i++"; i=$(( (i+1) %4 )); printf ''${cm[head_upd_sch_sp]}''"\b$1${spin:$i:1}"''${cm[clr]}''; }
 
 # Определение  функции построения и вывода списка разделов 
 GETLIST(){
@@ -2635,17 +2768,16 @@ unset usb_screen_buffer
 sata_lines=0
 usb_lines=0
 
-
 		if [[ $loc = "ru" ]]; then
-    printf '\n\n      0)  поиск разделов ..... '
+    printf '\n\n      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  поиск разделов ..... '${cm[clr]}''
         else
-    printf '\n\n      0)  updating partitions list ..... '
+    printf '\n\n      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  updating partitions list ..... '${cm[clr]}''
         fi
 
 
 spin='-\|/'
 i=0
-printf "$1${spin:$i:1}"
+printf ''${cm[head_upd_sch_sp]}''"$1${spin:$i:1}"''${cm[clr]}''
 
 while [ $var0 != 0 ] 
 do 
@@ -2681,11 +2813,11 @@ do
 
 
     dsize=`echo "$sizes_iomedia" | grep -A10 -B10 ${string} | grep -m 1 -w "Size =" | cut -f2 -d "=" | tr -d "\n \t"`
-    if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc)" Mb"
+    if [[  $dsize -le 999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000" | bc); dmsize=" Mb"
         else
-            if [[  $dsize -le 999999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000000" | bc)" Gb"
+            if [[  $dsize -le 999999999999 ]]; then dsize=$(echo "scale=1; $dsize/1000000000" | bc); dmsize=" Gb"
                     else
-                         dsize=$(echo "scale=1; $dsize/1000000000000" | bc)" Gb"
+                         dsize=$(echo "scale=1; $dsize/1000000000000" | bc); dmsize=" Gb"
             fi
     fi
 
@@ -2702,15 +2834,32 @@ do
 
         
           CHECK_USB
-          
+ 
+#'${cm[dn_bsd_sata]}'          # имя BSD для SATA
+#cm[pn_size_sata]="$Yellow"          # размер раздела для SATA
+#cm[dn_bsd_usb]="$Cyan"              # имя BSD для USB
+#cm[pn_size_usb]="$Cyan"             # размер раздела для USB         
+#'${cm[clr]}'
+#'${cm[pn_size_musb]}' 
+
+#${cm[sata_bsd]}="$Magenta"             # имя BSD номер диска SATA
+#${cm[sata_bsp]}="$Green"               # имя BSD номер тома SATA
+#${cm[usb_bsd]}="$Magenta"              # имя BSD номер диска USB
+#${cm[usb_bsp]}="$Green"                # имя BSD номер тома USB
+#'${cm[dn_sata]}'="$LightCyan"            # имена дисков sata              
+#'${cm[dn_usb]}'="$LightCyan"             # имена дисков usb
+#${cm[num_sata]}="$LightYellow"         # числа для sata
+#${cm[num_usb]}="$LightCyan"            # числа для usb
+
+        bsd=$(echo $string | cut -f2 -dk | cut -f1 -ds) ; bsp=$(echo $string | cut -f3 -ds)
 
         if [[ $usb = 1 ]]; then 
                     let "usb_lines++"
                     
                      if [[ ! $mcheck = "Yes" ]]; then
-        usb_screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        usb_screen_buffer+=$(printf '\n    '${cm[num_usb]}"%"$ncorr"s"$ch') ...   '${cm[dn_usb]}''"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}"%"$corr"s""%"$scorr"s"' '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}'')
                             else
-        usb_screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        usb_screen_buffer+=$(printf '\n    '${cm[num_usb]}"%"$ncorr"s"$ch')   +   '${cm[dn_usb]}''"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}"%"$corr"s""%"$scorr"s"' '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}'')
       
               fi
 
@@ -2718,9 +2867,9 @@ do
                     let "sata_lines++"
         
                      if [[ ! $mcheck = "Yes" ]]; then
-        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch') ...   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        screen_buffer+=$(printf '\n    '${cm[num_sata]}"%"$ncorr"s"$ch') ...   '${cm[dn_sata]}''"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}"%"$corr"s""%"$scorr"s"' '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}'')
                             else
-        screen_buffer+=$(printf '\n    '"%"$ncorr"s"$ch')   +   '"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${string}"%"$corr"s""%"$scorr"s"' '"$dsize"'     ')
+        screen_buffer+=$(printf '\n    '${cm[num_sata]}"%"$ncorr"s"$ch')   +   '${cm[dn_sata]}''"$drive""%"$dcorr"s"' '"%"$ldcorr"s"' '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}"%"$corr"s""%"$scorr"s"' '${cm[pn_sie_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}'')
       
               fi
         fi
@@ -2744,80 +2893,81 @@ printf "\r\033[3A"
 
 		if [[ $loc = "ru" ]]; then
             if [[ $CheckLoaders = 0 ]]; then
-                printf '\n\n\n      0)  повторить поиск разделов                     "+" - подключенные  \n\n'
-	            printf '     '
+                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'повторить поиск разделов                     '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - подключенные  '${cm[clr]}'\n\n'
+	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..31} 
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..31}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 else
-                printf '\n\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n'
-	            printf '     '
+                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - подключенные  '${cm[clr]}'\n\n'
+	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 fi 
 		else
 	         if [[ $CheckLoaders = 0 ]]; then
-                printf '\n\n\n      0)  update EFI partitions list                        "+" - mounted \n\n' 
-	            printf '     '
+                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" - mounted '${cm[clr]}'\n\n' 
+	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..32} 
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..30}
                 printf '\n'
                 else
-                printf '\n\n\n      0)  update EFI partitions list                              "+" - mounted \n\n' 
-	            printf '     '
+                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" - mounted '${cm[clr]}'\n\n' 
+	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 fi
         fi
 
 echo "${screen_buffer}"
 if [[ ! $usb_lines = 0 ]]; then
 
-                printf '\n     '
+                printf '\n     '${cm[dots_line2]}''
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..32} 
-                printf ' USB '
+                printf ''${cm[head_usb]}' USB '${cm[dots_line2]}''
                 printf '.%.0s' {1..31}
                 else
                 printf '.%.0s' {1..39}
-                printf ' USB '
+                printf ''${cm[head_usb]}' USB '${cm[dots_line2]}''
                 printf '.%.0s' {1..38}
                 fi
-                printf '\n     '
+                printf ''${cm[clr]}'\n     '
 
 echo "${usb_screen_buffer}"
 fi
 
 	let "ch++"
 	
-	            printf '\n     '
+	            printf '\n     '${cm[dots_line3]}''
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..68} 
                 else
                 printf '.%.0s' {1..82}
+                printf ''${cm[clr]}''
                 fi
 
 if [[ $ShowKeys = 1 ]]; then
 
 	 if [[ $loc = "ru" ]]; then
-	printf '\n      E  -   подключить EFI диска этой системы     \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы EFI  \n'
-    printf '      A  -   настроить авто-подключение EFI          \n'
-    printf '      I  -   дополнительное меню                     \n'
-	printf '      Q  -   закрыть окно и выход из программы     \n\n'
+	printf '\n'${cm[cl_E]}'      E  '${cm[kh_str]}'-   подключить EFI диска этой системы     '${cm[clr]}'\n'
+	printf ''${cm[cl_U]}'      U  '${cm[kh_str]}'-   отключить ВСЕ подключенные разделы EFI  '${cm[clr]}'\n'
+    printf ''${cm[cl_A]}'      A  '${cm[kh_str]}'-   настроить авто-подключение EFI          '${cm[clr]}'\n'
+    printf ''${cm[cl_I]}'      I  '${cm[kh_str]}'-   дополнительное меню                     '${cm[clr]}'\n'
+	printf ''${cm[cl_Q]}'      Q  '${cm[kh_str]}'-   закрыть окно и выход из программы     '${cm[clr]}'\n\n'
     #printf '                                                    \n' 
 			else
-	printf '\n      E  -   mount the EFI of current system drive \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions     \n'
-    printf '      A  -   set up EFI'"'"'s auto-mount             \n'
-    printf '      I  -   extra menu                              \n'
-	printf '      Q  -   close terminal and exit from the program\n\n'
+	printf '\n'${cm[cl_E]}'      E  '${cm[kh_str]}'-   mount the EFI of current system drive '${cm[clr]}'\n' 
+	printf ''${cm[cl_U]}'      U  '${cm[kh_str]}'-   unmount ALL mounted  EFI partitions     '${cm[clr]}'\n'
+    printf ''${cm[cl_A]}'      A  '${cm[kh_str]}'-   set up EFI'"'"'s auto-mount             '${cm[clr]}'\n'
+    printf ''${cm[cl_I]}'      I  '${cm[kh_str]}'-   extra menu                              '${cm[clr]}'\n'
+	printf ''${cm[cl_Q]}'      Q  '${cm[kh_str]}'-   close terminal and exit from the program'${cm[clr]}'\n\n'
     #printf '                                                    \n' 
 	     fi
 else 
@@ -2863,44 +3013,43 @@ usb_screen_buffer=$( echo  "$usb_screen_buffer" | sed "s/$chs)   +  /$chs) ...  
 
 fi
 
-
 		if [[ $loc = "ru" ]]; then
              if [[ $CheckLoaders = 0 ]]; then
-        	    printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
-                printf '\n\n      0)  повторить поиск разделов                     "+" - подключенные  \n\n' 
-	            printf '     '
+        	    printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')      '${cm[head_ast]}'*******'${cm[clr]}'\n'
+                printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                     '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
+	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..31} 
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..31}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 else
-                printf '\n*********           Программа монтирует EFI разделы в Mac OS (X.11 - X.15)           *********\n'
-                printf '\n\n      0)  повторить поиск разделов                            "+" - подключенные  \n\n' 
-	            printf '     '
+                printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'\n'
+                printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
+	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf ' SATA '
+                printf ' '${cm[head_sata]}'SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 fi
 
 			else
 
              if [[ $CheckLoaders = 0 ]]; then
-                printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
-                printf '\n\n      0)  update EFI partitions list                        "+" - mounted \n\n'  
-	            printf '     '
+                printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS (X'${cm[head_str]}'.11 '${cm[head_str]}'- X'${cm[head_str]}'.15'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
+                printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
+	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..31} 
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..31}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 else
-                printf '\n*********         This program mounts EFI partitions on Mac OS (X.11 - X.15)         *********\n'
-                printf '\n\n      0)  update EFI partitions list                              "+" - mounted \n\n'  
-	            printf '     '
+                printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS (X'${cm[head_str]}'.11 '${cm[head_str]}'- X'${cm[head_str]}'.15'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'\n'
+                printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
+	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf ' SATA '
+                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
-                printf '\n'
+                printf ''${cm[clr]}'\n'
                 fi
         fi
 
@@ -2908,17 +3057,17 @@ fi
 echo  "$screen_buffer"
 if [[ ! $usb_lines = 0 ]]; then
 
-                printf '\n     '
+                printf '\n     '${cm[dots_line2]}''
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..32} 
-                printf ' USB '
+                printf ''${cm[head_usb]}' USB '${cm[dots_line2]}''
                 printf '.%.0s' {1..31}
                 else
                 printf '.%.0s' {1..39}
-                printf ' USB '
+                printf ''${cm[head_usb]}' USB '${cm[dots_line2]}''
                 printf '.%.0s' {1..38}
                 fi
-                printf '\n     '
+                printf ''${cm[clr]}'\n     '
 
 echo "${usb_screen_buffer}"
 fi
@@ -2926,44 +3075,45 @@ fi
 
 	if [[ ! $order = 1 ]] || [[ ! $order = 0 ]]; then printf "\r\033[1A"; fi
     
-	printf '\n\n     '
+	printf '\n\n     '${cm[dots_line3]}''
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..68} 
                 else
                 printf '.%.0s' {1..82}
+                printf ''${cm[clr]}''
                 fi
 
 if [[ $ShowKeys = 1 ]]; then
 
 if [[ ! $order = 3 ]]; then
 	     if [[ $loc = "ru" ]]; then
-	printf '\n      E  -   подключить EFI диска этой системы     \n'
-	printf '      U  -   отключить ВСЕ подключенные разделы EFI  \n'
-    printf '      A  -   настроить авто-подключение EFI          \n'
-    printf '      I  -   дополнительное меню                     \n'
-	printf '      Q  -   закрыть окно и выход из программы\n\n'
+	printf '\n'${cm[cl_E]}'      E  '${cm[kh_str]}'-   подключить EFI диска этой системы     '${cm[clr]}'\n'
+	printf ''${cm[cl_U]}'      U  '${cm[kh_str]}'-   отключить ВСЕ подключенные разделы EFI  '${cm[clr]}'\n'
+    printf ''${cm[cl_A]}'      A  '${cm[kh_str]}'-   настроить авто-подключение EFI          '${cm[clr]}'\n'
+    printf ''${cm[cl_I]}'      I  '${cm[kh_str]}'-   дополнительное меню                     '${cm[clr]}'\n'
+	printf ''${cm[cl_Q]}'      Q  '${cm[kh_str]}'-   закрыть окно и выход из программы'${cm[clr]}'\n\n'
     #printf '                                                    \n' 
 			else
-	printf '\n      E  -   mount the EFI of current system drive \n' 
-	printf '      U  -   unmount ALL mounted  EFI partitions     \n'
-    printf '      A  -   set up EFI'"'"'s auto-mount                \n'
-    printf '      I  -   extra menu                              \n'
-	printf '      Q  -   close terminal and exit from the program\n\n'
+	printf '\n'${cm[cl_E]}'      E  '${cm[kh_str]}'-   mount the EFI of current system drive '${cm[clr]}'\n' 
+	printf ''${cm[cl_U]}'      U  '${cm[kh_str]}'-   unmount ALL mounted  EFI partitions     '${cm[clr]}'\n'
+    printf ''${cm[cl_A]}'      A  '${cm[kh_str]}'-   set up EFI'"'"'s auto-mount                '${cm[clr]}'\n'
+    printf ''${cm[cl_I]}'      I  '${cm[kh_str]}'-   extra menu                              '${cm[clr]}'\n'
+	printf ''${cm[cl_Q]}'      Q  '${cm[kh_str]}'-   close terminal and exit from the program'${cm[clr]}'\n\n'
     #printf '                                                    \n' 
 	     fi
 	else
         if [[ $loc = "ru" ]]; then
-	printf '\n      C  -   найти и подключить EFI с загрузчиком Clover \n'
-	printf '      O  -   найти и подключить EFI с загрузчиком Open Core\n'
-	printf '      S  -   вызвать экран настройки MountEFI \n'
-    printf '      P  -   открыть config.plist с EFI раздела            \n'
-    printf '      V  -   посмотреть версию программы    \n\n' 
+	printf '\n'${cm[cl_C]}'      C  '${cm[kh_str]}'-   найти и подключить EFI с загрузчиком Clover '${cm[clr]}'\n'
+	printf ''${cm[cl_O]}'      O  '${cm[kh_str]}'-   найти и подключить EFI с загрузчиком Open Core'${cm[clr]}'\n'
+	printf ''${cm[cl_S]}'      S  '${cm[kh_str]}'-   вызвать экран настройки MountEFI '${cm[clr]}'\n'
+    printf ''${cm[cl_P]}'      P  '${cm[kh_str]}'-   открыть config.plist с EFI раздела            '${cm[clr]}'\n'
+    printf ''${cm[cl_V]}'      V  '${cm[kh_str]}'-   посмотреть версию программы    '${cm[clr]}'\n\n' 
 			else
-	printf '\n      C  -   find and mount EFI with Clover boot loader \n' 
-	printf '      O  -   find and mount EFI with Open Core boot loader \n' 
-	printf '      S  -   call MountEFI setup screen\n'
-    printf '      P  -   open config.plist from EFI partition          \n'
-    printf '      V  -   view the program version       \n\n' 
+	printf '\n'${cm[cl_C]}'      C  '${cm[kh_str]}'-   find and mount EFI with Clover boot loader '${cm[clr]}'\n' 
+	printf ''${cm[cl_O]}'      O  '${cm[kh_str]}'-   find and mount EFI with Open Core boot loader '${cm[clr]}'\n' 
+	printf ''${cm[cl_S]}'      S  '${cm[kh_str]}'-   call MountEFI setup screen'${cm[clr]}'\n'
+    printf ''${cm[cl_P]}'      P  '${cm[kh_str]}'-   open config.plist from EFI partition          '${cm[clr]}'\n'
+    printf ''${cm[cl_V]}'      V  '${cm[kh_str]}'-   view the program version       '${cm[clr]}'\n\n' 
 	     fi
 fi
 else printf '\n\n'
@@ -2975,13 +3125,11 @@ if [[ ! $ShowKeys = 1 ]]; then printf '\n\n'; fi
     if [[ $sym = 2 ]]; then printf '\n'; fi
 	printf "\r\n\033[1A"
 	
-
-
 	if [ $loc = "ru" ]; then
 let "schs=$ch-1"
-printf '  Введите число от 0 до '$((schs+1))' ( P,U,E,A,S,I или Q ):  '; printf '                            '
+printf ''${cm[curs_str]}'  Введите число от '${cm[curs_num_1]}'0'${cm[curs_str]}' до '${cm[curs_num_2]}''$((schs+1))''${cm[curs_str]}' ( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_U]}'U'${cm[curs_str]}','${cm[cl_E]}'E'${cm[curs_str]}','${cm[cl_A]}'A'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}' или '${cm[cl_Q]}'Q'${cm[curs_str]}' ):  '${cm[clr]}''; printf '                            '
 			else
-printf '   Enter a num from 0 to '$((schs+1))' ( P,U,E,A,S,I or Q ):  ';  printf '                         '
+printf ''${cm[curs_str]}'   Enter a num from '${cm[curs_num_1]}'0'${cm[curs_str]}' to '${cm[curs_num_2]}''$((schs+1))''${cm[curs_str]}' ( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_U]}'U'${cm[curs_str]}','${cm[cl_E]}'E'${cm[curs_str]}','${cm[cl_A]}'A'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}' or '${cm[cl_Q]}'Q'${cm[curs_str]}' ):  '${cm[clr]}'';  printf '                         '
 	fi
 	if [[ $order = 1 ]]; then
 		if [ $loc = "ru" ]; then
@@ -3063,17 +3211,17 @@ printf "\r\033[8f"
 echo  "$screen_buffer"
 if [[ ! $usb_lines = 0 ]]; then
 
-                printf '\n     '
+                printf '\n     '${cm[dots_line2]}''
                 if [[ $CheckLoaders = 0 ]]; then
 	            printf '.%.0s' {1..32} 
-                printf ' USB '
+                printf ''${cm[head_usb]}' USB '${cm[dots_line2]}''
                 printf '.%.0s' {1..31}
                 else
                 printf '.%.0s' {1..39}
-                printf ' USB '
+                printf ''${cm[head_usb]}' USB '${cm[dots_line2]}''
                 printf '.%.0s' {1..38}
                 fi
-                printf '\n     '
+                printf ''${cm[clr]}'\n     '
 
 echo "${usb_screen_buffer}"
 fi
@@ -3122,7 +3270,7 @@ if [[ $choice1 = [0-9] ]]; then choice=${choice1}; break
         if [[ ! $order = 3 ]]; then
             if [[ $choice1 = [uUqQeEiIvVsSoOaApPlL] ]]; then choice=${choice1}; break; fi
                     else
-             if [[ $choice1 = [qQcCoOsSiIvVWpPlL] ]]; then choice=${choice1}; break; fi
+             if [[ $choice1 = [qQcCoOsSiIvVWpPlLDM] ]]; then choice=${choice1}; break; fi
         fi
  
 fi
@@ -3141,11 +3289,12 @@ printf '\n'
 printf '                                                                                \n'
 printf '                                                                                '
 if [[ $loc = "ru" ]]; then
-printf '\n  ! введите вторую цифру или нажмите <Enter> '
+printf '\n'${cm[curs_str]}'  ! введите вторую цифру или нажмите <Enter> '${cm[clr]}''
 else
-printf '\n  ! Press the second digit or press <Enter>  '
+printf '\n'${cm[curs_str]}'  ! Press the second digit or press <Enter>  '${cm[clr]}''
 fi
 printf "\r\n\033[4A\033['$pos_corr'C"$choice
+
 
 CHECK_HOTPLUG_DISKS
 if [[ $hotplug = 1 ]]; then break; fi
@@ -3243,27 +3392,29 @@ fi
 SHOW_MSG &
 }
 
+
+
 OPEN_PLIST(){
 sl=5; choice="±"; ldrname=""; line_pointer=$((10+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
 if [[ $ShowKeys = 1 ]]; then
     printf '\r\033['$line_pointer'f'
     	     if [[ $loc = "ru" ]]; then
-	printf '\n      O  -  открыть первый по списку config.plist OpenCore      \n'
-	printf '      C  -  открыть первый по списку config.plist Сlover        \n'
-    printf '      0-'$schs' - открыть config.plist на разделе (томе) номер... \n'
-    printf '      L  -  открыть config.plist который был открыт ранее.        \n'
+	printf '\n'${cm[cl_O]}'      O  '${cm[kh_str]}'-  открыть первый по списку config.plist OpenCore      '${cm[clr]}'\n'
+	printf ''${cm[cl_C]}'      C  '${cm[kh_str]}'-  открыть первый по списку config.plist Сlover        '${cm[clr]}'\n'
+    printf ''${cm[curs_num_1]}'      0'${cm[kh_str]}'-'${cm[curs_num_2]}''$schs''${cm[kh_str]}' - открыть config.plist на разделе (томе) номер... '${cm[clr]}'\n'
+    printf ''${cm[cl_L]}'      L  '${cm[kh_str]}'-  открыть config.plist который был открыт ранее.        '${cm[clr]}'\n'
     if [[ ${ch} -le 9 ]]; then
-	printf '      ** возврат в главное меню через 5 сек или любой клавишей.  \n\n\n'
+	printf ''${cm[cl_ast]}'      ** '${cm[cl_str]}'возврат в главное меню через 5 сек или любой клавишей.  '${cm[clr]}'\n\n\n'
     else
     printf '                                                                 \n\n\n'
     fi 
 			else
-	printf '\n      O  -  open the first on the list OpenCore config.plist     \n' 
-	printf '      С  -  open the first on the list Clover config.plist       \n'
-    printf '      0-'$schs' - open config.plist on partition (volume) number... \n'
-    printf '      L  - open the config.plist that was last opened            \n'
+	printf '\n'${cm[cl_O]}'      O  '${cm[kh_str]}'-  open the first on the list OpenCore config.plist     '${cm[clr]}'\n' 
+	printf ''${cm[cl_C]}'      С  '${cm[kh_str]}'-  open the first on the list Clover config.plist       '${cm[clr]}'\n'
+    printf ''${cm[curs_num_1]}'      0'${cm[kh_str]}'-'${cm[curs_num_2]}''$schs''${cm[kh_str]}' - open config.plist on partition (volume) number... \n'
+    printf ''${cm[cl_L]}'      L  '${cm[kh_str]}'- open the config.plist that was last opened            '${cm[clr]}'\n'
     if [[ ${ch} -le 9 ]]; then
-	printf '      ** return to the main menu after 5 seconds or by any key. \n\n\n'
+	printf ''${cm[cl_ast]}'      ** '${cm[cl_str]}'return to the main menu after 5 seconds or by any key. '${cm[clr]}'\n\n\n'
     else
     printf '                                                                 \n\n\n'
     fi 
@@ -3276,15 +3427,15 @@ printf '\r\033['$line_pointer'f'
 for i in 1 2; do printf '                                                                                \n'; done
     if [[ $loc = "ru" ]]; then
         if [[ ${ch} -le 9 ]]; then
-printf '\r  Открыть config.plist ( номер EFI, O, C, L или Enter ):   ' ; printf '                     \n'
+printf '\r  '${cm[curs_str]}'Открыть '${cm[cl_conf]}'config.plist'${cm[curs_str]}' ( номер EFI, '${cm[cl_O]}'O'${cm[curs_str]}', '${cm[cl_C]}'C'${cm[curs_str]}', '${cm[cl_L]}'L'${cm[curs_str]}' или Enter ):   '${cm[clr]}'' ; printf '                     \n'
         else
-printf '\r  Открыть config.plist ( номер EFI, O, C, L ):   ' ; printf '                               \n'
+printf '\r  '${cm[curs_str]}'Открыть '${cm[cl_conf]}'config.plist'${cm[curs_str]}' ( номер EFI, '${cm[cl_O]}'O'${cm[curs_str]}', '${cm[cl_C]}'C'${cm[curs_str]}', '${cm[cl_L]}'L'${cm[curs_str]}' ):   '${cm[clr]}'' ; printf '                               \n'
         fi
 	else
          if [[ ${ch} -le 9 ]]; then
-printf '\r  Edit config.plist - ( EFI number, O, C, L или Enter ):   ' ; printf '                     \n'
+printf '\r  '${cm[curs_str]}'Edit '${cm[cl_conf]}'config.plist'${cm[curs_str]}' - ( EFI number, '${cm[cl_O]}'O'${cm[curs_str]}', '${cm[cl_C]}'C'${cm[curs_str]}', '${cm[cl_L]}'L'${cm[curs_str]}' или Enter ):   '${cm[clr]}'' ; printf '                     \n'
          else cur_pos=50
-printf '\r    Edit config.plist - ( EFI number, O, C, L ):   ' ; printf '                             \n'
+printf '\r    '${cm[curs_str]}'Edit '${cm[cl_conf]}'config.plist'${cm[curs_str]}' - ( EFI number, '${cm[cl_O]}'O'${cm[curs_str]}', '${cm[cl_C]}'C'${cm[curs_str]}', '${cm[cl_L]}'L'${cm[curs_str]}' ):   '${cm[clr]}'' ; printf '                             \n'
         fi
     fi
 for i in 1 2 3; do printf '                                                                                \n'; done
@@ -3346,17 +3497,18 @@ printf "\r\n\033[1A"
 if [[ $order = 3 ]]; then armm=5 #############  значение задержки для таймера автовозврата в главное меню в секундах ########################
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$((schs+1))' ( P,O,C,S,I  или  Q ):   ' ; printf '                           '
+printf ''${cm[curs_str]}'  Введите число от '${cm[curs_num_1]}'0'${cm[curs_str]}' до '${cm[curs_num_2]}''$((schs+1))' '${cm[curs_str]}'( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_O]}'O'${cm[curs_str]}','${cm[cl_C]}'C'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}'  или  '${cm[cl_Q]}'Q'${cm[curs_str]}' ):   '${cm[clr]}'' ; printf '                           '
 			else
-printf '   Enter a num from 0 to '$((schs+1))' ( P,O,C,S,I  or  Q ):   ' ; printf '                          '
+printf ''${cm[curs_str]}'   Enter a num from '${cm[curs_num_1]}'0'${cm[curs_str]}' to '${cm[curs_num_2]}''$((schs+1))' '${cm[curs_str]}'( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_O]}'O'${cm[curs_str]}','${cm[cl_C]}'C'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}'  or  '${cm[cl_Q]}'Q'${cm[curs_str]}' ):   '${cm[clr]}'' ; printf '                          '
     fi
         else
             let "schs=$ch-1"
-            if [[ $loc = "ru" ]]; then
-printf '  Введите число от 0 до '$((schs+1))' ( P,U,E,A,S,I или Q ):      ' ; printf '                        '
+	if [ $loc = "ru" ]; then
+let "schs=$ch-1"
+printf ''${cm[curs_str]}'  Введите число от '${cm[curs_num_1]}'0'${cm[curs_str]}' до '${cm[curs_num_2]}''$((schs+1))''${cm[curs_str]}' ( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_U]}'U'${cm[curs_str]}','${cm[cl_E]}'E'${cm[curs_str]}','${cm[cl_A]}'A'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}' или '${cm[cl_Q]}'Q'${cm[curs_str]}' ):  '${cm[clr]}''; printf '                            '
 			else
-printf '   Enter a num from 0 to '$((schs+1))' ( P,U,E,A,S,I or Q ):      ' ; printf '                      '
-    fi
+printf ''${cm[curs_str]}'   Enter a num from '${cm[curs_num_1]}'0'${cm[curs_str]}' to '${cm[curs_num_2]}''$((schs+1))''${cm[curs_str]}' ( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_U]}'U'${cm[curs_str]}','${cm[cl_E]}'E'${cm[curs_str]}','${cm[cl_A]}'A'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}' or '${cm[cl_Q]}'Q'${cm[curs_str]}' ):  '${cm[clr]}'';  printf '                         '
+	fi
 fi
 printf '\n\n'
 printf '                                                                                \n'
@@ -3395,7 +3547,7 @@ if [[ ${choice} = [aA] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]]; then ./
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4; UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 else
-if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpPD]$ ]]; then unset choice; fi
+if [[ ! $choice =~ ^[0-9qQcCoOsSiIvVWpPDM]$ ]]; then unset choice; fi
 if [[ ${choice} = [sS] ]]; then cd "$(dirname "$0")"; if [[ -f setup ]] || [[ -f setup.sh ]]; then SAVE_EFIes_STATE; fi; if [[ -f setup ]]; then ./setup -r "${ROOT}"; else bash ./setup.sh -r "${ROOT}"; fi;  REFRESH_SETUP; choice="0"; order=4; fi; CHECK_RELOAD; if [[ $rel = 1 ]]; then  EXIT_PROGRAM; fi
 if [[ ${choice} = [oO] ]]; then  printf '                               '; SPIN_OC; choice="0"; order=4; fi
 if [[ ${choice} = [cC] ]]; then  printf '                               '; SPIN_FCLOVER; choice="0"; order=4; fi
@@ -3403,6 +3555,7 @@ if [[ ${choice} = [qQ] ]]; then choice=$ch; if [[ $mefisca = 1 ]]; then touch "$
 if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [W] ]];  then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
+if [[ ${choice} = [M] ]];  then CHECK_CM; if [[ $cm_check = 0 ]]; then COLOR_MODE; mean="Yes"; else mean="No"; unset cm; fi; plutil -replace GUIcolorMode -bool $mean "${CONFPATH}"; order=4; choice=0; fi
 if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4;  UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 fi
@@ -3524,15 +3677,15 @@ if [[ ! $nogetlist = 1 ]]; then
 	    ######PRINT_HEADER
     if [[ $loc = "ru" ]]; then
         if [[ $CheckLoaders = 0 ]]; then
-            printf '\n*******      Программа монтирует EFI разделы в Mac OS (X.11 - X.15)      *******\n'
+            printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')      '${cm[head_ast]}'*******'${cm[clr]}'\n'
         else
-            printf '\n*********           Программа монтирует EFI разделы в Mac OS (X.11 - X.15)           *********\n'
+            printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'\n'
         fi
     else
         if [[ $CheckLoaders = 0 ]]; then
-            printf '\n*******    This program mounts EFI partitions on Mac OS (X.11 - X.15)    *******\n'
+            printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
         else
-            printf '\n*********         This program mounts EFI partitions on Mac OS (X.11 - X.15)         *********\n'
+            printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'\n'
         fi
 	fi
         ####################
