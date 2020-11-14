@@ -37,9 +37,7 @@ for i in 0 1 2 3 4 5 6; do SET_STRUCT_1 $i; done
 StructHints[0]="звёздочки заголовка;текст строки заголовка;римская цифра версии мак ос;арабские цифры версии мак ос;"
 StructHints[1]="цифра 0;скобка после цифры;текст обновления списка разделов;кавычки вокруг +;плюс;текст строки обозначающий плюсом подключенные разделы;"
 StructHints[2]="первый сверху ряд точек;заголовок SATA;"
-StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
 StructHints[4]="второй сверху ряд точек;заголовок USB;"
-StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
 StructHints[6]="третий сверху ряд точек;"
 UPDATE_BOTTOM
 }
@@ -84,14 +82,16 @@ case $1 in
         ;;
     3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
         bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-        bufStruct[3]="8 num_sata,6 dn_sata,15 ld_cl,45 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+        bufStruct[3]="8 num_sata,6 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+        StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
         ;;
     4)  bbuf[4]=$(printf '\033[10;0f    '${cm[dots_line2]}''.......................................''${cm[head_usb]}' USB '${cm[dots_line2]}......................................'      ')
         bufStruct[4]="10 dots_line2,4 head_usb,44"
         ;;
     5)  drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
         bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-        bufStruct[5]="12 num_usb,6 dn_usb,15 ld_oc,45 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+        bufStruct[5]="12 num_usb,6 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+        StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);" 
         ;;
     6)  bbuf[6]=$(printf '\033[14;0f    '${cm[dots_line3]}...................................................................................${cm[clr]}'     ')
         bufStruct[6]="14 dots_line3,4"
@@ -165,6 +165,38 @@ elif [[ $hints = 2 ]]; then
             ;;
            esac
 fi 
+}
+
+SET_LOADER_STRUCT(){
+case "$1" in
+        Clover )   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+                    bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                    bufStruct[3]="8 num_sata,6 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                    ;;
+      OpenCore )   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_oc]}'             OpenCore       '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_oc,46 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   ;;
+      "Windows")   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_wn]}'        Windows        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_wn,46 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   ;;
+         Linux)    drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_gb]}'              Linux         '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_gb,47 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   ;;
+        Refind)    drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_rf]}'         Refind        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_rf,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   ;;
+"Не распознан")    drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Не распознан     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   ;;
+esac
+StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+
 }
 
 CLEAR_BOTTOM(){ for i in 1 2 3 4 5 6 7; do printf '\033['$((14+i))';0;f                                                                           '; done; printf '\033[37;45;f'; }
@@ -328,7 +360,7 @@ if [[ $cl_bit = 0 ]]; then printf '\033[32;25f''√'; printf '\033[33;25f'' '; f
 
 GET_POINTER_INPUT(){            
              printf '\033[37;45;f                                               '          
-             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQcCoOaAsSdDfFvVrRhHiI]+$ ]]; do
+             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQcCoOaAsSdDfFvVrRhHlL]+$ ]]; do
              read -s -r -n 1 inputs 
              if [[ "${inputs}" = $(printf '\033') ]]; then read -r -s -n 2 keys 
                       case "${inputs}" in
@@ -338,7 +370,7 @@ GET_POINTER_INPUT(){
                 '[C') inputs="F" break;;
             esac
              fi   
-             if [[ ! $inputs = [0-7zZxXeEqQcCoOaAsSdDfFvVrRhHiI] ]]; then 
+             if [[ ! $inputs = [0-7zZxXeEqQcCoOaAsSdDfFvVrRhHlL] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; fi 
                         
                         printf '\r'
@@ -353,7 +385,7 @@ SET_STRIP(){
 posit=36; code2=40
 if [[ ${cl_bit} = 0 ]]; then
 for ((i=0;i<16;i++)) do 
-printf '\033[27;'$posit'f\e['$code2'm''   ''\e[0m'
+#printf '\033[27;'$posit'f\e['$code2'm''   ''\e[0m'
 printf '\033[28;'$posit'f\e['$code2'm''   ''\e[0m'
 printf '\033[29;'$posit'f\e['$code2'm''   ''\e[0m'
 printf '\033[30;'$posit'f\e['$code2'm''   ''\e[0m'
@@ -362,19 +394,13 @@ let "code2++"; let "posit=posit+3"
 done
 strip=0
 else
-if [[ $strip = 0 ]]; then printf '\033[26;35f                                                  \033[31;35f                                                  '; strip=1; fi       
-printf '\033[27;36f\e['$rcol'm''                                                ''\e[0m'
+if [[ $strip = 0 ]]; then printf '\033[27;35f                                                  \033[31;35f                                                  '; strip=1; fi       
+#printf '\033[27;36f\e['$rcol'm''                                                ''\e[0m'
 printf '\033[28;36f\e['$rcol'm''                                                ''\e[0m'
 printf '\033[29;36f\e['$rcol'm''                                                ''\e[0m'
 printf '\033[30;36f\e['$rcol'm''                                                ''\e[0m'
 printf '\033[37;45f'
 fi
-}
-
-SHOW_LOADER_COLOR(){
-printf "\r\033[8;f\033['$c_clov'C"'\e['$new_color'm'"${Clover}"'\e[0m'
-printf "\033[12;f\033['$c_oc'C"'\e['$new_color'm'"${OpenCore}"'\e[0m'
-printf '\033[37;42f''                    '
 }
 
 COLOR_TRANS(){
@@ -415,10 +441,15 @@ fi
 
 SHOW_NEW_ITEM_COLOR(){
 NewItemColor="\e[0m\e["$new_color"m"
-#echo "NewItemColor = $NewItemColor" >> ~/Desktop/temp.txt
 cm[$(echo ${CurrStrList[ObjPtr]} | cut -f1 -d',')]="${NewItemColor}"
-if [[ $StrPtr -lt 7 ]]; then SET_STRUCT_1 $StrPtr; else SET_STRUCT_2 $StrPtr; fi
-echo "${bbuf[@]}" 2>/dev/null; printf '\033[37;45f'
+if [[ $loaderPointer1 = "" && $StrPtr = 3 ]]; then 
+        SET_LOADER_STRUCT $LoaderPointer1; 
+    elif [[ $loaderPointer1 = "" && $StrPtr = 5 ]]; then SET_LOADER_STRUCT "$LoaderPointer2"
+        elif [[ $StrPtr -lt 7 ]]; then SET_STRUCT_1 $StrPtr
+            elif [[ $StrPtr -lt 12 && $ObjPtr -gt 1 ]]; then for i in 7 8 9 10 11; do SET_STRUCT_2 $i; done
+                else SET_STRUCT_2 $StrPtr 
+fi
+SET_SCREEN; printf '\033[37;45f'
 }
 
 MAKE_COLOR(){
@@ -437,22 +468,20 @@ new_color+="$code"; rcol+="$code"
 echo "new_color = $new_color" >> ~/Desktop/temp.txt
 }
 
-
-STRIP_POINTER(){ if [[ $1 = "ON" ]]; then yes "" | printf '\033[26;'$NN'f''•  \033[31;'$NN'f''•  \033[37;45f'; else  yes "" | printf '\033[26;'$NN'f''   \033[31;'$NN'f''   \033[37;45f'; fi ; }
-SHOW_CURSOR(){ echo "${bbuf[@]}"; printf '\033[23;36f                                                          \033[23;38f'"${HintWords[$((ObjPtr-1))]}"''; unset IFS; yes '' | printf '\033['$lnN';'$(echo ${CurrStrList[ObjPtr]} | cut -f2 -d',')'f'"\033[?25h"; } #printf '\033[37;45f' yes '' | printf '\033['$lnN'f     '; echo "${bbuf[@]}";
+SET_SCREEN(){ for i in "${bbuf[@]}"; do echo "$i"; done; }
+STRIP_POINTER(){ if [[ $1 = "ON" ]]; then yes "" | printf '\033[27;'$NN'f''•  \033[31;'$NN'f''•  \033[37;45f'; else  yes "" | printf '\033[27;'$NN'f''   \033[31;'$NN'f''   \033[37;45f'; fi ; }
+SHOW_CURSOR(){ SET_SCREEN; printf '\033[23;36f                                                          \033[23;38f'"${HintWords[$((ObjPtr-1))]}"''; unset IFS; yes '' | printf '\033['$lnN';'$(echo ${CurrStrList[ObjPtr]} | cut -f2 -d',')'f'"\033[?25h"; } 
 
 ###############################################################
 EDIT_COLORS(){
 unset inputs
 printf "\033[?25l"
-old_clover="$Clover"; clover2="$Clover"
-old_opencore="$OpenCore"; opencore2="$OpenCore"
-old_themeldrs="$themeldrs"; Clover="Clover"; OpenCore="OpenCore"
-pclov=${#Clover}; let "c_clov=(9-pclov)/2+46"; poc=${#OpenCore}; let "c_oc=(9-poc)/2+46"
+old_themeldrs="$themeldrs"; 
 ObjPtr=1; StrPtr=0; CurrStrList=(${bufStruct[0]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}
 IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS; oldEdItem=""
 if [[ $old_themeldrs = "" ]]; then old_themeldrs=37; fi
 new_color=$old_themeldrs; new_color2=$new_color; lastEditItem=""; new_cm=()
+loaders=( Clover OpenCore Windows Linux Refind ); loaderPonter1=""; loaderPointer2=""
 
                 if [[ $loc = "ru" ]]; then
 printf '                                                                                        \n'
@@ -475,7 +504,7 @@ printf '     5) Inverse                      \n'
 printf '     6) Colors      16               \n'
 printf '     7) Colors     256               \n'
                     fi
-#SHOW_LOADER_COLOR
+
 COLOR_PARSER ${old_themeldrs}
 SHOW_TEXT_FLAGS
 if [[ ${cl_bit} = 0 ]]; then  
@@ -528,14 +557,22 @@ printf '\033[37;7f'
                     if [[ ${inputs} = [vVrR] ]]; then
                         if [[ ${inputs} = [vV] ]]; then  if [[ $StrPtr -eq 12 ]]; then StrPtr=0; else let "StrPtr++"; fi; fi
                         if [[ ${inputs} = [rR] ]]; then if [[ $StrPtr -eq 0 ]]; then StrPtr=12; else let "StrPtr--"; fi; fi
-                        ObjPtr=1; CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                        CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                        echo "StrPtr = $StrPtr ObjPtr = $ObjPtr" >> ~/Desktop/temp.txt
+                        if [[ ${inputs} = [vV] && $StrPtr = 5 && $ObjPtr = 2 ]]; then let "ObjPtr++"
+                            elif [[ ${inputs} = [vV] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr=3"
+                                elif [[ ${inputs} = [rR] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr++"
+                                    elif [[ ${inputs} = [rR] && $StrPtr = 1 && $ObjPtr = 2 ]]; then ObjPtr=4
+                                        elif [[ $ObjPtr -gt $((CurrStrSize-1)) ]]; then ObjPtr=$((CurrStrSize-1)); fi
                         SHOW_CURSOR
                         GET_ITEM_COLOR
                     fi
 
                     if [[ ${inputs} = [hH] ]]; then let "hints++"; if [[ $hints = 3 ]]; then hints=0; fi; UPDATE_BOTTOM
-                        ObjPtr=1; CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
-                        CLEAR_BOTTOM; sleep 0.1; echo "${bbuf[@]}"
+                        CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                        if [[ $ObjPtr -gt $((CurrStrSize-1)) ]]; then ObjPtr=1; fi
+                        CLEAR_BOTTOM; sleep 0.1; SET_SCREEN
+                        SHOW_CURSOR
                         GET_ITEM_COLOR
                     fi
 
@@ -555,14 +592,26 @@ printf '\033[37;7f'
                               
                              MAKE_COLOR
                              SHOW_NEW_ITEM_COLOR
-                             SET_STRIP 
-                             #SHOW_LOADER_COLOR                              
+                             SET_STRIP                          
                              SHOW_TEXT_FLAGS
                             
                     fi
-                
-                if [[ $inputs = [xX] ]] && [[ $cl_bit = 0 ]]; then
 
+                if [[ $inputs = [lL] ]]; then
+                    if [[ $LoaderPointer1 = "" ]]; then LoaderPointer1="Clover"; LoaderPointer2="OpenCore"; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
+                        elif [[ $LoaderPointer1 = "Clover" ]]; then LoaderPointer1="Windows"; LoaderPointer2="Linux"; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
+                            elif [[ $LoaderPointer1 = "Windows" ]]; then LoaderPointer1="Refind"; LoaderPointer2="Не распознан"; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
+                                elif [[ $LoaderPointer1 = "Refind" ]]; then LoaderPointer1=""; LoaderPointer2="" ; SET_STRUCT_1 3; SET_STRUCT_1 5; fi
+
+                    if [[ $LoaderPointer1 = "" ]]; then ObjPtr=1; else ObjPtr=3; fi
+                    StrPtr=3; CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}
+                    IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                    GET_ITEM_COLOR
+                    SHOW_CURSOR
+                fi
+
+                
+           if [[ $inputs = [xX] ]] && [[ $cl_bit = 0 ]]; then
              if [[ "$lastEditItem" = "$StrPtr,$ObjPtr" ]]; then        
                 STRIP_POINTER OFF
                 
@@ -581,7 +630,6 @@ printf '\033[37;7f'
                 MAKE_COLOR
                 SHOW_NEW_ITEM_COLOR
                 lastEditItem="$StrPtr,$ObjPtr"
-                #SHOW_LOADER_COLOR &
                 if [[ $strip = 1 ]]; then SET_STRIP; fi
                
          fi
@@ -605,10 +653,7 @@ printf '\033[37;7f'
                 MAKE_COLOR
                 SHOW_NEW_ITEM_COLOR
                 lastEditItem="$StrPtr,$ObjPtr"
-                if [[ $strip = 1 ]]; then SET_STRIP; fi
-
-                #SHOW_LOADER_COLOR &
-                
+                if [[ $strip = 1 ]]; then SET_STRIP; fi                
          fi
 
               if [[ $inputs = [zZ] ]] && [[ $cl_bit = 1 ]]; then
@@ -621,7 +666,6 @@ printf '\033[37;7f'
                     MAKE_COLOR
                     SHOW_NEW_ITEM_COLOR
                     lastEditItem="$StrPtr,$ObjPtr"
-                    #SHOW_LOADER_COLOR 
                     SET_STRIP 
               fi
 
@@ -635,7 +679,6 @@ printf '\033[37;7f'
                     MAKE_COLOR
                     SHOW_NEW_ITEM_COLOR
                     lastEditItem="$StrPtr,$ObjPtr"
-                    #SHOW_LOADER_COLOR 
                     SET_STRIP 
                 fi
                 if [[ $inputs = [aA] ]] && [[ $cl_bit = 1 ]]; then
@@ -648,7 +691,6 @@ printf '\033[37;7f'
                     MAKE_COLOR
                     SHOW_NEW_ITEM_COLOR
                     lastEditItem="$StrPtr,$ObjPtr"
-                    #SHOW_LOADER_COLOR 
                     SET_STRIP 
                 fi
 
@@ -662,7 +704,6 @@ printf '\033[37;7f'
                     MAKE_COLOR
                     SHOW_NEW_ITEM_COLOR
                     lastEditItem="$StrPtr,$ObjPtr"
-                    #SHOW_LOADER_COLOR 
                     SET_STRIP 
                 fi
 
@@ -676,32 +717,9 @@ printf '\033[37;7f'
                                     GET_ITEM_COLOR
                                     MAKE_COLOR
                                     SHOW_NEW_ITEM_COLOR
-                                    #SHOW_LOADER_COLOR \
                                     SHOW_ITEM_COLOR
                                     
                 fi
-<< 'COMMENT'
-                if [[ $inputs = [cC] ]]; then 
-                new_loader=$Clover                     
-                EDIT_LODERS_NAMES
-                if [[ ! $demo = "" ]]; then
-                if [[ ${#demo} -gt 8 ]]; then demo="${demo:0:8}"; fi
-                Clover="$demo"; pclov=${#Clover}; let "c_clov=(9-pclov)/2+46"; 
-                printf "\r\033[8;f\033[45C"'          '
-                #SHOW_LOADER_COLOR
-                fi
-                fi
-                if [[ $inputs = [oO] ]]; then 
-                new_loader=$OpenCore                     
-                EDIT_LODERS_NAMES
-                if [[ ! $demo = "" ]]; then
-                if [[ ${#demo} -gt 8 ]]; then demo="${demo:0:8}"; fi
-                OpenCore="$demo"; poc=${#OpenCore}; let "c_oc=(9-poc)/2+46"
-                printf "\033[12;f\033[45C"'          '
-                #SHOW_LOADER_COLOR
-                fi
-                fi
-COMMENT
             
             if [[ $inputs = [qQ] ]]; then  unset inputs; cvar=1; break;   fi
             if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
@@ -714,8 +732,7 @@ COMMENT
                 '[D') inputs="D" break ;;
                 '[C') inputs="F" break;;
             esac
-             fi   
-            #if [[ $cl_normal = 1 ]]; then printf '\033[26;25f''√' ;else printf '\033[26;25f'' '; fi       
+             fi        
 done
 }
 CUSTOM_SET
