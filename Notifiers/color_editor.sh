@@ -9,27 +9,146 @@ serv_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
-col=94; lines=50; hints=0; loc=ru
+col=94; lines=50; hints=0
 clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
+
+presetName="$1"
 
 CONFPATH="${HOME}/.MountEFIconf.plist"; MountEFIconf=$( cat "${CONFPATH}" )
 
-set_font(){ osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\"" ; osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2" ; }
+SAVE_COLOR_MODE_PRESET(){
+ if [[ $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then plutil -insert ColorModeData -xml  '<dict/>'   "${CONFPATH}"; fi
+ cm_string=""; for i in ${!cm_ptr[@]}; do cm_string+="${cm[i]}+"; done; cm_string="${cm_string%?}"
+ cm_ptr_string=""; for i in ${!cm_ptr[@]}; do cm_ptr_string+="${cm_ptr[i]}+"; done; cm_ptr_string="${cm_ptr_string%?}"
+ plutil -replace ColorModeData."$presetName" -string "$cm_string" "${CONFPATH}"
+ plutil -replace ColorModeStruct -string "$cm_ptr_string" "${CONFPATH}"; MountEFIconf=$( cat "${CONFPATH}" )
+}
 
-CUSTOM_SET(){
+GET_COLOR_MODE_PRESET(){
+#echo "preset name = $presetName"  >> ~/Desktop/temp.txt
+if [[ ! $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then
+while true; do if [[ $(echo "${MountEFIconf}" | grep -A$((i-1))  "ColorModeData</key>" | grep -ow "</dict>" ) = "" ]]; then let "i++"; else break; fi; done
+cm_string=$(echo "${MountEFIconf}" | grep -A$i "ColorModeData</key>" | grep -ow -A1 "$presetName</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
+#echo "cm_string = ${cm_string}" >> ~/Desktop/temp.txt
+#cm_ptr_string=$(echo "${MountEFIconf}" | grep -ow -A1 "ColorModeStruct</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
+#echo "cm_ptr_string = ${cm_ptr_string}" >> ~/Desktop/temp.txt
+IFS='+'; cm=($cm_string); 
+#cm_ptr=($cm_ptr_string); 
+unset IFS
+cm_ptr=( head_ast head_str head_os head_X head_sch head_upd_sch head_upd_sch_num head_upd_sch_br head_upd_sch_sp head_num_sch head_sch_br head_pls \
+head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_usb mount_pls mount_dot dn_sata dn_usb dn_bsd_sata pn_size_sata \
+pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp pn_size kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl \
+ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_ast cl_str cl_conf clr)
+if [[ "${cm[@]}" = "" ]]; then INIT_COLOR_STRUCT; fi
+for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
+fi
+}
+
+INIT_COLOR_STRUCT(){ 
+InterfaceStyle=$(defaults read -g AppleInterfaceStyle 2>/dev/null)
+InitValue="\e[0m\e[97m"
+if [[ "${presetName}" = "Basic" ]]; then if [[ $InterfaceStyle = "Dark" ]]; then InitValue="\e[0m\e[97m"; else InitValue="\e[0m\e[30m"; fi; fi
+if [[ "${presetName}" = "Novel" ]]; then InitValue="\e[0m\e[38;5;237m"; fi
+for i in ${!cm_ptr[@]}; do cm[i]="$InitValue"; done
+}
+
+SET_SYSTEM_THEME(){
+profile=`echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+if [[ "$profile" = "default" ]]; then
+system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
+osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
+else osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$profile"'"'
+fi
+}
+
+GET_THEME(){
+HasTheme=`echo "$MountEFIconf"  | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
+if [[ $HasTheme = "Theme" ]]; then theme=`echo "$MountEFIconf"  |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`; fi
+}
+
+GET_THEME_NAMES(){
+if [[ $loc = ru ]]; then plist=("СОЗДАТЬ НОВЫЙ ПРЕСЕТ"); else plist=("CREATE NEW PRESET"); fi
+pcount=$(echo "$MountEFIconf" | grep  -e "<key>BackgroundColor</key>" | wc -l | xargs)
+N0=0; N1=2; N2=3
+for ((i=0; i<$pcount; i++)); do
+plist+=( "$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')" )
+let "N1=N1+11"; let "N2=N2+11"; done
+plist+=(Basic Grass Homebrew "Man Page" Novel Ocean Pro "Red Sands"  "Silver Aerogel"  "Solid Colors")
+plcount=${#plist[@]}; file_list=""
+for ((i=0;i<$plcount;i++)) do pl_string="${plist[i]}"; file_list+='"'${pl_string}'"' ; if [[ ! $i = $(($plcount-1)) ]]; then file_list+=","; fi ; done
+}
+
+ASK_COLOR_MODE_PRESET(){
+if [[ $loc = "ru" ]]; then
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$file_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title "Пресеты встроенных и системных тем:"  with prompt "Выберите один или создайте новый."  
+end tell
+EOD
+else
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$file_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title "Presets for built-in and system themes:" with prompt "Select one or create a new:" 
+end tell
+EOD
+fi
+}
+
+CHOOSE_NEW_PRESET(){
+presetName=$(ASK_COLOR_MODE_PRESET)
+if [[ "$presetName" = "СОЗДАТЬ НОВЫЙ ПРЕСЕТ" || "$presetName" = "CREATE NEW PRESET" ]]; then CREATE_NEW_PRESET_NAME; else inputs="Q"; fi
+}
+
+DELETE_OR_TAKE_NEW_PRESET(){
+if [[ $loc = "ru" ]]; then
+answer=$(osascript -e 'display dialog "Выберите что сделать? " '"${icon_string}"' buttons {"Удалить текущий пресет и выйти", "Выбрать другой", "Отмена" } default button "Отмена" ' 2>/dev/null)
+else
+answer=$(osascript -e 'display dialog "Choose what to do?" '"${icon_string}"' buttons {"Remove current preset and exit", "Choose new one", "Cancel" } default button "Cancel" ' 2>/dev/null)
+fi
+answer=$(echo "${answer}"  | cut -f2 -d':' )
+         case "$answer" in
+
+            "Удалить текущий пресет и выйти" ) plutil -remove ColorModeData.$presetName "${CONFPATH}" >> /dev/null 2>/dev/null; presetName="false" ; inputs="Q" ;;
+            "Remove current preset and exit" ) plutil -remove ColorModeData.$presetName "${CONFPATH}" >> /dev/null 2>/dev/null; presetName="false" ; inputs="Q" ;;
+            "Сhoose new one"                 ) CHOOSE_NEW_PRESET ; init=2 ;;
+            "Выбрать другой"                 ) CHOOSE_NEW_PRESET ; init=2 ;;
+         esac
+}
+
+GET_SET_PRESET(){
+if [[ ! $(echo "$presetName" | egrep -ow "Basic|Grass|Homebrew|Man Page|Novel|Ocean|Pro|Red Sands|Silver Aerogel|Solid Colors") = "" ]]; then
+ osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$presetName"'"'
+else
+    GET_CUSTOM_SET
+osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background" \
+-e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground" \
+-e "tell application \"Terminal\" to set the font name of window 1 to \"$current_fontname\"" \
+-e "tell application \"Terminal\" to set the font size of window 1 to $current_fontsize"
+fi
+}
+
+GET_CUSTOM_SET(){
 ######## GET_CURRENT_SET
-current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>Color Mode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/'`
+current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>"${presetName}"</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/'`
 current_background=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_foreground=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_fontname=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_fontsize=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 ########################
-
-if [[ ${current_background:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background";fi
-if [[ ${current_foreground:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
-fi
-set_font "$current_fontname" $current_fontsize
 }
+
+CLR_UNUSED_STR(){
+printf '\033[3f'; printf ' %.0s' {1..94}
+printf '\033[5f'; printf ' %.0s' {1..94}
+printf '\033[7f'; printf ' %.0s' {1..94}
+printf '\033[9f'; printf ' %.0s' {1..94}
+printf '\033[11f'; printf ' %.0s' {1..94}
+printf '\033[13f'; printf ' %.0s' {1..94}
+printf '\033[20f'; printf ' %.0s' {1..94}
+}
+
 
 UPDATE_GUI(){
 bbuf=(); bufStruct=()
@@ -199,7 +318,7 @@ StructHints[5]="числа нумерации для USB;имя диска ил�
 
 }
 
-CLEAR_BOTTOM(){ for i in 1 2 3 4 5 6 7; do printf '\033['$((14+i))';0;f                                                                           '; done; printf '\033[37;45;f'; }
+CLEAR_BOTTOM(){ for i in 1 2 3 4 5 6 7; do printf '\033['$((14+i))';0;f                                                                           '; done; printf '\033[37;32;f'; }
 
 BACKUP(){ old_cm=(); for i in ${!cm[@]}; do old_cm[i]=${cm[i]}; done ; }
 
@@ -227,7 +346,7 @@ DYellow="\e[0m\e[2;33m" DLightRed="\e[0m\e[2;91m" DWhite="\e[0m\e[2;97m" DBlue="
 DMagenta="\e[0m\e[2;35m" DLightYellow="\e[0m\e[2;93m" cOFF="\e[0m" Dim="\e[0m\e[2m" Bright="\e[0m\e[1m" Orange="\e[38;5;222m" Limon="\e[38;5;116m"
 ForSATA="\e[38;5;228m" 
 
-cm[head_ast]="$Dim"                 # звёздочки заголовка
+cm[head_ast]="$DWhite"                 # звёздочки заголовка
 cm[head_str]="$Cyan"                # строка заголовка
 cm[head_os]="$Green"                # версия мак ос арабскими
 cm[head_X]="$LightMagenta"          # версия мак ос латинскими
@@ -288,26 +407,14 @@ cm[cl_ast]="$Yellow"                # цвет звёздочек подсказ
 cm[cl_str]="$Cyan"                  # цвет строки после звёздочек
 cm[cl_conf]="$LightMagenta"         # цвет config,plist в строке функции P
 cm[clr]="$cOFF"                     # конец применения цвета
+
+current_background="{4064, 9400, 9977}"; current_foreground="{65535, 65535, 65535}"; current_fontname="SF Mono Regular"; current_fontsize="11"
+osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background" \
+-e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground" \
+-e "tell application \"Terminal\" to set the font name of window 1 to \"$current_fontname\"" \
+-e "tell application \"Terminal\" to set the font size of window 1 to $current_fontsize"
+
 ###########################################################################################################################################################
-}
-#CHECK_CM(){ if $(cat "${CONFPATH}" | grep -A1 "GUIcolorMode</key>" | egrep -o "false|true"); then cm_check=1; COLOR_MODE; else cm_check=0; fi }; CHECK_CM
-
-
-EDIT_LODERS_NAMES(){
-                                unset demo
-#                        GET_APP_ICON
-                                if [[ $loc = "ru" ]]; then
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "Псевдоним загрузчика (максимум 8 символов):" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null
-                                else
-                        if demo=$(osascript -e 'set T to text returned of (display dialog "BootLoader alias (max 8 characters):" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer "'"${new_loader}"'")'); then cancel=0; else cancel=1; fi 2>/dev/null 
-                                fi
-                        demo=`echo "$demo" | tr -d \"\'\;\+\-\(\)`
-                        demo=`echo "$demo" | tr -cd "[:print:]\n"`
-                        demo=`echo "$demo" | tr -d "={}]><[&^$"`
-                        demo=$(echo "${demo}" | sed 's/^[ \t]*//')
-                        
-                        
-
 }
 
 function Progress {
@@ -316,7 +423,7 @@ let _done=(${_progress}*3)/10
 let _left=30-$_done
 _fill=$(printf "%${_done}s")
 _empty=$(printf "%${_left}s")
-printf "   |${_fill// /|}${_empty// / }|  code: ${1}  "
+printf "   |${_fill// /|}${_empty// / }|  code: ${1}  " 2>/dev/null
 }
 
 COLOR_PARSER(){
@@ -358,9 +465,11 @@ if [[ $cl_bit = 1 ]]; then printf '\033[33;25f''√'; printf '\033[32;25f'' '; f
 if [[ $cl_bit = 0 ]]; then printf '\033[32;25f''√'; printf '\033[33;25f'' '; fi
 }
 
-GET_POINTER_INPUT(){            
-             printf '\033[37;45;f                                               '          
-             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQcCoOaAsSdDfFvVrRhHlL]+$ ]]; do
+GET_POINTER_INPUT(){ 
+             if [[ $init = 1 ]]; then printf '\033[2;1f'; SHOW_CURSOR; init=0
+             elif [[ $inputs = [zZxXhHcCvVeE] ]]; then printf '\033[?25l\033[37;32;f                                                              ' 
+             fi         
+             while [[ ! ${inputs} =~ ^[0-7zZxXeEqQcCoOaAsSdDfFvVrRhHlLwWpP]+$ ]]; do
              read -s -r -n 1 inputs 
              if [[ "${inputs}" = $(printf '\033') ]]; then read -r -s -n 2 keys 
                       case "${inputs}" in
@@ -370,7 +479,7 @@ GET_POINTER_INPUT(){
                 '[C') inputs="F" break;;
             esac
              fi   
-             if [[ ! $inputs = [0-7zZxXeEqQcCoOaAsSdDfFvVrRhHlL] ]]; then 
+             if [[ ! $inputs = [0-7zZxXeEqQcCoOaAsSdDfFvVrRhHlLwWpP] ]]; then 
                         if [[ ${inputs} = "" ]]; then  unset inputs; fi 
                         
                         printf '\r'
@@ -399,7 +508,7 @@ if [[ $strip = 0 ]]; then printf '\033[27;35f                                   
 printf '\033[28;36f\e['$rcol'm''                                                ''\e[0m'
 printf '\033[29;36f\e['$rcol'm''                                                ''\e[0m'
 printf '\033[30;36f\e['$rcol'm''                                                ''\e[0m'
-printf '\033[37;45f'
+printf '\033[37;32f'
 fi
 }
 
@@ -412,13 +521,12 @@ fi
 
 GET_ITEM_COLOR(){
 oldItemColor=${cm[$(echo ${CurrStrList[ObjPtr]} | cut -f1 -d',')]}
-#echo $oldItemColor >> ~/Desktop/temp.txt
 old_color=$(echo "$oldItemColor" | sed s'/\\e\[0m//' |  sed s'/\\e\[//' | tr -d 'm')
-echo "old_color = $old_color" >> ~/Desktop/temp.txt
+#echo "old_color = $old_color" >> ~/Desktop/temp.txt
 if [[ $cl_bit = 1 && $(echo $old_color | grep -o "38;5") = "" ]]; then code=$( echo $old_color | awk -F ';' '{print $NF}' ); 
 if [[ $code -gt 29 && $code -lt 38 ]]; then old_color="38;5;"$((code-30)); elif [[ $code -gt 89 && $code -lt 98 ]]; then old_color="38;5;"$((code-82)); fi
 fi
-echo "old_color2 = $old_color" >> ~/Desktop/temp.txt
+#echo "old_color2 = $old_color" >> ~/Desktop/temp.txt
 if [[ ! $old_color = "" ]]; then COLOR_PARSER $old_color; fi
 }
 
@@ -435,12 +543,12 @@ STRIP_POINTER ON
 fi
 SET_STRIP 
 if [[ ${cl_bit} = 1 ]]; then
-printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;45f'
+printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;32f'
 fi
 }
 
 SHOW_NEW_ITEM_COLOR(){
-NewItemColor="\e[0m\e["$new_color"m"
+if [[ ${inputs} = [rR] ]]; then NewItemColor="\e[0m"; else NewItemColor="\e[0m\e["$new_color"m"; fi
 cm[$(echo ${CurrStrList[ObjPtr]} | cut -f1 -d',')]="${NewItemColor}"
 if [[ $loaderPointer1 = "" && $StrPtr = 3 ]]; then 
         SET_LOADER_STRUCT $LoaderPointer1; 
@@ -449,7 +557,7 @@ if [[ $loaderPointer1 = "" && $StrPtr = 3 ]]; then
             elif [[ $StrPtr -lt 12 && $ObjPtr -gt 1 ]]; then for i in 7 8 9 10 11; do SET_STRUCT_2 $i; done
                 else SET_STRUCT_2 $StrPtr 
 fi
-SET_SCREEN; printf '\033[37;45f'
+SET_SCREEN; printf '\033[37;32f'
 }
 
 MAKE_COLOR(){
@@ -465,23 +573,37 @@ fi
 if [[ $cl_bit = 1 ]]; then new_color+="38;5;"; fi 
 rcol=$(echo $new_color | sed s'/38;5;/48;5;/' | sed s'/4;//' | sed s'/7;//')
 new_color+="$code"; rcol+="$code"
-echo "new_color = $new_color" >> ~/Desktop/temp.txt
+#echo "new_color = $new_color" >> ~/Desktop/temp.txt
 }
 
-SET_SCREEN(){ for i in "${bbuf[@]}"; do echo "$i"; done; }
-STRIP_POINTER(){ if [[ $1 = "ON" ]]; then yes "" | printf '\033[27;'$NN'f''•  \033[31;'$NN'f''•  \033[37;45f'; else  yes "" | printf '\033[27;'$NN'f''   \033[31;'$NN'f''   \033[37;45f'; fi ; }
-SHOW_CURSOR(){ SET_SCREEN; printf '\033[23;36f                                                          \033[23;38f'"${HintWords[$((ObjPtr-1))]}"''; unset IFS; yes '' | printf '\033['$lnN';'$(echo ${CurrStrList[ObjPtr]} | cut -f2 -d',')'f'"\033[?25h"; } 
+SET_SCREEN(){ CLR_UNUSED_STR; for i in "${bbuf[@]}"; do echo "$i"; done; }
+STRIP_POINTER(){ if [[ $1 = "ON" ]]; then yes "" | printf '\033[27;'$NN'f''•  \033[31;'$NN'f''•  \033[37;32f'; else  yes "" | printf '\033[27;'$NN'f''   \033[31;'$NN'f''   \033[37;32f'; fi ; }
+SHOW_CURSOR(){ SET_SCREEN; printf '\033[23;36f                                                          \033[23;38f'"${HintWords[$((ObjPtr-1))]}"''; yes '' | printf '\033['$lnN';'$(echo ${CurrStrList[ObjPtr]} | cut -f2 -d',')'f'"\033[?25h"; } 
 
 ###############################################################
 EDIT_COLORS(){
-unset inputs
-printf "\033[?25l"
-old_themeldrs="$themeldrs"; 
+
+loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+
+GET_THEME_NAMES
+if [[ "$1" = "" ]]; then presetName=$(ASK_COLOR_MODE_PRESET); fi
+if [[ "$presetName" = "СОЗДАТЬ НОВЫЙ ПРЕСЕТ" || "$presetName" = "CREATE NEW PRESET" ]]; then CREATE_NEW_PRESET_NAME; fi
+if [[ ! "$presetName" = "false" ]]; then 
+
+GET_SET_PRESET  
+GET_COLOR_MODE_PRESET
+BACKUP
+UPDATE_GUI
+SHOW_CURSOR  
+
 ObjPtr=1; StrPtr=0; CurrStrList=(${bufStruct[0]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}
 IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS; oldEdItem=""
-if [[ $old_themeldrs = "" ]]; then old_themeldrs=37; fi
-new_color=$old_themeldrs; new_color2=$new_color; lastEditItem=""; new_cm=()
-loaders=( Clover OpenCore Windows Linux Refind ); loaderPonter1=""; loaderPointer2=""
+lastEditItem=""; new_cm=(); unset inputs
+loaderPonter1=""; loaderPointer2=""
+
+printf '\033[22;1f\033[1m'; printf '–%.0s' {1..94}
+printf '\033[23;1f[Редактор цветного мода]\033[0m   Элемент:'
+printf '\033[24;1f\033[1m'; printf '–%.0s' {1..94}; printf '\033[0m'
 
                 if [[ $loc = "ru" ]]; then
 printf '                                                                                        \n'
@@ -505,7 +627,7 @@ printf '     6) Colors      16               \n'
 printf '     7) Colors     256               \n'
                     fi
 
-COLOR_PARSER ${old_themeldrs}
+COLOR_PARSER 37
 SHOW_TEXT_FLAGS
 if [[ ${cl_bit} = 0 ]]; then  
 if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "clptr=code-29"; fi
@@ -516,24 +638,25 @@ STRIP_POINTER ON
 else MAKE_COLOR; fi
 SET_STRIP 
 if [[ ! ${cl_bit} = 0 ]]; then
-printf '\033[33;36f          \033[10D'; Progress ${code} 255; printf '\033[37;45f'
+printf '\033[33;36f          \033[10D'; Progress ${code} 255; printf '\033[37;32f'
 fi
 printf '\033[35;5f'
 printf '.%.0s' {1..82}
 printf '\033[37;7f'
                                 if [[ $loc = "ru" ]]; then
-                        printf 'Выберите от 1 до 7 (или Z/X, Q, E):                                     \n\n'
+                        printf 'Выберите от 0 до 7 или :                                                \n\n'
                         printf '             Z/X - выбор цвета                                            \n'
-                        printf '             A/S - выбор цвета.быстрая прокрутка (256 цветов)             \n'
-                        printf '             D/F - выбор в строке элемента интерфейса для правки          \n'
-                        printf '             V/R - переход курсора по строкам интерфеса вниз/вверх        \n'
+                        printf '             C/V - выбор цвета.быстрая прокрутка (256 цветов)             \n'
+                        printf '             E/E - отменить/возвратить результаты редактирования          \n'
+                        printf '             A/D - курсором влево/вправо                                  \n'
+                        printf '             W/S - курсор вверх/вниз                                      \n'
                         printf '             H   - смена строк подсказки для их редактирования            \n'
                         printf '             L   - редактировать цвета для загрузчиков                    \n'
-                        printf '             P   - перейти к редактированию выбранного элемента           \n'
-                        printf '             E/E - отменить/возвратить результаты редактирования          \n'
+                        printf '             R   - ввести код отмены действия предшествующего цвета       \n'
+                        printf '             P   - удалить текущий пресет или редактировать другой        \n'
                         printf '             Q   - вернуться в меню сохранив новые настройки пресета      \n'
 			                   else
-                        printf 'Select from 1 to 7 (or Z/X, Q, E):                                      \n\n'
+                        printf 'Select from 1 to 7 or :                                                 \n\n'
                         printf '             Z/X - select color                                           \n'
                         printf '             A/S - select color.fast forward list (256 colors)            \n'
                         printf '             C   - Specify an alias for the Clover bootloader             \n'
@@ -541,28 +664,26 @@ printf '\033[37;7f'
                         printf '             E/E - cancel/return the editing results                      \n'
                         printf '             Q   - return to the menu saving the new preset settings      \n'
                                 fi
-                    cvar=0
+                    cvar=0; init=1
                     while [[ $cvar = 0 ]]; 
                     do
-                    printf "\033[?25l"
-                    
+
                     GET_POINTER_INPUT
 
-                   if [[ ${inputs} = [dDfF] ]]; then
-                        if [[ ${inputs} = [fF] ]]; then if [[ $ObjPtr -eq $((CurrStrSize-1)) ]]; then ObjPtr=1; else let "ObjPtr++"; fi; fi
-                        if [[ ${inputs} = [dD] ]]; then if [[ $ObjPtr -eq 1 ]]; then ObjPtr=$((CurrStrSize-1)); else let "ObjPtr--"; fi; fi
+                   if [[ ${inputs} = [dDaA] ]]; then
+                        if [[ ${inputs} = [dD] ]]; then if [[ $ObjPtr -eq $((CurrStrSize-1)) ]]; then ObjPtr=1; else let "ObjPtr++"; fi; fi
+                        if [[ ${inputs} = [aA] ]]; then if [[ $ObjPtr -eq 1 ]]; then ObjPtr=$((CurrStrSize-1)); else let "ObjPtr--"; fi; fi
                         SHOW_CURSOR
                         GET_ITEM_COLOR                    
                     fi
-                    if [[ ${inputs} = [vVrR] ]]; then
-                        if [[ ${inputs} = [vV] ]]; then  if [[ $StrPtr -eq 12 ]]; then StrPtr=0; else let "StrPtr++"; fi; fi
-                        if [[ ${inputs} = [rR] ]]; then if [[ $StrPtr -eq 0 ]]; then StrPtr=12; else let "StrPtr--"; fi; fi
+                    if [[ ${inputs} = [sSwW] ]]; then
+                        if [[ ${inputs} = [sS] ]]; then  if [[ $StrPtr -eq 12 ]]; then StrPtr=0; else let "StrPtr++"; fi; fi
+                        if [[ ${inputs} = [wW] ]]; then if [[ $StrPtr -eq 0 ]]; then StrPtr=12; else let "StrPtr--"; fi; fi
                         CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
-                        echo "StrPtr = $StrPtr ObjPtr = $ObjPtr" >> ~/Desktop/temp.txt
-                        if [[ ${inputs} = [vV] && $StrPtr = 5 && $ObjPtr = 2 ]]; then let "ObjPtr++"
-                            elif [[ ${inputs} = [vV] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr=3"
-                                elif [[ ${inputs} = [rR] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr++"
-                                    elif [[ ${inputs} = [rR] && $StrPtr = 1 && $ObjPtr = 2 ]]; then ObjPtr=4
+                        if [[ ${inputs} = [sS] && $StrPtr = 5 && $ObjPtr = 2 ]]; then let "ObjPtr++"
+                            elif [[ ${inputs} = [sS] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr=3"
+                                elif [[ ${inputs} = [wW] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr++"
+                                    elif [[ ${inputs} = [wW] && $StrPtr = 1 && $ObjPtr = 2 ]]; then ObjPtr=4
                                         elif [[ $ObjPtr -gt $((CurrStrSize-1)) ]]; then ObjPtr=$((CurrStrSize-1)); fi
                         SHOW_CURSOR
                         GET_ITEM_COLOR
@@ -585,7 +706,7 @@ printf '\033[37;7f'
                              4)   if [[ $cl_blink = 1 ]]; then cl_blink=0; elif [[ $cl_blink = 0 ]]; then cl_blink=1; cl_normal=0; fi ;;
                              5)   if [[ $cl_inv = 1 ]]; then cl_inv=0; elif [[ $cl_inv = 0 ]]; then cl_inv=1; cl_normal=0; fi ;;
                              6)   if [[ $cl_bit = 1 ]]; then cl_bit=0; fi ;  MAKE_COLOR; SHOW_NEW_ITEM_COLOR; SET_STRIP; printf '\033[33;36f'; printf ' %.0s' {1..48}; code=37; if [[ ${code} -ge 30 ]] && [[ ${code} -le 37 ]]; then let "NN=(code-29)*3+34" ;fi ; STRIP_POINTER ON ;;  
-                             7)   if [[ $cl_bit = 0 ]]; then cl_bit=1; fi ;  STRIP_POINTER OFF; printf '\033[33;36f'; code=7; Progress ${code} 255; printf '\033[37;45f';;
+                             7)   if [[ $cl_bit = 0 ]]; then cl_bit=1; fi ;  STRIP_POINTER OFF; printf '\033[33;36f'; code=7; Progress ${code} 255; printf '\033[37;32f';;
                              0)   if [[ $cl_normal = 0 ]]; then cl_normal=1;  fi ;;
                                esac
                              if [[ $cl_bold = 0 ]] && [[ $cl_dim = 0 ]] && [[ $cl_underl = 0 ]] && [[ $cl_blink = 0 ]] && [[ $cl_inv = 0 ]]; then cl_normal=1; fi
@@ -659,7 +780,7 @@ printf '\033[37;7f'
               if [[ $inputs = [zZ] ]] && [[ $cl_bit = 1 ]]; then
                 if [[ "$lastEditItem" = "$StrPtr,$ObjPtr" ]]; then
                     if [[ $code -gt 0 ]]; then let "code--"; else code=255; fi
-                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;45f'
+                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;32f'
                 else
                     SHOW_ITEM_COLOR
                 fi
@@ -672,7 +793,7 @@ printf '\033[37;7f'
                 if [[ $inputs = [xX] ]] && [[ $cl_bit = 1 ]]; then
                   if [[ "$lastEditItem" = "$StrPtr,$ObjPtr" ]]; then
                     if [[ $code -lt 255 ]]; then let "code++"; else code=0; fi
-                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;45f'
+                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;32f'
                   else
                     SHOW_ITEM_COLOR
                   fi
@@ -681,10 +802,10 @@ printf '\033[37;7f'
                     lastEditItem="$StrPtr,$ObjPtr"
                     SET_STRIP 
                 fi
-                if [[ $inputs = [aA] ]] && [[ $cl_bit = 1 ]]; then
+                if [[ $inputs = [cC] ]] && [[ $cl_bit = 1 ]]; then
                   if [[ "$lastEditItem" = "$StrPtr,$ObjPtr" ]]; then
                     if [[ $code -gt 9 ]]; then let "code=code-6"; else code=255; fi
-                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;45f'
+                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;32f'
                   else
                       SHOW_ITEM_COLOR
                   fi
@@ -694,10 +815,10 @@ printf '\033[37;7f'
                     SET_STRIP 
                 fi
 
-                if [[ $inputs = [sS] ]] && [[ $cl_bit = 1 ]]; then
+                if [[ $inputs = [vV] ]] && [[ $cl_bit = 1 ]]; then
                   if [[ "$lastEditItem" = "$StrPtr,$ObjPtr" ]]; then
                     if [[ $code -lt 245 ]]; then let "code=code+6"; else code=0; fi
-                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;45f'
+                    printf '\033[33;36f'; Progress ${code} 255; printf '\033[37;32f'
                   else
                      SHOW_ITEM_COLOR
                   fi
@@ -718,12 +839,15 @@ printf '\033[37;7f'
                                     MAKE_COLOR
                                     SHOW_NEW_ITEM_COLOR
                                     SHOW_ITEM_COLOR
-                                    
+                                    SHOW_CURSOR                                    
                 fi
+
+            if [[ ${inputs} = [rR] ]]; then SHOW_NEW_ITEM_COLOR; SHOW_CURSOR; fi
+
+            if [[ ${inputs} = [pP] ]]; then DELETE_OR_TAKE_NEW_PRESET; fi
             
-            if [[ $inputs = [qQ] ]]; then  unset inputs; cvar=1; break;   fi
+            if [[ $inputs = [qQ] || $init = 2 ]]; then  if [[ ! $presetName = "false" ]]; then SAVE_COLOR_MODE_PRESET; fi; if [[ ! $init = 2 ]]; then presetName="false"; unset inputs; cvar=1; fi; break; fi
             if [[ $inputs = "" ]]; then printf "\033[2A"; break; fi
-        
             read -s -n 1  inputs
            if [[ "${inputs}" = $(printf '\033') ]]; then read -r -s -n 2 keys 
            case "${inputs}" in
@@ -734,14 +858,13 @@ printf '\033[37;7f'
             esac
              fi        
 done
+
+fi
 }
-CUSTOM_SET
-COLOR_MODE
-BACKUP
-UPDATE_GUI
-echo "${bbuf[@]}"
-printf '\033[22;1f\033[1m'; printf '–%.0s' {1..94}
-printf '\033[23;1f[Редактор цветного мода]\033[0m   Элемент:'
-printf '\033[24;1f\033[1m'; printf '–%.0s' {1..94}; printf '\033[0m'
-EDIT_COLORS
-printf "\033[?25h"
+#CUSTOM_SET
+#COLOR_MODE
+clear && printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
+printf '\033[1f'; printf ' %.0s' {1..94}
+while true; do EDIT_COLORS "${presetName}"; if [[ "$presetName" = "false" ]]; then break; fi; done
+printf "\e[0m\033[?25h"
+clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
