@@ -111,7 +111,7 @@ DELETE_OR_TAKE_NEW_PRESET(){
 if [[ $loc = "ru" ]]; then
 answer=$(osascript -e 'display dialog "Выберите что сделать? " '"${icon_string}"' buttons {"Удалить мод", "Сохранить и выбрать", "Отмена" } default button "Отмена" ' 2>/dev/null)
 else
-answer=$(osascript -e 'display dialog "Choose what to do?" '"${icon_string}"' buttons {"Remove mode", "Save and choose", "Cancel" } default button "Cancel" ' 2>/dev/null)
+answer=$(osascript -e 'display dialog "Select what to do?" '"${icon_string}"' buttons {"Remove mode", "Save and choose", "Cancel" } default button "Cancel" ' 2>/dev/null)
 fi
 answer=$(echo "${answer}"  | cut -f2 -d':' )
          case "$answer" in
@@ -164,17 +164,26 @@ printf '\033[20f'; printf ' %.0s' {1..94}
 UPDATE_GUI(){
 bbuf=(); bufStruct=()
 for i in 0 1 2 3 4 5 6; do SET_STRUCT_1 $i; done
-StructHints[0]="звёздочки заголовка;текст строки заголовка;римская цифра версии мак ос;арабские цифры версии мак ос;"
-StructHints[1]="цифра 0;скобка после цифры;текст обновления списка разделов;кавычки вокруг +;плюс;текст строки обозначающий плюсом подключенные разделы;"
-StructHints[2]="первый сверху ряд точек;заголовок SATA;"
-StructHints[4]="второй сверху ряд точек;заголовок USB;"
-StructHints[6]="третий сверху ряд точек;"
+if [[ $loc = "ru" ]]; then
+    StructHints[0]="звёздочки заголовка;текст строки заголовка;римская цифра версии мак ос;арабские цифры версии мак ос;"
+    StructHints[1]="цифра 0;скобка после цифры;текст обновления списка разделов;кавычки вокруг +;плюс;текст строки обозначающий плюсом подключенные разделы;"
+    StructHints[2]="первый сверху ряд точек;заголовок SATA;"
+    StructHints[4]="второй сверху ряд точек;заголовок USB;"
+    StructHints[6]="третий сверху ряд точек;"
+else
+    StructHints[0]="Header asterisks;header line text;Roman numeral of the mac os version;Arabic numerals of the mac os version;"
+    StructHints[1]="number 0;bracket after the number 0;text to update the EFI list ;quotes around +;a plus;text line explain that + means mounted;"
+    StructHints[2]="The first row of dots from the top;SATA header;"
+    StructHints[4]="The second row of dots from the top;заголовок USB;"
+    StructHints[6]="The third row of dots from the top;"
+fi
 UPDATE_BOTTOM
 }
 
 UPDATE_BOTTOM(){
 for i in 7 8 9 10 11 12; do SET_STRUCT_2 $i; done
-case $hints in
+if [[ $loc = "ru" ]]; then
+    case $hints in
     0)  StructHints[7]="буква E;цвет всех строк подсказок по клавишам;"
         StructHints[8]="буква U;цвет всех строк подсказок по клавишам;"    
         StructHints[9]="буква A;цвет всех строк подсказок по клавишам;"
@@ -196,11 +205,37 @@ case $hints in
         StructHints[11]="звёздочки сноски;текст сноски;"
         StructHints[12]="строка перед кусором;текст config.plist;"
         ;;                
-esac 
+    esac
+else
+        case $hints in
+    0)  StructHints[7]="letter E;color of all lines of key tips;"
+        StructHints[8]="letter U;color of all lines of key tips;"    
+        StructHints[9]="letter A;color of all lines of key tips;"
+        StructHints[10]="letter I;color of all lines of key tips;"
+        StructHints[11]="letter Q;color of all lines of key tips;"
+        StructHints[12]="line before cursor;first line number;second line number;letter P;letter S;"
+        ;;
+    1)  StructHints[7]="letter C;color of all lines of key tips;"
+        StructHints[8]="letter O;color of all lines of key tips;"
+        StructHints[9]="letter S;color of all lines of key tips;"
+        StructHints[10]="letter P;color of all lines of key tips;"
+        StructHints[11]="letter V;color of all lines of key tips;"
+        StructHints[12]="line before cursor;first line number;second line number;letter I;"
+        ;;
+    2)  StructHints[7]="letter O;color of all lines of key tips;"
+        StructHints[8]="letter C;color of all lines of key tips;"
+        StructHints[9]="first line number;second line number;line before cursor;"
+        StructHints[10]="letter L;color of all lines of key tips;"
+        StructHints[11]="footnote stars;footnote text;"
+        StructHints[12]="line before cursor;config.plist;"
+        ;;                
+    esac
+fi 
 }
 
 SET_STRUCT_1(){
-case $1 in
+if [[ $loc = "ru" ]]; then
+    case $1 in
     0)  bbuf[0]=$(printf '\033[2;0f'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'')
         bufStruct[0]="2 head_ast,0 head_str,20 head_X,62 head_os,64"
         ;;
@@ -213,7 +248,7 @@ case $1 in
     3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
         bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
         bufStruct[3]="8 num_sata,6 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
-        StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+        StructHints[3]="порядковые номера для sata;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
         ;;
     4)  bbuf[4]=$(printf '\033[10;0f    '${cm[dots_line2]}''.......................................''${cm[head_usb]}' USB '${cm[dots_line2]}......................................'      ')
         bufStruct[4]="10 dots_line2,4 head_usb,44"
@@ -221,17 +256,47 @@ case $1 in
     5)  drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
         bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
         bufStruct[5]="12 num_usb,6 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
-        StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);" 
+        StructHints[5]="порядковые номера для USB;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);" 
         ;;
     6)  bbuf[6]=$(printf '\033[14;0f    '${cm[dots_line3]}...................................................................................${cm[clr]}'     ')
         bufStruct[6]="14 dots_line3,4"
         ;;
-esac
+    esac
+else
+       case $1 in
+    0)  bbuf[0]=$(printf '\033[2;0f'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'15'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'')
+        bufStruct[0]="2 head_ast,0 head_str,18 head_X,64 head_os,66"
+        ;;
+    1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                               '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - mounted  '${cm[clr]}'          ')
+        bufStruct[1]="4 head_num_sch,6 head_sch_br,7 head_sch,10 head_pls_qts,67 head_pls,68 head_pls_str,73"
+        ;;
+    2)  bbuf[2]=$(printf '\033[6;0f    '${cm[dots_line1]}......................................${cm[head_sata]}' SATA '${cm[dots_line1]}......................................${cm[clr]}'      ')
+        bufStruct[2]="6 dots_line1,4 head_sata,43"
+        ;;
+    3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+        bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+        bufStruct[3]="8 num_sata,6 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+        StructHints[3]="order numbers for sata;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);"
+        ;;
+    4)  bbuf[4]=$(printf '\033[10;0f    '${cm[dots_line2]}''.......................................''${cm[head_usb]}' USB '${cm[dots_line2]}......................................'      ')
+        bufStruct[4]="10 dots_line2,4 head_usb,44"
+        ;;
+    5)  drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+        bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+        bufStruct[5]="12 num_usb,6 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+        StructHints[5]="order numbers for sata;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);" 
+        ;;
+    6)  bbuf[6]=$(printf '\033[14;0f    '${cm[dots_line3]}...................................................................................${cm[clr]}'     ')
+        bufStruct[6]="14 dots_line3,4"
+        ;;
+    esac
+fi 
 }
 
 ############## строки подсказок по клавишам #############################
 SET_STRUCT_2(){
-if [[ $hints = 0 ]]; then
+if [[ $loc = "ru" ]]; then
+    if [[ $hints = 0 ]]; then
            case $1 in
         7)  bbuf[7]=$(printf '\033[15;1f'${cm[cl_E]}'      E  '${cm[kh_str]}'-   подключить EFI диска этой системы     '${cm[clr]}'')
             bufStruct[7]="15 cl_E,6 kh_str,13"
@@ -252,7 +317,7 @@ if [[ $hints = 0 ]]; then
             bufStruct[12]="21 curs_str,2 curs_num_1,19 curs_num_2,24 cl_P,28 cl_S,36"
             ;;
            esac
-elif [[ $hints = 1 ]]; then
+    elif [[ $hints = 1 ]]; then
            case $1 in
        7)   bbuf[7]=$(printf '\033[15;1f'${cm[cl_C]}'      C  '${cm[kh_str]}'-   найти и подключить EFI с загрузчиком Clover '${cm[clr]}'')
             bufStruct[7]="15 cl_C,6 kh_str,13"
@@ -273,7 +338,7 @@ elif [[ $hints = 1 ]]; then
             bufStruct[12]="21 curs_str,2 curs_num_1,19 curs_num_2,24 cl_I,36"
             ;;
            esac
-elif [[ $hints = 2 ]]; then 
+    elif [[ $hints = 2 ]]; then 
            case $1 in      
        7)   bbuf[7]=$(printf '\033[15;1f'${cm[cl_O]}'      O  '${cm[kh_str]}'-  открыть первый по списку config.plist OpenCore      '${cm[clr]}'\n')
             bufStruct[7]="15 cl_O,6 kh_str,12"
@@ -294,11 +359,78 @@ elif [[ $hints = 2 ]]; then
             bufStruct[12]="21 curs_str,2 cl_conf,10"
             ;;
            esac
-fi 
+    fi 
+else
+        if [[ $hints = 0 ]]; then
+           case $1 in
+        7)  bbuf[7]=$(printf '\033[15;1f'${cm[cl_E]}'      E  '${cm[kh_str]}'-   mount the EFI of current system drive     '${cm[clr]}'')
+            bufStruct[7]="15 cl_E,6 kh_str,13"
+            ;;
+	    8)  bbuf[8]=$(printf '\033[16;1f'${cm[cl_U]}'      U  '${cm[kh_str]}'-   unmount ALL mounted  EFI partitions  '${cm[clr]}'')
+            bufStruct[8]="16 cl_U,6 kh_str,13"
+            ;;
+        9)  bbuf[9]=$(printf '\033[17;1f'${cm[cl_A]}'      A  '${cm[kh_str]}'-   set up EFI'"'"'s auto-mount          '${cm[clr]}'')
+            bufStruct[9]="17 cl_A,6 kh_str,13"
+            ;;
+       10)  bbuf[10]=$(printf '\033[18;1f'${cm[cl_I]}'      I  '${cm[kh_str]}'-   extra menu                           '${cm[clr]}'')
+            bufStruct[10]="18 cl_I,6 kh_str,13"
+            ;;
+	   11)  bbuf[11]=$(printf '\033[19;1f'${cm[cl_Q]}'      Q  '${cm[kh_str]}'-   close terminal and exit from the program   '${cm[clr]}'')
+            bufStruct[11]="19 cl_Q,6 kh_str,13"
+            ;; 
+       12)  bbuf[12]=$(printf '\033[21;1f'${cm[curs_str]}'  Enter a num from  '${cm[curs_num_1]}'0'${cm[curs_str]}' to '${cm[curs_num_2]}'3'${cm[curs_str]}' ( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_U]}'U'${cm[curs_str]}','${cm[cl_E]}'E'${cm[curs_str]}','${cm[cl_A]}'A'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}' or '${cm[cl_Q]}'Q'${cm[curs_str]}' ):  '${cm[clr]}'             ')
+            bufStruct[12]="21 curs_str,2 curs_num_1,20 curs_num_2,25 cl_P,29 cl_S,37"
+            ;;
+           esac
+    elif [[ $hints = 1 ]]; then
+           case $1 in
+       7)   bbuf[7]=$(printf '\033[15;1f'${cm[cl_C]}'      C  '${cm[kh_str]}'-   find and mount EFI with Clover bootloader  '${cm[clr]}'')
+            bufStruct[7]="15 cl_C,6 kh_str,13"
+            ;;
+	   8)   bbuf[8]=$(printf '\033[16;1f'${cm[cl_O]}'      O  '${cm[kh_str]}'-   find and mount EFI with Open Core bootloader '${cm[clr]}'')
+            bufStruct[8]="16 cl_O,6 kh_str,13"
+            ;;
+	   9)   bbuf[9]=$(printf '\033[17;1f'${cm[cl_S]}'      S  '${cm[kh_str]}'-   call MountEFI setup screen '${cm[clr]}'')
+            bufStruct[9]="17 cl_S,6 kh_str,13"
+            ;;
+      10)   bbuf[10]=$(printf '\033[18;1f'${cm[cl_P]}'      P  '${cm[kh_str]}'-   open config.plist from EFI partition            '${cm[clr]}'')
+            bufStruct[10]="18 cl_P,6 kh_str,13"
+            ;; 
+      11)   bbuf[11]=$(printf '\033[19;1f'${cm[cl_V]}'      V  '${cm[kh_str]}'-   view the program version       '${cm[clr]}'')
+            bufStruct[11]="19 cl_V,6 kh_str,13"
+            ;;
+      12)   bbuf[12]=$(printf '\033[21;1f'${cm[curs_str]}'  Enter a num from  '${cm[curs_num_1]}'0'${cm[curs_str]}' to '${cm[curs_num_2]}''3' '${cm[curs_str]}'( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_O]}'O'${cm[curs_str]}','${cm[cl_C]}'C'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}'  or  '${cm[cl_Q]}'Q'${cm[curs_str]}' ):   '${cm[clr]}'            ')
+            bufStruct[12]="21 curs_str,2 curs_num_1,20 curs_num_2,25 cl_I,37"
+            ;;
+           esac
+    elif [[ $hints = 2 ]]; then 
+           case $1 in      
+       7)   bbuf[7]=$(printf '\033[15;1f'${cm[cl_O]}'      O  '${cm[kh_str]}'-  open the first on the list OpenCore config.plist      '${cm[clr]}'\n')
+            bufStruct[7]="15 cl_O,6 kh_str,12"
+            ;;  
+	   8)   bbuf[8]=$(printf '\033[16;1f'${cm[cl_C]}'      C  '${cm[kh_str]}'-  open the first on the list Clover config.plist        '${cm[clr]}'')
+            bufStruct[8]="16 cl_C,6 kh_str,12"
+            ;;
+       9)   bbuf[9]=$(printf '\033[17;1f'${cm[curs_num_1]}'      0'${cm[kh_str]}'-'${cm[curs_num_2]}'2'${cm[kh_str]}' - open config.plist on partition (volume) number... '${cm[clr]}'')
+            bufStruct[9]="17 curs_num_1,6 curs_num_2,8 kh_str,12"
+            ;;
+      10)   bbuf[10]=$(printf '\033[18;1f'${cm[cl_L]}'      L  '${cm[kh_str]}'-  open the config.plist that was last opened.        '${cm[clr]}'')
+            bufStruct[10]="18 cl_L,6 kh_str,12"
+            ;;
+	  11)   bbuf[11]=$(printf '\033[19;1f'${cm[cl_ast]}'      ** '${cm[cl_str]}'return to the main menu after 5 seconds or by any key.  '${cm[clr]}'')
+            bufStruct[11]="19 cl_ast,6 cl_str,9"
+            ;;
+      12)   bbuf[12]=$(printf '\033[21;1f'${cm[curs_str]}'  Open '${cm[cl_conf]}'config.plist'${cm[curs_str]}' ( EFI num, '${cm[cl_O]}'O'${cm[curs_str]}', '${cm[cl_C]}'C'${cm[curs_str]}', '${cm[cl_L]}'L'${cm[curs_str]}' or Enter ):   '${cm[clr]}'            ')
+            bufStruct[12]="21 curs_str,2 cl_conf,7"
+            ;;
+           esac
+    fi 
+fi
 }
 
 SET_LOADER_STRUCT(){
-case "$1" in
+if [[ $loc = "ru" ]]; then
+    case "$1" in
         Clover )   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
                     bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
                     bufStruct[3]="8 num_sata,6 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
@@ -323,13 +455,44 @@ case "$1" in
                    bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Не распознан     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
                    bufStruct[5]="12 num_usb,6 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
                    ;;
-esac
-StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
-StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+    esac
+    StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+    StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+else
+        case "$1" in
+        Clover )   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+                    bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                    bufStruct[3]="8 num_sata,6 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                    ;;
+      OpenCore )   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_oc]}'             OpenCore       '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_oc,46 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   ;;
+      "Windows")   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_wn]}'        Windows        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_wn,46 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   ;;
+         Linux)    drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_gb]}'              Linux         '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_gb,47 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   ;;
+        Refind)    drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_rf]}'         Refind        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_rf,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   ;;
+   Unrecognized)   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Unrecognized     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   ;;
+    esac
+    StructHints[3]="numbers for sata;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
+    StructHints[5]="numbers for sata;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
+fi
 }
 
 SET_STRUCT_3(){
-case "$1" in
+if [[ $loc = "ru" ]]; then
+    case "$1" in
            1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  поиск разделов ..... '${cm[clr]}''"${cm[head_upd_sch_sp]}-\|/${cm[clr]}")
                 bufStruct[1]="4 head_upd_sch_num,6 head_upd_sch_br,7 head_upd_sch,10 head_upd_sch_sp,31"
                 StructHints[1]="цифра 0 строки поиска;скобка после цифры;текст поиск разделов;спинер;"
@@ -338,7 +501,19 @@ case "$1" in
                 bufStruct[12]="21 ld_srch,2 ld_srch_bt,40 ld_srch_sp,57"
                 StructHints[12]="текст строки поиска;bootx64.efi;спинер;"
                 ;;
-esac
+    esac
+else
+    case "$1" in
+           1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  updating partitions list ..... '${cm[clr]}''"${cm[head_upd_sch_sp]}-\|/${cm[clr]}")
+                bufStruct[1]="4 head_upd_sch_num,6 head_upd_sch_br,7 head_upd_sch,10 head_upd_sch_sp,41"
+                StructHints[1]="number 0 of the search string;bracket after the number;text search for partitions;spiner;"
+                ;;
+           12)  bbuf[12]=$(printf '\033[21;0f  '${cm[ld_srch]}'Wait. Looking for boot partitions with '${cm[ld_srch_bt]}'BOOTx64.efi'${cm[ld_srch]}' ...  '${cm[clr]}''"${cm[ld_srch_sp]}-\|/${cm[clr]}")
+                bufStruct[12]="21 ld_srch,2 ld_srch_bt,41 ld_srch_sp,58"
+                StructHints[12]="text search for partitions;bootx64.efi;spiner;"
+                ;;
+    esac
+fi 
 }
 CLEAR_BOTTOM(){ for i in 1 2 3 4 5 6 7; do printf '\033['$((14+i))';0;f                                                                           '; done; printf '\033[37;32;f'; }
 
@@ -625,7 +800,13 @@ EDIT_COLORS(){
 MountEFIconf=$( cat "${CONFPATH}" )
 
 GET_THEME_NAMES
-if [[ "$1" = "" ]]; then presetName=$(ASK_COLOR_MODE_PRESET); fi
+if [[ "$1" = "" ]]; then 
+    while true; do presetName=$(ASK_COLOR_MODE_PRESET 2>/dev/null) 
+        if [[ ! $presetName = "" ]]; then break 
+            else kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') 
+        fi
+    done
+fi
 if [[ ! "$presetName" = "false" ]]; then 
 
 GET_SET_PRESET  
@@ -641,7 +822,11 @@ lastEditItem=""; new_cm=(); unset inputs
 loaderPonter1=""; loaderPointer2=""; hidden=0
 
 printf '\033[22;1f\033[1m'; printf '–%.0s' {1..94}
+if [[ $loc = "ru" ]]; then
 printf '\033[23;1f[Редактор цветного мода]\033[0m   Элемент:'
+else
+printf '\033[23;1f[Color Mode Editor]\033[0m    Item:'
+fi
 printf '\033[24;1f\033[1m'; printf '–%.0s' {1..94}; printf '\033[0m'
 
                 if [[ $loc = "ru" ]]; then
@@ -691,13 +876,13 @@ printf '\033[37;7f'
                         printf '           F   - споказать скрытые элементы              L   - названия загрузчиков           \n'
                         printf '           P   - управлять пресетами                     Q   - выход с сохранением            \n'
 			                   else
-                        printf 'Select from 1 to 7 or :                                                            \n\n'
-                        printf '           Z/X - select color, step 1                     A/D - move cursor left/right         \n'
-                        printf '           C/V - select color, step 6 (256 colors)        W/S - move cursor up/down            \n'
-                        printf '           E/E - cancel/return the editing                H   - edit GUI key hints             \n'
-                        printf '           T   - edit with last used color                R   - insert stop color code         \n'
-                        printf '           F   - show hidden items                        L   - edit bootloader names          \n'
-                        printf '           P   - preset  management                       Q   - quit saving result             \n'
+                        printf 'Select from 1 to 7 or :                                                          \n\n'
+                        printf '           Z/X - select color, step 1                     A/D - move cursor left/right       \n'
+                        printf '           C/V - select color, step 6 (256 colors)        W/S - move cursor up/down          \n'
+                        printf '           E/E - cancel/return the editing                H   - edit GUI key hints           \n'
+                        printf '           T   - edit with last used color                R   - insert stop color code       \n'
+                        printf '           F   - show hidden items                        L   - edit bootloader names        \n'
+                        printf '           P   - preset  management                       Q   - quit saving result           \n'
                                 fi
                     cvar=0; init=1
                     while [[ $cvar = 0 ]]; 
@@ -914,6 +1099,7 @@ done
 fi
 }
 loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+loc=en
 if [[ -f "${CONFPATH}" ]]; then
 while true; do EDIT_COLORS "${presetName}"; if [[ "$presetName" = "false" ]]; then break; fi; done
 printf "\e[0m\033[?25h"
@@ -926,4 +1112,6 @@ else
     osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Abort" } default button "Abort" giving up after 10' >>/dev/null /2>/dev/null
     fi
 fi
+system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
+osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
 clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
