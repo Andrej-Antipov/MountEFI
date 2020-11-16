@@ -914,7 +914,7 @@ done
 fi
 }
 loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-if [[ ! -f "${CONFPATH}" ]]; then
+if [[ -f "${CONFPATH}" ]]; then
 while true; do EDIT_COLORS "${presetName}"; if [[ "$presetName" = "false" ]]; then break; fi; done
 printf "\e[0m\033[?25h"
 else
