@@ -26,9 +26,10 @@ SAVE_COLOR_MODE_PRESET(){
 
 GET_COLOR_STRUCTURE(){
 cm_ptr=( head_ast head_str head_os head_X head_sch head_upd_sch head_upd_sch_num head_upd_sch_br head_upd_sch_sp head_num_sch head_sch_br head_pls \
-head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_sata_br num_usb num_usb_br mount_pls mount_dot dn_sata dn_usb dn_bsd_sata pn_size_sata \
-pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl \
-ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_ast cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark)
+head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_sata_br num_usb num_usb_br mount_sata_pls mount_sata_dots \
+mount_usb_pls mount_usb_dots dn_sata dn_usb dn_bsd_sata pn_size_sata pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp \
+rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_ast \
+cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark)
 for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
 }
 
@@ -246,17 +247,17 @@ if [[ $loc = "ru" ]]; then
         bufStruct[2]="6 dots_line1,4 head_sata,43"
         ;;
     3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-        bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-        bufStruct[3]="8 num_sata,6 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
-        StructHints[3]="порядковые номера для sata;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+        bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+        bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+        StructHints[3]="порядковые номера для sata;скобка после номера;плюс обозначения подключенных;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
         ;;
     4)  bbuf[4]=$(printf '\033[10;0f    '${cm[dots_line2]}''.......................................''${cm[head_usb]}' USB '${cm[dots_line2]}......................................'      ')
         bufStruct[4]="10 dots_line2,4 head_usb,44"
         ;;
     5)  drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-        bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-        bufStruct[5]="12 num_usb,6 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
-        StructHints[5]="порядковые номера для USB;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);" 
+        bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+        bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_pls,11 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+        StructHints[5]="порядковые номера для USB;скобка после номера;плюс обозначения подключенных;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);" 
         ;;
     6)  bbuf[6]=$(printf '\033[14;0f    '${cm[dots_line3]}...................................................................................${cm[clr]}'     ')
         bufStruct[6]="14 dots_line3,4"
@@ -274,17 +275,17 @@ else
         bufStruct[2]="6 dots_line1,4 head_sata,43"
         ;;
     3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-        bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-        bufStruct[3]="8 num_sata,6 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
-        StructHints[3]="order numbers for sata;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);"
+        bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+        bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+        StructHints[3]="order numbers for sata;bracket after number;plus for mounted;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);"
         ;;
     4)  bbuf[4]=$(printf '\033[10;0f    '${cm[dots_line2]}''.......................................''${cm[head_usb]}' USB '${cm[dots_line2]}......................................'      ')
         bufStruct[4]="10 dots_line2,4 head_usb,44"
         ;;
     5)  drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-        bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-        bufStruct[5]="12 num_usb,6 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
-        StructHints[5]="order numbers for sata;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);" 
+        bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+        bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_pls,11 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+        StructHints[5]="order numbers for usb;bracket after number;plus for mounted;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);" 
         ;;
     6)  bbuf[6]=$(printf '\033[14;0f    '${cm[dots_line3]}...................................................................................${cm[clr]}'     ')
         bufStruct[6]="14 dots_line3,4"
@@ -432,61 +433,71 @@ SET_LOADER_STRUCT(){
 if [[ $loc = "ru" ]]; then
     case "$1" in
         Clover )   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-                    bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-                    bufStruct[3]="8 num_sata,6 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   StructHints[3]="числа нумерации для sata;скобка после номера; плюс для подключенных; имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
                     ;;
       OpenCore )   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_oc]}'             OpenCore       '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_oc,46 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...   '${cm[dn_usb]}''"$drive"${cm[ld_oc]}'             OpenCore       '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_dots,9 dn_usb,15 ld_oc,46 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   StructHints[5]="числа нумерации для USB;скобка после номера; точки обозначают отключенные;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
                    ;;
       "Windows")   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_wn]}'        Windows        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_wn,46 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_dots]}' ...   '${cm[dn_sata]}''"$drive"${cm[ld_wn]}'        Windows        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_dots,9 dn_sata,15 ld_wn,46 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   StructHints[3]="числа нумерации для sata;скобка после номера; точки обозначают отключенные;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
                    ;;
          Linux)    drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_gb]}'              Linux         '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_gb,47 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +   '${cm[dn_usb]}''"$drive"${cm[ld_gb]}'              Linux         '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_pls,11 dn_usb,15 ld_gb,47 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   StructHints[5]="числа нумерации для USB;скобка после номера; плюс для подключенных;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
                    ;;
         Refind)    drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_rf]}'         Refind        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_rf,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"${cm[ld_rf]}'         Refind        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 ld_rf,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   StructHints[3]="числа нумерации для sata;скобка после номера; плюс для подключенных;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
                    ;;
 "Не распознан")    drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Не распознан     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Не распознан     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_dots,9 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   StructHints[5]="числа нумерации для USB;скобка после номера; точки обозначают отключенные;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
                    ;;
     esac
-    StructHints[3]="числа нумерации для sata;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
-    StructHints[5]="числа нумерации для USB;имя диска или псевдоним;имя загрузчика (выбирается клавишей L);имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
 else
         case "$1" in
         Clover )   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-                    bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-                    bufStruct[3]="8 num_sata,6 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"${cm[ld_cl]}'         Clover        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 ld_cl,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   StructHints[3]="numbers for sata;bracket after number;plus means mounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
                     ;;
       OpenCore )   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_oc]}'             OpenCore       '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_oc,46 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...   '${cm[dn_usb]}''"$drive"${cm[ld_oc]}'             OpenCore       '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_dots,9 dn_usb,15 ld_oc,46 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   StructHints[5]="numbers for usb;bracket after number;dots mean unmounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
                    ;;
       "Windows")   drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_wn]}'        Windows        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_wn,46 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_dots]}' ...   '${cm[dn_sata]}''"$drive"${cm[ld_wn]}'        Windows        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_dots,9 dn_sata,15 ld_wn,46 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   StructHints[5]="numbers for sata;bracket after number;dots mean unmounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
                    ;;
          Linux)    drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_gb]}'              Linux         '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_gb,47 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +   '${cm[dn_usb]}''"$drive"${cm[ld_gb]}'              Linux         '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_pls,11 dn_usb,15 ld_gb,47 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   StructHints[3]="numbers for usb;bracket after number;plus means mounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
                    ;;
         Refind)    drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
-                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch')   +   '${cm[dn_sata]}''"$drive"${cm[ld_rf]}'         Refind        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[3]="8 num_sata,6 dn_sata,15 ld_rf,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"${cm[ld_rf]}'         Refind        '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 ld_rf,47 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+                   StructHints[3]="numbers for sata;bracket after number;plus means mounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
                    ;;
    Unrecognized)   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
-                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch') ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Unrecognized     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
-                   bufStruct[5]="12 num_usb,6 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...   '${cm[dn_usb]}''"$drive"${cm[ld_unrec]}'           Unrecognized     '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+                   bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_dots,9 dn_usb,15 ld_unrec,44 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+                   StructHints[5]="numbers for usb;bracket after number;dots mean unmounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
                    ;;
     esac
-    StructHints[3]="numbers for sata;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
-    StructHints[5]="numbers for sata;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
+     StructHints[5]="numbers for sata;bracket after number;dots mean unmounted EFI;drive name or alias;bootloader name (selected with the L key);BSD disk name;disk number;partition or volume number;partition or volume size;partition dimension (Mb/Gb);"
+
 fi
 }
 
@@ -494,24 +505,44 @@ SET_STRUCT_3(){
 if [[ $loc = "ru" ]]; then
     case "$1" in
            1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  поиск разделов ..... '${cm[clr]}''"${cm[head_upd_sch_sp]}-\|/${cm[clr]}")
-                bufStruct[1]="4 head_upd_sch_num,6 head_upd_sch_br,7 head_upd_sch,10 head_upd_sch_sp,31"
-                StructHints[1]="цифра 0 строки поиска;скобка после цифры;текст поиск разделов;спинер;"
-                ;;
-           12)  bbuf[12]=$(printf '\033[21;0f  '${cm[ld_srch]}'Подождите. Ищем загрузочные разделы с '${cm[ld_srch_bt]}'BOOTx64.efi'${cm[ld_srch]}' ...  '${cm[clr]}''"${cm[ld_srch_sp]}-\|/${cm[clr]}")
-                bufStruct[12]="21 ld_srch,2 ld_srch_bt,40 ld_srch_sp,57"
-                StructHints[12]="текст строки поиска;bootx64.efi;спинер;"
-                ;;
+               bufStruct[1]="4 head_upd_sch_num,6 head_upd_sch_br,7 head_upd_sch,10 head_upd_sch_sp,31"
+               StructHints[1]="цифра 0 строки поиска;скобка после цифры;текст поиск разделов;спинер;"
+               ;;
+           3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+               bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_dots]}' ...   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+               bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_dots,9 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+               StructHints[3]="порядковые номера для sata;скобка после номера;точки для обозначения отключенных;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);"
+               ;;
+          5)   drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+               bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+               bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_dots,9 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+               StructHints[5]="порядковые номера для USB;скобка после номера;точки для обозначения отключенных;имя диска или псевдоним;имя BSD диска;цифра номера диска;цифра номера раздела;размер раздела;измерение раздела (Mb/Gb);" 
+               ;;
+         12)   bbuf[12]=$(printf '\033[21;0f  '${cm[ld_srch]}'Подождите. Ищем загрузочные разделы с '${cm[ld_srch_bt]}'BOOTx64.efi'${cm[ld_srch]}' ...  '${cm[clr]}''"${cm[ld_srch_sp]}-\|/${cm[clr]}")
+               bufStruct[12]="21 ld_srch,2 ld_srch_bt,40 ld_srch_sp,57"
+               StructHints[12]="текст строки поиска;bootx64.efi;спинер;"
+               ;;
     esac
 else
     case "$1" in
            1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  updating partitions list ..... '${cm[clr]}''"${cm[head_upd_sch_sp]}-\|/${cm[clr]}")
-                bufStruct[1]="4 head_upd_sch_num,6 head_upd_sch_br,7 head_upd_sch,10 head_upd_sch_sp,41"
-                StructHints[1]="number 0 of the search string;bracket after the number;text search for partitions;spiner;"
-                ;;
-           12)  bbuf[12]=$(printf '\033[21;0f  '${cm[ld_srch]}'Wait. Looking for boot partitions with '${cm[ld_srch_bt]}'BOOTx64.efi'${cm[ld_srch]}' ...  '${cm[clr]}''"${cm[ld_srch_sp]}-\|/${cm[clr]}")
-                bufStruct[12]="21 ld_srch,2 ld_srch_bt,41 ld_srch_sp,58"
-                StructHints[12]="text search for partitions;bootx64.efi;spiner;"
-                ;;
+               bufStruct[1]="4 head_upd_sch_num,6 head_upd_sch_br,7 head_upd_sch,10 head_upd_sch_sp,41"
+               StructHints[1]="number 0 of the search string;bracket after the number;text search for partitions;spiner;"
+               ;;
+           3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
+               bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_dots]}' ...   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'           '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]}$dmsize"'     '${cm[clr]}' ')
+               bufStruct[3]="8 num_sata,6 num_sata_br,7 mount_sata_pls,11 dn_sata,15 dn_bsd_sata,61 sata_bsd,65 sata_bsp,67 pn_size_sata,79 pn_size_msata,84"
+               StructHints[3]="order numbers for sata;bracket after number;plus means mounted EFI;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);"
+               ;;
+           5)  drive="TOSHIBA MK2555GSXF"; dsize=" 31.6"; dmsize="Gb"; bsd=1 ; bsp=2; ch=2
+               bbuf[5]=$(printf '\033[12;0f    '${cm[num_usb]}"  "$ch''${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...   '${cm[dn_usb]}''"$drive"'                            '${cm[dn_bsd_usb]}disk${cm[usb_bsd]}${bsd}${cm[dn_bsd_usb]}s${cm[usb_bsp]}${bsp}'           '${cm[pn_size_usb]}''"$dsize${cm[pn_size_musb]}$dmsize"'     '${cm[clr]}' ')
+               bufStruct[5]="12 num_usb,6 num_usb_br,7 mount_usb_pls,11 dn_usb,15 dn_bsd_usb,61 usb_bsd,65 usb_bsp,67 pn_size_usb,80 pn_size_musb,84"
+               StructHints[5]="order numbers for usb;bracket after number;dots mean unmounted EFI;drive name or alias;BSD disk name;disk number;partition or volume number;partition or volume size; dimension (Mb/Gb);" 
+               ;;
+          12)  bbuf[12]=$(printf '\033[21;0f  '${cm[ld_srch]}'Wait. Looking for boot partitions with '${cm[ld_srch_bt]}'BOOTx64.efi'${cm[ld_srch]}' ...  '${cm[clr]}''"${cm[ld_srch_sp]}-\|/${cm[clr]}")
+               bufStruct[12]="21 ld_srch,2 ld_srch_bt,41 ld_srch_sp,58"
+               StructHints[12]="text search for partitions;bootx64.efi;spiner;"
+               ;;
     esac
 fi 
 }
@@ -526,9 +557,10 @@ COLOR_MODE(){
 # cm_ptr   # список указателей на элементы списка модификаторов cm
 cm=() 
 cm_ptr=( head_ast head_str head_os head_X head_sch head_upd_sch head_upd_sch_num head_upd_sch_br head_upd_sch_sp head_num_sch head_sch_br head_pls \
-head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_sata_br num_usb num_usb_br mount_pls mount_dot dn_sata dn_usb dn_bsd_sata pn_size_sata \
-pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl \
-ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_ast cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark)
+head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_sata_br num_usb num_usb_br mount_sata_pls mount_sata_dots \
+mount_usb_pls mount_usb_dots dn_sata dn_usb dn_bsd_sata pn_size_sata pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp \
+rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_ast \
+cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark)
 for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
 
 Black="\e[0m\e[30m"  Cyan="\e[0m\e[36m"  LightBlue="\e[0m\e[94m" Red="\e[0m\e[31m" LightGray="\e[0m\e[37m" LightMagenta="\e[0m\e[95m"
@@ -566,8 +598,10 @@ cm[num_sata]="$LightYellow"         # числа для sata
 cm[num_sata_br]="$LightYellow"      # скобка после числа sata
 cm[num_usb]="$LightCyan"            # числа для usb
 cm[num_usb_br]="$LightCyan"         # скобка после числа usb
-cm[mount_pls]="$Magenta"            # цвет плюса для примонтированных
-cm[mount_dot]="$LightGray"          # цвет точек для отключенных
+cm[mount_sata_pls]="$Magenta"       # цвет плюса для примонтированных sata
+cm[mount_sata_dots]="$LightGray"    # цвет точек для отключенных sata
+cm[mount_usb_pls]="$Magenta"        # цвет плюса для примонтированных sata
+cm[mount_usb_dots]="$LightGray"     # цвет точек для отключенных sata
 cm[dn_sata]="$LightYellow"          # имена дисков sata              
 cm[dn_usb]="$LightCyan"             # имена дисков usb
 cm[dn_bsd_sata]="$LightYellow"      # имя BSD для SATA
@@ -607,7 +641,7 @@ cm[cl_ast]="$Yellow"                # цвет звёздочек подсказ
 cm[cl_str]="$Cyan"                  # цвет строки после звёздочек
 cm[cl_conf]="$LightMagenta"         # цвет config,plist в строке функции P
 cm[ld_srch]="$LightGray"            # строка поиска загрузчиков
-cm[ld_srch_sp]="$LightGray"         # спинер поиска загрузчиков
+cm[ld_srch_sp]="$LightMagenta"      # спинер поиска загрузчиков
 cm[ld_srch_bt]="$LightMagenta"      # bootx64.efi в строке поиска загрузчиков
 cm[rv1]="$cOFF"                     # резерв
 cm[rv2]="$cOFF"                     # резерв
@@ -763,9 +797,11 @@ if [[ ${inputs} = [rR] ]]; then NewItemColor="\e[0m"; else NewItemColor="\e[0m\e
 cm[$(echo ${CurrStrList[ObjPtr]} | cut -f1 -d',')]="${NewItemColor}"
 if [[ $StrPtr -lt 7 ]]; then
     if [[ $StrPtr = 3 && ! $LoaderPointer1 = "" ]]; then SET_LOADER_STRUCT $LoaderPointer1
-      elif [[ $StrPtr = 1 && $hidden = 1 ]]; then SET_STRUCT_3 1
-         elif [[ $StrPtr = 5 && ! $LoaderPointer1 = "" ]]; then SET_LOADER_STRUCT $LoaderPointer2
-            else SET_STRUCT_1 $StrPtr
+      elif [[ $StrPtr = 3 && $hidden = 1 ]]; then SET_STRUCT_3 3
+        elif [[ $StrPtr = 5 && $hidden = 1 ]]; then SET_STRUCT_3 5
+            elif [[ $StrPtr = 1 && $hidden = 1 ]]; then SET_STRUCT_3 1
+                elif [[ $StrPtr = 5 && ! $LoaderPointer1 = "" ]]; then SET_LOADER_STRUCT $LoaderPointer2
+                    else SET_STRUCT_1 $StrPtr
     fi
 elif [[ $StrPtr = 12 && $hidden = 1 ]]; then SET_STRUCT_3 12
     elif [[ $StrPtr -lt 12 && $ObjPtr -gt 1 ]]; then for i in 7 8 9 10 11; do SET_STRUCT_2 $i; done
@@ -789,6 +825,8 @@ rcol=$(echo $new_color | sed s'/38;5;/48;5;/' | sed s'/4;//' | sed s'/7;//')
 new_color+="$code"; rcol+="$code"
 #echo "new_color = $new_color" >> ~/Desktop/temp.txt
 }
+
+GET_CURRENT_STRUCT(){ CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS ; }
 
 SET_SCREEN(){ CLR_UNUSED_STR; for i in "${!bbuf[@]}"; do echo "${bbuf[i]}";  done ; }
 STRIP_POINTER(){ if [[ $1 = "ON" ]]; then yes "" | printf '\033[27;'$NN'f''•  \033[31;'$NN'f''•  \033[37;32f'; else  yes "" | printf '\033[27;'$NN'f''   \033[31;'$NN'f''   \033[37;32f'; fi ; }
@@ -891,26 +929,38 @@ printf '\033[37;7f'
                     GET_POINTER_INPUT
 
                    if [[ ${inputs} = [dDaA] ]]; then
+                        OldObjPtr=$ObjPtr
                         if [[ ${inputs} = [dD] ]]; then if [[ $ObjPtr -eq $((CurrStrSize-1)) ]]; then ObjPtr=1; else let "ObjPtr++"; fi; fi
                         if [[ ${inputs} = [aA] ]]; then if [[ $ObjPtr -eq 1 ]]; then ObjPtr=$((CurrStrSize-1)); else let "ObjPtr--"; fi; fi
                         SHOW_CURSOR
                         GET_ITEM_COLOR                    
                     fi
                     if [[ ${inputs} = [sSwW] ]]; then
+                        OldStrPtr=$StrPtr
                         if [[ ${inputs} = [sS] ]]; then  if [[ $StrPtr -eq 12 ]]; then StrPtr=0; else let "StrPtr++"; fi; fi
                         if [[ ${inputs} = [wW] ]]; then if [[ $StrPtr -eq 0 ]]; then StrPtr=12; else let "StrPtr--"; fi; fi
-                        CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
-                        if [[ ${inputs} = [sS] && $StrPtr = 5 && $ObjPtr = 2 ]]; then let "ObjPtr++"
-                            elif [[ ${inputs} = [sS] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr=3"
-                                elif [[ ${inputs} = [wW] && $StrPtr = 3 && $ObjPtr = 2 ]]; then let "ObjPtr++"
-                                    elif [[ ${inputs} = [wW] && $StrPtr = 1 && $ObjPtr = 2 ]]; then ObjPtr=4
-                                        elif [[ $ObjPtr -gt $((CurrStrSize-1)) ]]; then ObjPtr=$((CurrStrSize-1)); fi
+                        GET_CURRENT_STRUCT
+
+                        if [[ $inputs = [sS] && $StrPtr -lt 6 && $StrPtr -ge 0 ]]; then
+                           if [[ $ObjPtr = 3 && $StrPtr = 1 ]]; then let "ObjPtr=4"; fi
+                                if [[ $ObjPtr = 4 && $StrPtr = 2 ]]; then let "ObjPtr=5"; fi
+                                    if [[ $ObjPtr = 5 && ( $StrPtr = 2 || $StrPtr = 4 ) ]]; then let "ObjPtr=2"
+                                        elif [[ $ObjPtr = 2 && ( $StrPtr = 3 || $StrPtr = 5 ) ]]; then let "ObjPtr=5"
+                                            elif [[ $ObjPtr -gt 2  && ( $StrPtr = 2 || $StrPtr = 4 ) ]]; then let "StrPtr++"; GET_CURRENT_STRUCT; fi 
+      
+                        elif [[ $inputs = [wW] && $StrPtr -lt 6 && $StrPtr -gt 0 ]]; then
+                            if [[ $ObjPtr = 5 && ( $StrPtr = 2 || $StrPtr = 4 ) ]]; then let "ObjPtr=2"
+                                elif [[ $ObjPtr = 2 && ( $StrPtr = 1 || $StrPtr = 3 ) ]]; then let "ObjPtr=5"
+                                    elif [[ $ObjPtr -gt 2  && ( $StrPtr = 2 || $StrPtr = 4 ) ]]; then let "StrPtr--"; GET_CURRENT_STRUCT; fi
+                        fi            
+                        if [[ $ObjPtr -gt $((CurrStrSize-1)) ]]; then ObjPtr=$((CurrStrSize-1)); OldObjPtr=$ObjPtr; fi
+
                         SHOW_CURSOR
                         GET_ITEM_COLOR
                     fi
 
                     if [[ ${inputs} = [hH] ]]; then let "hints++"; if [[ $hints = 3 ]]; then hints=0; fi; UPDATE_BOTTOM
-                        CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}; IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                        GET_CURRENT_STRUCT
                         if [[ $ObjPtr -gt $((CurrStrSize-1)) ]]; then ObjPtr=1; fi
                         CLEAR_BOTTOM; sleep 0.1; SET_SCREEN
                         SHOW_CURSOR
@@ -947,17 +997,17 @@ printf '\033[37;7f'
                                 elif [[ $LoaderPointer1 = "Refind" ]]; then LoaderPointer1=""; LoaderPointer2="" ; SET_STRUCT_1 3; SET_STRUCT_1 5; fi
 
                     if [[ $LoaderPointer1 = "" ]]; then ObjPtr=1; else ObjPtr=3; fi
-                    StrPtr=3; CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}
-                    IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                    StrPtr=3
+                    GET_CURRENT_STRUCT
                     GET_ITEM_COLOR
                     SHOW_CURSOR
                 fi
 
                 
                 if [[ $inputs = [fF] ]]; then 
-                        if [[ $hidden = 0 ]]; then hidden=1; SET_STRUCT_3 1; SET_STRUCT_3 12; else hidden=0; SET_STRUCT_1 1; SET_STRUCT_2 12; fi
-                        ObjPtr=1; StrPtr=1; CurrStrList=(${bufStruct[StrPtr]}); lnN=${CurrStrList[0]}; CurrStrSize=${#CurrStrList[@]}
-                        IFS=';';HintWords=(${StructHints[StrPtr]}); unset IFS
+                        if [[ $hidden = 0 ]]; then hidden=1; SET_STRUCT_3 1; SET_STRUCT_3 12 ; SET_STRUCT_3 3; SET_STRUCT_3 5; else hidden=0; SET_STRUCT_1 1; SET_STRUCT_2 12; SET_STRUCT_1 3; SET_STRUCT_1 5; fi
+                        ObjPtr=1; StrPtr=3
+                        GET_CURRENT_STRUCT
                         GET_ITEM_COLOR
                         SHOW_CURSOR
                 fi
@@ -1099,7 +1149,6 @@ done
 fi
 }
 loc=`defaults read -g AppleLocale | cut -d "_" -f1`
-loc=en
 if [[ -f "${CONFPATH}" ]]; then
 while true; do EDIT_COLORS "${presetName}"; if [[ "$presetName" = "false" ]]; then break; fi; done
 printf "\e[0m\033[?25h"
