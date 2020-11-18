@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 08.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 19.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.8.0"
-s_edit_vers="057"
+s_edit_vers="058"
 ############################################################################################################################################################################################################
 # 004 - исправлены все определения пути для поддержки путей с пробелами
 # 005 - добавлен быстрый доступ к настройкам авто-монтирования при входе в систему
@@ -61,6 +61,7 @@ s_edit_vers="057"
 # 055 - коррекция команды завершения диалога поиска
 # 056 - получение данных от MEFIScA перенесено в setup
 # 057 - скрыть перезапуск если не из апплета
+# 058 - редактор цветного мода
 
 clear
 
@@ -2909,20 +2910,20 @@ fi
 
 SET_CODE_BASE(){
 current_layout=$(defaults read ~/Library/Preferences/com.apple.HIToolbox.plist AppleSelectedInputSources | egrep -w 'KeyboardLayout Name' | sed -E 's/.+ = "?([^"]+)"?;/\1/') 2>/dev/null
-sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y W f F)
+sym_base=( l L c C a A b B i I e E h H p P s S u U R Z q Q d D o O v V m M z x X n N r y Y W f F m M)
             case "${current_layout}" in 
 
-                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
+                "Russian"                  ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090 d18c d0ac)
                                              ;;
-                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
+                "RussianWin"               ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090 d18c d0ac)
                                              ;;
-                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab d0a8 d184 d0a4)
+                "Russian - Phonetic"       ) code_base=( d0bb d09b d186 d0a6 d0b0 d090 d0b1 d091 d0b8 d098 d0b5 d095 d187 d0a7 d0bf d09f d181 d0a1 d183 d0a3 d0a0 d097 d18f d0af d0b4 d094 d0be d09e d0b2 d092 d0bc d09c d0b7 d185 d0a5 d0bd d09d d180 d18b d0ab d0a8 d184 d0a4 d0bc d09c)
                                              ;;
-                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
+                "Ukrainian-PC"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d0b8 d098 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d196 d086 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090 d18c d0ac)
                                              ;;
-                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
+                "Ukrainian"                ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d0b8 d098 d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d189 d0a9 d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090 d18c d0ac)
                                              ;;
-                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090)
+                "Byelorussian"             ) code_base=( d0b4 d094 d181 d0a1 d184 d0a4 d196 d086 d188 d0a8 d183 d0a3 d180 d0a0 d0b7 d097 d18b d0ab d0b3 d093 d09a d0af d0b9 d099 d0b2 d092 d19e d08e d0bc d09c d18c d0ac d18f d187 d0a7 d182 d0a2 d0ba d0bd d09d d0a6 d0b0 d090 d18c d0ac)
                                              ;;
                                           *) code_base=()
                                              ;;
@@ -2949,7 +2950,7 @@ TRANS_READ(){
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfF]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFmM]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -3072,6 +3073,9 @@ sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или 
 sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
 sbuf+=$(printf ' H) Редактор хэшей загрузчиков                                                  \n')
 sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
+if [[ -f "${ROOT}"/cm_edit ]]; then
+sbuf+=$(printf ' M) Создать или править цветные модификации тем                                 \n')
+fi
 sbuf+=$(printf ' S) Авто-обновление программы = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Да, Нет)             \n')
 if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
 sbuf+=$(printf ' U) Обновление программы                                                        \n')
@@ -3103,6 +3107,9 @@ sbuf+=$(printf ' I) Import config from file (zip or plist)                      
 sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
 sbuf+=$(printf ' H) Hashes of EFI loaders editor                                                \n')
 sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
+if [[ -f "${ROOT}"/cm_edit ]]; then
+sbuf+=$(printf ' M) Run color mode editor                                                       \n')
+fi
 sbuf+=$(printf ' S) Auto-update this program = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Yes, No)                \n')
 if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
 sbuf+=$(printf ' U) Update program manually                                                     \n')
@@ -7340,6 +7347,8 @@ else
 fi
 }
 
+
+
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
@@ -7352,7 +7361,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=36; col=80
+lines=37; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -7721,6 +7730,11 @@ fi
 ##############################################################################
 
 if [[ $inputs = [pP] ]]; then THEME_EDITOR;  fi
+
+##############################################################################
+
+if [[ -f "${ROOT}"/cm_edit && $inputs = [mM] ]]; then 
+    "${ROOT}"/cm_edit; unset inputs; SOFT_CLEAR; fi
 
 ##############################################################################
 
