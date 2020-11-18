@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 19.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI Color Mode Editor #######################################################################################################
 prog_vers="1.8.0"
@@ -13,16 +13,13 @@ serv_vers="008"
 
 COLOR_MODE_EDITOR(){
 
-presetName="$1"
-
 CONFPATH="${HOME}/.MountEFIconf.plist"
+SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 SAVE_COLOR_MODE_PRESET(){
  if [[ $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then plutil -insert ColorModeData -xml  '<dict/>'   "${CONFPATH}"; fi
  cm_string=""; for i in ${!cm_ptr[@]}; do cm_string+="${cm[i]}+"; done; cm_string="${cm_string%?}"
-# cm_ptr_string=""; for i in ${!cm_ptr[@]}; do cm_ptr_string+="${cm_ptr[i]}+"; done; cm_ptr_string="${cm_ptr_string%?}"
  plutil -replace ColorModeData."$presetName" -string "$cm_string" "${CONFPATH}"
-# plutil -replace ColorModeStruct -string "$cm_ptr_string" "${CONFPATH}"; MountEFIconf=$( cat "${CONFPATH}" )
 }
 
 GET_COLOR_STRUCTURE(){
@@ -68,6 +65,26 @@ fi
 GET_THEME(){
 HasTheme=`echo "$MountEFIconf"  | grep -E "<key>Theme</key>" | grep -Eo Theme | tr -d '\n'`
 if [[ $HasTheme = "Theme" ]]; then theme=`echo "$MountEFIconf"  |  grep -A 1 -e  "<key>Theme</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`; fi
+}
+
+set_font(){ osascript -e "tell application \"Terminal\" to set the font name of window 1 to \"$1\"" ; osascript -e "tell application \"Terminal\" to set the font size of window 1 to $2" ; }
+
+CUSTOM_SET(){
+######## GET_CURRENT_SET
+current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_background=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_foreground=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontname=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+current_fontsize=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+########################
+
+if [[ ${current_background:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background"
+		else set_background_color $current_background
+fi
+if [[ ${current_foreground:0:1} = "{" ]]; then osascript -e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground"
+		else  set_foreground_color $current_foreground
+fi
+set_font "$current_fontname" $current_fontsize
 }
 
 GET_THEME_NAMES(){
@@ -142,12 +159,16 @@ clear && printf '\e[8;45;94t' && printf '\e[3J' && printf "\033[H"
 
 GET_CUSTOM_SET(){
 ######## GET_CURRENT_SET
+if [[ ! $presetName = "Init180061Mode" ]]; then 
 preset_num=$(echo "$MountEFIconf"  | grep "<key>BackgroundColor</key>" | wc -l | bc)
 current=`echo "$MountEFIconf" | grep -A$((preset_num*11)) -ow "<key>Presets</key>" | grep -A 1 -e "<key>${presetName}</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/'`
 current_background=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "BackgroundColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_foreground=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "TextColor" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_fontname=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontName" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
 current_fontsize=`echo "$MountEFIconf"  | grep -A 10 -E "<key>$current</key>" | grep -A 1 "FontSize" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+else
+    current_background="{4064, 8941, 17101}"; current_foreground="{65535, 65535, 65535}"; current_fontname="SF Mono Regular"; current_fontsize="11"
+fi
 ########################
 }
 
@@ -1042,9 +1063,10 @@ done
 fi
 }
 loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+if [[ -f "${SERVFOLD_PATH}"/presetName ]]; then presetName=$(cat "${SERVFOLD_PATH}"/presetName | tr -d '\n'); rm -f "${SERVFOLD_PATH}"/presetName; fi
 if [[ -f "${CONFPATH}" ]]; then
 while true; do EDIT_COLORS "${presetName}"; if [[ "$presetName" = "false" ]]; then break; fi; done
-printf "\e[0m\033[?25h"
+#printf "\e[0m\033[?25h"
 else
     if [[ $loc = "ru" ]]; then
     error_message='"Это редактор для программы MountEFI.\nФайл конфигурации MountEFI не найден.\n\nВыполнение прекращено!"'
@@ -1054,10 +1076,14 @@ else
     osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Abort" } default button "Abort" giving up after 10' >>/dev/null /2>/dev/null
     fi
 fi
-system_default=$(plutil -p /Users/$(whoami)/Library/Preferences/com.apple.Terminal.plist | grep "Default Window Settings" | tr -d '"' | cut -f2 -d '>' | xargs)
-osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$system_default"'"'
+if [[ ! "$presetName" = "Init180061Mode" ]]; then
+theme="system"
+GET_THEME
+if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
+fi
 clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
-
 }
 
 COLOR_MODE_EDITOR
+
+
