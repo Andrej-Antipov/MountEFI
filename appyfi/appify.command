@@ -93,6 +93,8 @@ if [[ ! -d ../MountEFI.app ]]; then
                     if [[ -s .script ]]; then mv -f .script ../MountEFI.app/Contents/Resources/script; chmod +x ../MountEFI.app/Contents/Resources/script; fi
             fi
             if [[ -f ../Notifiers/MEFIScA.sh ]]; then cp -a ../Notifiers/MEFIScA.sh ../MountEFI.app/Contents/Resources/MEFIScA.sh; fi
+            if [[ -f ../Notifiers/color_editor.sh ]]; then cp -a ../Notifiers/color_editor.sh ../MountEFI.app/Contents/Resources/cm_edit 
+                    chmod +x ../MountEFI.app/Contents/Resources/cm_edit; fi
             touch ../MountEFI.app
             rm -f .document.wflow
 fi
@@ -150,6 +152,7 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                 fi
 
                 if [[ -f Notifiers/MEFIScA.sh ]]; then cp -a Notifiers/MEFIScA.sh Updates/$current_vers/$edit_vers/ ; fi
+                if [[ -f Notifiers/color_editor.sh ]]; then cp -a Notifiers/color_editor.sh Updates/$current_vers/$edit_vers/cm_edit ; chmod +x Updates/$current_vers/$edit_vers/cm_edit; fi
 
                 ditto -c -k --sequesterRsrc --keepParent Updates/$current_vers/$edit_vers Updates/$current_vers/"$edit_vers"".zip"
                 if [[ -d Autoupdates ]]; then rm -Rf Autoupdates; fi
