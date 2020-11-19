@@ -1647,7 +1647,75 @@ fi
 }
 
 ##################################################################################################################################################################
+######################################### Color Mode FUNC #####################################
+GET_COLOR_MODE_PRESET(){
+cm=()
+if [[ ! $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then
+    i=1
+    while true; do if [[ $(echo "${MountEFIconf}" | grep -A$((i-1))  "ColorModeData</key>" | grep -ow "</dict>" ) = "" ]]; then let "i++"; else break; fi; done
+    if [[ ! $(echo "${MountEFIconf}" | grep -A$((i-1)) -o "$presetName</key>") = "" ]]; then
+        cm_string=$(echo "${MountEFIconf}" | grep -A$i "ColorModeData</key>" | grep -ow -A1 "$presetName</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
+        IFS='+'; cm=($cm_string); unset IFS
+    fi
+fi
+}
 
+GET_COLOR_MODE_STRUCT(){ cm_ptr_string=$(echo "${MountEFIconf}" | grep -A1 "ColorModeStructure</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' 2>/dev/null); }
+
+COLOR_MODE(){
+#######################################################################################################################################################
+################################################### блок установки модификации цветного вывода ######################################################
+# cm        # список модификаторов цвета
+# cm_ptr   # список указателей на элементы списка модификаторов cm
+cm=(); cm_ptr=()
+
+if [[ $theme = "built-in" ]]; then
+current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
+else
+current=$(echo "$MountEFIconf" |  grep -A 1 -e  "<key>ThemeProfile</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+fi
+
+presetName="$current"; GET_COLOR_MODE_PRESET; if [[ "${cm_string}" = "" ]]; then presetName="Init180061Mode"; GET_COLOR_MODE_PRESET; fi
+
+GET_COLOR_MODE_STRUCT
+
+if [[ "${cm_ptr_string}" = "" ]]; then
+cm_ptr_string="head_ast head_str head_os head_X head_sch head_upd_sch head_upd_sch_num head_upd_sch_br head_upd_sch_sp head_num_sch head_sch_br head_pls "\
+"head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_sata_br num_usb num_usb_br mount_sata_pls mount_sata_dots "\
+"mount_usb_pls mount_usb_dots dn_sata dn_usb dn_bsd_sata pn_size_sata pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp "\
+"rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_W cl_M "\
+"cl_E2 cl_ast cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark"
+plutil -replace ColorModeStructure -string "$cm_ptr_string" "${CONFPATH}"
+fi
+cm_ptr=($cm_ptr_string); for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
+
+if [[ "${cm[@]}" = "" ]]; then 
+cm_string="\e[0m\e[2;38;5;15m+\e[0m\e[38;5;39m+\e[0m\e[32m+\e[0m\e[95m+\e[0m\e[37m+\e[0m\e[38;5;228m+\e[0m\e[38;5;39m+\e[0m\e[38;5;64m+"\
+"\e[0m\e[38;5;228m+\e[0m\e[38;5;39m+\e[0m\e[37m+\e[0m+\e[0m\e[37m+\e[0m\e[2;36m+\e[0m\e[38;5;228m+\e[38;5;116m+\e[0m\e[37m+"\
+"\e[0m\e[37m+\e[0m\e[37m+\e[0m\e[93m+\e[0m\e[93m+\e[0m\e[96m+\e[0m\e[96m+\e[0m\e[38;5;15m+\e[0m\e[33m+\e[0m\e[38;5;15m+"\
+"\e[0m\e[38;5;8m+\e[0m\e[38;5;227m+\e[0m\e[38;5;44m+\e[0m\e[38;5;11m+\e[0m\e[38;5;227m+\e[0m\e[93m+\e[0m\e[38;5;14m+\e[0m\e[38;5;44m+"\
+"\e[0m\e[96m+\e[0m\e[38;5;227m+\e[0m\e[38;5;227m+\e[0m\e[38;5;44m+\e[0m\e[38;5;44m+\e[0m+\e[0m\e[37m+\e[0m\e[37m+\e[0m\e[1;38;5;44m+"\
+"\e[0m\e[1;93m+\e[0m\e[31m+\e[0m\e[38;5;159m+\e[0m\e[38;5;10m+\e[0m\e[1;38;5;31m+\e[0m\e[38;5;167m+\e[0m\e[1;38;5;184m+\e[0m\e[95m+"\
+"\e[0m\e[95m+\e[0m\e[38;5;9m+\e[0m\e[1;36m+\e[0m\e[1;93m+\e[0m\e[1;31m+\e[0m\e[1;95m+\e[0m\e[1;92m+\e[0m\e[1;32m+\e[0m\e[1;92m+"\
+"\e[0m\e[1;96m+\e[0m\e[1;33m+\e[0m\e[38;5;11m+\e[0m\e[1;92m+\e[0m\e[38;5;88m+\e[0m\e[33m+\e[0m\e[36m+\e[0m\e[95m+\e[0m\e[38;5;7m+"\
+"\e[0m\e[38;5;7m+\e[0m\e[38;5;28m+\e[0m+\e[0m+\e[0m+\e[0m+0"
+IFS='+'; cm=($cm_string); unset IFS
+if [[ $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then plutil -insert ColorModeData -xml  '<dict/>'   "${CONFPATH}"; fi
+plutil -replace ColorModeData."$presetName" -string "$cm_string" "${CONFPATH}"
+fi
+
+if [[ "$presetName" = "Init180061Mode" ]]; then
+current_background="{4064, 8941, 17101}"; current_foreground="{65535, 65535, 65535}"; current_fontname="SF Mono Regular"; current_fontsize="11"
+osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background" \
+-e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground" \
+-e "tell application \"Terminal\" to set the font name of window 1 to \"$current_fontname\"" \
+-e "tell application \"Terminal\" to set the font size of window 1 to $current_fontsize"
+fi
+###########################################################################################################################################################
+}
+
+CHECK_CM(){ if $(cat "${CONFPATH}" | grep -A1 "GUIcolorMode</key>" | egrep -o "false|true"); then cm_check=1; COLOR_MODE
+else cm_check=0; fi };
 ############## обновление даных после выхода из скрипта настроек #########################################################
 
 REFRESH_SETUP(){
@@ -1658,6 +1726,7 @@ GET_LOCALE
 strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
 GET_USER_PASSWORD
+GET_THEME
 CHECK_CM
 GET_THEME_LOADERS
 GET_LOADERS
@@ -2543,70 +2612,8 @@ fi
 # Конец блока обработки если один  раздел EFI #################################################
 ###########################################################################################
 fi
-
-######################################### Color Mode FUNC #####################################
-GET_COLOR_MODE_PRESET(){
-cm=()
-if [[ ! $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then
-    i=1
-    while true; do if [[ $(echo "${MountEFIconf}" | grep -A$((i-1))  "ColorModeData</key>" | grep -ow "</dict>" ) = "" ]]; then let "i++"; else break; fi; done
-    if [[ ! $(echo "${MountEFIconf}" | grep -A$((i-1)) -o "$presetName</key>") = "" ]]; then
-        cm_string=$(echo "${MountEFIconf}" | grep -A$i "ColorModeData</key>" | grep -ow -A1 "$presetName</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
-        IFS='+'; cm=($cm_string); unset IFS
-    fi
-fi
-}
-
-GET_COLOR_MODE_STRUCT(){ cm_ptr_string=$(echo "${MountEFIconf}" | grep -A1 "ColorModeStructure</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' 2>/dev/null); }
-
-COLOR_MODE(){
-#######################################################################################################################################################
-################################################### блок установки модификации цветного вывода ######################################################
-# cm        # список модификаторов цвета
-# cm_ptr   # список указателей на элементы списка модификаторов cm
-cm=(); cm_ptr=()
-
-presetName="$current"; GET_COLOR_MODE_PRESET; if [[ "${cm_string}" = "" ]]; then presetName="Init180061Mode"; GET_COLOR_MODE_PRESET; fi
-
-GET_COLOR_MODE_STRUCT
-
-if [[ "${cm_ptr_string}" = "" ]]; then
-cm_ptr_string="head_ast head_str head_os head_X head_sch head_upd_sch head_upd_sch_num head_upd_sch_br head_upd_sch_sp head_num_sch head_sch_br head_pls "\
-"head_pls_str head_pls_qts head_sata head_usb dots_line1 dots_line2 dots_line3 num_sata num_sata_br num_usb num_usb_br mount_sata_pls mount_sata_dots "\
-"mount_usb_pls mount_usb_dots dn_sata dn_usb dn_bsd_sata pn_size_sata pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp "\
-"rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_W cl_M "\
-"cl_E2 cl_ast cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark"
-plutil -replace ColorModeStructure -string "$cm_ptr_string" "${CONFPATH}"
-fi
-cm_ptr=($cm_ptr_string); for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
-
-if [[ "${cm[@]}" = "" ]]; then 
-cm_string="\e[0m\e[2;38;5;15m+\e[0m\e[38;5;39m+\e[0m\e[32m+\e[0m\e[95m+\e[0m\e[37m+\e[0m\e[38;5;228m+\e[0m\e[38;5;39m+\e[0m\e[38;5;64m+"\
-"\e[0m\e[38;5;228m+\e[0m\e[38;5;39m+\e[0m\e[37m+\e[0m+\e[0m\e[37m+\e[0m\e[2;36m+\e[0m\e[38;5;228m+\e[38;5;116m+\e[0m\e[37m+"\
-"\e[0m\e[37m+\e[0m\e[37m+\e[0m\e[93m+\e[0m\e[93m+\e[0m\e[96m+\e[0m\e[96m+\e[0m\e[38;5;15m+\e[0m\e[33m+\e[0m\e[38;5;15m+"\
-"\e[0m\e[38;5;8m+\e[0m\e[38;5;227m+\e[0m\e[38;5;44m+\e[0m\e[38;5;11m+\e[0m\e[38;5;227m+\e[0m\e[93m+\e[0m\e[38;5;14m+\e[0m\e[38;5;44m+"\
-"\e[0m\e[96m+\e[0m\e[38;5;227m+\e[0m\e[38;5;227m+\e[0m\e[38;5;44m+\e[0m\e[38;5;44m+\e[0m+\e[0m\e[37m+\e[0m\e[37m+\e[0m\e[1;38;5;44m+"\
-"\e[0m\e[1;93m+\e[0m\e[31m+\e[0m\e[38;5;159m+\e[0m\e[38;5;10m+\e[0m\e[1;38;5;31m+\e[0m\e[38;5;167m+\e[0m\e[1;38;5;184m+\e[0m\e[95m+"\
-"\e[0m\e[95m+\e[0m\e[38;5;9m+\e[0m\e[1;36m+\e[0m\e[1;93m+\e[0m\e[1;31m+\e[0m\e[1;95m+\e[0m\e[1;92m+\e[0m\e[1;32m+\e[0m\e[1;92m+"\
-"\e[0m\e[1;96m+\e[0m\e[1;33m+\e[0m\e[38;5;11m+\e[0m\e[1;92m+\e[0m\e[38;5;88m+\e[0m\e[33m+\e[0m\e[36m+\e[0m\e[95m+\e[0m\e[38;5;7m+"\
-"\e[0m\e[38;5;7m+\e[0m\e[38;5;28m+\e[0m+\e[0m+\e[0m+\e[0m+0"
-IFS='+'; cm=($cm_string); unset IFS
-if [[ $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then plutil -insert ColorModeData -xml  '<dict/>'   "${CONFPATH}"; fi
-plutil -replace ColorModeData."$presetName" -string "$cm_string" "${CONFPATH}"
-fi
-
-if [[ "$presetName" = "Init180061Mode" ]]; then
-current_background="{4064, 8941, 17101}"; current_foreground="{65535, 65535, 65535}"; current_fontname="SF Mono Regular"; current_fontsize="11"
-osascript -e "tell application \"Terminal\" to set background color of window 1 to $current_background" \
--e "tell application \"Terminal\" to set normal text color of window 1 to $current_foreground" \
--e "tell application \"Terminal\" to set the font name of window 1 to \"$current_fontname\"" \
--e "tell application \"Terminal\" to set the font size of window 1 to $current_fontsize"
-fi
-###########################################################################################################################################################
-}
-
-CHECK_CM(){ if $(cat "${CONFPATH}" | grep -A1 "GUIcolorMode</key>" | egrep -o "false|true"); then cm_check=1; COLOR_MODE
-else cm_check=0; fi }; CHECK_CM
+########################## проверка и запуск цветного режима ################################
+CHECK_CM
 ################### применение темы ##########################################################
 if [[ $cm_check = 0 ]]; then
 theme="system"
