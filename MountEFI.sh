@@ -3,8 +3,8 @@
 #  Created by Андрей Антипов on 19.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
-prog_vers="1.8.0"
-edit_vers="061"
+prog_vers="1.9.0"
+edit_vers="001"
 serv_vers="008"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
@@ -442,7 +442,7 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
         if [[ $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
     fi
 
-#    if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
+    if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
 
     if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
     
