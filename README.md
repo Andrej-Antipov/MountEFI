@@ -1,5 +1,5 @@
 # MountEFI
-A shell script program with GUI for quickly searching and mounting EFI / ESP partitions on Mac OS 10.11 - 10.15
+A shell script program with GUI for quickly searching and mounting EFI / ESP partitions on Mac OS 10.11 - 11
 
 **Basic program features**
 
