@@ -15,6 +15,7 @@ A shell script program with GUI for quickly searching and mounting EFI / ESP par
 * Has hashes editor to store BOOTx64.efi MD5 hashes in config file to recognize any loaders
 * Backup and restore self settings. Also via iCloud
 * Password for mount stored in keychain
+* Color mode GUI and Editor
 * Some other features
 
 ![Theme customizable GUI](https://github.com/Andrej-Antipov/MountEFI/blob/master/screenshots/100.png)
