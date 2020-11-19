@@ -4,8 +4,8 @@ export LANG=en_US.UTF-8
 
 #  Created by Андрей Антипов on 11.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
-prog_vers="1.8.0"
-edit_vers="061"
+prog_vers="1.9.0"
+edit_vers="001"
 serv_vers="008"
 
 MOUNT_EFI_WINDOW_UP(){ 
