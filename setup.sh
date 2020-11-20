@@ -644,17 +644,9 @@ strng=`echo "$MountEFIconf" | grep  "<key>CurrentPreset</key>" | grep key | sed 
     fi
 fi
 
-if [[ ! $cache = 1 ]]; then
-        if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist "${CONFPATH}"
-        else
-             FILL_CONFIG
-        fi
-fi
+if [[ ! $cache = 1 ]]; then if [[ -f DefaultConf.plist ]]; then cp DefaultConf.plist "${CONFPATH}"; else FILL_CONFIG; fi; fi
 
-if [[ $deleted = 1 ]]; then
-    plutil -replace Theme -string $theme "${CONFPATH}" 
-fi
+if [[ $deleted = 1 ]]; then plutil -replace Theme -string $theme "${CONFPATH}" ; fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 strng=`echo "$MountEFIconf"| grep -e "<key>ShowKeys</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
@@ -743,6 +735,8 @@ if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO "${
 
 strng=`echo "$MountEFIconf"| grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "startupMount" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
+
+if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
@@ -7338,14 +7332,10 @@ if [[ $inputs = 0 ]]; then
                         fi
                     
                    fi
-if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
-rm -f "${CONFPATH}"
- if [[ -f DefaultConf.plist ]]; then
-            cp DefaultConf.plist "${CONFPATH}"
-        else
-             FILL_CONFIG
-        fi
-    fi
+    if [[ -d ${HOME}/.MountEFIconfBackups ]]; then rm -R ${HOME}/.MountEFIconfBackups; fi
+    rm -f "${CONFPATH}"; cache=0; CHECK_CONFIG
+    #if [[ -f DefaultConf.plist ]]; then cp DefaultConf.plist "${CONFPATH}" ; else FILL_CONFIG; fi
+fi
     UPDATE_CACHE
     CORRECT_STATE_ON_LOGIN_SERVICE
 fi

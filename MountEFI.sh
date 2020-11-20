@@ -24,7 +24,7 @@ SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
 
-DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true"); if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
 
 DBG "CLIENT started +++++++++++++++++++++++++++++++++++++++++++++++++"
 
@@ -130,6 +130,22 @@ SOURCE="${HOME}/.MountEFIupdates/${edit_vers}"
 if [[ -f "${SOURCE}/DefaultConf.plist" ]]; then mv -f "${SOURCE}/DefaultConf.plist" "${ROOT}"; fi
 if [[ -f "${SOURCE}/MEFIScA.sh" ]]; then mv -f "${SOURCE}/MEFIScA.sh" "${ROOT}"; fi
 if [[ -f "${SOURCE}/cm_edit" ]]; then mv -f "${SOURCE}/cm_edit" "${ROOT}"; fi
+if [[ -f "${SOURCE}/OC_Hashes.txt" ]]; then
+    ocHashes64List=($(cat "${SOURCE}"/OC_Hashes.txt | egrep -o '^[0-9a-f]{64}\b=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b'))
+    ocHashes32List=($(cat "${SOURCE}"/OC_Hashes.txt | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b'))
+    ocHashes64string=""; ocHashes32string=""
+    for i in ${!ocHashes64List[@]}; do ocHashes64string+="${ocHashes64List[i]};"; done
+    for i in ${!ocHashes32List[@]}; do ocHashes32string+="${ocHashes32List[i]};"; done
+    if [[ $(echo "${MountEFIconf}" | grep -o "YHashes</key>") = "" ]]; then plutil -insert YHashes -xml  '<dict/>' "${CONFPATH}"; fi
+    plutil -replace YHashes.ocHashes64 -string "${ocHashes64string}" "${CONFPATH}" 2>>/dev/null
+    plutil -replace YHashes.ocHashes32 -string "${ocHashes32string}" "${CONFPATH}" 2>>/dev/null
+    UPDATE_CACHE
+    if [[ -f "${ROOT}"/DefaultConf.plist ]]; then 
+        if [[ $(cat "${ROOT}"/DefaultConf.plist | grep -o "YHashes</key>") = "" ]]; then plutil -insert YHashes -xml  '<dict/>' "${ROOT}"/DefaultConf.plist; fi
+        plutil -replace YHashes.ocHashes64 -string "${ocHashes64string}" "${ROOT}"/DefaultConf.plist 2>>/dev/null
+        plutil -replace YHashes.ocHashes32 -string "${ocHashes32string}" "${ROOT}"/DefaultConf.plist 2>>/dev/null
+    fi
+fi
 
 #IF_NEW_APPLET
             TARGET="${ROOT}/../../../MountEFI.app/Contents"
@@ -1259,6 +1275,10 @@ GET_APP_ICON
 
 GET_FLAG
 
+ocHashes32string=$(echo "${MountEFIconf}" | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
+ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
+
+
 # Блок определения функций ########################################################
 
 #Получение пароля для sudo из связки ключей
@@ -1282,79 +1302,11 @@ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null 
 if [[ ${oc_revision} = "" ]]; then
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
-case "${oc_list[pnum]}" in
-cbdc9e74d27453c2f3afaec2ca84f34819758cfb7f8f157959bf608fc76a069d ) oc_revision=.63r;;
-5ee87cfa50c502249abb6e3480bfdaa0aee0e2713f267fa907bb4e1250af71f7 ) oc_revision=.63d;;
-58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
-5ef1fc5a81e8e4e6aeb504c91d4a1d7786652faf1a336a446b187ae283d2cc9a ) oc_revision=.62d;;
-75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
-58c4b4a88f8c41f84683bdf4afa3e77c3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
-58c4b4a88f8c41f84683bdf4afa3e77c5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
-bb901639773a1c319a3ff804128bdfb4f663a56f66b9d95fd053a46b0829fa5c ) oc_revision=.60d;;
-01dfbdd3175793d729999c52882dd3b6da4a5e54641317b2aa7715f8b4273791 ) oc_revision=.59r;;
-efbad161ffbf7a17374d08ec924651fef46456574b8b67f603de74c201b4e130 ) oc_revision=.59d;;
-10610877a9cc0ed958ff74ed7a192474dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
-d90190bfea64112ed83621079371277ab85c28aa004291a96bf74d95eea3364a ) oc_revision=.58d;;
-10610877a9cc0ed958ff74ed7a1924743e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
-9ff8a0c61dc1332dd58ecc311e0938b088e8aec480eb24e757241580731d2023 ) oc_revision=.57d;;
-12e5d34064fed06441b86b21f3fa3b7d947f8ccfec961d02f54d1a2f5c808504 ) oc_revision=.56r;;
-9004a000df355d09a79ba510c055a5f0db78c5fef3550213e947b8d6fa5338e4 ) oc_revision=.56d;;
-f3b1534643d3eb11fc18ac5a56528d794bdb27730c0c06275e2fc389348d46d0 ) oc_revision=.55r;;
-07b64c16f48d61e5e9f2364467250912217a07b161306324d147681914a319c3 ) oc_revision=.55d;;
-91e8abcf647af737d4a22fe3f98d00c021aa72da926ec362ab58626b60c36ac8 ) oc_revision=.54r;;
-5758e9b672486b863b18f6e5ff001b27d36cb1eafafcd9b94d3526aece5bc8b4 ) oc_revision=.54d;;
-97f744526c733aa2e6505f01f37de6d78cc62a1017afa01c2c75ad4b6fca8df2 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f1d821f7a51eab7c39999328438770fa7 ) oc_revision=.53d;;
-1ca142bf009ed537d84c980196c36d72ba2a5846697e7895753e7b05989738e5 ) oc_revision=.52r;;
-eaba9d5b467da41f5a872630d4ad7ff552f819181055f501b6882c2a73268dbc ) oc_revision=.52d;;
-eb66a8a986762b9cadecb6408ecb1ec7ff42893722bc0a3278c7d8029b797342 ) oc_revision=.51r;;
-c31035549f86156ff5e79b9d87240ec54be8a2620c923129b3bac0b2d1b8fd6b ) oc_revision=.51d;;
-7844acab1d74aeccc5d2696627c1ed3d081f9922be27b2d1e82fc8dbd3426498 ) oc_revision=.50r;;
-c221f59769bd185857b2c30858fe3aa2ec0e6c7dfa2ab84eaad52f167e85466f ) oc_revision=.50d;;
-                                                                *)     oc_revision=""
-esac 
-######################################################################################
+oc_revision=$(echo "${ocHashes64string}" | egrep -o "${oc_list[pnum]}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
 fi
 
 if [[ ${oc_revision} = "" ]]; then
-
-case "${md5_loader}" in
-############## oc_hashes_strings 33 #################
-cbdc9e74d27453c2f3afaec2ca84f348 ) oc_revision=.63x;;
-5ee87cfa50c502249abb6e3480bfdaa0 ) oc_revision=.63x;;
-5ef1fc5a81e8e4e6aeb504c91d4a1d77 ) oc_revision=.62x;;
-75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
-58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
-bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60x;;
-01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59x;;
-efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59x;;
-d90190bfea64112ed83621079371277a ) oc_revision=.58x;;
-9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57x;;
-10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
-12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56x;;
-9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56x;;
-f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55x;;
-07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55x;;
-91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54x;;
-5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54x;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53x;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53x;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52x;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52x;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51x;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51x;;
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50x;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50x;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
-52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
-                                *)     oc_revision=""
-                    esac
+oc_revision=$(echo "${ocHashes32string}" | egrep -o "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=)
 fi
 
 }
@@ -1671,7 +1623,7 @@ COLOR_MODE(){
 ################################################### блок установки модификации цветного вывода ######################################################
 # cm        # список модификаторов цвета
 # cm_ptr   # список указателей на элементы списка модификаторов cm
-cm=(); cm_ptr=()
+cm=(); cm_ptr=(); cm_string=""; cm_ptr_string=""
 
 if [[ $theme = "built-in" ]]; then
 current=`echo "$MountEFIconf"  | grep -A 1 -e "<key>CurrentPreset</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n'`
@@ -1689,7 +1641,7 @@ cm_ptr_string="head_ast head_str head_os head_X head_sch head_upd_sch head_upd_s
 "mount_usb_pls mount_usb_dots dn_sata dn_usb dn_bsd_sata pn_size_sata pn_size_msata dn_bsd_usb pn_size_usb pn_size_musb sata_bsd sata_bsp usb_bsd usb_bsp "\
 "rv0 kh_str curs_str curs_num_1 curs_num_2 ld_unrec ld_oc ld_cl ld_wn ld_rf ld_gb ld_oth cl_Q cl_P cl_U cl_E cl_A cl_S cl_I cl_V cl_C cl_O cl_L cl_W cl_M "\
 "cl_E2 cl_ast cl_str cl_conf ld_srch ld_srch_sp ld_srch_bt rv1 rv2 rv3 clr dark"
-plutil -replace ColorModeStructure -string "$cm_ptr_string" "${CONFPATH}"
+plutil -replace ColorModeStructure -string "$cm_ptr_string" "${CONFPATH}"; UPDATE_CACHE
 fi
 cm_ptr=($cm_ptr_string); for i in ${!cm_ptr[@]}; do export ${cm_ptr[i]}=$i; done
 
@@ -1704,8 +1656,8 @@ cm_string="\e[0m\e[2;38;5;15m+\e[0m\e[38;5;39m+\e[0m\e[32m+\e[0m\e[95m+\e[0m\e[3
 "\e[0m\e[1;96m+\e[0m\e[1;33m+\e[0m\e[38;5;11m+\e[0m\e[1;92m+\e[0m\e[38;5;88m+\e[0m\e[33m+\e[0m\e[36m+\e[0m\e[95m+\e[0m\e[38;5;7m+"\
 "\e[0m\e[38;5;7m+\e[0m\e[38;5;28m+\e[0m+\e[0m+\e[0m+\e[0m+0"
 IFS='+'; cm=($cm_string); unset IFS
-if [[ $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then plutil -insert ColorModeData -xml  '<dict/>'   "${CONFPATH}"; fi
-plutil -replace ColorModeData."$presetName" -string "$cm_string" "${CONFPATH}"
+if [[ $(echo "${MountEFIconf}" | grep -o "ColorModeData</key>") = "" ]]; then plutil -replace ColorModeData -xml  '<dict/>'   "${CONFPATH}"; fi
+plutil -replace ColorModeData."$presetName" -string "$cm_string" "${CONFPATH}"; UPDATE_CACHE
 fi
 
 if [[ "$presetName" = "Init180061Mode" ]]; then
@@ -1723,9 +1675,11 @@ else cm_check=0; fi };
 ############## обновление даных после выхода из скрипта настроек #########################################################
 
 REFRESH_SETUP(){
-DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true"); if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
 CHECK_MEFIScA
 UPDATE_CACHE
+ocHashes32string=$(echo "${MountEFIconf}" | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
+ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
 GET_LOCALE
 strng=`echo "$MountEFIconf" | grep -A 1 -e "OpenFinder</key>" | grep false | tr -d "<>/"'\n\t'`
 if [[ $strng = "false" ]]; then OpenFinder=0; else OpenFinder=1; fi
