@@ -101,9 +101,9 @@ fi
 
 cd ..
 
-if [[ -f DefaultConf.plist ]]; then 
+if [[ -f Notifiers/DefaultConf.plist ]]; then 
         if [[ -f MountEFI.app/Contents/Resources/DefaultConf.plist ]]; then rm MountEFI.app/Contents/Resources/DefaultConf.plist; fi
-        cp DefaultConf.plist MountEFI.app/Contents/Resources/
+        cp Notifiers/DefaultConf.plist MountEFI.app/Contents/Resources/
 fi
 
 
@@ -150,7 +150,8 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                     cp -a Notifiers/Oldapp/document.wflow Updates/$current_vers/$edit_vers
                     #cp -a Notifiers/Oldapp/Info.plist Updates/$current_vers/$edit_vers
                 fi
-
+                
+                if [[ -f Notifiers/OC_Hashes.txt ]]; then cp -a Notifiers/OC_Hashes.txt Updates/$current_vers/$edit_vers/OC_Hashes.txt ; fi
                 if [[ -f Notifiers/MEFIScA.sh ]]; then cp -a Notifiers/MEFIScA.sh Updates/$current_vers/$edit_vers/ ; fi
                 if [[ -f Notifiers/color_editor.sh ]]; then cp -a Notifiers/color_editor.sh Updates/$current_vers/$edit_vers/cm_edit ; chmod +x Updates/$current_vers/$edit_vers/cm_edit; fi
 
