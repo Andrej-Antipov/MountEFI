@@ -2422,6 +2422,8 @@ do
 
 if [[ $mcheck = "Yes" ]]; then
 	noefi=0
+    if osascript -e 'tell application "Finder" to get window "EFI"' >>/dev/null 2>/dev/null 
+        then osascript -e 'tell application "Finder" to close  window "EFI"' >>/dev/null 2>/dev/null; fi
 	diskutil quiet umount force  /dev/${string}
 
 	UNMOUNTED_CHECK	
@@ -2447,7 +2449,6 @@ printf '\n\n'
 
 nogetlist=1
 if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
-
 
 }
 
