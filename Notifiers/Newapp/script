@@ -486,7 +486,12 @@ while [ $var1 != 0 ]
 do 
 
 	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
-    if [[ $mcheck = "Yes" ]]; then diskutil quiet umount force  /dev/${string}; UNMOUNTED_CHECK; fi
+    if [[ $mcheck = "Yes" ]]; then 
+    
+    if osascript -e 'tell application "Finder" to get window "EFI"' >>/dev/null 2>/dev/null 
+        then osascript -e 'tell application "Finder" to close  window "EFI"' >>/dev/null 2>/dev/null; fi
+
+    diskutil quiet umount force  /dev/${string}; UNMOUNTED_CHECK; fi
 
     let "num++"
 	let "var1--"
@@ -494,6 +499,7 @@ done
 
 kill $mspid
 KILL_DIALOG
+
 }
 
 MOUNTED_CHECK(){
