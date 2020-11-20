@@ -1775,6 +1775,8 @@ if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') =
 
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
+rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
+
 GET_APP_ICON
 
 UPDATE_CACHE
