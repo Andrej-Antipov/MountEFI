@@ -106,10 +106,9 @@ for ((i=0;i<$plcount;i++)) do pl_string="${plist[i]}"; file_list+='"'${pl_string
 }
 
 WINDOW_UP(){
-osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "color_editor.sh")  to true' 2>/dev/null
+osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "cm_edit")  to true' 2>/dev/null
 osascript -e 'tell application "Terminal" to activate' 2>/dev/null
 }
-
 
 ASK_COLOR_MODE_PRESET(){
 if [[ $loc = "ru" ]]; then
