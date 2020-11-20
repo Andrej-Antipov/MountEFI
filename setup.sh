@@ -17,6 +17,8 @@ DBG(){ if $DEBUG; then TSP; echo $1 >> "${logfile}" 2>/dev/null; fi;  }
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
+rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
+
 DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
 
 SHOW_VERSION(){
@@ -416,7 +418,6 @@ let "N1=N1+2"; let "N2=N2+2"
 current_fontsize=$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')
 let "N1=N1+2"; let "N2=N2+2"
 current_foreground=$(echo "$MountEFIconf" | grep -A "$N1" Presets | awk '(NR == '$N2')' | sed -e 's/.*>\(.*\)<.*/\1/')
-
 }
 
 GET_CURRENT_SET(){

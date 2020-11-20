@@ -22,6 +22,8 @@ cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
 CONFPATH="${HOME}/.MountEFIconf.plist"
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
+rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
+
 DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
 
 DBG "CLIENT started +++++++++++++++++++++++++++++++++++++++++++++++++"
