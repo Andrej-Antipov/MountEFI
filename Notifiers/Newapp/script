@@ -20,7 +20,7 @@ logfile="${HOME}/Desktop/temp.txt"
 TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> "${logfile}" 2>/dev/null; }
 DBG(){ if $DEBUG; then TSP; echo $1 >> "${logfile}" 2>/dev/null; fi;  }
 CONFPATH="${HOME}/.MountEFIconf.plist"
-DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true"); if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
 DEBUG_MODE(){ if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; }
 DBG "SCRIPT: start applet ___________________________________________________"
 
@@ -558,37 +558,7 @@ if [[ $strng = "false" ]]; then OpenFinder=0; fi
 ################################################### детект загрузчиков ##########################################################################################
 
 CORRECT_OC_VERS(){
-case "${md5_full}" in
-cbdc9e74d27453c2f3afaec2ca84f34819758cfb7f8f157959bf608fc76a069d ) oc_revision=.63r;;
-5ee87cfa50c502249abb6e3480bfdaa0aee0e2713f267fa907bb4e1250af71f7 ) oc_revision=.63d;;
-58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
-5ef1fc5a81e8e4e6aeb504c91d4a1d7786652faf1a336a446b187ae283d2cc9a ) oc_revision=.62d;;
-75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
-58c4b4a88f8c41f84683bdf4afa3e77c3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
-58c4b4a88f8c41f84683bdf4afa3e77c5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
-bb901639773a1c319a3ff804128bdfb4f663a56f66b9d95fd053a46b0829fa5c ) oc_revision=.60d;;
-01dfbdd3175793d729999c52882dd3b6da4a5e54641317b2aa7715f8b4273791 ) oc_revision=.59r;;
-efbad161ffbf7a17374d08ec924651fef46456574b8b67f603de74c201b4e130 ) oc_revision=.59d;;
-10610877a9cc0ed958ff74ed7a192474dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
-d90190bfea64112ed83621079371277ab85c28aa004291a96bf74d95eea3364a ) oc_revision=.58d;;
-10610877a9cc0ed958ff74ed7a1924743e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
-9ff8a0c61dc1332dd58ecc311e0938b088e8aec480eb24e757241580731d2023 ) oc_revision=.57d;;
-12e5d34064fed06441b86b21f3fa3b7d947f8ccfec961d02f54d1a2f5c808504 ) oc_revision=.56r;;
-9004a000df355d09a79ba510c055a5f0db78c5fef3550213e947b8d6fa5338e4 ) oc_revision=.56d;;
-f3b1534643d3eb11fc18ac5a56528d794bdb27730c0c06275e2fc389348d46d0 ) oc_revision=.55r;;
-07b64c16f48d61e5e9f2364467250912217a07b161306324d147681914a319c3 ) oc_revision=.55d;;
-91e8abcf647af737d4a22fe3f98d00c021aa72da926ec362ab58626b60c36ac8 ) oc_revision=.54r;;
-5758e9b672486b863b18f6e5ff001b27d36cb1eafafcd9b94d3526aece5bc8b4 ) oc_revision=.54d;;
-97f744526c733aa2e6505f01f37de6d78cc62a1017afa01c2c75ad4b6fca8df2 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f1d821f7a51eab7c39999328438770fa7 ) oc_revision=.53d;;
-1ca142bf009ed537d84c980196c36d72ba2a5846697e7895753e7b05989738e5 ) oc_revision=.52r;;
-eaba9d5b467da41f5a872630d4ad7ff552f819181055f501b6882c2a73268dbc ) oc_revision=.52d;;
-eb66a8a986762b9cadecb6408ecb1ec7ff42893722bc0a3278c7d8029b797342 ) oc_revision=.51r;;
-c31035549f86156ff5e79b9d87240ec54be8a2620c923129b3bac0b2d1b8fd6b ) oc_revision=.51d;;
-7844acab1d74aeccc5d2696627c1ed3d081f9922be27b2d1e82fc8dbd3426498 ) oc_revision=.50r;;
-c221f59769bd185857b2c30858fe3aa2ec0e6c7dfa2ab84eaad52f167e85466f ) oc_revision=.50d;;
-                                                                *)     oc_revision=""
-esac 
+oc_revision=$(echo "${ocHashes64string}" | egrep -o "${md5_full}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
 }
 
 ################################ получение имени диска для переименования #####################
@@ -605,45 +575,7 @@ if [[ ${oc_revision} = "" ]]; then
 fi
 
 if [[ ${oc_revision} = "" ]]; then
-
-case "${md5_loader}" in
-############## oc_hashes_strings 33 #################
-cbdc9e74d27453c2f3afaec2ca84f348 ) oc_revision=.63x;;
-5ee87cfa50c502249abb6e3480bfdaa0 ) oc_revision=.63x;;
-5ef1fc5a81e8e4e6aeb504c91d4a1d77 ) oc_revision=.62x;;
-75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
-58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
-bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60x;;
-01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59x;;
-efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59x;;
-d90190bfea64112ed83621079371277a ) oc_revision=.58x;;
-9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57x;;
-10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
-12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56x;;
-9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56x;;
-f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55x;;
-07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55x;;
-91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54x;;
-5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54x;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53x;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53x;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52x;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52x;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51x;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51x;;
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50x;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50x;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
-52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
-                                *)     oc_revision=""
-                    esac
-fi
+oc_revision=$(echo "${ocHashes32string}" | egrep -o "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=); fi
 
 }
 
@@ -1769,6 +1701,11 @@ fi
 
 CLIENT_DONE(){ if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientDown; DBG "SCRIPT CLIENT DONE"; fi; }
 
+GET_OC_REL_VERS(){
+ocHashes32string=$(echo "${MountEFIconf}" | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
+ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
+}
+
 ################################### INIT ##################################################
 if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
    kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
@@ -1780,6 +1717,9 @@ rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
 GET_APP_ICON
 
 UPDATE_CACHE
+
+GET_OC_REL_VERS
+
 GET_LOCALE 
 GET_FLAG
 GET_LOADERS
