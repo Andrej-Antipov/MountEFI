@@ -151,7 +151,19 @@ if [[ ! "$edit_vers" = "" ]] || [[ ! "$prog_vers" = "" ]]; then
                     #cp -a Notifiers/Oldapp/Info.plist Updates/$current_vers/$edit_vers
                 fi
                 
-                if [[ -f Notifiers/OC_Hashes.txt ]]; then cp -a Notifiers/OC_Hashes.txt Updates/$current_vers/$edit_vers/OC_Hashes.txt ; fi
+                if [[ -f Notifiers/OC_Hashes.txt ]]; then cp -a Notifiers/OC_Hashes.txt Updates/$current_vers/$edit_vers/OC_Hashes.txt 
+                        ocHashes64List=($(cat Notifiers/OC_Hashes.txt | egrep -o '^[0-9a-f]{64}\b=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b'))
+                        ocHashes32List=($(cat Notifiers/OC_Hashes.txt | egrep -o '^[0-9a-f]{32}\b=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b'))
+                            ocHashes64string=""; ocHashes32string=""
+                        for i in ${!ocHashes64List[@]}; do ocHashes64string+="${ocHashes64List[i]};"; done
+                        for i in ${!ocHashes32List[@]}; do ocHashes32string+="${ocHashes32List[i]};"; done
+                        if [[ $(cat Updates/$current_vers/$edit_vers/DefaultConf.plist | grep -o "YHashes</key>") = "" ]]; then plutil -insert YHashes -xml  '<dict/>' Updates/$current_vers/$edit_vers/DefaultConf.plist; fi
+                        plutil -replace YHashes.ocHashes64 -string "${ocHashes64string}" Updates/$current_vers/$edit_vers/DefaultConf.plist 2>>/dev/null
+                        plutil -replace YHashes.ocHashes32 -string "${ocHashes32string}" Updates/$current_vers/$edit_vers/DefaultConf.plist 2>>/dev/null
+                       if [[ $(cat MountEFI.app/Contents/Resources/DefaultConf.plist | grep -o "YHashes</key>") = "" ]]; then plutil -insert YHashes -xml  '<dict/>' MountEFI.app/Contents/Resources/DefaultConf.plist; fi
+                        plutil -replace YHashes.ocHashes64 -string "${ocHashes64string}" MountEFI.app/Contents/Resources/DefaultConf.plist 2>>/dev/null
+                        plutil -replace YHashes.ocHashes32 -string "${ocHashes32string}" MountEFI.app/Contents/Resources/DefaultConf.plist 2>>/dev/null 
+                fi
                 if [[ -f Notifiers/MEFIScA.sh ]]; then cp -a Notifiers/MEFIScA.sh Updates/$current_vers/$edit_vers/ ; fi
                 if [[ -f Notifiers/color_editor.sh ]]; then cp -a Notifiers/color_editor.sh Updates/$current_vers/$edit_vers/cm_edit ; chmod +x Updates/$current_vers/$edit_vers/cm_edit; fi
 
