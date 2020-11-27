@@ -462,6 +462,15 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
 
     if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
 
+    if [[ -f DefaultConf.plist ]]; then
+    ocHashes32string=$(cat DefaultConf.plist | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
+    ocHashes64string=$(cat DefaultConf.plist | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
+    if [[ $(echo "${MountEFIconf}" | grep -o "YHashes</key>") = "" ]]; then plutil -insert YHashes -xml  '<dict/>' "${CONFPATH}"; fi
+    plutil -replace YHashes.ocHashes64 -string "${ocHashes64string}" "${CONFPATH}" 2>>/dev/null
+    plutil -replace YHashes.ocHashes32 -string "${ocHashes32string}" "${CONFPATH}" 2>>/dev/null
+    cache=0
+    fi
+
     if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
     
     if [[ ! -d "${HOME}"/Library/Application\ Support/MountEFI/validconf ]]; then mkdir -p "${HOME}"/Library/Application\ Support/MountEFI/validconf; fi
@@ -3392,7 +3401,6 @@ SHOW_DEBUG(){
 if $DEBUG; then
 ret_line=$((18+${#dlist[@]}+$(if [[ ! ${#usb_lines} = 0 &&  ! ${usb_lines} = 0 ]]; then echo 3; else echo 0 ; fi)))
 if [[ $ShowKeys = 0 ]]; then let "ret_line=ret_line-3"; fi
-DBG "CLIENT: DEBUG MODE ENABLED"
 posit_corr=$(((col-22-${#logfile})/2)); if [[ $posit_corr -lt 0 ]]; then posit_corr=0; fi
 printf '\r\033['$lines'f\e['$posit_corr'C\e[38;5;220mDEBUG is ON • log: >> '"${logfile::$((col-1))}"'\e[0m'
 printf '\r\033['$ret_line'f\033[48C '
@@ -3472,7 +3480,7 @@ if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [wW] ]]; then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
 if [[ ${choice} = [mM] ]]; then CHECK_CM; if [[ $cm_check = 0 ]]; then COLOR_MODE; mean="Yes"; else mean="No"; unset cm; if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi; fi; plutil -replace GUIcolorMode -bool $mean "${CONFPATH}"; order=4; choice=0; fi
 if [[ ${choice} = [eE] ]]; then if [[ -f "${ROOT}"/cm_edit ]]; then printf "\e[0m\033[?25l"; if [[ $cm_check = 0 ]]; then presetName="$current"; fi; echo "$presetName" > "${SERVFOLD_PATH}"/presetName; "${ROOT}"/cm_edit; UPDATE_CACHE; CHECK_CM; order=4; UPDATELIST; fi; fi
-if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; order=4; UPDATELIST; fi
+if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DBG "CLIENT: DEBUG DISABLED"; DEBUG="false"; else mean="Yes"; DEBUG=true; DBG "CLIENT: DEBUG ENABLED"; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4;  UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 fi
 else
