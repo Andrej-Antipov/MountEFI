@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 19.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 28.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -1050,18 +1050,20 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2
                                 if answer=$(osascript -e 'display dialog "Remove password from keychain?" '"${icon_string}"''); then cancel=0; else cancel=1; fi 2>/dev/null
                                 fi
                                
-                                if [[ $cancel = 0 ]]; then 
-                security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
-                sudo -k
-                SET_TITLE
+                                if [[ $cancel = 0 ]]; then                     
+                        security delete-generic-password -a ${USER} -s ${!efimounter} >/dev/null 2>&1
+                        sudo -k
+                        SET_TITLE
                         if [[ $loc = "ru" ]]; then
                         echo 'SUBTITLE="ПАРОЛЬ УДАЛЁН ИЗ СВЯЗКИ КЛЮЧЕЙ !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                         else
                         echo 'SUBTITLE="PASSWORD REMOVED FROM KEYCHAIN !"; MESSAGE=""' >> ${HOME}/.MountEFInoty.sh
                         fi
                         DISPLAY_NOTIFICATION
-                        fi
-                        
+                        sleep 0.8
+                        plutil -replace startupMount -bool NO "${CONFPATH}"; UPDATE_CACHE
+                        STOP_RUN_ON_LOGIN_SERVICE        
+                        fi                            
         else
                 
             ENTER_PASSWORD
@@ -1970,7 +1972,7 @@ sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске M
 sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 #sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков (бета) = "'$mld_set'"'"%"$mld_corr"s"'     (Да, Нет)        \n')
+sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков = "'$mld_set'"'"%"$mld_corr"s"'            (Да, Нет)        \n')
 sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
             else
 sbuf+=$(printf '\033[1;84f''                                 Menu List                              ')
@@ -1991,7 +1993,7 @@ sbuf+=$(printf '\033[9;84f'' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"
 sbuf+=$(printf '\033[10;84f'' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 #sbuf+=$(printf '\033[10;84f'' N) Lounch MountEFI on Mac OS login = "'$mefi_set'"'"%"$mefi_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf '\033[11;84f'' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf '\033[11;84f'' F) Bootloader auto search service (beta) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf '\033[11;84f'' F) Bootloader auto search service = "'$mld_set'"'"%"$mld_corr"s"'       (Yes, No)                \n')
 sbuf+=$(printf '\033[12;84f'' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
             fi
 sbuf+=$(printf '\033[13;84f')
@@ -3004,7 +3006,7 @@ sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
 if [[ -f "$ROOT"/MEFIScA.sh ]]; then
-sbuf+=$(printf ' F) Сервис авто поиска загрузчиков (бета) = "'$mld_set'"'"%"$mld_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' F) Сервис авто поиска загрузчиков = "'$mld_set'"'"%"$mld_corr"s"'       (Да, Нет)             \n')
 fi
 sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' A) Создать или править псевдонимы физических носителей                         \n')
@@ -3038,7 +3040,7 @@ sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
 if [[ -f "$ROOT"/MEFIScA.sh ]]; then
-sbuf+=$(printf ' F) Bootloader auto search service (beta) = "'$mld_set'"'"%"$mld_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' F) Bootloader auto search service = "'$mld_set'"'"%"$mld_corr"s"'       (Yes, No)                \n')
 fi
 sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' A) Create or edit aliases physical device/media                                \n')
