@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 28.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -19,7 +19,7 @@ SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
 
-DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true")
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true"); if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
 
 SHOW_VERSION(){
 clear && printf "\e[3J" 

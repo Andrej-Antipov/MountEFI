@@ -3479,7 +3479,7 @@ if [[ ${choice} = [iI] ]]; then  order=4; UPDATELIST; fi
 if [[ ${choice} = [vV] ]]; then SHOW_VERSION ; order=4; UPDATELIST; fi
 if [[ ${choice} = [wW] ]]; then MEFIScA_DATA; EASYEFI_RESTART_APP; fi
 if [[ ${choice} = [mM] ]]; then CHECK_CM; if [[ $cm_check = 0 ]]; then COLOR_MODE; mean="Yes"; else mean="No"; unset cm; if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi; fi; plutil -replace GUIcolorMode -bool $mean "${CONFPATH}"; order=4; choice=0; fi
-if [[ ${choice} = [eE] ]]; then if [[ -f "${ROOT}"/cm_edit ]]; then printf "\e[0m\033[?25l"; if [[ $cm_check = 0 ]]; then presetName="$current"; fi; echo "$presetName" > "${SERVFOLD_PATH}"/presetName; "${ROOT}"/cm_edit; UPDATE_CACHE; CHECK_CM; order=4; UPDATELIST; fi; fi
+if [[ ${choice} = [eE] ]]; then if [[ -f "${ROOT}"/cm_edit ]]; then printf "\e[0m\033[?25l"; if [[ $cm_check = 0 ]]; then presetName="$current"; fi; echo "$presetName" > "${SERVFOLD_PATH}"/presetName; "${ROOT}"/cm_edit; UPDATE_CACHE; CHECK_CM; choice="0"; order=4; fi; fi
 if [[ ${choice} = [D] ]];  then if $DEBUG; then mean="No"; DBG "CLIENT: DEBUG DISABLED"; DEBUG="false"; else mean="Yes"; DEBUG=true; DBG "CLIENT: DEBUG ENABLED"; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; order=4; UPDATELIST; fi
 if [[ ${choice} = [pP] ]]; then OPEN_PLIST; order=4;  UPDATELIST; if [[ ${ch} -gt 9 && $hotplug = 1 ]]; then choice=0; break; fi; fi
 fi
