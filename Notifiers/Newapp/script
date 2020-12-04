@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 11.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
 edit_vers="001"
@@ -491,7 +491,7 @@ do
     if osascript -e 'tell application "Finder" to get window "EFI"' >>/dev/null 2>/dev/null 
         then osascript -e 'tell application "Finder" to close  window "EFI"' >>/dev/null 2>/dev/null; fi
 
-    diskutil quiet umount force  /dev/${string}; UNMOUNTED_CHECK; fi
+    diskutil quiet umount /dev/${string}; UNMOUNTED_CHECK; fi
 
     let "num++"
 	let "var1--"
@@ -944,7 +944,7 @@ while [ $var1 != 0 ]; do
 	     fi
 	fi
 
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
@@ -988,7 +988,7 @@ while [ $var1 != 0 ]; do
 	   fi
 	fi
 
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
@@ -1024,7 +1024,7 @@ while [ $var1 != 0 ]; do
 
     if [[ ! ${loader} = "" ]];then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
 
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
