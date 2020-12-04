@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 19.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -1770,7 +1770,7 @@ fi
 ###################################################################################################################################
 GET_DATA_STACK(){
 #i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
-DBG "CLIENT START data get, waited $((8-i)) cycle of 8"
+DBG "CLIENT START data get"#" waited $((8-i)) cycle of 8"
 IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
 ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
 lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
@@ -2271,7 +2271,7 @@ do
 	         fi
 	fi
 
-		if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
+		if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
 		
     let "num++"
     let "var1--"
@@ -2334,7 +2334,7 @@ do
                     fi   
 	        fi
 	fi
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
 		
     let "num++"
     let "var1--"
@@ -2387,7 +2387,7 @@ do
        fi
     ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
     fi   
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
@@ -2433,7 +2433,7 @@ if [[ $mcheck = "Yes" ]]; then
 	noefi=0
     if osascript -e 'tell application "Finder" to get window "EFI"' >>/dev/null 2>/dev/null 
         then osascript -e 'tell application "Finder" to close  window "EFI"' >>/dev/null 2>/dev/null; fi
-	diskutil quiet umount force  /dev/${string}
+	diskutil quiet umount /dev/${string}
 
 	UNMOUNTED_CHECK	
 
@@ -2668,8 +2668,8 @@ for i in ${!mlist[@]}; do
      if [[ ${mlist[i]:0:3} = "sat" ]] && [[ ${mlist[i]:4} = "true" ]]; then printf '\033['$((i+8))';8;f'${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +  '${cm[clr]}''
                 elif [[ ${mlist[i]:0:3} = "sat" ]] && [[ ${mlist[i]:4} = "false" ]]; then  printf '\033['$((i+8))';8;f'${cm[num_sata_br]}')'${cm[mount_sata_dots]}' ...  '${cm[clr]}''; fi
         elif [[ "$1" = "usb" ]]; then
-            if [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "true" ]]; then printf '\033['$((sata_lines+i+9))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +  '${cm[clr]}''
-                elif [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "false" ]]; then printf '\033['$((sata_lines+i+9))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...  '${cm[clr]}''; fi
+            if [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "true" ]]; then printf '\033['$((sata_lines+i+8))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +  '${cm[clr]}''
+                elif [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "false" ]]; then printf '\033['$((sata_lines+i+8))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...  '${cm[clr]}''; fi
         fi           
 done
 if [[ "$1" = "sata" ]]; then printf '\033['$((sata_lines+9))';1f'; else printf '\033['$((sata_lines+usb_lines+12))';1f'; fi
