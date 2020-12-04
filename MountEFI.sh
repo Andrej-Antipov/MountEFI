@@ -3516,7 +3516,8 @@ fi
 string=${strng0}
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-if [[ $mcheck = "Yes" ]]; then 
+if [[ $mcheck = "Yes" ]]; then
+    sudo fsck_msdos -fy ${string} >>/dev/null 2>/dev/null
     if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
         if [[ $ldrname = "" ]];then open "$vname"; else open "$vname/EFI"; fi
     fi
