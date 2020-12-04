@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
@@ -292,7 +292,7 @@ if [[ ! ${#new_remlist[@]} = 0 ]]; then
             if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
             FIND_LOADERS
             if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
-            diskutil quiet  umount force /dev/${string}
+            if ! diskutil quiet  umount /dev/${string}; then sleep 0.5; diskutil quiet  umount force; fi
             fi
         fi
         done
@@ -435,15 +435,15 @@ fi
 
 DO_MOUNT(){
         if [[ $flag = 0 ]]; then
-                    if ! diskutil quiet mount  /dev/${string} 2>/dev/null; then
+                    if ! diskutil quiet mount readOnly /dev/${string} 2>/dev/null; then
                     sleep 1
-                    diskutil quiet mount  /dev/${string} 2>/dev/null; fi  
+                    diskutil quiet mount readOnly /dev/${string} 2>/dev/null; fi  
         else
                     if [[ $mypassword = "0" ]] || [[ $mypassword = "" ]]; then GET_PASSWORD; fi
                     if [[ ! $mypassword = "0" ]]; then
-                            if ! echo "$mypassword" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null; then 
+                            if ! echo "$mypassword" | sudo -S diskutil quiet mount readOnly /dev/${string} 2>/dev/null; then 
                                 sleep 1
-                                echo "$mypassword" | sudo -S diskutil quiet mount  /dev/${string} 2>/dev/null
+                                echo "$mypassword" | sudo -S diskutil quiet mount  readOnly /dev/${string} 2>/dev/null
                             fi
                     fi
         fi
@@ -487,7 +487,7 @@ if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
                     FIND_LOADERS
 
                     if [[ ! ${loader} = "" ]]; then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
-                    if [[ $was_mounted = 0 ]]; then diskutil quiet  umount force /dev/${string}; fi
+                    if [[ $was_mounted = 0 ]]; then if ! diskutil quiet  umount /dev/${string}; then sleep 0.5; diskutil quiet  umount force; fi; fi
                 fi
                 old_ldlist[pnum]=${ldlist[pnum]}
                 if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then old_oc_revision[pnum]=${ldlist[0]:8}; fi  
