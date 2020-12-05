@@ -292,7 +292,7 @@ if [[ ! ${#new_remlist[@]} = 0 ]]; then
             if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
             FIND_LOADERS
             if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
-            if ! diskutil quiet  umount /dev/${string}; then sleep 0.5; diskutil quiet  umount force; fi
+            if ! diskutil quiet  umount /dev/${string}; then sleep 0.5; diskutil quiet  umount force /dev/${string}; fi
             fi
         fi
         done
@@ -487,7 +487,7 @@ if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
                     FIND_LOADERS
 
                     if [[ ! ${loader} = "" ]]; then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
-                    if [[ $was_mounted = 0 ]]; then if ! diskutil quiet  umount /dev/${string}; then sleep 0.5; diskutil quiet  umount force; fi; fi
+                    if [[ $was_mounted = 0 ]]; then if ! diskutil quiet  umount /dev/${string}; then sleep 0.5; diskutil quiet  umount force /dev/${string}; fi; fi
                 fi
                 old_ldlist[pnum]=${ldlist[pnum]}
                 if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then old_oc_revision[pnum]=${ldlist[0]:8}; fi  
