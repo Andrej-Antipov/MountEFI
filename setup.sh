@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.11.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -5725,7 +5725,7 @@ fi
 
 GET_SYSTEM_FLAG(){
 macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}; if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1101" ]] || [[ "${macos}" -lt "1011" ]]; then 
+if [[ "${macos}" -gt "1110" ]] || [[ "${macos}" -lt "1011" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
