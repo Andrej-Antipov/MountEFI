@@ -2176,6 +2176,7 @@ fi
 DO_MOUNT(){
     	if [[ $flag = 0 ]] && [[ "$(sysctl -n kern.safeboot)" = "1" ]]; then ENTER_PASSWORD; password_was_entered=1; IF_UNLOCK_SAFE_MODE; fi
         if [[ $flag = 0 ]]; then
+                    fsck_msdos -fy ${string} >>/dev/null 2>/dev/null
                     if ! diskutil quiet mount  /dev/${string} 2>/dev/null; then
                     sleep 1
                     diskutil quiet mount  /dev/${string} 2>/dev/null; fi  
@@ -2186,6 +2187,7 @@ DO_MOUNT(){
                         CHECK_PASSWORD
                         if [[ ${need_password} = 0 ]]; then
                             IF_UNLOCK_SAFE_MODE
+                            sudo fsck_msdos -fy ${string} >>/dev/null 2>/dev/null
                             if ! sudo diskutil quiet mount  /dev/${string} 2>/dev/null; then 
                                 sleep 1
                                 sudo diskutil quiet mount  /dev/${string} 2>/dev/null
@@ -3517,7 +3519,6 @@ string=${strng0}
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 if [[ $mcheck = "Yes" ]]; then
-    sudo fsck_msdos -fy ${string} >>/dev/null 2>/dev/null
     if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
         if [[ $ldrname = "" ]];then open "$vname"; else open "$vname/EFI"; fi
     fi
