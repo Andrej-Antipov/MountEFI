@@ -733,10 +733,10 @@ fi
 strng=`echo "$MountEFIconf"| grep -e "<key>EasyEFImode</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "EasyEFImode" ]]; then plutil -replace EasyEFImode -bool NO "${CONFPATH}"; cache=0; fi
 
-strng=`echo "$MountEFIconf"| grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
+strng=`echo "$MountEFIconf" | grep -e "<key>startupMount</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "startupMount" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
 
-if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
+if [[ $(echo "$MountEFIconf" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
 
 if [[ $cache = 0 ]]; then UPDATE_CACHE; fi
 
