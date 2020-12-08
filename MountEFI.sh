@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 08.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
 edit_vers="001"
-serv_vers="008"
+serv_vers="009"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -462,9 +462,9 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
 
     if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
 
-    if [[ -f DefaultConf.plist ]]; then
-    ocHashes32string=$(cat DefaultConf.plist | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
-    ocHashes64string=$(cat DefaultConf.plist | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
+    if [[ -f "${ROOT}"/DefaultConf.plist ]]; then
+    ocHashes32string=$(cat "${ROOT}"/DefaultConf.plist | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
+    ocHashes64string=$(cat "${ROOT}"/DefaultConf.plist | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
     if [[ $(echo "${MountEFIconf}" | grep -o "YHashes</key>") = "" ]]; then plutil -insert YHashes -xml  '<dict/>' "${CONFPATH}"; fi
     plutil -replace YHashes.ocHashes64 -string "${ocHashes64string}" "${CONFPATH}" 2>>/dev/null
     plutil -replace YHashes.ocHashes32 -string "${ocHashes32string}" "${CONFPATH}" 2>>/dev/null
