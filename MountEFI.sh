@@ -460,7 +460,7 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
         if [[ $(launchctl list | grep -o "MEFIScA.job") = "" ]]; then plutil -replace startupMount -bool NO "${CONFPATH}"; cache=0; fi
     fi
 
-    if [[ $(echo "${CONFPATH}" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
+    if [[ $(echo "$MountEFIconf" | grep -ow "GUIcolorMode</key>") = "" ]]; then plutil -replace GUIcolorMode -bool Yes "${CONFPATH}"; cache=0; fi
 
     if [[ -f "${ROOT}"/DefaultConf.plist ]]; then
     ocHashes32string=$(cat "${ROOT}"/DefaultConf.plist | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/')
