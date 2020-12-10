@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 08.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -2421,7 +2421,7 @@ GETARR
 
 var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
 
-cd "${ROOT}"
+cd "${ROOT}"; if [[ ! $flag = 0 ]]; then CHECK_PASSWORD; fi
 
 while [ $var1 != 0 ] 
 do 
@@ -2436,6 +2436,7 @@ if [[ $mcheck = "Yes" ]]; then
     if osascript -e 'tell application "Finder" to get window "EFI"' >>/dev/null 2>/dev/null 
         then osascript -e 'tell application "Finder" to close  window "EFI"' >>/dev/null 2>/dev/null; fi
 	diskutil quiet umount /dev/${string}
+    if [[ ! $flag = 0 ]] && [[ ${need_password} = 0 ]]; then sudo fsck_msdos -fy "/dev/${string}" >>/dev/null 2>/dev/null; else fsck_msdos -fy "/dev/${string}" >>/dev/null 2>/dev/null; fi
 
 	UNMOUNTED_CHECK	
 
@@ -2449,8 +2450,6 @@ if [[ $mcheck = "Yes" ]]; then
     let "num++"
 	let "var1--"
 done
-
-
 
 printf '\r                                                          '
 printf "\r\033[2A"
@@ -3507,16 +3506,9 @@ string=`echo ${dlist[$pnum]}`
 strng0=${string}
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
-if [[ ! $mcheck = "Yes" ]]; then
-    wasmounted=0
-    DO_MOUNT
-    if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi
-    else 
-    wasmounted=1
-fi
+if [[ ! $mcheck = "Yes" ]]; then wasmounted=0; DO_MOUNT; if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi; else wasmounted=1; fi
 
-string=${strng0}
-mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+string=${strng0}; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 if [[ $mcheck = "Yes" ]]; then
     if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
