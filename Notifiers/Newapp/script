@@ -2,7 +2,7 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 08.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
 edit_vers="001"
@@ -480,7 +480,7 @@ GETARR
 var1=$pos
 num=0
 
-cd "${ROOT}"
+cd "${ROOT}"; if [[ ! $flag = 0 ]]; then CHECK_PASSWORD; fi
 
 while [ $var1 != 0 ] 
 do 
@@ -492,6 +492,9 @@ do
         then osascript -e 'tell application "Finder" to close  window "EFI"' >>/dev/null 2>/dev/null; fi
 
     diskutil quiet umount /dev/${string}; UNMOUNTED_CHECK; fi
+        if [[ ! $flag = 0 ]] && [[ ${need_password} = 0 ]]; then 
+            sudo fsck_msdos -fy "/dev/${string}" >>/dev/null 2>/dev/null; else fsck_msdos -fy "/dev/${string}" >>/dev/null 2>/dev/null; fi
+
 
     let "num++"
 	let "var1--"
