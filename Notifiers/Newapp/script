@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 10.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="001"
-serv_vers="009"
+edit_vers="002"
+serv_vers="010"
 
 MOUNT_EFI_WINDOW_UP(){ 
 osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
@@ -1569,6 +1569,66 @@ CORRECT_LOADERS_LIST(){
 synchro=0
 }
 
+CORRECT_LOADERS_HASH_LINKS(){
+    old_config_hashes=(); temp_lddlist=()
+
+if [[ -f ~/.hashes_list.txt ]]; then old_config_hashes=( $( cat ~/.hashes_list.txt | tr '\n' ' ' ) ); fi
+rm -f ~/.hashes_list.txt
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
+    for i in ${!mounted_loaders_list[@]}; do
+        if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
+                loader=""; oc_revision=""; revision=""
+                md5_loader=${mounted_loaders_list[i]}; GET_CONFIG_VERS "ALL"
+                            if [[ ! "${loader}" = "" ]]; then ldlist[i]="$loader"
+                                 elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
+                                    for hh in ${old_config_hashes[@]}; do
+                                        if [[ ${hh} = ${md5_loader} ]]; then
+                                                unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                        fi
+                                    done                  
+                            fi
+         fi
+    done 
+
+    old_other_loaders=(); deleted_other_loaders=()
+    if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_loaders_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.other_loaders_list.txt
+     
+        if [[ ! ${#old_other_loaders[@]} = 0 ]] ; then
+                      for y in "${old_other_loaders[@]}"; do
+                                match=0
+                                    for z in "${oth_list[@]}"; do
+                                        if [[ ${y:0:32} = ${z:0:32} ]]; then match=1; break; fi
+                                    done
+                                if [[ ${match} = 0 ]]; then deleted_other_loaders+=( ${y} ); fi
+                      done
+        fi
+     if [[ ! ${#deleted_other_loaders[@]} = 0 ]] ; then
+                for i in ${!mounted_loaders_list[@]}; do
+                            md5_loader=${mounted_loaders_list[i]}
+                            for y in ${!deleted_other_loaders[@]}; do
+                               if [[ ${md5_loader} = ${deleted_other_loaders[y]:0:32} ]]; then 
+                                    unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                fi
+                            done
+                done
+    fi
+
+     if [[ ! ${#oth_list[@]} = 0 ]] ; then 
+        for i in ${!mounted_loaders_list[@]}; do
+            if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
+                md5_loader=${mounted_loaders_list[i]}
+                for x in ${!oth_list[@]}; do
+                    if [[ ${md5_loader} = ${oth_list[x]:0:32} ]]; then  
+                                ldlist[i]="Other""${oth_list[x]:33}"; break
+                    fi
+                done
+            fi
+        done
+    fi
+    
+fi
+}
+
 KILL_DIALOG2(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
 
 ###################### GET MEFIScA DATA ########################################
@@ -1576,7 +1636,7 @@ GET_DATA_STACK(){
 if [[ $mefisca = 1 ]]; then
 DBG "reset = $rst"
 if [[ ${rst} = 0 ]]; then i=64; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
-    DBG "SCRIPT: CLIENT waiting ServerGetReady was $((64-i)) cycles"
+   DBG "SCRIPT: CLIENT waiting ServerGetReady was $((64-i)) cycles"
 fi
 i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
         fi; if [[ $i = 0 ]]; then break; fi; done 
@@ -1591,7 +1651,6 @@ i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; le
  oc_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/oc_list | tr '\n' ';' ) ); for i in ${!oc_list[@]}; do oc_list[i]=${oc_list[i]:32}; done
  DBG "SCRIPT oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
  if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
- CORRECT_LOADERS_HASH_LINKS
  rm -f "${SERVFOLD_PATH}/MEFIScA/ServerGetReady"; rm -f "${SERVFOLD_PATH}/MEFIScA/clientReady"
  fi
 fi
@@ -1724,6 +1783,8 @@ if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') =
 
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
+DBG "checkpoint 1 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
+
 rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
 
 GET_APP_ICON
@@ -1753,6 +1814,7 @@ GET_CONFIG_HASHES
 hotplug_flag=0
 
 DBG "SCRIPT rst = $rst"
+DBG "checkpoint 2 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
 
 ############################################################################################
 #################################### MAIN ##################################################
@@ -1774,9 +1836,10 @@ if [[ ${pos} = 1 ]]; then KILL_DIALOG; ONE_EFI_FOUND; if [[ $cansel = 0 ]]; then
 fi
 
 mefi_stack_got=0
-if [[ ${rst} = 0 ]]; then GET_DATA_STACK; GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; UPDATE_SCREEN; fi
+if [[ ${rst} = 0 ]]; then GET_DATA_STACK; CORRECT_LOADERS_HASH_LINKS; GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; CORRECT_LOADERS_HASH_LINKS; UPDATE_SCREEN; fi
 kill $mspid
 KILL_DIALOG2
+DBG "checkpoint 3 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
 while true; do
 #################### MAIN MENU #####################
 START_CHECK_HOTPLUG &
@@ -1847,7 +1910,6 @@ if [[ ${hotplug_flag} = 1 ]]; then GETARR; hotplug_flag=0; CORRECT_LOADERS_LIST;
 UPDATE_SCREEN
 
 MEFIScA_DATA
-
 done
 
 EXIT_PROGRAM
