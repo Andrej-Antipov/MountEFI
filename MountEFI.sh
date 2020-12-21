@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="001"
-serv_vers="009"
+edit_vers="002"
+serv_vers="010"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1770,7 +1770,8 @@ fi
 ###################################################################################################################################
 GET_DATA_STACK(){
 #i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
-DBG "CLIENT START data get"#" waited $((8-i)) cycle of 8"
+DBG "CLIENT START data get"
+#" waited $((8-i)) cycle of 8"
 IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list 2>/dev/null | tr '\n' ';' ) )
 ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist 2>/dev/null | tr '\n' ';' ) )
 lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist 2>/dev/null | tr '\n' ';' ) )
@@ -1805,12 +1806,12 @@ DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 GET_MEFIScA_DATA(){
      mfupd=0
      if [[ $mrel = 0 ]]; then
-        i=96; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; 
-        if [[ $i = 80 ]]; then MSG_WARN_SERV_READY &
-        fi
-        if [[ $i -lt 1 ]]; then break; fi; done
-        DBG "CLIENT waiting ServerGetReady was $((96-i)) cycles"
-        if [[ $i = 0 ]]; then KILL_DIALOG; MSG_SERV_READY_ERR; touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag; POSTCONTROL_RELAUNCH_MEFIScA; fi
+#        i=96; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; 
+#        if [[ $i = 80 ]]; then MSG_WARN_SERV_READY &
+#        fi
+#        if [[ $i -lt 1 ]]; then break; fi; done
+#        DBG "CLIENT waiting ServerGetReady was $((96-i)) cycles"
+#        if [[ $i = 0 ]]; then KILL_DIALOG; MSG_SERV_READY_ERR; touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag; POSTCONTROL_RELAUNCH_MEFIScA; fi
         i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &
         fi; if [[ $i = 0 ]]; then break; fi; done; KILL_DIALOG; if [[ $i = 0 ]]; then MSG_TIMEOUT; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
         DBG "CLIENT waiting WaitSychro gone off was $((240-i)) cycles"
