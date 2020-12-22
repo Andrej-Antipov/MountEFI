@@ -6,7 +6,7 @@ export LANG=en_US.UTF-8
 
 prog_vers="1.9.0"
 edit_vers="002"
-serv_vers="010"
+serv_vers="009"
 
 MOUNT_EFI_WINDOW_UP(){ 
 osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
