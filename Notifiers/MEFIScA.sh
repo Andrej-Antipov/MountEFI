@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 21.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
 edit_vers="002"
-serv_vers="010"
+serv_vers="009"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -45,7 +45,7 @@ GET_OC_LIST_ITEM(){ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenC
 if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF; else reloadFlag=0; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
 touch "${MEFIScA_PATH}"/WaitSynchro; DBG "MEFIScA WAIT ON"
 
-DBG "MEFIScA launch up v.010-002"
+DBG "MEFIScA launch up v.008-007"
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
@@ -458,7 +458,7 @@ match=0; for i in ${ldlist[@]}; do if [[ ${i::8} = "OpenCore" ]]; then match=1; 
 #    echo "reload" > "${MEFIScA_PATH}"/serverRflag; DBG "MEFIScA Reload flag SET UP"
     DBG "M: OpenCore found in ldlist" 
     for pnum in ${!ldlist[@]}; do if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"; ldlist[pnum]="${loader}"; DBG "M: OC corection loader = $loader"; fi; done
-    startup=1; sendData=1; SAVE_LOADERS_STACK; WAITFLAG_OFF
+    startup=1; sendData=1; WAITFLAG_OFF
     fi
 fi
 
@@ -494,7 +494,7 @@ if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
         done
     fi
     old_mounted=(${mounted_loaders_list[@]}); old_lddlist=(${lddlist[@]})
-    startup=1; sendData=1; SAVE_LOADERS_STACK; WAITFLAG_OFF
+    startup=1; sendData=1; WAITFLAG_OFF
 fi
 }
 
@@ -549,7 +549,7 @@ done
 }
 
 CLIENT_IS_ONLINE(){  DBG "MEFIScA клиент онлайн"; SAVE_LOADERS_STACK;  while CLIENT_ONLINE; do sleep 0.5; done; DBG "MEFIScA клиент сам по себе"; WAIT_CLIENT_DOWN; GET_MOUNTEFI_STACK; SERVER_READY_OFF; }
-CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then DBG "MEFIScA Hotplug detected: $hotplug $update_screen_flag"; SAVE_LOADERS_STACK; update_screen_flag=0 ; break; fi; }
+CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then DBG "MEFIScA Hotplug detected: $hotplug $update_screen_flag"; update_screen_flag=0 ; break; fi; }
 
 # Конец определения GETLIST ###########################################################
 
@@ -579,7 +579,7 @@ while true; do
         STARTUP_FIND_LOADERS
 
     while true; do
-        sleep 0.4; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; else sleep 0.4; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; fi; fi
+        sleep 0.3; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; else sleep 0.3; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; fi; fi
         if [[ $aa = "" ]]; then DBG "MEFIScA ONLINE"; aa=0; fi; CLIENT_IS_OFFLINE
     done
 done
