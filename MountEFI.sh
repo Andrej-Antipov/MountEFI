@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 22.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 27.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -2669,8 +2669,8 @@ for i in ${!mlist[@]}; do
      if [[ ${mlist[i]:0:3} = "sat" ]] && [[ ${mlist[i]:4} = "true" ]]; then printf '\033['$((i+8))';8;f'${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +  '${cm[clr]}''
                 elif [[ ${mlist[i]:0:3} = "sat" ]] && [[ ${mlist[i]:4} = "false" ]]; then  printf '\033['$((i+8))';8;f'${cm[num_sata_br]}')'${cm[mount_sata_dots]}' ...  '${cm[clr]}''; fi
         elif [[ "$1" = "usb" ]]; then
-            if [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "true" ]]; then printf '\033['$((sata_lines+i+8))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +  '${cm[clr]}''
-                elif [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "false" ]]; then printf '\033['$((sata_lines+i+8))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...  '${cm[clr]}''; fi
+            if [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "true" ]]; then printf '\033['$((sata_lines+11+(i-sata_lines)))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_pls]}'   +  '${cm[clr]}''
+                elif [[ ${mlist[i]:0:3} = "usb" ]] && [[ ${mlist[i]:4} = "false" ]]; then printf '\033['$((sata_lines+11+(i-sata_lines)))';8;f'${cm[num_usb_br]}')'${cm[mount_usb_dots]}' ...  '${cm[clr]}''; fi
         fi           
 done
 if [[ "$1" = "sata" ]]; then printf '\033['$((sata_lines+9))';1f'; else printf '\033['$((sata_lines+usb_lines+12))';1f'; fi
