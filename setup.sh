@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 22.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -6316,6 +6316,36 @@ ENTER_LOADER_NAME(){
            fi
 }
 
+ASK_EFI(){
+
+if [[ $loc = "ru" ]]; then
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$efi_prompt_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title " Список EFI (ESP) разделов:"  
+end tell
+EOD
+
+else
+
+osascript <<EOD
+tell application "System Events"    activate
+set ThemeList to {$efi_prompt_list}
+set FavoriteThemeAnswer to choose from list ThemeList with title " EFI (ESP) partition list:" 
+end tell
+EOD
+
+fi
+
+}
+
+IF_GET_PASSWORD(){
+    GET_USER_PASSWORD
+    if [[ $mypassword = 0 || $mypassword = "" ]]; then ENTER_PASSWORD
+        if [[ $mypassword = 0 || $mypassword = "" ]]; then break; fi
+    fi
+}
+
 ADD_HASHES(){
 loader_type=$1
 editor_type=$2
@@ -6399,11 +6429,31 @@ while true; do
 ########### диалог выбора файла для получения хэша ###############################
                   while true; do
                 
-                  if [[ $loc = "ru" ]]; then prompt='"ВЫБЕРИТЕ ФАЙЛ ЗАГРУЗЧИКА ДЛЯ ЗАПОМИНАНИЯ ЕГО ХЭША MD5:"'; else prompt='"SELECT FILE TO STORE ITS MD5 HASH :"'; fi
-                  alias_string='"'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"':Volumes"'
-                  if answer="$(osascript -e 'tell application "Terminal" to return POSIX path of (choose file default location alias '"${alias_string}"' with prompt '"${prompt}"')')"; then cancel=0; else cancel=1; fi 2>/dev/null 
-                  if [[ $answer = "" ]]; then cancel=1; break; else 
-                            cancel=0;  hash_string=$( md5 -qq "${answer}" )
+                  efi_prompt_list=""
+
+                    ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
+                    drives_iomedia=$( echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia," )
+                    IFS=';'; dlist=($( diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )); unset IFS
+
+                    for i in ${dlist[@]}; do
+
+                    efi_prompt_list+='"'"$i  :  $(echo "$drives_iomedia" | grep -B 10 $(echo $i | rev | cut -f2-3 -d"s" | rev) | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")"'"'
+                    efi_prompt_list+=","; done
+                    efi_prompt_list=${efi_prompt_list::$(($(echo ${#efi_prompt_list})-1))}
+
+                    answer=$( echo $(ASK_EFI) | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}")
+
+                    if [[ ! $answer = "" ]]; then 
+                    mflag=0
+                    if [[ $(df | grep ${answer}) = "" ]]; then 
+                    if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${answer} 2>/dev/null; else IF_GET_PASSWORD; echo "$mypassword" | sudo -S diskutil quiet mount  /dev/${answer} 2>/dev/null; fi
+                    mflag=1
+                    fi
+                     vname=$(df | egrep ${answer} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+                    hash_string=$( md5 -qq "$vname/EFI/BOOT/BOOTX64.EFI" 2>/dev/null)
+                    if [[ $mflag = 1 ]]; then diskutil quiet umount /dev/${answer}; mflag=0; fi
+                    fi
+                  if [[ $answer = "" || $hash_string = "" ]]; then cancel=1; break; else cancel=0;  
                             CHECK_DUPLICATE_HASHES
                             if [[ $cancel = 1 ]]; then break; fi
  ########### диалог ввода версии загрузчика ###################################### 
