@@ -1367,6 +1367,20 @@ unset IFS
 
 ######################################################################################################################
 
+PREMOUNT_DELETED(){ 
+if [[ $mefisca = 1  && $(df | grep ${lddlist[i]}) = "" ]]; then 
+    string=${lddlist[i]}; DO_MOUNT
+    vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+        if [[ ! "$vname" = "" ]]; then 
+            md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
+            if [[ ! ${md5_loader} = "" ]]; then loader=""; oc_revision=""; revision=""; GET_LOADER_STRING
+                if [[ ! "${loader}" = "" ]]; then ldlist[i]="$loader"; fi
+            fi
+        fi
+    diskutil quiet umount /dev/${string}
+fi
+}
+
 CORRECT_LOADERS_HASH_LINKS(){
     GET_CONFIG_HASHES
     old_config_hashes=(); temp_lddlist=()
@@ -1382,13 +1396,15 @@ if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
                                  elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
                                     for hh in ${old_config_hashes[@]}; do
                                         if [[ ${hh} = ${md5_loader} ]]; then
+                                                PREMOUNT_DELETED
+                                                if [[ "${loader}" = "" ]]; then
                                                 unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                                fi
                                         fi
                                     done                  
                             fi
          fi
     done 
-
     old_other_loaders=(); deleted_other_loaders=()
     if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_loaders_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.other_loaders_list.txt
      
@@ -1401,17 +1417,20 @@ if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
                                 if [[ ${match} = 0 ]]; then deleted_other_loaders+=( ${y} ); fi
                       done
         fi
+
      if [[ ! ${#deleted_other_loaders[@]} = 0 ]] ; then
                 for i in ${!mounted_loaders_list[@]}; do
                             md5_loader=${mounted_loaders_list[i]}
                             for y in ${!deleted_other_loaders[@]}; do
                                if [[ ${md5_loader} = ${deleted_other_loaders[y]:0:32} ]]; then 
+                                    PREMOUNT_DELETED
+                                    if [[ "${loader}" = "" ]]; then
                                     unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                    fi
                                 fi
                             done
                 done
     fi
-
      if [[ ! ${#oth_list[@]} = 0 ]] ; then 
         for i in ${!mounted_loaders_list[@]}; do
             if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
@@ -1424,7 +1443,6 @@ if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
             fi
         done
     fi
-    
 fi
 }
 
