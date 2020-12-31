@@ -914,8 +914,8 @@ printf '\033[37;7f'
                 if [[ $inputs = [lL] ]]; then 
                     if [[ $LoaderPointer1 = "" ]]; then LoaderPointer1="Clover"; LoaderPointer2="OpenCore"; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
                         elif [[ $LoaderPointer1 = "Clover" ]]; then LoaderPointer1="Windows"; LoaderPointer2="Linux"; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
-                            elif [[ $LoaderPointer1 = "Windows" ]]; if [[ $loc = "ru" ]]; then unrec="Не распознан"; else unrec="Unrecognized"; fi ; then LoaderPointer1="Refind"; LoaderPointer2="$unrec"; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
-                                elif [[ $LoaderPointer1 = "Refind" ]]; then LoaderPointer1=""; LoaderPointer2="" ; SET_STRUCT_1 3; SET_STRUCT_1 5; fi
+                            elif [[ $LoaderPointer1 = "Windows" ]]; then LoaderPointer1="Refind"; LoaderPointer2="$unrec"; if [[ $loc = "ru" ]]; then unrec="Не распознан"; else unrec="Unrecognized"; fi; SET_LOADER_STRUCT $LoaderPointer1; SET_LOADER_STRUCT "$LoaderPointer2"
+                                elif [[ $LoaderPointer1 = "Refind" ]]; then LoaderPointer1="" ; LoaderPointer2="" ; SET_STRUCT_1 3; SET_STRUCT_1 5; fi
 
                     if [[ $LoaderPointer1 = "" ]]; then ObjPtr=1; else ObjPtr=5; fi
                     StrPtr=3
