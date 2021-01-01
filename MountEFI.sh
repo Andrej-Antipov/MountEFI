@@ -712,7 +712,7 @@ var=24
 while [[ ! $var = 0 ]]; do
 if [[ ! $CheckLoaders = 0 ]]; then printf '\e[40m %.0s\e[0m' {1..94};  else printf '\e[40m %.0s\e[0m' {1..80}; fi
 let "var--"; done
-if [[ ! $CheckLoaders = 0 ]]; then vcorr=35; v2corr=27; v3corr=28; v4corr=23; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; fi
+if [[ ! $CheckLoaders = 0 ]]; then vcorr=35; v2corr=27; v3corr=28; v4corr=23; v6corr=36; v7corr=17; v8corr=40; else vcorr=28; v2corr=20; v3corr=21; v4corr=15; v6corr=29; v7corr=10; v8corr=33; fi
 printf "\033[H"
 
 KILL_CURL_UPDATER(){
@@ -791,7 +791,7 @@ if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[1;33m
                            fi
                            read -s -n 1 -t 3
       else
-if [[ ! $CheckLoaders = 0 ]]; then 
+#if [[ ! $CheckLoaders = 0 ]]; then 
     ppid=0
     while true; do 
             recheckLDs=1; demo="~"; need_update=0
@@ -826,16 +826,16 @@ if [[ ! $CheckLoaders = 0 ]]; then
                             ppid=$!
         fi        
     oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
-    if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;36f"'\e[40m\e[1;33m'"  Latest \e[1;35mOpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}' \e[0m'
-                                    printf "\033[18;17f"'\e[40m\e[36m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'
-                               else printf "\033[17;36f"'\e[40m                             \e[0m'
-                                    printf "\033[18;17f"'\e[40m                                                          \e[0m'
+    if [[ ! ${oc_vrs} = "" ]]; then printf "\033[17;'$v6corr'f"'\e[40m\e[1;33m'"  Latest \e[1;35mOpenCore: "'\e[1;36m'${oc_vrs:0:1}"\e[1;32m.\e[1;36m"${oc_vrs:1:1}"\e[1;32m.\e[1;36m"${oc_vrs:2:1}' \e[0m'
+                                    printf "\033[18;'$v7corr'f"'\e[40m\e[36m     https://github.com/acidanthera/OpenCorePkg/releases  \e[0m'
+                               else printf "\033[17;'$v6corr'f"'\e[40m                             \e[0m'
+                                    printf "\033[18;'$v7corr'f"'\e[40m                                                          \e[0m'
     fi
     clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
-    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;40f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs:0:4}'\e[0m' 
-                                      printf "\033[20;17f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases   \e[0m'
-                                 else printf "\033[19;40f"'\e[40m                 \e[0m' 
-                                      printf "\033[20;17f"'\e[40m                                                                  \e[0m'
+    if [[ ! ${clov_vrs} = "" ]]; then printf "\033[19;'$v8corr'f"'\e[40m\e[1;33m'"    \e[1;35mClover:  "'\e[1;32m'${clov_vrs:0:4}'\e[0m' 
+                                      printf "\033[20;'$v7corr'f"'\e[40m\e[36m  https://github.com/CloverHackyColor/CloverBootloader/releases   \e[0m'
+                                 else printf "\033[19;'$v8corr'f"'\e[40m                 \e[0m' 
+                                      printf "\033[20;'$v7corr'f"'\e[40m                                                                  \e[0m'
     fi
     
     if [[ $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.com | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]] && [[ $(ps -xa -o pid,command | grep -v grep | cut -f1 -d " " | grep -ow $ppid | xargs | cut -f1 -d " " | wc -l | bc ) = 0 ]]; then 
@@ -843,7 +843,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
     fi
     CHECK_HOTPLUG_DISKS; read -rsn1 -t2 demo; if [[ ! $demo = "~" ]] || [[ $hotplug = 1 ]] || [[ "${recheckLDs}" = "2" ]]; then printf '\033[1D\e[40m \e[0m'; pauser=0; RECHECK_LOADERS; recheckLDs=0; KILL_CURL_UPDATER; if [[ ! $ppid = 0 ]]; then kill $ppid; wait $ppid ; fi; break; fi
    done 
-fi
+#fi
 fi
 clear && printf "\e[3J"
 }
