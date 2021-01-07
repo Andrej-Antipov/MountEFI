@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 22.12.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 07.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
-edit_vers="002"
-serv_vers="009"
+edit_vers="003"
+serv_vers="010"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -579,7 +579,7 @@ while true; do
         STARTUP_FIND_LOADERS
 
     while true; do
-        sleep 0.3; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; else sleep 0.3; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; fi; fi
+        sleep 0.8; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; else sleep 0.8; if CLIENT_ONLINE; then unset aa; CLIENT_IS_ONLINE; fi; fi
         if [[ $aa = "" ]]; then DBG "MEFIScA ONLINE"; aa=0; fi; CLIENT_IS_OFFLINE
     done
 done
