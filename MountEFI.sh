@@ -1458,13 +1458,13 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
             autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
             rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
             rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
-            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
                 if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
 
             fi 2>/dev/null
           fi
     else
-        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
                 if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s >> ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
         fi 2>/dev/null
     fi
@@ -1475,7 +1475,7 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
         last_e=$(echo ${autoupdate_list[1]} | bc)
     if [[ $( echo "${autoupdate_list[0]}000+${last_e}" | bc) -gt $( echo "${current_vers}000+${vers_e}"  | bc) ]]; then
       if [[ ! -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]] || [[ ! $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then
-        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
+        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
            if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
                 if [[ $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then 
                       if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 

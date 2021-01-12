@@ -5862,7 +5862,7 @@ if [[ $REPLY =~ ^[yY]$ ]]; then
     if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; fi
     success=0
     printf "\e[40m\e[1;33m\r\033[20C"
-    if curl https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${latest_release}/${latest_edit}".zip" -L -o ~/.MountEFIupdates/${latest_edit}".zip" --progress-bar 2>&1 | while IFS= read -d $'\r' -r p; do p=${p:(-6)}; p=${p%'%'*}; p=${p/,/}; p=$(expr $p / 10 2>/dev/null); let "s=p/3"; echo -ne "[ $p% ] [ $(eval 'printf =%.0s {1..'${s}'}')> ]\r\033[20C"; done ; printf '\e[0m'; then
+    if curl https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/${latest_release}/${latest_edit}".zip" -L -o ~/.MountEFIupdates/${latest_edit}".zip" --progress-bar 2>&1 | while IFS= read -d $'\r' -r p; do p=${p:(-6)}; p=${p%'%'*}; p=${p/,/}; p=$(expr $p / 10 2>/dev/null); let "s=p/3"; echo -ne "[ $p% ] [ $(eval 'printf =%.0s {1..'${s}'}')> ]\r\033[20C"; done ; printf '\e[0m'; then
         printf '\r\e[40m                                                                                 '
         unzip  -o -qq ~/.MountEFIupdates/${latest_edit}".zip" -d ~/.MountEFIupdates 2>/dev/null
         if [[ -f ~/.MountEFIupdates/${latest_edit}/MountEFI ]]; then 
@@ -5883,14 +5883,15 @@ fi
 }
 
 GET_LATEST_RELEASE(){
-latest_release=$(curl -s --max-time 30 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
+#latest_release=$(curl -s --max-time 30 https://api.github.com/repos/Andrej-Antipov/MountEFI/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s/[^0-9]//g | tr -d ' \n\t')
 if [[ -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
-latest_release=${latest_release::3}
+#latest_release=${latest_release::3}
+latest_release=190
 echo "${latest_release}" > ~/Library/Application\ Support/MountEFI/MEFILatestRelease.txt
 }
 
 GET_LATEST_EDITION(){
-latest_edit=$(curl -s --max-time 30 https://github.com/Andrej-Antipov/MountEFI/tree/master/Updates/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/Updates/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+latest_edit=$(curl -s --max-time 30 https://github.com/Andrej-Antipov/MountEFI/tree/master/UpdatesLast/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/UpdatesLast/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
 echo "${latest_edit}" > ~/Library/Application\ Support/MountEFI/MEFILatestEdition.txt
 }
 
