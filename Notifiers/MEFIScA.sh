@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 07.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
-edit_vers="003"
-serv_vers="010"
+edit_vers="004"
+serv_vers="011"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -106,7 +106,8 @@ fi
 ##################### проверка на загрузчик после монтирования ##################################################################################
 GET_LOADER_STRING(){                              
                if [[ ! "${loader:0:5}" = "Other" ]]; then             
-                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
+                    check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" )
+                    if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"
                                 revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
@@ -139,7 +140,7 @@ if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
-                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_LIST_ITEM; GET_OC_VERS
+                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_LIST_ITEM; GET_OC_VERS
                        if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then echo "••1••" ; old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
