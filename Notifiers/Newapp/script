@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 07.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="003"
-serv_vers="010"
+edit_vers="004"
+serv_vers="011"
 
 MOUNT_EFI_WINDOW_UP(){ 
 osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
@@ -644,8 +644,8 @@ GET_LOADER_STRING(){
                GET_OTHER_LOADERS_STRING
                
                if [[ ! "${loader:0:5}" = "Other" ]]; then
-                
-                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
+                    check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" )
+                    if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
                                 if [[ ${revision} = "" ]]; then
@@ -986,7 +986,7 @@ while [ $var1 != 0 ]; do
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
 
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
+					check_loader=`xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
                 					if [[ ${check_loader} = "OpenCore" ]]; then
                        						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
@@ -1066,7 +1066,7 @@ if [[ -d ~/.MountEFIst ]]; then
         for i in ${!mounted_loaders_list[@]}; do   
             if [[ ! $( df | grep ${dlist[i]} ) = "" ]] && [[ ! ${mounted_loaders_list[i]} = 0 ]]; then 
                 vname=`df | egrep ${dlist[i]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-                if [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" ) = "OpenCore" ]]; then
+                if [[ $( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" ) = "OpenCore" ]]; then
                     oc_list[i]=$( md5 -qq "$vname"/EFI/OC/OpenCore.efi ); fi
             fi
         done
