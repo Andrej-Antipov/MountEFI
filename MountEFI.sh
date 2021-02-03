@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="004"
-serv_vers="011"
+edit_vers="005"
+serv_vers="012"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -185,7 +185,7 @@ DISPLAY_MESSAGE1(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}
 MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания вышло !"'; else MESSAGE='"The waiting time is up !"'; fi; DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null; }
 DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null; }
 MSG_WAIT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Подготовка данных о загрузчиках .... !"' ; else MESSAGE='"Waiting for the end of data synchro .... !"' ; fi; DISPLAY_MESSAGE >>/dev/null 2>/dev/null; }
-KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... ' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
 
 POSTCONTROL_RELAUNCH_MEFIScA(){
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
@@ -619,7 +619,7 @@ if [[ ${TTYcount} -ge 1 ]] && [[ ! ${MyZPID} = "" ]]; then
 fi
 	
 osascript -e 'tell application "Terminal" to set visible of (every window whose name contains "MountEFI")  to false'
-#TERMINATE &
+TERMINATE &
 if [[ ${TTYcount} = 0  ]];then  osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' && osascript -e 'quit app "terminal.app"' & exit
 else
    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")' & exit
@@ -629,8 +629,8 @@ else
 
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}; if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1120" ]] || [[ "${macos}" -lt "1011" ]]; then 
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}; if [[ ${#macos} = 3 ]]; then macos+="00"; fi
+if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -641,7 +641,7 @@ if [[ "${macos}" -gt "1120" ]] || [[ "${macos}" -lt "1011" ]]; then
 ##############################
     fi
 fi
-if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
+if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
 }
 
 ##################### получение имени и версии загрузчика ######################################################################################
@@ -993,9 +993,9 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         while [[ ! $TRY = 0 ]]; do
         while true; do
         if [[ $loc = "ru" ]]; then
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         else
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         fi 
         if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
         done

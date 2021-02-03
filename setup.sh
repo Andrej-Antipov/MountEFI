@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.01.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 03.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="004"
+s_edit_vers="005"
 ############################################################################################################################################################################################################
 
 clear
@@ -984,9 +984,9 @@ TRY=3
         while [[ ! $TRY = 0 ]]; do
         GET_APP_ICON
         if [[ $loc = "ru" ]]; then
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi  
                 mypassword="${PASSWORD}"
@@ -5483,8 +5483,9 @@ echo 'if [[ ! $am_enabled = 0 ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ ! $apos = 0 ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'macos=`sw_vers -productVersion`' >> ${HOME}/.MountEFIa.sh
 echo 'macos=`echo ${macos//[^0-9]/}`' >> ${HOME}/.MountEFIa.sh
+echo 'macos=${macos:0:5}' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; fi' >> ${HOME}/.MountEFIa.sh
 echo 'macos=${macos:0:4}' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
 echo 'zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '"'/IOPlatformUUID/'"' | cut -f2 -d"=" | tr -d '"'"'"'""' '"'"' | cut -f2-4 -d '"'-'"' | tr -d - | rev)' >> ${HOME}/.MountEFIa.sh
 echo 'efimounter=$(echo 0x7a 0x78 | xxd -r)' >> ${HOME}/.MountEFIa.sh
@@ -5724,8 +5725,8 @@ fi
 }
 
 GET_SYSTEM_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}; if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1120" ]] || [[ "${macos}" -lt "1011" ]]; then 
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}; if [[ ${#macos} = 3 ]]; then macos+="00"; fi
+if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -5736,7 +5737,7 @@ if [[ "${macos}" -gt "1120" ]] || [[ "${macos}" -lt "1011" ]]; then
 ##############################
     fi
 fi
-if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; fi
+if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
 }
 
 FORCE_CHECK_PASSWORD(){
@@ -7222,7 +7223,7 @@ DISPLAY_MESSAGE >>/dev/null 2>/dev/null
 }
 
 
-KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... ' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
 
 GET_DATA_STACK(){
 i=8; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.25; let "i--"; if [[ $i = 0 ]]; then break; fi; done
