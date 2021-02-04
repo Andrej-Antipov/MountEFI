@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -3319,9 +3319,11 @@ fi
 }
 #############################################################################################################################################
 STORE_CONFIG_PATH(){
-plutil -replace OpenedPlistPartUUID -string $(echo "$(ioreg -c IOMedia -r | tr -d '"|+{}\t')" | sed '/Statistics =/d'  | egrep -A12 -B12 "UUID =" | grep -A12 -B12 $1 | grep -m 1 UUID | awk '{print $NF}') "${CONFPATH}"
-UPDATE_CACHE
+volIDstring=$(diskutil info $1 | grep "Volume UUID" | awk '{print $NF}')
+if [[ ! $volIDstring = "" ]]; then plutil -replace OpenedPlistPartUUID -string "${volIDstring}" "${CONFPATH}" ; UPDATE_CACHE; fi
 }
+
+REM_STORED_PATH(){ lopUUID=""; plutil -remove OpenedPlistPartUUID "${CONFPATH}" >>/dev/null 2>/dev/null; UPDATE_CACHE; }
 
 SHOW_MSG(){
 osascript -e 'display dialog '"${error_message}"' '"${icon_string}"' buttons { "OK"} default button "OK" giving up after 3' >/dev/null 2>/dev/null
@@ -3404,14 +3406,12 @@ while true; do
               ldrname=""; break ;;
        [lL])  lopUUID=$(echo "$MountEFIconf"| grep -A1 "OpenedPlistPartUUID</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
               if [[ ! ${lopUUID} = "" ]]; then
-                if [[ $(ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${lopUUID}) = "" ]]; then WARNING_NO_PARTS; else
-                    BSDname=$(ioreg -c IOMedia -r | tr -d '"' | egrep -A12 -B12  "UUID" | grep -A12 -B12 ${lopUUID} | grep "BSD Name" | awk '{print $NF}')
-                    if [[ $BSDname = "" ]]; then WARNING_NO_PARTS; else
+                BSDname=$(diskutil info ${lopUUID} | grep "Device Identifier:" | awk '{print $NF}')
+                    if [[ $BSDname = "" ]]; then WARNING_NO_PARTS; REM_STORED_PATH; else
                         for ii in ${!dlist[@]}; do if [[ ${dlist[ii]} = $BSDname ]]; then chs=$((ii+1)); MOUNTS
                         if [[ $mcheck = "Yes" ]]; then sleep 0.8; open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; break; fi; fi; done
                     fi
-                fi
-              fi ; break ;;
+                fi ; break ;;
     esac
     if [[ $sl -lt 1 ]] || [[ ! $choice = "±" ]]; then break; fi
 done
