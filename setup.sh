@@ -1388,6 +1388,7 @@ do
             GET_UUID_S
  
     uuid=`echo "$uuids_iomedia" | grep -A12 -B12 $strng | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
+    if [[ $uuid = "" ]]; then uuid=$(diskutil info $strng | grep "Volume UUID" | awk '{print $NF}'); fi
         if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
 	 let var4=$apos
@@ -1506,6 +1507,7 @@ do
             GET_UUID_S
  
     uuid=`echo "$uuids_iomedia" | grep -A12 -B12 $strng | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
+    if [[ $uuid = "" ]]; then uuid=$(diskutil info $strng | grep "Volume UUID" | awk '{print $NF}'); fi
         if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 	if [[ ! $apos = 0 ]]; then
 	 let var4=$apos
@@ -2540,6 +2542,7 @@ GET_AUTOMOUNTED
 	am_check=0
 	let "pois=inputs-1"
     uuid=`echo "$uuids_iomedia" | grep -A12 -B12 ${slist[$pois]} | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
+    if [[ $uuid = "" ]]; then uuid=$(diskutil info ${slist[$pois]} | grep "Volume UUID" | awk '{print $NF}'); fi
     if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 if [[ ! $apos = 0 ]]; then
 	 let vari=$apos
@@ -2664,6 +2667,7 @@ GET_SYS_AUTOMOUNTED
 	sys_am_check=0
 	let "pois=inputs-1"
     uuid=`echo "$uuids_iomedia" | grep -A12 -B12 ${slist[$pois]} | grep -m 1 UUID | cut -f2 -d "=" | tr -d " \n"`
+    if [[ $uuid = "" ]]; then uuid=$(diskutil info ${slist[$pois]} | grep "Volume UUID" | awk '{print $NF}'); fi
     if [[ $uuid = "" ]]; then unuv=1; else unuv=0; fi
 if [[ ! $apos = 0 ]]; then
 	 let vari=$apos
@@ -5423,6 +5427,7 @@ FILL_SYS_AUTOMOUNT_EXEC(){
 
 echo '#!/bin/bash'  >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
+echo 'CONFPATH="${HOME}/.MountEFIconf.plist"' >> ${HOME}/.MountEFIa.sh
 echo 'DISPLAY_NOTIFICATION(){' >> ${HOME}/.MountEFIa.sh
 if [[ -d ${HOME}/.MountEFInotifyService/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
 echo '${HOME}/.MountEFInotifyService/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFIa.sh
@@ -5478,6 +5483,7 @@ echo '		posb=0' >> ${HOME}/.MountEFIa.sh
 echo '		while [[ ! $var8 = 0 ]]' >> ${HOME}/.MountEFIa.sh
 echo '					do' >> ${HOME}/.MountEFIa.sh
 echo '                       check_uuid=`ioreg -c IOMedia -r | tr -d '"'"'"'"'"' | egrep "UUID" | grep -o ${alist[$posb]}`' >> ${HOME}/.MountEFIa.sh
+echo '                       if [[ $check_uuid = "" ]]; then check_uuid=$(diskutil info ${alist[$posb]} | grep "Volume UUID" | awk '"'{print "'$'"NF}'"'); fi' >> ${HOME}/.MountEFIa.sh
 echo '                       if [[ $check_uuid = "" ]]; then ' >> ${HOME}/.MountEFIa.sh
 echo '                      strng2=`echo ${strng1[@]}  |  sed '"'s/'"'${alist[$posb]}'"'//'"'`' >> ${HOME}/.MountEFIa.sh
 echo '						plutil -replace SysLoadAM.PartUUIDs -string "$strng2" "${CONFPATH}"' >> ${HOME}/.MountEFIa.sh
@@ -5611,6 +5617,7 @@ echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
 echo 'if  [[ $autom_open = 1 ]]; then ' >> ${HOME}/.MountEFIa.sh
 echo '                string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '"'"'"'" \\\n\\\t'"'`' >> ${HOME}/.MountEFIa.sh
+echo '                if [[ $string = "" ]]; then string=$(diskutil info ${alist[$posa]} | grep "Device Identifier:" | awk '"'{print "'$'"NF}'"'); fi' >> ${HOME}/.MountEFIa.sh
 echo '                vname=`df | egrep ${string} | sed '"'s#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#'"' | cut -c 2-`' >> ${HOME}/.MountEFIa.sh
 echo '				open "$vname"' >> ${HOME}/.MountEFIa.sh
 echo 'fi' >> ${HOME}/.MountEFIa.sh

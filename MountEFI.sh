@@ -1076,6 +1076,8 @@ osascript -e 'tell application "Terminal" to set frontmost of (every window whos
 osascript -e 'tell application "Terminal" to activate'
 }
 
+GET_FLAG
+
 #Функция автомонтирования EFI по Volume UUID при запуске ####################################################################################
 
 if $(echo "$MountEFIconf" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" | egrep -o "true|false"); then am_enabled=1
@@ -1083,22 +1085,14 @@ if $(echo "$MountEFIconf" | grep AutoMount -A 3 | grep -A 1 -e "Enabled</key>" |
     ################ REM_ABSENT
     strng1=$(echo "$MountEFIconf" | grep AutoMount -A 9 | grep -A 1 -e "PartUUIDs</key>"  | grep string | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
     alist=($strng1); apos=${#alist[@]}
-    if [[ ! $apos = 0 ]]
-	     then
-		      var8=$apos
-		      posb=0
-		           while [[ ! $var8 = 0 ]]
+    if [[ ! $apos = 0 ]]; then
+            for posb in ${!alist[@]}
 					do
-                       check_uuid=`ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[$posb]}`
-                       if [[ $check_uuid = "" ]]; then 
-						strng2=`echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'`
-						plutil -replace AutoMount.PartUUIDs -string "$strng2" "${CONFPATH}"
-						strng1=$strng2
-                        cache=0
-						fi
-					let "posb++"
-					let "var8--"
+                       check_uuid=$(ioreg -c IOMedia -r | tr -d '"' | egrep "UUID" | grep -o ${alist[posb]})
+                       if [[ $check_uuid = "" ]]; then check_uuid=$(diskutil info ${alist[posb]} | grep "Volume UUID" | awk '{print $NF}'); fi
+                       if [[ $check_uuid = "" ]]; then strng2=$(echo ${strng1[@]}  |  sed 's/'${alist[$posb]}'//'); strng1=$strng2; cache=0;fi
 					done
+    if [[ $cache = 0 ]]; then plutil -replace AutoMount.PartUUIDs -string "$strng1" "${CONFPATH}"; fi
     alist=($strng1); apos=${#alist[@]}
     fi
     if [[ $apos = 0 ]]; then plutil -replace AutoMount.Enabled -bool NO "${CONFPATH}"; am_enabled=0; cache=0; fi
@@ -1136,6 +1130,7 @@ if [[ ! $am_enabled = 0 ]]; then
             if  [[ $autom_open = 1 ]]; then 
 
                 string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
+                if [[ $string = "" ]]; then string=$(diskutil info ${alist[$posa]} | grep "Device Identifier:" | awk '{print $NF}'); fi
                 vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 				open "$vname"
             fi
@@ -1292,8 +1287,6 @@ synchro=0
 recheckLDs=0
 old_oc_revision=()
 GET_APP_ICON
-
-GET_FLAG
 
 ocHashes32string=$(echo "${MountEFIconf}" | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
 ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
