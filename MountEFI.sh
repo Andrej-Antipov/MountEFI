@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -320,6 +320,8 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
             echo '  </dict>' >> "${CONFPATH}"
             echo '  <key>RenamedHD</key>' >> "${CONFPATH}"
             echo '  <string> </string>' >> "${CONFPATH}"
+            echo '  <key>ReturnMainMenuTimeout</key>' >> "${CONFPATH}"
+            echo '  <integer>10</integer>' >> "${CONFPATH}"
             echo '  <key>ShowKeys</key>' >> "${CONFPATH}"
             echo '  <true/>' >> "${CONFPATH}"
             echo '	<key>SysLoadAM</key>' >> "${CONFPATH}"
@@ -402,6 +404,11 @@ if [[ ! -f "${HOME}"/Library/Application\ Support/MountEFI/validconf/${MEFI_MD5}
     if [[ ! $strng = "RenamedHD" ]]; then
             plutil -insert RenamedHD -string " " "${CONFPATH}"
             cache=0
+    fi
+
+    if [[ $(echo "$MountEFIconf" | grep -e "<key>ReturnMainMenuTimeout</key>" |  sed -e 's/.*>\(.*\)<.*/\1/') = "" ]]; then
+        plutil -insert ReturnMainMenuTimeout -integer 10 "${CONFPATH}"
+        cache=0
     fi
 
     strng=`echo "$MountEFIconf" | grep -e "<key>Backups</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
@@ -626,6 +633,9 @@ else
  fi
 }
 
+########### время авто-возврата в главное меню
+GET_ARMM(){ armm_timeout=$(echo "$MountEFIconf" | grep -A 1 -e "ReturnMainMenuTimeout</key>" | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+            if [[ $armm_timeout = "" ]]; then armm_timeout=10; fi; }
 
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
@@ -1288,7 +1298,8 @@ GET_FLAG
 ocHashes32string=$(echo "${MountEFIconf}" | grep -A3  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes32</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
 ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "<key>YHashes</key>" | grep -A1 -o "<key>ocHashes64</key>" | grep string |  sed -e 's/.*>\(.*\)<.*/\1/' | tr ';' '\n')
 
-
+########### время авто-возврата в главное меню
+GET_ARMM
 # Блок определения функций ########################################################
 
 #Получение пароля для sudo из связки ключей
@@ -1716,6 +1727,7 @@ GET_THEME
 CHECK_CM
 GET_THEME_LOADERS
 GET_LOADERS
+GET_ARMM
 if [[ ${CheckLoaders} = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); oc_list=(); elif [[ $(launchctl list | grep -o "MountEFIr.job") = "" ]]; then GET_MOUNTEFI_STACK; fi
 rm -f ~/.other_loaders_list.txt
 #if [[ $(echo "$MountEFIconf"| grep -o "Restart") = "Restart" ]]; then SAVE_LOADERS_STACK; fi
@@ -3319,7 +3331,8 @@ fi
 }
 #############################################################################################################################################
 STORE_CONFIG_PATH(){
-volIDstring=$(diskutil info $1 | grep "Volume UUID" | awk '{print $NF}')
+volIDstring=$(echo "$(ioreg -c IOMedia -r | tr -d '"|+{}\t')" | sed '/Statistics =/d'  | egrep -A12 -B12 "UUID =" | grep -A12 -B12 $1 | grep -m 1 UUID | awk '{print $NF}')
+if [[ $volIDstring = "" ]]; then volIDstring=$(diskutil info $1 | grep "Volume UUID" | awk '{print $NF}'); fi
 if [[ ! $volIDstring = "" ]]; then plutil -replace OpenedPlistPartUUID -string "${volIDstring}" "${CONFPATH}" ; UPDATE_CACHE; fi
 }
 
@@ -3407,6 +3420,7 @@ while true; do
        [lL])  lopUUID=$(echo "$MountEFIconf"| grep -A1 "OpenedPlistPartUUID</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/')
               if [[ ! ${lopUUID} = "" ]]; then
                 BSDname=$(diskutil info ${lopUUID} | grep "Device Identifier:" | awk '{print $NF}')
+                if [[ $BSDname = "" ]]; then BSDname=$(ioreg -c IOMedia -r | tr -d '"' | egrep -A12 -B12  "UUID" | grep -A12 -B12 ${lopUUID} | grep "BSD Name" | awk '{print $NF}'); fi
                     if [[ $BSDname = "" ]]; then WARNING_NO_PARTS; REM_STORED_PATH; else
                         for ii in ${!dlist[@]}; do if [[ ${dlist[ii]} = $BSDname ]]; then chs=$((ii+1)); MOUNTS
                         if [[ $mcheck = "Yes" ]]; then sleep 0.8; open "$vname"/EFI/*/config.plist >/dev/null 2>/dev/null; break; fi; fi; done
@@ -3436,8 +3450,9 @@ while [[ ! ${choice} =~ ^[0-9uUqQ]+$ ]]; do
 if [[ $order = 2 ]]; then                                               
 order=0
 fi
+
 printf "\r\n\033[1A"
-if [[ $order = 3 ]]; then armm=5 #############  значение задержки для таймера автовозврата в главное меню в секундах ########################
+if [[ $order = 3 ]]; then armm=$armm_timeout #############  значение задержки для таймера автовозврата в главное меню в секундах ########################
     let "schs=$ch-1"
     if [[ $loc = "ru" ]]; then
 printf ''${cm[curs_str]}'  Введите число от '${cm[curs_num_1]}'0'${cm[curs_str]}' до '${cm[curs_num_2]}''$((schs+1))' '${cm[curs_str]}'( '${cm[cl_P]}'P'${cm[curs_str]}','${cm[cl_O]}'O'${cm[curs_str]}','${cm[cl_C]}'C'${cm[curs_str]}','${cm[cl_S]}'S'${cm[curs_str]}','${cm[cl_I]}'I'${cm[curs_str]}'  или  '${cm[cl_Q]}'Q'${cm[curs_str]}' ):   '${cm[clr]}'' ; printf '                           '

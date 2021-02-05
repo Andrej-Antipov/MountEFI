@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 03.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 05.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -274,6 +274,15 @@ if [[ $strng = "false" ]]; then OpenFinder=0
         OpenFinder_set="Yes"; of_corr=18
             fi
 fi
+}
+
+########### время авто-возврата в главное меню
+GET_ARMM(){
+armm_timeout=$(echo "$MountEFIconf" | grep -A 1 -e "ReturnMainMenuTimeout</key>" | grep integer | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\n')
+if [[ $armm_timeout = "" ]]; then armm_timeout=10; fi
+    if [[ $loc = "ru" ]]; then if [[ $armm_timeout -lt 10 ]]; then to_corr=18; else to_corr=17; fi
+                             elif [[ $armm_timeout -lt 10 ]]; then to_corr=20; else to_corr=19; fi
+
 }
 
 GET_SHOWKEYS(){
@@ -554,6 +563,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' >> "${CONFPATH}"
             echo '  </dict>' >> "${CONFPATH}"
             echo '  <key>RenamedHD</key>' >> "${CONFPATH}"
             echo '  <string> </string>' >> "${CONFPATH}"
+            echo '  <key>ReturnMainMenuTimeout</key>' >> "${CONFPATH}"
+            echo '  <integer>10</integer>' >> "${CONFPATH}"
             echo '  <key>ShowKeys</key>' >> "${CONFPATH}"
             echo '  <true/>' >> "${CONFPATH}"
             echo '	<key>SysLoadAM</key>' >> "${CONFPATH}"
@@ -683,6 +694,11 @@ fi
 strng=`echo "$MountEFIconf" | grep -e "<key>RenamedHD</key>" |  sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ ! $strng = "RenamedHD" ]]; then
             plutil -insert RenamedHD -string " " "${CONFPATH}"
+            cache=0
+fi
+
+if [[ $(echo "$MountEFIconf" | grep -e "<key>ReturnMainMenuTimeout</key>" |  sed -e 's/.*>\(.*\)<.*/\1/') = "" ]]; then
+            plutil -insert ReturnMainMenuTimeout -integer 10 "${CONFPATH}"
             cache=0
 fi
 
@@ -1970,7 +1986,7 @@ fi
 sbuf+=$(printf '\033[8;84f'' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[9;84f'' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[10;84f'' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
-#sbuf+=$(printf '\033[10;84f'' N) Запустить MountEFI при запуске Mac OS X = "'$mefi_set'"'"%"$mefi_corr"s"'(Да, Нет)             \n')
+#sbuf+=$(printf '\033[10;84f'' T) Авто-возврат в главное меню через "'$armm_timeout'" секунд   '"%"$to_corr"s"'           \n')
 sbuf+=$(printf '\033[11;84f'' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf '\033[11;84f'' F) Сервис поиска загрузчиков = "'$mld_set'"'"%"$mld_corr"s"'            (Да, Нет)        \n')
 sbuf+=$(printf '\033[12;84f'' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
@@ -2892,7 +2908,7 @@ TRANS_READ(){
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFmM]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFmMtT]+$ ]]; do
 
                 if [[ $loc = "ru" ]]; then
 printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
@@ -3004,6 +3020,7 @@ fi
 sbuf+=$(printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
 sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' T) Авто-возврат в главное меню через "'$armm_timeout'" секунд   '"%"$to_corr"s"'           \n')
 sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
 if [[ -f "$ROOT"/MEFIScA.sh ]]; then
 sbuf+=$(printf ' F) Сервис авто поиска загрузчиков = "'$mld_set'"'"%"$mld_corr"s"'       (Да, Нет)             \n')
@@ -3038,6 +3055,7 @@ fi
 sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
 sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' T) Auto-return to main menu after "'$armm_timeout'" seconds   '"%"$to_corr"s"'           \n')
 sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
 if [[ -f "$ROOT"/MEFIScA.sh ]]; then
 sbuf+=$(printf ' F) Bootloader auto search service = "'$mld_set'"'"%"$mld_corr"s"'       (Yes, No)                \n')
@@ -3100,6 +3118,7 @@ UPDATE_SCREEN(){
         GET_USER_PASSWORD
         GET_OPENFINDER
         GET_THEME
+        GET_ARMM
         GET_SHOWKEYS
         GET_AUTOUPDATE
         GET_AUTOMOUNT
@@ -6401,7 +6420,7 @@ while true; do
              demo=$( echo "${demo}" | xargs )
              invalid_value=$( echo "${demo}" | tr -cd "[:print:]\n" )
              demo=$( echo "${demo}" | egrep -o '^[0-9a-f]{32}\b' )
-              if [[ $cancel = 1 ]]; then break; elif [[ ${#demo} = 0 ]]; then WRONG_ANSWER; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
+              if [[ $cancel = 1 ]]; then break; elif [[ $demo = "" ]] || [[ ${#demo} = 0 ]]; then WRONG_ANSWER; cancel=1; break; else hash_string="${demo}"; CHECK_DUPLICATE_HASHES; break; fi
                 done
 
     fi
@@ -6413,7 +6432,7 @@ while true; do
                     if [[ ${editor_type} = "edit" ]]; then cancel=2; fi
                                 break
              fi
-             if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER
+             if [[ ${#demo2} = 0 ]]; then WRONG_ANSWER; cancel=1; break
                 ########### запись хэша в конфиг #################################################
             else 
                  if [[ ${editor_type} = "edit" ]]; then hash_string="${all_hashes_list[ch]:1:32}=${adrive}"; DEL_HASHES_IN_PLIST; fi; hash_string="${demo}""=""${demo2}"; BACKUP_LAST_HASHES; ADD_HASH_IN_PLIST;  cancel=2; break
@@ -7341,7 +7360,19 @@ else
 fi
 }
 
-
+ASK_ARMM_TIMEOUT(){
+                while true; do
+             demo=""
+             if [[ $loc = "ru" ]]; then
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Задайте время авто-возврата из дополнительного меню.\nДопустимые значения от 2 до 99 сек:" '"${icon_string}"' buttons {"Отменить", "OK"} default button "OK" default answer '"${armm_timeout}"')'); then cancel=0; else cancel=1; fi 2>/dev/null
+             else
+             if demo=$(osascript -e 'set T to text returned of (display dialog "Set the auto-return time from the additional menu.\nValid values range from 2 to 99 sec:" '"${icon_string}"' buttons {"Cancel", "OK"} default button "OK" default answer '"${armm_timeout}"')'); then cancel=0; else cancel=1; fi 2>/dev/null 
+             fi
+             demo=$( echo "${demo}" | xargs )
+             demo=$( echo "${demo}" | egrep -o '^[0-9]{1,2}\b' )
+              if [[ $cancel = 1 ]] || [[ $demo = "" ]] || [[ $demo -lt 2 ]]; then break; else plutil -replace ReturnMainMenuTimeout -integer "${demo}" "${CONFPATH}"; UPDATE_CACHE; break; fi
+                done
+}
 
 ###############################################################################
 ################### MAIN ######################################################
@@ -7355,7 +7386,7 @@ var4=0
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
-lines=37; col=80
+lines=38; col=80
 if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
@@ -7585,7 +7616,7 @@ if [[ $inputs = [fF] ]]; then
 UPDATE_CACHE
 fi  
 ###############################################################################
-
+if [[ $inputs = [tT] ]]; then ASK_ARMM_TIMEOUT; fi 
 # Искать загрузчики при подключении разделов  ################################
 if [[ $inputs = [lL] ]]; then 
    if [[ $CheckLoaders = 1 ]]; then 
