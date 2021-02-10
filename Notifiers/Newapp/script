@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 03.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="005"
-serv_vers="012"
+edit_vers="006"
+serv_vers="013"
 
 MOUNT_EFI_WINDOW_UP(){ 
 osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
@@ -293,7 +293,8 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|f
 }
 
 GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}; if [[ ${#macos} = 3 ]]; then macos+="00"; fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}
+if [[ ${#macos} = 4 ]]; then macos+="0"; elif [[ ${#macos} = 3 ]]; then macos+="00"; fi
 if [[ "${macos:0:4}" -gt "1120" ]] || [[ "${macos}" -lt "1090" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
