@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 05.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="005"
+s_edit_vers="006"
 ############################################################################################################################################################################################################
 
 clear
@@ -3149,9 +3149,9 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 
 
                         if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS  (X.9 - XI.2)    *******\n\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS  (X.9 - XI.2)    *******\n\n'
 	                 fi
 
 SHOW_DISKs
@@ -5751,7 +5751,8 @@ fi
 }
 
 GET_SYSTEM_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}; if [[ ${#macos} = 3 ]]; then macos+="00"; fi
+macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}
+if [[ ${#macos} = 4 ]]; then macos+="0"; elif [[ ${#macos} = 3 ]]; then macos+="00"; fi
 if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
