@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 07.01.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 09.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI Color Mode Editor #######################################################################################################
 prog_vers="1.9.0"
-edit_vers="003"
-serv_vers="010"
+edit_vers="006"
+serv_vers="012"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -264,8 +264,8 @@ fi
 SET_STRUCT_1(){
 if [[ $loc = "ru" ]]; then
     case $1 in
-    0)  bbuf[0]=$(printf '\033[2;0f'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'2'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'')
-        bufStruct[0]="2 head_ast,0 head_str,20 head_X,62 head_os,64"
+    0)  bbuf[0]=$(printf '\033[2;0f'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'2'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'')
+        bufStruct[0]="2 head_ast,0 head_str,20 head_X,63 head_os,65"
         ;;
     1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - подключенные  '${cm[clr]}'          ')
         bufStruct[1]="4 head_num_sch,6 head_sch_br,7 head_sch,10 head_pls_qts,62 head_pls,63 head_pls_str,68"
@@ -292,8 +292,8 @@ if [[ $loc = "ru" ]]; then
     esac
 else
        case $1 in
-    0)  bbuf[0]=$(printf '\033[2;0f'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'11 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'2'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'')
-        bufStruct[0]="2 head_ast,0 head_str,18 head_X,64 head_os,66"
+    0)  bbuf[0]=$(printf '\033[2;0f'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'2'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'')
+        bufStruct[0]="2 head_ast,0 head_str,18 head_X,65 head_os,67"
         ;;
     1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                               '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - mounted  '${cm[clr]}'          ')
         bufStruct[1]="4 head_num_sch,6 head_sch_br,7 head_sch,10 head_pls_qts,67 head_pls,68 head_pls_str,73"
