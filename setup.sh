@@ -3007,9 +3007,6 @@ fi
 SET_SCREEN(){
 
 unset sbuf
-
-if [[ $cm_check = 1 ]]; then
-
             if [[ $loc = "ru" ]]; then
 sbuf=$(printf ' '${cm[Red]}0${cm[cOff]}') Установить все настройки по умолчанию                                      \n')
 sbuf+=$(printf '  '${cm[Yell]}1${cm[cOff]}') Язык интерфейса программы = "'${cm[Yell]}$loc_set${cm[cOff]}'"'"%"$loc_corr"s"'(авто, англ, русский) \n')
@@ -3104,112 +3101,24 @@ sbuf+=$(printf ' '${cm[Mg]}R${cm[cOff]}') Restart the setup program immediately 
 sbuf+=$(printf ' '${cm[Red]}Z${cm[cOff]}') Uninstall all MountEFI files and services          (SHIFT+Z)                \n')
 fi 
 
-else
-
-            if [[ $loc = "ru" ]]; then
-sbuf=$(printf ' 0) Установить все настройки по умолчанию                                      \n')
-sbuf+=$(printf '  1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(авто, англ, русский) \n')
-sbuf+=$(printf ' 2) Показывать меню = "'"$menue_set"'"'"%"$menue_corr"s"'(авто, всегда)        \n')
-sbuf+=$(printf ' 3) Пароль пользователя = "'"$mypassword_set"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n')
-sbuf+=$(printf ' 4) Открывать папку EFI в Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Да, Нет)             \n')
-if [[ ! $theme = "system" ]]; then
-sbuf+=$(printf ' 5) Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"'(выключена)           \n')
-sbuf+=$(printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'* (включен)'"%"$btspc_corr"s"'     \n')
-else
-sbuf+=$(printf ' 5) Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"' * (включена)            \n')
-sbuf+=$(printf ' 6) Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'  (выключен)'"%"$btspc_corr"s"'    \n')
-fi
-sbuf+=$(printf ' 7) Показывать подсказки по клавишам = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf ' 8) Подключить EFI при запуске MountEFI = "'$am_set'"'"%"$am_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf ' 9) Подключить EFI при запуске Mac OS X = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf ' T) Авто-возврат в главное меню через "'$armm_timeout'" секунд   '"%"$to_corr"s"'           \n')
-sbuf+=$(printf ' L) Искать загрузчики подключая EFI = "'$ld_set'"'"%"$ld_corr"s"'(Да, Нет)             \n')
-if [[ -f "$ROOT"/MEFIScA.sh ]]; then
-sbuf+=$(printf ' F) Сервис авто поиска загрузчиков = "'$mld_set'"'"%"$mld_corr"s"'       (Да, Нет)             \n')
-fi
-sbuf+=$(printf ' C) Сохранение настроек при выходе = "'$bd_set'"'"%"$bd_corr"s"'(Да, Нет)             \n')
-sbuf+=$(printf ' A) Создать или править псевдонимы физических носителей                         \n')
-sbuf+=$(printf ' B) Резервное сохранение и восстановление настроек                              \n')
-sbuf+=$(printf ' I) Загрузить конфиг из файла (zip или plist)                                   \n')
-sbuf+=$(printf ' E) Сохранить конфиг в файл (zip)                                               \n')
-sbuf+=$(printf ' H) Редактор хэшей загрузчиков                                                  \n')
-sbuf+=$(printf ' P) Редактировать встроенные пресеты тем                                        \n')
-if [[ -f "${ROOT}"/cm_edit ]]; then
-sbuf+=$(printf ' M) Создать или править цветные модификации тем                                 \n')
-fi
-sbuf+=$(printf ' S) Авто-обновление программы = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Да, Нет)             \n')
-if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
-sbuf+=$(printf ' U) Обновление программы                                                        \n')
-fi
-            else
-sbuf=$(printf ' 0) Setup all parameters to defaults                                            \n')
-sbuf+=$(printf ' 1) Program language = "'$loc_set'"'"%"$loc_corr"s"'(auto, rus, eng)         \n')
-sbuf+=$(printf ' 2) Show menue = "'"$menue_set"'"'"%"$menue_corr"s"'(auto, always)           \n')
-sbuf+=$(printf ' 3) Save password = "'"$mypassword_set"'"'"%"$pass_corr"s"'(password, not saved)    \n')
-sbuf+=$(printf ' 4) Open EFI folder in Finder = "'$OpenFinder_set'"'"%"$of_corr"s"'(Yes, No)                \n')
-if [[ ! $theme = "system" ]]; then
-sbuf+=$(printf ' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"'   (disabled)               \n')
-sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'  * (enabled)                \n')
-else
-sbuf+=$(printf ' 5) System theme "'"$theme_name"'"'"%"$theme_ncorr"s"' * (enabled)                \n')
-sbuf+=$(printf ' 6) Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'    (disabled)               \n')
-fi
-sbuf+=$(printf ' 7) Show binding keys help = "'$ShowKeys_set'"'"%"$sk_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf ' 8) Mount EFI on run MountEFI. Enabled = "'$am_set'"'"%"$am_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf ' 9) Mount EFI on run Mac OS X. Enabled = "'$sys_am_set'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf ' T) Auto-return to main menu after "'$armm_timeout'" seconds   '"%"$to_corr"s"'           \n')
-sbuf+=$(printf ' L) Look for boot loaders mounting EFI = "'$ld_set'"'"%"$ld_corr"s"'(Yes, No)                \n')
-if [[ -f "$ROOT"/MEFIScA.sh ]]; then
-sbuf+=$(printf ' F) Bootloader auto search service = "'$mld_set'"'"%"$mld_corr"s"'       (Yes, No)                \n')
-fi
-sbuf+=$(printf ' C) Auto save settings on exit setup = "'$bd_set'"'"%"$bd_corr"s"'(Yes, No)                \n')
-sbuf+=$(printf ' A) Create or edit aliases physical device/media                                \n')
-sbuf+=$(printf ' B) Backup and restore configuration settings                                   \n')
-sbuf+=$(printf ' I) Import config from file (zip or plist)                                      \n')
-sbuf+=$(printf ' E) Upload config to file (zip)                                                 \n')
-sbuf+=$(printf ' H) Hashes of EFI loaders editor                                                \n')
-sbuf+=$(printf ' P) Edit built-in theme presets                                                 \n')
-if [[ -f "${ROOT}"/cm_edit ]]; then
-sbuf+=$(printf ' M) Run color mode editor                                                       \n')
-fi
-sbuf+=$(printf ' S) Auto-update this program = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Yes, No)                \n')
-if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-sbuf+=$(printf ' U) Update program manually                                                     \n')
-fi
-
-            fi
-                    Lit="Z"
-            if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
-               if [[ $loc = "ru" ]]; then
-sbuf+=$(printf ' D) Загрузить бэкапы настроек из iCloud                                         \n')
-                else
-sbuf+=$(printf ' D) Upload settings backups from iCloud                                         \n')
-            fi
-      fi
- if [[ $loc = "ru" ]]; then
-if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-sbuf+=$(printf ' W) Быстро переключить MountEFI в режим EasyEFI           (SHIFT+W)             \n')
-fi
-sbuf+=$(printf ' R) Быстро перезагрузить программу настройки              (SHIFT+R)             \n')
-sbuf+=$(printf ' Z) Удаление программы MountEFI с компьютера              (SHIFT+Z)             \n')
-else
-if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
-sbuf+=$(printf ' W) Instantly switch MountEFI in EasyEFI mode          (SHIFT+W)                \n')
-fi
-sbuf+=$(printf ' R) Restart the setup program immediately              (SHIFT+R)                \n')
-sbuf+=$(printf ' Z) Uninstall all MountEFI files and services          (SHIFT+Z)                \n')
-fi 
-
-fi
 echo "${sbuf}"
 }
 
 UPDATE_SCREEN(){
         CHECK_CM
+        cm=()
         if [[ $cm_check = 0 ]]; then
             GET_THEME
             if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
         else
+	cOff=1; Yell=0; Grn=2; Red=3; Blu=4; Mg=5; Dim=6
+	cm[Yell]="\e[0m\e[1;93m"
+	cm[cOff]="\e[0m"
+	cm[Grn]="\e[0m\e[1;92m"
+	cm[Red]="\e[0m\e[1;31m"
+	cm[Blu]="\e[1;36m"
+	cm[Mg]="\e[1;35m"
+	cm[Dim]="\e[0m\e[2m"
         SET_CM_THEME &
         fi
 
@@ -7507,16 +7416,6 @@ GET_SYSTEM_FLAG
 rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart
 theme="system"
 var4=0
-CHECK_CM
-cm=()
-cOff=1; Yell=0; Grn=2; Red=3; Blu=4; Mg=5; Dim=6
-cm[Yell]="\e[0m\e[1;93m"
-cm[cOff]="\e[0m"
-cm[Grn]="\e[0m\e[1;92m"
-cm[Red]="\e[0m\e[1;31m"
-cm[Blu]="\e[1;36m"
-cm[Mg]="\e[1;35m"
-cm[Dim]="\e[0m\e[2m"
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
