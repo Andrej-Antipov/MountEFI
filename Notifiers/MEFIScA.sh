@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
-edit_vers="006"
-serv_vers="013"
+edit_vers="007"
+serv_vers="014"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -506,9 +506,9 @@ if (security find-generic-password -a ${USER} -s ${!efimounter} -w) >/dev/null 2
 
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}
-if [[ ${#macos} = 4 ]]; then macos+="0"; elif [[ ${#macos} = 3 ]]; then macos+="00"; fi
-if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; GET_PASSWORD; fi; macos=${macos:0:4}
+mac_vers=($(sw_vers -productVersion | tr "." " "))
+macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
+if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; GET_PASSWORD; fi; macos=${macos:0:4}
 }
 
 UPDATE_SCREEN(){
