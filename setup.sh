@@ -2905,12 +2905,19 @@ GET_INPUT(){
 
 unset inputs
 while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFmMtT]+$ ]]; do
-
+if [[ $cm_check = 1 ]]; then
                 if [[ $loc = "ru" ]]; then
-printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
-			else
-printf '  Enter a letter from 0 to '$Lit' (or Q - exit ):   ' ; printf '                           '
+    printf '  Введите символ от '${cm[Yell]}0${cm[cOff]}' до '${cm[Grn]}$Lit${cm[cOff]}' (или '${cm[Mg]}Q${cm[cOff]}' - выход ):   ' ; printf '                             '
+			   else
+    printf '  Enter a letter from '${cm[Yell]}0${cm[cOff]}' to '${cm[Grn]}$Lit${cm[cOff]}' (or '${cm[Mg]}Q${cm[cOff]}' - exit ):   ' ; printf '                           '
                 fi
+else
+                if [[ $loc = "ru" ]]; then
+    printf '  Введите символ от 0 до '$Lit' (или Q - выход ):   ' ; printf '                             '
+			   else
+    printf '  Enter a letter from 0 to '$Lit' (or Q - exit ):   ' ; printf '                           '
+                fi
+fi
 printf "%"80"s"'\n'"%"80"s"'\n'"%"80"s"'\n'"%"80"s"
 printf "\033[4A"
 printf "\r\033[45C"
@@ -3000,6 +3007,105 @@ fi
 SET_SCREEN(){
 
 unset sbuf
+
+if [[ $cm_check = 1 ]]; then
+
+            if [[ $loc = "ru" ]]; then
+sbuf=$(printf ' '${cm[Red]}0${cm[cOff]}') Установить все настройки по умолчанию                                      \n')
+sbuf+=$(printf '  '${cm[Yell]}1${cm[cOff]}') Язык интерфейса программы = "'${cm[Yell]}$loc_set${cm[cOff]}'"'"%"$loc_corr"s"'(авто, англ, русский) \n')
+sbuf+=$(printf ' '${cm[Yell]}2${cm[cOff]}') Показывать меню = "'"${cm[Yell]}$menue_set${cm[cOff]}"'"'"%"$menue_corr"s"'(авто, всегда)        \n')
+sbuf+=$(printf ' '${cm[Grn]}3${cm[cOff]}') Пароль пользователя = "'"${cm[Grn]}$mypassword_set${cm[cOff]}"'"'"%"$pass_corr"s"'(пароль, нет пароля)  \n')
+sbuf+=$(printf ' '${cm[Yell]}4${cm[cOff]}') Открывать папку EFI в Finder = "'${cm[Yell]}$OpenFinder_set${cm[cOff]}'"'"%"$of_corr"s"'(Да, Нет)             \n')
+if [[ ! $theme = "system" ]]; then
+sbuf+=$(printf ' '${cm[Yell]}5${cm[cOff]}') Системная тема "'"$theme_name"'"'"%"$theme_ncorr"s"'(выключена)           \n')
+sbuf+=$(printf ' '${cm[Blu]}6${cm[cOff]}') Пресет "'"${cm[Blu]}$itheme_set${cm[cOff]}"'" из '$pcount' встроенных'"%"$btheme_corr"s"''${cm[Blu]}*${cm[cOff]}' (включен)'"%"$btspc_corr"s"'     \n')
+else
+sbuf+=$(printf ' '${cm[Blu]}5${cm[cOff]}') Системная тема "'"${cm[Blu]}$theme_name${cm[cOff]}"'"'"%"$theme_ncorr"s"' '${cm[Blu]}*${cm[cOff]}' (включена)            \n')
+sbuf+=$(printf ' '${cm[Yell]}6${cm[cOff]}') Пресет "'"$itheme_set"'" из '$pcount' встроенных'"%"$btheme_corr"s"'  (выключен)'"%"$btspc_corr"s"'    \n')
+fi
+sbuf+=$(printf ' '${cm[Yell]}7${cm[cOff]}') Показывать подсказки по клавишам = "'${cm[Yell]}$ShowKeys_set${cm[cOff]}'"'"%"$sk_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' '${cm[Yell]}8${cm[cOff]}') Подключить EFI при запуске MountEFI = "'${cm[Yell]}$am_set${cm[cOff]}'"'"%"$am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' '${cm[Yell]}9${cm[cOff]}') Подключить EFI при запуске Mac OS X = "'${cm[Yell]}$sys_am_set${cm[cOff]}'"'"%"$sys_am_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' '${cm[Grn]}T${cm[cOff]}') Авто-возврат в главное меню через "'${cm[Grn]}$armm_timeout${cm[cOff]}'" секунд   '"%"$to_corr"s"'           \n')
+sbuf+=$(printf ' '${cm[Yell]}L${cm[cOff]}') Искать загрузчики подключая EFI = "'${cm[Yell]}$ld_set${cm[cOff]}'"'"%"$ld_corr"s"'(Да, Нет)             \n')
+if [[ -f "$ROOT"/MEFIScA.sh ]]; then
+sbuf+=$(printf ' '${cm[Blu]}F${cm[cOff]}') Сервис авто поиска загрузчиков = "'${cm[Yell]}$mld_set${cm[cOff]}'"'"%"$mld_corr"s"'       (Да, Нет)             \n')
+fi
+sbuf+=$(printf ' '${cm[Yell]}C${cm[cOff]}') Сохранение настроек при выходе = "'${cm[Yell]}$bd_set${cm[cOff]}'"'"%"$bd_corr"s"'(Да, Нет)             \n')
+sbuf+=$(printf ' '${cm[Mg]}A${cm[cOff]}') Создать или править псевдонимы физических носителей                         \n')
+sbuf+=$(printf ' '${cm[Blu]}B${cm[cOff]}') Резервное сохранение и восстановление настроек                              \n')
+sbuf+=$(printf ' '${cm[Blu]}I${cm[cOff]}') Загрузить конфиг из файла (zip или plist)                                   \n')
+sbuf+=$(printf ' '${cm[Blu]}E${cm[cOff]}') Сохранить конфиг в файл (zip)                                               \n')
+sbuf+=$(printf ' '${cm[Grn]}H${cm[cOff]}') Редактор хэшей загрузчиков                                                  \n')
+sbuf+=$(printf ' '${cm[Mg]}P${cm[cOff]}') Редактировать встроенные пресеты тем                                        \n')
+if [[ -f "${ROOT}"/cm_edit ]]; then
+sbuf+=$(printf ' '${cm[Mg]}M${cm[cOff]}') Создать или править цветные модификации тем                                 \n')
+fi
+sbuf+=$(printf ' '${cm[Yell]}S${cm[cOff]}') Авто-обновление программы = "'${cm[Yell]}$AutoUpdate_set${cm[cOff]}'"'"%"$aus_corr"s"'(Да, Нет)             \n')
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
+sbuf+=$(printf ' '${cm[Yell]}U${cm[cOff]}') Обновление программы                                                        \n')
+fi
+            else
+sbuf=$(printf ' '${cm[Red]}0${cm[cOff]}') Setup all parameters to defaults                                            \n')
+sbuf+=$(printf ' '${cm[Yell]}1${cm[cOff]}') Program language = "'${cm[Yell]}$loc_set${cm[cOff]}'"'"%"$loc_corr"s"'(auto, rus, eng)         \n')
+sbuf+=$(printf ' '${cm[Yell]}2${cm[cOff]}') Show menue = "'"${cm[Yell]}$menue_set${cm[cOff]}"'"'"%"$menue_corr"s"'(auto, always)           \n')
+sbuf+=$(printf ' '${cm[Grn]}3${cm[cOff]}') Save password = "'"${cm[Grn]}$mypassword_set${cm[cOff]}"'"'"%"$pass_corr"s"'(password, not saved)    \n')
+sbuf+=$(printf ' '${cm[Yell]}4${cm[cOff]}') Open EFI folder in Finder = "'${cm[Yell]}$OpenFinder_set${cm[cOff]}'"'"%"$of_corr"s"'(Yes, No)                \n')
+if [[ ! $theme = "system" ]]; then
+sbuf+=$(printf ' '${cm[Yell]}5${cm[cOff]}') System theme "'"$theme_name"'"'"%"$theme_ncorr"s"'   (disabled)               \n')
+sbuf+=$(printf ' '${cm[Blu]}6${cm[cOff]}') Theme "'"${cm[Blu]}$itheme_set${cm[cOff]}"'" of '$pcount' presets'"%"$btheme_corr"s"'  '${cm[Blu]}*${cm[cOff]}' (enabled)                \n')
+else
+sbuf+=$(printf ' '${cm[Blu]}5${cm[cOff]}') System theme "'"${cm[Blu]}$theme_name${cm[cOff]}"'"'"%"$theme_ncorr"s"' '${cm[Blu]}*${cm[cOff]}' (enabled)                \n')
+sbuf+=$(printf ' '${cm[Yell]}6${cm[cOff]}') Theme "'"$itheme_set"'" of '$pcount' presets'"%"$btheme_corr"s"'    (disabled)               \n')
+fi
+sbuf+=$(printf ' '${cm[Yell]}7${cm[cOff]}') Show binding keys help = "'${cm[Yell]}$ShowKeys_set${cm[cOff]}'"'"%"$sk_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' '${cm[Yell]}8${cm[cOff]}') Mount EFI on run MountEFI. Enabled = "'${cm[Yell]}$am_set${cm[cOff]}'"'"%"$am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' '${cm[Yell]}9${cm[cOff]}') Mount EFI on run Mac OS X. Enabled = "'${cm[Yell]}$sys_am_set${cm[cOff]}'"'"%"$sys_am_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' '${cm[Grn]}T${cm[cOff]}') Auto-return to main menu after "'${cm[Grn]}$armm_timeout${cm[cOff]}'" seconds   '"%"$to_corr"s"'           \n')
+sbuf+=$(printf ' '${cm[Yell]}L${cm[cOff]}') Look for boot loaders mounting EFI = "'${cm[Yell]}$ld_set${cm[cOff]}'"'"%"$ld_corr"s"'(Yes, No)                \n')
+if [[ -f "$ROOT"/MEFIScA.sh ]]; then
+sbuf+=$(printf ' '${cm[Blu]}F${cm[cOff]}') Bootloader auto search service = "'${cm[Yell]}$mld_set${cm[cOff]}'"'"%"$mld_corr"s"'       (Yes, No)                \n')
+fi
+sbuf+=$(printf ' '${cm[Yell]}C${cm[cOff]}') Auto save settings on exit setup = "'${cm[Yell]}$bd_set${cm[cOff]}'"'"%"$bd_corr"s"'(Yes, No)                \n')
+sbuf+=$(printf ' '${cm[Mg]}A${cm[cOff]}') Create or edit aliases physical device/media                                \n')
+sbuf+=$(printf ' '${cm[Blu]}B${cm[cOff]}') Backup and restore configuration settings                                   \n')
+sbuf+=$(printf ' '${cm[Blu]}I${cm[cOff]}') Import config from file (zip or plist)                                      \n')
+sbuf+=$(printf ' '${cm[Blu]}E${cm[cOff]}') Upload config to file (zip)                                                 \n')
+sbuf+=$(printf ' '${cm[Grn]}H${cm[cOff]}') Hashes of EFI loaders editor                                                \n')
+sbuf+=$(printf ' '${cm[Mg]}P${cm[cOff]}') Edit built-in theme presets                                                 \n')
+if [[ -f "${ROOT}"/cm_edit ]]; then
+sbuf+=$(printf ' '${cm[Mg]}M${cm[cOff]}') Run color mode editor                                                       \n')
+fi
+sbuf+=$(printf ' '${cm[Yell]}S${cm[cOff]}') Auto-update this program = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Yes, No)                \n')
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+sbuf+=$(printf ' '${cm[Yell]}U${cm[cOff]}') Update program manually                                                     \n')
+fi
+
+            fi
+                    Lit="Z"
+            if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
+               if [[ $loc = "ru" ]]; then
+sbuf+=$(printf ' '${cm[Blu]}D${cm[cOff]}') Загрузить бэкапы настроек из iCloud                                         \n')
+                else
+sbuf+=$(printf ' '${cm[Blu]}D${cm[cOff]}') Upload settings backups from iCloud                                         \n')
+            fi
+      fi
+ if [[ $loc = "ru" ]]; then
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+sbuf+=$(printf ' '${cm[Blu]}W${cm[cOff]}') Быстро переключить MountEFI в режим EasyEFI           (SHIFT+W)             \n')
+fi
+sbuf+=$(printf ' '${cm[Mg]}R${cm[cOff]}') Быстро перезагрузить программу настройки              (SHIFT+R)             \n')
+sbuf+=$(printf ' '${cm[Red]}Z${cm[cOff]}') Удаление программы MountEFI с компьютера              (SHIFT+Z)             \n')
+else
+if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+sbuf+=$(printf ' '${cm[Blu]}W${cm[cOff]}') Instantly switch MountEFI in EasyEFI mode          (SHIFT+W)                \n')
+fi
+sbuf+=$(printf ' '${cm[Mg]}R${cm[cOff]}') Restart the setup program immediately              (SHIFT+R)                \n')
+sbuf+=$(printf ' '${cm[Red]}Z${cm[cOff]}') Uninstall all MountEFI files and services          (SHIFT+Z)                \n')
+fi 
+
+else
+
             if [[ $loc = "ru" ]]; then
 sbuf=$(printf ' 0) Установить все настройки по умолчанию                                      \n')
 sbuf+=$(printf '  1) Язык интерфейса программы = "'$loc_set'"'"%"$loc_corr"s"'(авто, англ, русский) \n')
@@ -3072,7 +3178,7 @@ sbuf+=$(printf ' U) Update program manually                                     
 fi
 
             fi
-                    Lit="R"
+                    Lit="Z"
             if [[ $cloud_archive = 1 ]] || [[ $shared_archive = 1 ]]; then
                if [[ $loc = "ru" ]]; then
 sbuf+=$(printf ' D) Загрузить бэкапы настроек из iCloud                                         \n')
@@ -3093,20 +3199,36 @@ fi
 sbuf+=$(printf ' R) Restart the setup program immediately              (SHIFT+R)                \n')
 sbuf+=$(printf ' Z) Uninstall all MountEFI files and services          (SHIFT+Z)                \n')
 fi 
+
+fi
 echo "${sbuf}"
 }
 
 UPDATE_SCREEN(){
-        GET_THEME
-        if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
+        CHECK_CM
+        if [[ $cm_check = 0 ]]; then
+            GET_THEME
+            if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
+        else
+        SET_CM_THEME &
+        fi
 
         SET_LOCALE
 
+        if [[ $cm_check = 0 ]]; then
+
                     if [[ $loc = "ru" ]]; then
-        printf '******                   Программа настройки MountEFI                    *******\n'
-			else
-        printf '******                This is setup program for MountEFI                 *******\n'
-	                 fi
+            printf '*******                  Программа настройки MountEFI                    *******\n'
+			       else
+            printf '*******               This is setup program for MountEFI                 *******\n'
+	               fi
+        else
+                    if [[ $loc = "ru" ]]; then
+            printf ''${cm[Dim]}'*******'${cm[cOff]}'                  '${cm[Blu]}'Программа настройки MountEFI'${cm[cOff]}'                    '${cm[Dim]}'*******'${cm[cOff]}'\n'
+			       else
+            printf ''${cm[Dim]}'*******'${cm[cOff]}'               '${cm[Blu]}'This is setup program for MountEFI'${cm[cOff]}'                 '${cm[Dim]}'*******'${cm[cOff]}'\n'
+	               fi
+        fi
         printf '.%.0s' {1..80}
         printf ' %.0s' {1..80}
         
@@ -3141,9 +3263,9 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 
 
                         if [[ $loc = "ru" ]]; then
-        printf '\n******    Программа монтирует EFI разделы в Mac OS  (X.9 - XI.2)    *******\n\n'
+        printf '\n******    Программа монтирует EFI разделы в Mac OS (X.11 - X.14)    *******\n\n'
 			else
-        printf '\n******    This program mounts EFI partitions on Mac OS  (X.9 - XI.2)    *******\n\n'
+        printf '\n******    This program mounts EFI partitions on Mac OS (X.11 - X.14)    *******\n\n'
 	                 fi
 
 SHOW_DISKs
@@ -4410,9 +4532,7 @@ let "chn--";
 
 UPDATE_FONTS_LIST(){
 
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "$macos" = "1011" ]]; then 
+if [[ "${macos:0:4}" -lt "1012" ]]; then 
 fontlist="Andale Mono;Courier;Courier Oblique;Courier Bold;Courier New;Courier New Italic;Courier New Bold;Courier New Bold Italic;Menlo Regular;\
 Menlo Bold;Menlo Italic;Menlo Bold Italic;Monaco;PT Mono;PT Mono Bold;Osaka-Mono"
 else     
@@ -5740,7 +5860,7 @@ fi
 GET_SYSTEM_FLAG(){
 mac_vers=($(sw_vers -productVersion | tr "." " "))
 macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
-if [[ "${macos:0:4}" -gt "1103" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
+if [[ "${macos:0:4}" -gt "1103" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -7369,6 +7489,15 @@ ASK_ARMM_TIMEOUT(){
                 done
 }
 
+SET_CM_THEME(){
+cm_background="{4064, 8941, 17101}"; cm_foreground="{65535, 65535, 65535}"; cm_fontname="SF Mono Regular"; cm_fontsize="11"
+osascript -e "tell application \"Terminal\" to set background color of window 1 to $cm_background" \
+-e "tell application \"Terminal\" to set normal text color of window 1 to $cm_foreground" \
+-e "tell application \"Terminal\" to set the font name of window 1 to \"$cm_fontname\"" \
+-e "tell application \"Terminal\" to set the font size of window 1 to $cm_fontsize"
+}
+
+CHECK_CM(){ if $(cat "${CONFPATH}" | grep -A1 "GUIcolorMode</key>" | egrep -o "false|true"); then cm_check=1; else cm_check=0; fi }
 ###############################################################################
 ################### MAIN ######################################################
 ###############################################################################
@@ -7378,6 +7507,16 @@ GET_SYSTEM_FLAG
 rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart
 theme="system"
 var4=0
+CHECK_CM
+cm=()
+cOff=1; Yell=0; Grn=2; Red=3; Blu=4; Mg=5; Dim=6
+cm[Yell]="\e[0m\e[1;93m"
+cm[cOff]="\e[0m"
+cm[Grn]="\e[0m\e[1;92m"
+cm[Red]="\e[0m\e[1;31m"
+cm[Blu]="\e[1;36m"
+cm[Mg]="\e[1;35m"
+cm[Dim]="\e[0m\e[2m"
 cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
