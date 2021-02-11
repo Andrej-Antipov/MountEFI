@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="006"
+s_edit_vers="007"
 ############################################################################################################################################################################################################
 
 clear
@@ -1330,10 +1330,6 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
 	                 fi
 var0=$pos; num1=0 ; ch=0; unset screen_buffer3
 
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
-
 if [[ $loc = "ru" ]]; then
     printf '\n\n\n      0)  поиск разделов .....    '
 		else
@@ -1448,10 +1444,6 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
         printf '\n Select EFI partitions and automount options:                                 '
 	                 fi
 var0=$pos; num1=0 ; ch=0; unset screen_buffer3
-
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
 if [[ $loc = "ru" ]]; then
     printf '\n\n\n      0)  поиск разделов .....    '
@@ -3245,10 +3237,6 @@ printf '\e[8;'${lines}';80t' && printf '\e[3J' && printf "\033[0;0H"
         printf '                                 Aliases setup                               '
 	                 fi
 var0=$pos; num=0 ; ch=0; unset screen_buffer1; unset screen_buffer2
-
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
 if [[ $loc = "ru" ]]; then
     printf '\n\n\n     0)  поиск разделов .....      '
@@ -5506,10 +5494,9 @@ echo 'if [[ $cache = 0 ]]; then UPDATE_CACHE; fi' >> ${HOME}/.MountEFIa.sh
 echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ ! $am_enabled = 0 ]]; then' >> ${HOME}/.MountEFIa.sh
 echo 'if [[ ! $apos = 0 ]]; then' >> ${HOME}/.MountEFIa.sh
-echo 'macos=`sw_vers -productVersion`' >> ${HOME}/.MountEFIa.sh
-echo 'macos=`echo ${macos//[^0-9]/}`' >> ${HOME}/.MountEFIa.sh
-echo 'macos=${macos:0:5}' >> ${HOME}/.MountEFIa.sh
-echo 'if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; fi' >> ${HOME}/.MountEFIa.sh
+echo 'mac_vers=($(sw_vers -productVersion | tr "." " "))' >> ${HOME}/.MountEFIa.sh
+echo 'macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi' >> ${HOME}/.MountEFIa.sh
+echo 'if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi' >> ${HOME}/.MountEFIa.sh
 echo 'macos=${macos:0:4}' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
 echo 'zx=Mac-$(ioreg -rd1 -c IOPlatformExpertDevice | awk '"'/IOPlatformUUID/'"' | cut -f2 -d"=" | tr -d '"'"'"'""' '"'"' | cut -f2-4 -d '"'-'"' | tr -d - | rev)' >> ${HOME}/.MountEFIa.sh
@@ -5751,9 +5738,9 @@ fi
 }
 
 GET_SYSTEM_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}
-if [[ ${#macos} = 4 ]]; then macos+="0"; elif [[ ${#macos} = 3 ]]; then macos+="00"; fi
-if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then 
+mac_vers=($(sw_vers -productVersion | tr "." " "))
+macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
+if [[ "${macos:0:4}" -gt "1103" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -5764,7 +5751,7 @@ if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then
 ##############################
     fi
 fi
-if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
+if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
 }
 
 FORCE_CHECK_PASSWORD(){

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 10.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="006"
-serv_vers="013"
+edit_vers="007"
+serv_vers="014"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -639,9 +639,9 @@ GET_ARMM(){ armm_timeout=$(echo "$MountEFIconf" | grep -A 1 -e "ReturnMainMenuTi
 
 # Установка флага необходимости в SUDO - flag
 GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:5}; 
-if [[ ${#macos} = 4 ]]; then macos+="0"; elif [[ ${#macos} = 3 ]]; then macos+="00"; fi
-if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then 
+mac_vers=($(sw_vers -productVersion | tr "." " "))
+macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
+if [[ "${macos:0:4}" -gt "1103" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -652,7 +652,7 @@ if [[ "${macos:0:4}" -gt "1130" ]] || [[ "${macos}" -lt "1090" ]]; then
 ##############################
     fi
 fi
-if [[ "$macos" -lt "10130" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
+if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
 }
 
 ##################### получение имени и версии загрузчика ######################################################################################
@@ -2488,10 +2488,6 @@ if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
 }
 
 CHECK_SANDBOX
-
-# У Эль Капитан другой термин для размера раздела
-	
-if [[ "$macos" = "1011" ]]; then vmacos="Total Size:"; else vmacos="Disk Size:"; fi
 
 MOUNT_EFI_WINDOW_UP &
 
