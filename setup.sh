@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 27.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -192,8 +192,10 @@ fi
 }
 
 MOUNT_EFI_WINDOW_UP(){ 
-osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
-osascript -e 'tell application "Terminal" to activate'
+if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then
+    osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
+    osascript -e 'tell application "Terminal" to activate'
+fi
 }
 
 # Выход из программы с проверкой - выгружать терминал из трея или нет
