@@ -15,8 +15,7 @@ if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window 
 fi
 }
 
-if [[ $(ps xao command | grep -i "MountEFI$" | grep -v grep | wc -l | bc) = 2 ]]; then MOUNT_EFI_WINDOW_UP &
-fi
+if [[ $(ps xao command | grep -i "MountEFI$" | grep -v grep | wc -l | bc) = 2 ]]; then MOUNT_EFI_WINDOW_UP; exit; fi
 
 logfile="${HOME}/Desktop/temp.txt"
 TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> "${logfile}" 2>/dev/null; }
