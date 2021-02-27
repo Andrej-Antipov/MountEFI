@@ -5112,7 +5112,7 @@ done
                         if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi & 
                         lines=$oldlines
                         UPDATE_PRESETS_LIST
-                        MOUNT_EFI_WINDOW_UP &
+                        MOUNT_EFI_WINDOW_UP
                           
         fi
 
@@ -5120,7 +5120,7 @@ done
                         SET_INPUT
                         if result=$(ASK_SYSTEM_THEME); then
                                             osascript -e 'tell application "Terminal" to  set current settings of window 1 to settings set "'"$result"'"'
-                                            MOUNT_EFI_WINDOW_UP &
+                                            MOUNT_EFI_WINDOW_UP
                         oldlines=$lines; lines=32
                         clear && printf '\e[8;'${lines}';88t' && printf '\e[3J' && printf "\033[0;0H"
                         UPDATE_CACHE
@@ -5139,7 +5139,7 @@ done
                         if [[ $result = 1 ]]; then
                         plutil -replace ThemeLoadersNames -string "$Loaders" "${CONFPATH}"
                         plutil -replace ThemeLoaders -string $new_color "${CONFPATH}"
-                        MOUNT_EFI_WINDOW_UP &
+                        MOUNT_EFI_WINDOW_UP
                         else
                         SET_THEMES_LOADERS "S," "$themename"
                         fi
@@ -5148,14 +5148,14 @@ done
                         fi  2>/dev/null
                         fi
                         else
-                        MOUNT_EFI_WINDOW_UP &
+                        MOUNT_EFI_WINDOW_UP
                         fi 2>/dev/null
                         unset inputs
                         GET_THEME
                         if [[ $theme = "built-in" ]]; then CUSTOM_SET; else SET_SYSTEM_THEME; fi &
                         lines=$oldlines
                         UPDATE_PRESETS_LIST
-                        MOUNT_EFI_WINDOW_UP &
+                        MOUNT_EFI_WINDOW_UP
             fi  
 
         if [[ $inputs = "" ]]; then printf "\033[2A"; fi
@@ -7090,7 +7090,7 @@ unset inputs
 
 SHOW_HASHES_SCREEN
 
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 
 done
 

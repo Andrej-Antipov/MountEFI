@@ -1731,7 +1731,7 @@ CHECK_AUTOUPDATE
 if [[ ${AutoUpdate} = 1 ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]] && [[ ! -f /Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt ]] && [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then 
                     START_AUTOUPDATE &
 fi 
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 SET_INPUT
 }
 ##########################################################################################################################
@@ -1880,7 +1880,7 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
   fi
 #DBG "CLIENT oc_list after start find loaders = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"      
 fi
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 }
 
 MEFIScA_DATA(){
@@ -2323,7 +2323,7 @@ if [[ ${need_password} = 0 ]]; then
     trap " " EXIT
 fi
 if [[ $loader_found = 0 ]]; then 
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 fi
 }
 
@@ -2386,7 +2386,7 @@ if [[ ${need_password} = 0 ]]; then
     trap " " EXIT
 fi
 if [[ $loader_found = 0 ]]; then 
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 fi
 }
 #####################################################################################################
@@ -2436,7 +2436,7 @@ if [[ ${need_password} = 0 ]]; then
     wait $! 2>/dev/null
     trap " " EXIT
 fi
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 }
 
 ###################################################################################################
@@ -2491,7 +2491,7 @@ if [[ ${noefi} = 0 ]]; then order=2; printf "\r\033[2A"; fi
 
 CHECK_SANDBOX
 
-#MOUNT_EFI_WINDOW_UP &
+#MOUNT_EFI_WINDOW_UP
 
 rmlist=(); posrm=0
 
@@ -3689,7 +3689,7 @@ fi
 CORRECT_LOADERS_LIST
 GET_LOADERS_FROM_NEW_PARTS
 synchro=0
-MOUNT_EFI_WINDOW_UP &
+MOUNT_EFI_WINDOW_UP
 #######################
 
  fi; GETLIST; fi
