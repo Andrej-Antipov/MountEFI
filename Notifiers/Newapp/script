@@ -2,15 +2,17 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 11.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 27.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
 edit_vers="007"
 serv_vers="014"
 
-MOUNT_EFI_WINDOW_UP(){ 
-osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
-osascript -e 'tell application "Terminal" to activate'
+MOUNT_EFI_WINDOW_UP(){
+if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
+    osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
+    osascript -e 'tell application "Terminal" to activate'
+fi
 }
 
 if [[ $(ps xao command | grep -i "MountEFI$" | grep -v grep | wc -l | bc) = 2 ]]; then MOUNT_EFI_WINDOW_UP &
