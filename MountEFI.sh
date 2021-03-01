@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 27.02.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.03.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
 edit_vers="007"
-serv_vers="014"
+serv_vers="015"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -1068,7 +1068,7 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         fi
     fi
 fi
-MOUNT_EFI_WINDOW_UP
+#MOUNT_EFI_WINDOW_UP
 }
 
 
@@ -3591,6 +3591,7 @@ fi
 #   mrel - флаг перезапуска из функции setup (reload), mfupd - флаг выполненного обновления, rst - флаг перезагрузки (restart), no_ret - флаг не возвращаться в EasyEFI mode
 CLIENT_READY(){ if [[ $mefisca = 1 && $mrel = 0 ]]; then if [[ $rst = 0  || $mfupd = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; DBG "CLIENT Ready"; else rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart; DBG "CLIENT does not want to be Ready"; fi; fi; }
 
+
 ################### ожидание завершения монтирования разделов при хотплаге #################
 #############################################################################################
 # Начало основноо цикла программы ###########################################################
@@ -3689,7 +3690,7 @@ fi
 CORRECT_LOADERS_LIST
 GET_LOADERS_FROM_NEW_PARTS
 synchro=0
-MOUNT_EFI_WINDOW_UP
+#MOUNT_EFI_WINDOW_UP
 #######################
 
  fi; GETLIST; fi
