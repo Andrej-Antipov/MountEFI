@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 02.03.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 25.03.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="007"
+edit_vers="008"
 serv_vers="015"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
@@ -2135,8 +2135,9 @@ done
 if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
 lists_updated=1
 fi
-	if [[ $pos = 0 ]]; then
-clear
+if [[ $pos = 0 ]]; then
+	if [[ ! "$(sysctl machdep.cpu.brand_string | awk '{print $2,$3}')" = "Apple M1" ]]; then
+	clear
 		if [[ $loc = "ru" ]]; then
 	printf '\nНеизвестная ошибка. Нет разделов EFI для монтирования\n'
 	printf 'Конец программы...\n\n\n\n''\e[3J'
@@ -2149,7 +2150,8 @@ clear
 sleep 0.5
 read  -n1 demo
 EXIT_PROGRAM
-	fi
+   fi
+fi
 }
 
 ############################################ конец движка детекта EFI ###############################################
