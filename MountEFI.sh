@@ -2136,7 +2136,7 @@ if [[ ! $usb = 0 ]]; then let "lines=lines+3"; fi
 lists_updated=1
 fi
 if [[ $pos = 0 ]]; then
-	if [[ ! "$(sysctl machdep.cpu.brand_string | awk '{print $2,$3}')" = "Apple M1" ]]; then
+	if [[ ! "$(uname -m)" = "arm64" ]]; then
 	clear
 		if [[ $loc = "ru" ]]; then
 	printf '\nНеизвестная ошибка. Нет разделов EFI для монтирования\n'
