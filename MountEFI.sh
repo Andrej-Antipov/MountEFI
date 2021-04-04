@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 25.03.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.04.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -554,6 +554,16 @@ osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "
 else
 osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Continue", "Abort" } default button "Abort" giving up after 110'  2>/dev/null
 fi
+}
+
+APPLE_ISC_WARNING(){
+	SET_TITLE
+    if [[ $loc = "ru" ]]; then
+    echo 'SUBTITLE="НЕ МОГУ ПОДКЛЮЧИТЬ ТОМ APPLE ISC !"; MESSAGE="Ошибка подключения '${string}'"' >> "${HOME}"/.MountEFInoty.sh
+    else
+    echo 'SUBTITLE="FAILED TO MOUNT APPLE ISC VOLUME !"; MESSAGE="Error mounting '${string}'"' >> "${HOME}"/.MountEFInoty.sh
+    fi
+    DISPLAY_NOTIFICATION 	
 }
 
 CHECK_SANDBOX(){
@@ -2038,7 +2048,7 @@ GET_EFI_S(){
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
 drives_iomedia=$( echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia," )
-string=$( diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
+string=$( diskutil list | egrep "EFI|Apple_APFS_ISC" | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
 disk_images=$( echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';' )
 syspart=$( df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n' )
 IFS=';'; dlist=($string); ilist=($disk_images); usb_iolist=($usb_iomedia); unset IFS; pos=${#dlist[@]}; posi=${#ilist[@]}; pusb=${#usb_iolist[@]}
@@ -2150,6 +2160,8 @@ if [[ $pos = 0 ]]; then
 sleep 0.5
 read  -n1 demo
 EXIT_PROGRAM
+	else
+		var0=$pos; num=0; dnum=0; unset nlist; unset rnlist; lines=25
    fi
 fi
 }
@@ -2171,6 +2183,7 @@ MOUNTED_CHECK(){
 
     fi
 }
+
 
 CHECK_PASSWORD(){
 need_password=0
@@ -2503,7 +2516,7 @@ if [[ ! $upd = 0 ]] || [[ ! $rst = 0 ]]; then GET_MOUNTEFI_STACK; upd=0; else mo
 
 # Блок обработки ситуации если найден всего один раздел EFI ########################
 ###################################################################################
-if [[ $pos = 1 ]]; then 
+if [[ $pos = 1 ]] && [[ ! "$(uname -m)" = "arm64" ]]; then 
 
 if [[ ! ${menue} = 1 ]]; then
 
@@ -3534,14 +3547,21 @@ string=`echo ${dlist[$pnum]}`
 strng0=${string}
 mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
-if [[ ! $mcheck = "Yes" ]]; then wasmounted=0; DO_MOUNT; if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi; else wasmounted=1; fi
+if [[ "$(uname -m)" = "arm64" ]] && [[ ${strng0} = $(diskutil list | egrep -m1 "Apple_APFS_ISC" | grep -oE '[^ ]+$') ]]; then APPLE_ISC_WARNING
 
-string=${strng0}; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-if [[ $mcheck = "Yes" ]]; then
-    if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
-        if [[ $ldrname = "" ]];then open "$vname"; else open "$vname/EFI"; fi
-    fi
+else
+
+	if [[ ! $mcheck = "Yes" ]]; then 
+	
+		wasmounted=0; DO_MOUNT; if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi; else wasmounted=1; fi
+		string=${strng0}; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+		vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+	
+		if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
+				if [[ $ldrname = "" ]];then open "$vname"; else open "$vname/EFI"; fi
+		fi
+	fi
+
 fi
  nogetlist=1
 
