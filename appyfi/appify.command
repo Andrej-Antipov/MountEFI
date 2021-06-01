@@ -46,6 +46,7 @@ MAKE_NEW_APPLET(){
                 rm -f "$TARGET/MacOS/Application"* 2>/dev/null
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
                 rm -Rf "${SOURCE}"
+                xattr -rc "../MountEFI.app"
             fi
 }
 
@@ -59,7 +60,7 @@ BACK_OLD_APPLET(){
                 mv -f "${SOURCE}/document.wflow" "$TARGET/document.wflow" 2>/dev/null
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
                 rm -Rf "${SOURCE}"
-
+				xattr -rc "../MountEFI.app"
 }
 
 if [[ ! -d ../MountEFI.app ]]; then
