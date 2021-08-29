@@ -6,8 +6,8 @@ clear
 UPDATE_OC_HASHES_LIST(){
 if [[ ! ${dbg_hash} = 0 ]] && [[ ! ${rls_hash} = 0 ]] && [[ ! ${oc_vrs} = 0 ]]; then 
     if [[ "${oc_vrs:0:1}" = 0 ]]; then fsg="."; else fsg="${oc_vrs:0:1}"; fi
-    rel_string="${rls_hash}"" ) oc_revision=""${fsg}""${oc_vrs:1:1}""${oc_vrs:2:1}""r;;"
-    dbg_string="${dbg_hash}"" ) oc_revision=""${fsg}""${oc_vrs:1:1}""${oc_vrs:2:1}""d;;"
+    rel_string="${rls_hash}${rls_hash2}"" ) oc_revision=""${fsg}""${oc_vrs:1:1}""${oc_vrs:2:1}""r;;"
+    dbg_string="${dbg_hash}${dbg_hash2}"" ) oc_revision=""${fsg}""${oc_vrs:1:1}""${oc_vrs:2:1}""d;;"
     hsh_string=$( cat OC_hashes.txt | grep oc_hashes_strings )
     hsh_count=$( echo $hsh_string | cut -f3 -d' ' )
     let "new_count=hsh_count+2"
@@ -28,7 +28,7 @@ cd "$(dirname "$0")"
 rm -f OC_hashes.txt
 echo "############## oc_hashes_strings 00 #################" >> OC_hashes.txt
 
-oc_versions=( 0.0.1 0.0.2 0.0.3 0.0.4 0.5.0 0.5.1 0.5.2 0.5.3 0.5.4 0.5.5 0.5.6)
+oc_versions=( 0.5.0 0.5.1 0.5.2 0.5.3 0.5.4 0.5.5 0.5.6 0.7.0 0.7.1 0.7.2 )
 
     echo "list of hashes needs to update. downloading OC releases... "
 if ping -c 1 google.com >> /dev/null 2>&1; then
@@ -64,17 +64,19 @@ if ping -c 1 google.com >> /dev/null 2>&1; then
     mkdir -p OC/$oc_vrs/RELEASE
     curl -L -s -o OC/$oc_vrs/RELEASE/RELEASE.zip $latest_RELEASE 2>/dev/null
     fi
-    cp OC/$oc_vrs/RELEASE/RELEASE.zip ~/Desktop
+    #cp OC/$oc_vrs/RELEASE/RELEASE.zip ~/Desktop
     cd OC/$oc_vrs/DEBUG
     unzip  -o -qq DEBUG.zip 2>/dev/null
-    if [[ -f EFI/BOOT/BOOTx64.efi ]]; then dbg_hash=$( md5 -qq EFI/BOOT/BOOTx64.efi )
-                    else
-                        dbg_hash=$( md5 -qq BOOT/BOOTx64.efi )
+    if [[ -f EFI/BOOT/BOOTx64.efi ]]; then dbg_hash=$( md5 -qq EFI/BOOT/BOOTx64.efi ); dbg_hash2=$( md5 -qq EFI/OC/OpenCore.efi )
+                    elif [[ -f X64/EFI/BOOT/BOOTx64.efi ]]; then dbg_hash=$( md5 -qq X64/EFI/BOOT/BOOTx64.efi ); dbg_hash2=$( md5 -qq X64/EFI/OC/OpenCore.efi )
+						else
+							dbg_hash=$( md5 -qq BOOT/BOOTx64.efi ); dbg_hash2=$( md5 -qq OC/OpenCore.efi )
     fi
     cd ../RELEASE
     unzip  -o -qq RELEASE.zip 2>/dev/null
-    if [[ -f EFI/BOOT/BOOTx64.efi ]]; then rls_hash=$( md5 -qq EFI/BOOT/BOOTx64.efi )
-                        else rls_hash=$( md5 -qq BOOT/BOOTx64.efi )
+    if [[ -f EFI/BOOT/BOOTx64.efi ]]; then rls_hash=$( md5 -qq EFI/BOOT/BOOTx64.efi ); rls_hash2=$( md5 -qq EFI/OC/OpenCore.efi )
+		elif [[ -f X64/EFI/BOOT/BOOTx64.efi ]]; then rls_hash=$( md5 -qq X64/EFI/BOOT/BOOTx64.efi ); rls_hash2=$( md5 -qq X64/EFI/OC/OpenCore.efi )
+                        else rls_hash=$( md5 -qq BOOT/BOOTx64.efi ); rls_hash2=$( md5 -qq OC/OpenCore.efi )
     fi
     cd "$(dirname "$0")"
     kill $!
