@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 25.05.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 29.08.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="010"
-serv_vers="017"
+edit_vers="011"
+serv_vers="018"
 
 MOUNT_EFI_WINDOW_UP(){
 if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
@@ -296,7 +296,7 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|f
 GET_FLAG(){
 mac_vers=($(sw_vers -productVersion | tr "." " "))
 macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
-if [[ "${macos:0:4}" -gt "1104" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
+if [[ "${macos:0:4}" -gt "1105" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
