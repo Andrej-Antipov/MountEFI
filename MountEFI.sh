@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.08.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 09.09.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="011"
-serv_vers="018"
+edit_vers="012"
+serv_vers="019"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -709,12 +709,16 @@ if [[ ! $CheckLoaders = 0 ]]; then
                     if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
 
                     if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
+                    elif [[ ${loader_sum} = 0 ]] && [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]]; then 
+                       loader_sum=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi 2>/dev/null); GET_OCLP_VERS
                        if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
 
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
-                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
+                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""
+						if [[ ! "${md5_loader}" =  "$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi 2>/dev/null)" ]]; then GET_LOADER_STRING; else GET_OCLP_VERS; fi
+					fi
                     ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
                     let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
             fi
@@ -2649,12 +2653,27 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
                     GET_LOADER_STRING
                   fi
                 fi
+            elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]] ; then 
+					md5_loader=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi );
+					if [[ ${md5_loader} = "" ]]; then loader=""; else
+						if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
+							mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
+							GET_OCLP_VERS
+						fi
+                  fi
             else
                    if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then  loader="empty"; mounted_loaders_list[pnum]=0; lflag=1; fi
             fi
     fi
 fi
 
+}
+
+GET_OCLP_VERS(){ 
+	loader="OpenCore"; oc_revision=""; 
+	oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi )"
+	oc_revision=$(echo "${ocHashes64string}" | egrep -o "${oc_list[pnum]:32:63}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
+	loader+="${oc_revision}"
 }
 
 ########################### вывод признаков наличия загрузчика #########################################
