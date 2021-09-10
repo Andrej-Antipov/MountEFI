@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.08.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 10.09.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
-edit_vers="011"
-serv_vers="018"
+edit_vers="012"
+serv_vers="019"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -106,7 +106,7 @@ fi
 ##################### проверка на загрузчик после монтирования ##################################################################################
 GET_LOADER_STRING(){                              
                if [[ ! "${loader:0:5}" = "Other" ]]; then             
-                    check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" )
+                    if [[ $oclp = 1 ]]; then check_loader="OpenCore"; else check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" ); fi
                     if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"
@@ -161,12 +161,20 @@ FIND_LOADERS(){
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
 vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+			oclp=0
 			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )            
                 if [[ ${md5_loader} = "" ]]; then loader=""
                     #elif [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""
                         else mounted_loaders_list[$pnum]="${md5_loader}"
                             lflag=1; GET_LOADER_STRING
+                fi
+            elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]] ; then 
+					md5_loader=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi );         
+                if [[ ${md5_loader} = "" ]]; then loader=""
+                    #elif [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""
+                        else mounted_loaders_list[$pnum]="${md5_loader}"
+                            lflag=1; oclp=1; GET_LOADER_STRING
                 fi
             elif [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then loader="empty"; mounted_loaders_list[pnum]=0
             fi
