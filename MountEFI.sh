@@ -670,7 +670,7 @@ if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi; macos=${macos:
 GET_LOADER_STRING(){                
                GET_OTHER_LOADERS_STRING               
                if [[ ! "${loader:0:5}" = "Other" ]]; then 
-                    check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" )
+                    if [[ $oclp = 1 ]]; then check_loader="OpenCore"; else check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" ); fi
                     if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
@@ -710,14 +710,14 @@ if [[ ! $CheckLoaders = 0 ]]; then
 
                     if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
                     elif [[ ${loader_sum} = 0 ]] && [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]]; then 
-                       loader_sum=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi 2>/dev/null); GET_OCLP_VERS
+                       loader_sum=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi 2>/dev/null); GET_OC_VERS
                        if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
 
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
                     if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""
-						if [[ ! "${md5_loader}" =  "$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi 2>/dev/null)" ]]; then GET_LOADER_STRING; else GET_OCLP_VERS; fi
+						GET_LOADER_STRING
 					fi
                     ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
                     let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
@@ -2310,13 +2310,14 @@ do
 
     vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
-	if [[ -d "$vname"/EFI/BOOT ]]; then
+	if [[ -d "$vname"/EFI ]] ; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
 					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
+			elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]] ; then check_loader="OpenCore"; fi
                         if [[ ${check_loader} = "OpenCore" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi; was_mounted=1
                         if [[ ! $ldrname = "" ]]; then break; fi
                         fi   
-	         fi
+	         
 	fi
 
 		if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
@@ -2644,7 +2645,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
     if [[ $mcheck = "Yes" ]]; then 
 
 vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
-
+		    oclp=0
 			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
                 md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
                 if [[ ${md5_loader} = "" ]]; then loader=""; else
@@ -2658,7 +2659,7 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
 					if [[ ${md5_loader} = "" ]]; then loader=""; else
 						if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
 							mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
-							GET_OCLP_VERS
+							oclp=1; GET_LOADER_STRING
 						fi
                   fi
             else
@@ -2667,13 +2668,6 @@ vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c
     fi
 fi
 
-}
-
-GET_OCLP_VERS(){ 
-	loader="OpenCore"; oc_revision=""; 
-	oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi )"
-	oc_revision=$(echo "${ocHashes64string}" | egrep -o "${oc_list[pnum]:32:63}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
-	loader+="${oc_revision}"
 }
 
 ########################### вывод признаков наличия загрузчика #########################################
