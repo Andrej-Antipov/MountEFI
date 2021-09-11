@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 09.09.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.09.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -670,12 +670,14 @@ if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi; macos=${macos:
 GET_LOADER_STRING(){                
                GET_OTHER_LOADERS_STRING               
                if [[ ! "${loader:0:5}" = "Other" ]]; then 
-                    if [[ $oclp = 1 ]]; then check_loader="OpenCore"; else check_loader=$( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" ); fi
-                    if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
+                    check_loader=$( xxd -l 40000 "$vname$loaderPath" | egrep -om1  "OpenCore" )
+                    if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname$loaderPath" | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
+                    #echo "loaderPath=$loaderPath" >> ~/Desktop/log.txt
+                    #echo "check_loader=$check_loader" >> ~/Desktop/log.txt
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
-                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
-                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                revision=$( xxd "$vname$loaderPath" | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: )
+                                if [[ ${revision} = "" ]]; then revision=$( xxd "$vname$loaderPath" | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
                                 loader+="${revision:0:4}"
                                 ;;
   
@@ -706,19 +708,18 @@ if [[ ! $CheckLoaders = 0 ]]; then
         mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then 
             vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-                    if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2>/dev/null); then loader_sum=0; fi
+					loaderPath=""
+					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
+					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
+                    if ! loader_sum=$( md5 -qq "$vname$loaderPath" 2>/dev/null); then loader_sum=0; fi
 
-                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd -l 40000 "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
-                    elif [[ ${loader_sum} = 0 ]] && [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]]; then 
-                       loader_sum=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi 2>/dev/null); GET_OC_VERS
+                    if [[ ! ${loader_sum} = 0 ]] && [[ $( xxd -l 40000 "$vname$loaderPath"| egrep -om1 "OpenCore" ) = "OpenCore" ]]; then md5_loader=${loader_sum}; GET_OC_VERS
                        if [[ ! "${old_oc_revision[pnum]}" = "${oc_revision}" ]]; then old_oc_revision[pnum]="${oc_revision}"; update_screen_flag=1; else update_screen_flag=0; fi
                     fi
 
                     if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || [[ ${update_screen_flag} = 1 ]]; then 
                     mounted_loaders_list[$pnum]=${loader_sum}
-                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision=""
-						GET_LOADER_STRING
-					fi
+                    if [[ ${loader_sum} = 0 ]]; then loader="empty"; else md5_loader=${loader_sum}; loader=""; oc_revision=""; revision="";  GET_LOADER_STRING; fi
                     ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[$pnum]}
                     let "chs=pnum+1"; if [[ "${recheckLDs}" = "1" ]]; then recheckLDs=2; fi; UPDATE_SCREEN; break; fi
             fi
@@ -1394,7 +1395,10 @@ if [[ $mefisca = 1  && $(df | grep ${lddlist[i]}) = "" ]]; then
     string=${lddlist[i]}; DO_MOUNT
     vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
         if [[ ! "$vname" = "" ]]; then 
-            md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
+					loaderPath=""
+					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
+					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
+            md5_loader=$( md5 -qq "$vname$loaderPath" )               
             if [[ ! ${md5_loader} = "" ]]; then loader=""; oc_revision=""; revision=""; GET_LOADER_STRING
                 if [[ ! "${loader}" = "" ]]; then ldlist[i]="$loader"; fi
             fi
@@ -2310,14 +2314,16 @@ do
 
     vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
 
-	if [[ -d "$vname"/EFI ]] ; then
-			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
-			elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]] ; then check_loader="OpenCore"; fi
+	if [[ -d "$vname"/EFI ]]; then
+					loaderPath=""
+					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
+					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
+			if [[ ! "${loaderPath}" = "" ]]; then 
+					check_loader=`xxd "$vname$loaderPath" | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
                         if [[ ${check_loader} = "OpenCore" ]]; then loader_found=1; if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi; was_mounted=1
                         if [[ ! $ldrname = "" ]]; then break; fi
                         fi   
-	         
+	         fi
 	fi
 
 		if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK ; fi
@@ -2645,23 +2651,17 @@ if [[ ! $CheckLoaders = 0 ]]; then
     if [[ $mcheck = "Yes" ]]; then 
 
 vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
-		    oclp=0
-			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
-                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )               
+			loaderPath=""
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/BOOTX64.efi"; 
+				elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
+			if  [[ ! "${loaderPath}" = "" ]]; then 
+                md5_loader=$( md5 -qq "$vname$loaderPath" )               
                 if [[ ${md5_loader} = "" ]]; then loader=""; else
                    if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
                     mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
                     GET_LOADER_STRING
                   fi
                 fi
-            elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]] && [[ -f "$vname"/EFI/OC/OpenCore.efi ]] ; then 
-					md5_loader=$( md5 -qq "$vname"/System/Library/CoreServices/boot.efi );
-					if [[ ${md5_loader} = "" ]]; then loader=""; else
-						if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""; else
-							mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
-							oclp=1; GET_LOADER_STRING
-						fi
-                  fi
             else
                    if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then  loader="empty"; mounted_loaders_list[pnum]=0; lflag=1; fi
             fi

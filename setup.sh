@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.08.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.09.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="011"
+s_edit_vers="012"
 ############################################################################################################################################################################################################
 
 clear
@@ -6497,7 +6497,10 @@ while true; do
                     mflag=1
                     fi
                      vname=$(df | egrep ${answer} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
-                    hash_string=$( md5 -qq "$vname/EFI/BOOT/BOOTX64.EFI" 2>/dev/null)
+                     loaderPath=""
+					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
+					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
+                    hash_string=$( md5 -qq "$vname$loaderPath" 2>/dev/null)
                     if [[ $mflag = 1 ]]; then diskutil quiet umount /dev/${answer}; mflag=0; fi
                     fi
                   if [[ $answer = "" || $hash_string = "" ]]; then cancel=1; break; else cancel=0;  
