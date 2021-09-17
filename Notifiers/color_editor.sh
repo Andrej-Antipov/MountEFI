@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 29.08.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 17.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI Color Mode Editor #######################################################################################################
 prog_vers="1.9.0"
@@ -195,13 +195,13 @@ for i in 0 1 2 3 4 5 6; do SET_STRUCT_1 $i; done
 if [[ $loc = "ru" ]]; then
     StructHints[0]="звёздочки заголовка;текст строки заголовка;римская цифра версии мак ос;арабские цифры версии мак ос;"
     StructHints[1]="цифра 0;скобка после цифры;текст обновления списка разделов;кавычки вокруг +;плюс;текст строки обозначающий плюсом подключенные разделы;"
-    StructHints[2]="первый сверху ряд точек;заголовок SATA;"
+    StructHints[2]="первый сверху ряд точек;заголовок INT;"
     StructHints[4]="второй сверху ряд точек;заголовок USB;"
     StructHints[6]="третий сверху ряд точек;"
 else
     StructHints[0]="Header asterisks;header line text;Roman numeral of the mac os version;Arabic numerals of the mac os version;"
     StructHints[1]="number 0;bracket after the number 0;text to update the EFI list ;quotes around +;a plus;text line explain that + means mounted;"
-    StructHints[2]="The first row of dots from the top;SATA header;"
+    StructHints[2]="The first row of dots from the top;INT header;"
     StructHints[4]="The second row of dots from the top;заголовок USB;"
     StructHints[6]="The third row of dots from the top;"
 fi
@@ -270,8 +270,8 @@ if [[ $loc = "ru" ]]; then
     1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - подключенные  '${cm[clr]}'          ')
         bufStruct[1]="4 head_num_sch,6 head_sch_br,7 head_sch,10 head_pls_qts,62 head_pls,63 head_pls_str,68"
         ;;
-    2)  bbuf[2]=$(printf '\033[6;0f    '${cm[dots_line1]}......................................${cm[head_sata]}' SATA '${cm[dots_line1]}......................................${cm[clr]}'      ')
-        bufStruct[2]="6 dots_line1,4 head_sata,43"
+    2)  bbuf[2]=$(printf '\033[6;0f    '${cm[dots_line1]}.......................................${cm[head_sata]}' INT '${cm[dots_line1]}......................................${cm[clr]}'      ')
+        bufStruct[2]="6 dots_line1,4 head_sata,44"
         ;;
     3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
         bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'          '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]} $dmsize"'     '${cm[clr]}' ')
@@ -298,8 +298,8 @@ else
     1)  bbuf[1]=$(printf '\033[4;0f      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                               '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - mounted  '${cm[clr]}'          ')
         bufStruct[1]="4 head_num_sch,6 head_sch_br,7 head_sch,10 head_pls_qts,67 head_pls,68 head_pls_str,73"
         ;;
-    2)  bbuf[2]=$(printf '\033[6;0f    '${cm[dots_line1]}......................................${cm[head_sata]}' SATA '${cm[dots_line1]}......................................${cm[clr]}'      ')
-        bufStruct[2]="6 dots_line1,4 head_sata,43"
+    2)  bbuf[2]=$(printf '\033[6;0f    '${cm[dots_line1]}.......................................${cm[head_sata]}' INT '${cm[dots_line1]}......................................${cm[clr]}'      ')
+        bufStruct[2]="6 dots_line1,4 head_sata,44"
         ;;
     3)  drive="SanDisk SD8SBAT128G1122"; dsize="209.7"; dmsize="Mb"; bsd=0 ; bsp=1; ch=1
         bbuf[3]=$(printf '\033[8;0f    '${cm[num_sata]}"  "$ch''${cm[num_sata_br]}')'${cm[mount_sata_pls]}'   +   '${cm[dn_sata]}''"$drive"'                       '${cm[dn_bsd_sata]}disk${cm[sata_bsd]}${bsd}${cm[dn_bsd_sata]}s${cm[sata_bsp]}${bsp}'          '${cm[pn_size_sata]}''"$dsize${cm[pn_size_msata]} $dmsize"'     '${cm[clr]}' ')
