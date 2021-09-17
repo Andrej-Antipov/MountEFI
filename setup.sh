@@ -5771,7 +5771,7 @@ fi
 GET_SYSTEM_FLAG(){
 mac_vers=($(sw_vers -productVersion | tr "." " "))
 macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
-if [[ "${macos:0:4}" -gt "1105" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
+if [[ "${macos:0:4}" -gt "1106" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
