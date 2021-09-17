@@ -2856,31 +2856,31 @@ printf "\r\033[3A"
             if [[ $CheckLoaders = 0 ]]; then
                 printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'повторить поиск разделов                     '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - подключенные  '${cm[clr]}'\n\n'
 	            printf '     '${cm[dots_line1]}''
-	            printf '.%.0s' {1..31} 
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+	            printf '.%.0s' {1..32} 
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..31}
                 printf ''${cm[clr]}'\n'
                 else
                 printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - подключенные  '${cm[clr]}'\n\n'
 	            printf '     '${cm[dots_line1]}''
-                printf '.%.0s' {1..38}
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+                printf '.%.0s' {1..39}
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
                 printf ''${cm[clr]}'\n'
                 fi 
 		else
 	         if [[ $CheckLoaders = 0 ]]; then
-                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" - mounted '${cm[clr]}'\n\n' 
+                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - mounted '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..32} 
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..30}
                 printf '\n'
                 else
-                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" - mounted '${cm[clr]}'\n\n' 
+                printf '\n\n\n      '${cm[head_num_sch]}'0'${cm[head_sch_br]}')  '${cm[head_sch]}'update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'"'${cm[head_pls_str]}' - mounted '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
-                printf '.%.0s' {1..38}
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+                printf '.%.0s' {1..39}
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
                 printf ''${cm[clr]}'\n'
                 fi
@@ -2986,16 +2986,16 @@ fi
         	    printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')      '${cm[head_ast]}'*******'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                     '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
-	            printf '.%.0s' {1..31} 
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+	            printf '.%.0s' {1..32} 
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..31}
                 printf ''${cm[clr]}'\n'
                 else
                 printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
-                printf '.%.0s' {1..38}
-                printf ' '${cm[head_sata]}'SATA '${cm[dots_line1]}''
+                printf '.%.0s' {1..39}
+                printf ' '${cm[head_sata]}'INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
                 printf ''${cm[clr]}'\n'
                 fi
@@ -3006,16 +3006,16 @@ fi
                 printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
 	            printf '     '${cm[dots_line1]}''
-	            printf '.%.0s' {1..31} 
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+	            printf '.%.0s' {1..32} 
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..31}
                 printf ''${cm[clr]}'\n'
                 else
                 printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
 	            printf '     '${cm[dots_line1]}''
-                printf '.%.0s' {1..38}
-                printf ''${cm[head_sata]}' SATA '${cm[dots_line1]}''
+                printf '.%.0s' {1..39}
+                printf ''${cm[head_sata]}' INT '${cm[dots_line1]}''
                 printf '.%.0s' {1..38}
                 printf ''${cm[clr]}'\n'
                 fi

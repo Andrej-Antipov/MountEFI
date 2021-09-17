@@ -848,7 +848,7 @@ GET_EFI_S(){
 
 ioreg_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 
-strng=`diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
+strng=`diskutil list | egrep "EFI|Apple_APFS_ISC" | grep -oE '[^ ]+$' | xargs | tr ' ' ';'`
 disk_images=`echo "$ioreg_iomedia" | egrep -A 22 "Apple UDIF" | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';'`
 syspart=`df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n'`
 
