@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 11.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="013"
-serv_vers="020"
+edit_vers="014"
+serv_vers="021"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -651,7 +651,7 @@ GET_ARMM(){ armm_timeout=$(echo "$MountEFIconf" | grep -A 1 -e "ReturnMainMenuTi
 GET_FLAG(){
 mac_vers=($(sw_vers -productVersion | tr "." " "))
 macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
-if [[ "${macos:0:4}" -gt "1106" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
+if [[ "${macos:0:4}" -gt "1201" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -979,6 +979,17 @@ reload_check=`echo "$MountEFIconf"| grep -e "<key>Reload</key>" | grep key | sed
 update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | sed -e 's/.*>\(.*\)<.*/\1/' | tr -d '\t\n'`
 if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]] || [[ $restart_check = "Restart" ]]; then rel=1; else rel=0; fi
 }
+
+RESET_SYSTEM_PERMISSIONS(){
+	while ! osascript -e 'Tell application "System Events" to keystroke ""'; do tccutil reset AppleEvents com.apple.Terminal >>/dev/null; 
+	if [[ $loc = "ru" ]]; then
+MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
+else
+MESSAGE='"Searching agent not answer. !\nRelaunching forced .... !"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+	done  2>/dev/null
+}
  
 ENTER_PASSWORD(){
 
@@ -1018,6 +1029,7 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         TRY=3
         while [[ ! $TRY = 0 ]]; do
         while true; do
+        RESET_SYSTEM_PERMISSIONS
         if [[ $loc = "ru" ]]; then
         PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         else

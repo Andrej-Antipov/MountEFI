@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="013"
+s_edit_vers="014"
 ############################################################################################################################################################################################################
 
 clear
@@ -995,12 +995,24 @@ osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "
 EXIT_PROG
 }
 
+RESET_SYSTEM_PERMISSIONS(){
+	while ! osascript -e 'Tell application "System Events" to keystroke ""'; do tccutil reset AppleEvents com.apple.Terminal >>/dev/null; 
+	if [[ $loc = "ru" ]]; then
+MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
+else
+MESSAGE='"Searching agent not answer. !\nRelaunching forced .... !"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+	done  2>/dev/null
+}
+
 ENTER_PASSWORD(){
 
 
 TRY=3
         while [[ ! $TRY = 0 ]]; do
         GET_APP_ICON
+        RESET_SYSTEM_PERMISSIONS
         if [[ $loc = "ru" ]]; then
         if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
@@ -5771,7 +5783,7 @@ fi
 GET_SYSTEM_FLAG(){
 mac_vers=($(sw_vers -productVersion | tr "." " "))
 macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
-if [[ "${macos:0:4}" -gt "1106" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
+if [[ "${macos:0:4}" -gt "1201" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -6364,7 +6376,7 @@ ENTER_LOADER_NAME(){
 }
 
 ASK_EFI(){
-
+RESET_SYSTEM_PERMISSIONS
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
 tell application "System Events"    activate
@@ -6526,6 +6538,7 @@ done
 }
 
 ASK_HASHES_TO_DELETE(){
+	RESET_SYSTEM_PERMISSIONS
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
 tell application "System Events"    activate
@@ -6544,6 +6557,7 @@ fi
 }
 
 ASK_HASHES_LIST_TO_ADD(){
+	RESET_SYSTEM_PERMISSIONS
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
 tell application "System Events"    activate
@@ -7132,6 +7146,7 @@ for i in $( ps x  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev
 RUN_UNINSTALLER(){
         cleared=0
         GET_APP_ICON
+        RESET_SYSTEM_PERMISSIONS
         if [[ $loc = "ru" ]]; then
         if RESULT="$(osascript -e 'Tell application "System Events" to display dialog "Вы запустили программу удаления MountEFI !\nВыберите один из двух уровней очистки:\n\nУровень 1.Локальная очистка:\nУдаляются все файлы и сервисы с вашего\nпользовательского раздела. \n\nУровень 2.Полная очистка:\nПосле локальной очистки выполняется\nудаление архивов настроек из iCloud\n\nФайлы удаляются необратимо\nВведите 1 или 2 для желаемого уровня:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
