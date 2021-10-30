@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 11.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 30.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="013"
-serv_vers="020"
+edit_vers="014"
+serv_vers="021"
 
 MOUNT_EFI_WINDOW_UP(){
 if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
@@ -187,6 +187,17 @@ if [[ -f "$ROOT"/version.txt ]]; then
 fi   
 }
 
+RESET_SYSTEM_PERMISSIONS(){
+	while ! osascript -e 'Tell application "System Events" to keystroke ""'; do tccutil reset AppleEvents org.gosvamih.MountEFI
+	if [[ $loc = "ru" ]]; then
+MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
+else
+MESSAGE='"Dialog windows require permissions !\nClick OK for permissions !"'
+fi
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
+	done  2>/dev/null
+}
+
 DISPLAY_MESSAGE1(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null; }
 MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания вышло !"'; else MESSAGE='"The waiting time is up !"'; fi; DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null; }
 DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null; }
@@ -296,7 +307,7 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders</key>" | egrep -o "true|f
 GET_FLAG(){
 mac_vers=($(sw_vers -productVersion | tr "." " "))
 macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
-if [[ "${macos:0:4}" -gt "1106" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
+if [[ "${macos:0:4}" -gt "1201" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
     if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "<key>UnsupportedExecution</key>" | grep string | sed -e 's/.*>\(.*\)<.*/\1/') ]]; then
 ############## ERROR_OS_VERSION
         if [[ $loc = "ru" ]]; then 
@@ -1857,6 +1868,7 @@ kill $mspid
 KILL_DIALOG2
 DBG "checkpoint 3 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
 while true; do
+RESET_SYSTEM_PERMISSIONS
 #################### MAIN MENU #####################
 START_CHECK_HOTPLUG &
 hotplug_pid=$!
