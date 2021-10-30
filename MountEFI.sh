@@ -985,7 +985,7 @@ RESET_SYSTEM_PERMISSIONS(){
 	if [[ $loc = "ru" ]]; then
 MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
 else
-MESSAGE='"Searching agent not answer. !\nRelaunching forced .... !"'
+MESSAGE='"Dialog windows require permissions !\nClick OK for permissions !"'
 fi
 DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 	done  2>/dev/null
