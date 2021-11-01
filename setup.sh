@@ -1002,6 +1002,7 @@ MESSAGE='"Для диалоговых окон требуются разреше
 else
 MESSAGE='"Dialog windows require permissions !\nClick OK for permissions !"'
 fi
+GET_APP_ICON
 DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 	done  2>/dev/null
 }
@@ -7140,7 +7141,9 @@ done
                                     fi
                                     if [[ -f ~/.MountEFIconf.plist ]]; then rm ~/.MountEFIconf.plist; fi
                                     if [[ -d "${MEFI_PATH}" ]]; then rm -Rf "${MEFI_PATH}"; fi
-
+                                    tccutil reset AppleEvents com.apple.Terminal 
+									tccutil reset AppleEvents  org.gosvamih.MountEFI 
+									sleep 0.2
 for i in $( ps x  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev ); do kill ${i}; wait ${i} 2>/dev/null; done
 
 }
@@ -7825,6 +7828,13 @@ fi
 if [[ $inputs = [N] ]] && [[ "${par}" = "-r" ]]  && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
 tccutil reset AppleEvents com.apple.Terminal >>/dev/null 2>/dev/null
 tccutil reset AppleEvents  org.gosvamih.MountEFI >>/dev/null 2>/dev/null
+	if [[ $loc = "ru" ]]; then
+MESSAGE='"Разрешения MountEFI для System Events удалены !"'
+else
+MESSAGE='"MountEFI system permissions was removed !"'
+fi
+GET_APP_ICON
+DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
 fi
 
 #############################################################################
