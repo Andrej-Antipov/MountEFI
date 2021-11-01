@@ -2918,7 +2918,7 @@ TRANS_READ(){
 GET_INPUT(){
 
 unset inputs
-while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFmMtT]+$ ]]; do
+while [[ ! ${inputs} =~ ^[0-9qQvVaAbBcCdDlLiIeEpPRuUHhsSZWfFmMtTNn]+$ ]]; do
 if [[ $cm_check = 1 ]]; then
                 if [[ $loc = "ru" ]]; then
     printf '  Введите символ от '${cm[Yell]}0${cm[cOff]}' до '${cm[Grn]}$Lit${cm[cOff]}' (или '${cm[Mg]}Q${cm[cOff]}' - выход ):   ' ; printf '                             '
@@ -3055,6 +3055,7 @@ fi
 sbuf+=$(printf ' '${cm[Yell]}S${cm[cOff]}') Авто-обновление программы = "'${cm[Yell]}$AutoUpdate_set${cm[cOff]}'"'"%"$aus_corr"s"'(Да, Нет)             \n')
 if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then 
 sbuf+=$(printf ' '${cm[Yell]}U${cm[cOff]}') Обновление программы                                                        \n')
+sbuf+=$(printf ' '${cm[Grn]}N${cm[cOff]}') Сброс системных разрешений для программы MountEFI     (SHIFT+N)             \n')
 fi
             else
 sbuf=$(printf ' '${cm[Red]}0${cm[cOff]}') Setup all parameters to defaults                                            \n')
@@ -3090,6 +3091,7 @@ fi
 sbuf+=$(printf ' '${cm[Yell]}S${cm[cOff]}') Auto-update this program = "'$AutoUpdate_set'"'"%"$aus_corr"s"'(Yes, No)                \n')
 if [[ "${par}" = "-r" ]] && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
 sbuf+=$(printf ' '${cm[Yell]}U${cm[cOff]}') Update program manually                                                     \n')
+sbuf+=$(printf ' '${cm[Grn]}N${cm[cOff]}') Reset System Permissions for MountEFI              (SHIFT+N)                \n')
 fi
 
             fi
@@ -7440,7 +7442,7 @@ cd "${ROOT}"
 while [ $var4 != 1 ] 
 do
 lines=38; col=80
-if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; fi 
+if [[ "${par}" = "-r" ]] && [[ -f MountEFI ]]; then let "lines++"; let "lines++"; fi 
 if [[ ! "$quick_am" = "1" ]]; then
 printf '\e[8;'${lines}';'$col't' && printf '\e[3J' && printf "\033[H"
 printf "\033[?25l"
@@ -7817,6 +7819,12 @@ if [[ $inputs = [eE] ]]; then UPLOAD_CONFIG_TO_FILE;  fi
 ##############################################################################
 if [[ $inputs = [uU] ]] && [[ "${par}" = "-r" ]]  && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then UPDATE_PROGRAM
     if [[ $success = 1 ]]; then exit; fi
+fi
+
+##############################################################################
+if [[ $inputs = [N] ]] && [[ "${par}" = "-r" ]]  && [[ -f ../../../MountEFI.app/Contents/Info.plist ]]; then
+tccutil reset AppleEvents com.apple.Terminal >>/dev/null 2>/dev/null
+tccutil reset AppleEvents  org.gosvamih.MountEFI >>/dev/null 2>/dev/null
 fi
 
 #############################################################################
