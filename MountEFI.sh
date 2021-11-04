@@ -536,7 +536,7 @@ SET_TITLE(){ echo '#!/bin/bash'  >> "${HOME}"/.MountEFInoty.sh; echo '' >> "${HO
 
 DISPLAY_NOTIFICATION(){
 
-if [[ -d "${ROOT}"/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
+if [[ -d "${ROOT}"/terminal-notifier.app ]] && [[ ${macos} -gt "1009" ]]; then
 echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> "${HOME}"/.MountEFInoty.sh
 sleep 1.5
 else

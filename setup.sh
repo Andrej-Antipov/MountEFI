@@ -978,7 +978,7 @@ echo 'SOUND="Submarine"' >> ${HOME}/.MountEFInoty.sh
 }
 
 DISPLAY_NOTIFICATION(){
-if [[ -d terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
+if [[ -d terminal-notifier.app ]] && [[ ${macos} -gt "1009" ]]; then
 echo ''"'$(echo "$ROOT")'"'/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFInoty.sh
 sleep 1
 else
@@ -5463,7 +5463,7 @@ echo '#!/bin/bash'  >> ${HOME}/.MountEFIa.sh
 echo                >> ${HOME}/.MountEFIa.sh
 echo 'CONFPATH="${HOME}/.MountEFIconf.plist"' >> ${HOME}/.MountEFIa.sh
 echo 'DISPLAY_NOTIFICATION(){' >> ${HOME}/.MountEFIa.sh
-if [[ -d ${HOME}/.MountEFInotifyService/terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then
+if [[ -d ${HOME}/.MountEFInotifyService/terminal-notifier.app ]] && [[ ${macos} -gt "1009" ]]; then
 echo '${HOME}/.MountEFInotifyService/terminal-notifier.app/Contents/MacOS/terminal-notifier -title "MountEFI" -sound Submarine -subtitle "${SUBTITLE}" -message "${MESSAGE}"'  >> ${HOME}/.MountEFIa.sh
 else
 echo 'COMMAND="display notification \"${MESSAGE}\" with title \"${TITLE}\" subtitle \"${SUBTITLE}\" sound name \"${SOUND}\""; osascript -e "${COMMAND}"' >> ${HOME}/.MountEFIa.sh
@@ -5677,7 +5677,7 @@ if [[ -d ~/.MountEFInotifyService ]]; then rm -R ~/.MountEFInotifyService; fi
 
 SETUP_SYS_AUTOMOUNT(){
 REMOVE_SYS_AUTOMOUNT_SERVICE
-if [[ -d terminal-notifier.app ]] && [[ ${macos} -lt "1016" ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp -R terminal-notifier.app ~/.MountEFInotifyService; fi
+if [[ -d terminal-notifier.app ]] && [[ ${macos} -gt "1009" ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp -R terminal-notifier.app ~/.MountEFInotifyService; fi
 if [[ -f AppIcon.icns ]]; then if [[ ! -d ~/.MountEFInotifyService ]]; then mkdir ~/.MountEFInotifyService; fi; cp AppIcon.icns ~/.MountEFInotifyService; fi
 FILL_SYS_AUTOMOUNT_PLIST
 FILL_SYS_AUTOMOUNT_EXEC
