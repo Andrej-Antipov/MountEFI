@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 30.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 04.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -2995,7 +2995,7 @@ fi
 
 		if [[ $loc = "ru" ]]; then
              if [[ $CheckLoaders = 0 ]]; then
-        	    printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')      '${cm[head_ast]}'*******'${cm[clr]}'\n'
+        	    printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')     '${cm[head_ast]}'*******'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                     '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..32} 
@@ -3003,7 +3003,7 @@ fi
                 printf '.%.0s' {1..31}
                 printf ''${cm[clr]}'\n'
                 else
-                printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'\n'
+                printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')          '${cm[head_ast]}'*********'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                            '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..39}
@@ -3015,7 +3015,7 @@ fi
 			else
 
              if [[ $CheckLoaders = 0 ]]; then
-                printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
+                printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')   '${cm[head_ast]}'*******'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
 	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..32} 
@@ -3023,7 +3023,7 @@ fi
                 printf '.%.0s' {1..31}
                 printf ''${cm[clr]}'\n'
                 else
-                printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'\n'
+                printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')        '${cm[head_ast]}'*********'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
 	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..39}
@@ -3669,15 +3669,15 @@ if [[ ! $nogetlist = 1 ]]; then
 	    ######PRINT_HEADER
     if [[ $loc = "ru" ]]; then
         if [[ $CheckLoaders = 0 ]]; then
-            printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')      '${cm[head_ast]}'*******'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')     '${cm[head_ast]}'*******'${cm[clr]}'\n'
         else
-            printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')           '${cm[head_ast]}'*********'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')          '${cm[head_ast]}'*********'${cm[clr]}'\n'
         fi
     else
         if [[ $CheckLoaders = 0 ]]; then
-            printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')   '${cm[head_ast]}'*******'${cm[clr]}'\n'
         else
-            printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XI'${cm[head_str]}'.'${cm[head_os]}'6'${cm[head_str]}')         '${cm[head_ast]}'*********'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')        '${cm[head_ast]}'*********'${cm[clr]}'\n'
         fi
 	fi
         ####################
