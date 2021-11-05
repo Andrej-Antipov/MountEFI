@@ -187,16 +187,6 @@ if [[ -f "$ROOT"/version.txt ]]; then
 fi   
 }
 
-RESET_SYSTEM_PERMISSIONS(){
-	while ! osascript -e 'Tell application "System Events" to keystroke ""'; do tccutil reset AppleEvents org.gosvamih.MountEFI
-	if [[ $loc = "ru" ]]; then
-MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
-else
-MESSAGE='"Dialog windows require permissions !\nClick OK for permissions !"'
-fi
-DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
-	done  2>/dev/null
-}
 
 DISPLAY_MESSAGE1(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null; }
 MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания вышло !"'; else MESSAGE='"The waiting time is up !"'; fi; DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null; }
@@ -227,9 +217,9 @@ mypassword=""
         while [[ ! $TRY = 0 ]]; do
         while true; do
         if [[ $loc = "ru" ]]; then
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         else
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         fi 
         if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
         done  
@@ -916,19 +906,19 @@ if $DEBUG; then deb_mode=" • DEBUG is ON • "; else deb_mode=""; fi
 
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$efi_prompt_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) $deb_mode/ Список EFI (ESP) разделов:"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed OK button name {"Поехали!"} cancel button name {"Выход"}
-end tell
+
 EOD
 
 else
 
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$efi_prompt_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) $deb_mode/ EFI (ESP) partition list:"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed cancel button name {"Exit"}
-end tell
+
 EOD
 
 fi
@@ -1504,7 +1494,7 @@ if [[ $mefisca = 1 ]] && [[ ${synchro} = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]];
     max=0; for y in ${!new_remlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
     for ((h=0;h<=max;h++)); do echo ${new_remlist[h]} >> ~/Library/Application\ Support/MountEFI/new_remlist; done
 fi
-pkill  "System Events"
+pkill "osascript"
 break
 fi
 
@@ -1805,8 +1795,8 @@ ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "<key>YHashes</key>" | gre
 }
 
 ################################### INIT ##################################################
-if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
+#if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
+#   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
 
 SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
@@ -1868,7 +1858,7 @@ kill $mspid
 KILL_DIALOG2
 DBG "checkpoint 3 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
 while true; do
-RESET_SYSTEM_PERMISSIONS
+
 #################### MAIN MENU #####################
 START_CHECK_HOTPLUG &
 hotplug_pid=$!
@@ -1881,8 +1871,8 @@ if [[ -f ~/Library/Application\ Support/MountEFI/hotplugFlag ]]; then
 fi
 kill ${hotplug_pid}
 
-if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
+#if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
+#   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
 if [[ ${result_names} = "false" ]]; then CLIENT_DONE; break; fi
 
     modename=$(echo "${result_names}" | egrep -o "расширенный|advanced|упрощённый|simple|terminal|терминала|Авто-подключение|auto-mount|DEBUG")
