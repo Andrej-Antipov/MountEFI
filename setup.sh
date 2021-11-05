@@ -995,17 +995,6 @@ osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "
 EXIT_PROG
 }
 
-RESET_SYSTEM_PERMISSIONS(){
-	while ! osascript -e 'Tell application "System Events" to keystroke ""'; do tccutil reset AppleEvents com.apple.Terminal >>/dev/null; 
-	if [[ $loc = "ru" ]]; then
-MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
-else
-MESSAGE='"Dialog windows require permissions !\nClick OK for permissions !"'
-fi
-GET_APP_ICON
-DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
-	done  2>/dev/null
-}
 
 ENTER_PASSWORD(){
 
@@ -1013,11 +1002,10 @@ ENTER_PASSWORD(){
 TRY=3
         while [[ ! $TRY = 0 ]]; do
         GET_APP_ICON
-        RESET_SYSTEM_PERMISSIONS
         if [[ $loc = "ru" ]]; then
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'display dialog "Для подключения EFI разделов нужен пароль!\nОн будет храниться в вашей связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if PASSWORD="$(osascript -e 'Tell application "System Events" to display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if PASSWORD="$(osascript -e 'display dialog "Password is required to mount EFI partitions!\nIt will be keeped in your keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi      
                 if [[ $cansel = 1 ]] || [[ "${PASSWORD}" = "" ]]; then break; fi  
                 mypassword="${PASSWORD}"
@@ -4907,15 +4895,15 @@ done
 ASK_SYSTEM_THEME(){
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {"Basic", "Grass", "Homebrew", "Man Page", "Novel", "Ocean", "Pro", "Red Sands", "Silver Aerogel", "Solid Colors"}set FavoriteThemeAnswer to choose from list ThemeList with title "Выбор темы" with prompt "Для какой темы редактировать указатели?" default items "Basic" set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
-end tell
+
 EOD
 else
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {"Basic", "Grass", "Homebrew", "Man Page", "Novel", "Ocean", "Pro", "Red Sands", "Silver Aerogel", "Solid Colors"}set FavoriteThemeAnswer to choose from list ThemeList with title "Choose theme" with prompt "What system theme set to edit?" default items "Basic"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
-end tell
+
 EOD
 fi
 }
@@ -4923,15 +4911,15 @@ fi
 ASK_STORE_OPTIONS(){
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeAsk to {"Для темы с которой они редактировались", "Для всех тем как указатели по умолчанию"}set FavoriteThemeAnswer to choose from list ThemeAsk with title "Сохранение указателей" with prompt "Как сохранить изменения указателей?" default items "Сохранить редакцию указателей для темы с которой они редактировались"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
-end tell
+
 EOD
 else
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeAsk to {"For the theme with which they were edited", "For all themes as default bootloaders pointers"}set FavoriteThemeAnswer to choose from list ThemeAsk with title "Saving pointers" with prompt "How to save edited pointers?" default items "Сохранить редакцию указателей для темы с которой они редактировались"set FavoriteThemeAnswer to FavoriteThemeAnswer's item 1 (* extract choice from list *)
-end tell
+
 EOD
 fi
 
@@ -5576,9 +5564,9 @@ echo '        DISPLAY_NOTIFICATION' >> ${HOME}/.MountEFIa.sh
 echo '        TRY=3 ; GET_APP_ICON' >> ${HOME}/.MountEFIa.sh
 echo '        while [[ ! $TRY = 0 ]]; do' >> ${HOME}/.MountEFIa.sh
 echo '        if [[ $loc = "ru" ]]; then' >> ${HOME}/.MountEFIa.sh
-echo '        if PASSWORD="$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Пароль для подключения EFI разделов: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD="$(osascript -e '"'display dialog "'"       Пароль для подключения EFI разделов: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        else' >> ${HOME}/.MountEFIa.sh
-echo '        if PASSWORD="$(osascript -e '"'Tell application "'"System Events"'" to display dialog "'"       Enter the password to mount the EFI partitions: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
+echo '        if PASSWORD="$(osascript -e '"'display dialog "'"       Enter the password to mount the EFI partitions: "'"'"'"${icon_string}"'"'"''" with hidden answer  default answer "'""'"'"' -e '"'text returned of result'"')"; then cansel=0; else cansel=1; fi 2>/dev/null' >> ${HOME}/.MountEFIa.sh
 echo '        fi' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $cansel = 1 ]]; then break; fi ' >> ${HOME}/.MountEFIa.sh
 echo '                mypassword=$PASSWORD' >> ${HOME}/.MountEFIa.sh
@@ -6379,22 +6367,21 @@ ENTER_LOADER_NAME(){
 }
 
 ASK_EFI(){
-RESET_SYSTEM_PERMISSIONS
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$efi_prompt_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title " Список EFI (ESP) разделов:"  
-end tell
+
 EOD
 
 else
 
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$efi_prompt_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title " EFI (ESP) partition list:" 
-end tell
+
 EOD
 
 fi
@@ -6541,39 +6528,38 @@ done
 }
 
 ASK_HASHES_TO_DELETE(){
-	RESET_SYSTEM_PERMISSIONS
+
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$file_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title "Удалить хэши из файла конфигурации"  with prompt "Выберите один или несколько"  with multiple selections allowed 
-end tell
+
 EOD
 else
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$file_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title "Delete installed files" with prompt "Select one or more files"  with multiple selections allowed
-end tell
+
 EOD
 fi
 }
 
 ASK_HASHES_LIST_TO_ADD(){
-	RESET_SYSTEM_PERMISSIONS
 if [[ $loc = "ru" ]]; then
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$file_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title "Сохранить хэши в файле конфигурации MountEFI"  with prompt "Выберите один или несколько"  with multiple selections allowed 
-end tell
+
 EOD
 else
 osascript <<EOD
-tell application "System Events"    activate
+
 set ThemeList to {$file_list}
 set FavoriteThemeAnswer to choose from list ThemeList with title "Save Hashes in MountEFI Configuration File" with prompt "Select one or more files"  with multiple selections allowed
-end tell
+
 EOD
 fi
 }
@@ -7151,11 +7137,10 @@ for i in $( ps x  | grep -v grep | grep MountEFI | rev | awk '{print $NF}' | rev
 RUN_UNINSTALLER(){
         cleared=0
         GET_APP_ICON
-        RESET_SYSTEM_PERMISSIONS
         if [[ $loc = "ru" ]]; then
-        if RESULT="$(osascript -e 'Tell application "System Events" to display dialog "Вы запустили программу удаления MountEFI !\nВыберите один из двух уровней очистки:\n\nУровень 1.Локальная очистка:\nУдаляются все файлы и сервисы с вашего\nпользовательского раздела. \n\nУровень 2.Полная очистка:\nПосле локальной очистки выполняется\nудаление архивов настроек из iCloud\n\nФайлы удаляются необратимо\nВведите 1 или 2 для желаемого уровня:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if RESULT="$(osascript -e 'display dialog "Вы запустили программу удаления MountEFI !\nВыберите один из двух уровней очистки:\n\nУровень 1.Локальная очистка:\nУдаляются все файлы и сервисы с вашего\nпользовательского раздела. \n\nУровень 2.Полная очистка:\nПосле локальной очистки выполняется\nудаление архивов настроек из iCloud\n\nФайлы удаляются необратимо\nВведите 1 или 2 для желаемого уровня:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         else
-        if RESULT="$(osascript -e 'Tell application "System Events" to display dialog "You have run the MountEFI uninstall program ! \nChoose one of two levels of cleaning:\n\nLevel 1: Local Cleaning:\nAll files and running services from your \nuser partition will be removed. \n\nLevel 2: Complete Cleaning:\nAfter local cleaning, backups of your settings\nfrom iCloud will be deleted\n\nFiles will be deleted permanently !!!\nEnter 1 or 2 for the desired level:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
+        if RESULT="$(osascript -e 'display dialog "You have run the MountEFI uninstall program ! \nChoose one of two levels of cleaning:\n\nLevel 1: Local Cleaning:\nAll files and running services from your \nuser partition will be removed. \n\nLevel 2: Complete Cleaning:\nAfter local cleaning, backups of your settings\nfrom iCloud will be deleted\n\nFiles will be deleted permanently !!!\nEnter 1 or 2 for the desired level:" '"${icon_string}"' giving up after (110) default answer ""' -e 'text returned of result')"; then cansel=0; else cansel=1; fi 2>/dev/null
         fi
 
         if [[ ! $cansel = 1 ]] && [[ ! "${RESULT}" = "" ]]; then 

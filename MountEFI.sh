@@ -980,16 +980,7 @@ update_check=`echo "$MountEFIconf"| grep -e "<key>Updating</key>" | grep key | s
 if [[ $reload_check = "Reload" ]] || [[ $update_check = "Updating" ]] || [[ $restart_check = "Restart" ]]; then rel=1; else rel=0; fi
 }
 
-RESET_SYSTEM_PERMISSIONS(){
-	while ! osascript -e 'Tell application "System Events" to keystroke ""'; do tccutil reset AppleEvents com.apple.Terminal >>/dev/null; 
-	if [[ $loc = "ru" ]]; then
-MESSAGE='"Для диалоговых окон требуются разрешения !\nНажмите OK для разрешений !"'
-else
-MESSAGE='"Dialog windows require permissions !\nClick OK for permissions !"'
-fi
-DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null
-	done  2>/dev/null
-}
+
  
 ENTER_PASSWORD(){
 
@@ -1029,11 +1020,10 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         TRY=3
         while [[ ! $TRY = 0 ]]; do
         while true; do
-        RESET_SYSTEM_PERMISSIONS
         if [[ $loc = "ru" ]]; then
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         else
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
         fi 
         if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
         done
