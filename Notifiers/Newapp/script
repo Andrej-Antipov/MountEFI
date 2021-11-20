@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 30.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="014"
-serv_vers="021"
+edit_vers="015"
+serv_vers="022"
 
 MOUNT_EFI_WINDOW_UP(){
 if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
@@ -356,7 +356,7 @@ usbnames=(); for (( i=0; i<$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]} | 
 
 for (( i=0; i<$posd; i++ ))
  do
-    dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
+    dmname=$( echo "$drives_iomedia" | grep -B 10 -w ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
     if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
         for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then rmlist+=( ${dmlist[i]} ); fi; done
  done                            
@@ -709,7 +709,7 @@ while [[ $var0 != 0 ]]; do
 	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
     dlenth=`echo ${#dstring}`
 	let "corr=9-dlenth"
-    drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+    drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
         GET_RENAMEHD
 		dcorr=${#drive}
@@ -1406,7 +1406,7 @@ usbnames=(); for (( i=0; i<$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]} | 
 
 for (( i=0; i<$posd; i++ ))
  do
-    dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
+    dmname=$( echo "$drives_iomedia" | grep -B 10 -w ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
     if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
         for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then rmlist+=( ${dmlist[i]} ); fi; done
  done                            
