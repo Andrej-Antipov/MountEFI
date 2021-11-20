@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 30.10.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="014"
+s_edit_vers="015"
 ############################################################################################################################################################################################################
 
 clear
@@ -1400,7 +1400,7 @@ do
 	done
 	fi
 
-            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+            drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstrng} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
              if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
 
             string1=$strng
@@ -1515,7 +1515,7 @@ do
 	done
 	fi
 
-            drive=`echo "$drives_iomedia" | grep -B 10 ${dstrng} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+            drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstrng} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
              if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
 
             string1=$strng
@@ -3299,7 +3299,7 @@ do
 		dlenth=`echo ${#dstring}`
 		let "corr=9-dlenth"
 
-		drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+		drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
         GET_RENAMEHD
 		dcorr=${#drive}
@@ -3458,7 +3458,7 @@ GET_DRIVE(){ # inputs ->   nslist string slist dstring    drive ->
 
 	                    string=`echo ${slist[$pnum]}`
 	                    dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-                        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+                        drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep  -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
                         if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
 }
 
@@ -6486,7 +6486,7 @@ while true; do
 
                     for i in ${dlist[@]}; do
 
-                    efi_prompt_list+='"'"$i  :  $(echo "$drives_iomedia" | grep -B 10 $(echo $i | rev | cut -f2-3 -d"s" | rev) | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")"'"'
+                    efi_prompt_list+='"'"$i  :  $(echo "$drives_iomedia" | grep -B 10 -w $(echo $i | rev | cut -f2-3 -d"s" | rev) | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")"'"'
                     efi_prompt_list+=","; done
                     efi_prompt_list=${efi_prompt_list::$(($(echo ${#efi_prompt_list})-1))}
 

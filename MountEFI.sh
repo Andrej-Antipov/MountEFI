@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 04.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 20.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="014"
-serv_vers="021"
+edit_vers="015"
+serv_vers="022"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -2088,7 +2088,7 @@ usbnames=(); for (( i=0; i<$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]} | 
 
 for (( i=0; i<$posd; i++ ))
  do
-    dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
+    dmname=$( echo "$drives_iomedia" | grep -B 10 -w ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
     if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
         for (( n=0; n<$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then rmlist+=( ${dmlist[i]} ); fi; done
  done                            
@@ -2565,7 +2565,7 @@ if [[ ! $mcheck = "Yes" ]]; then
             fi
         fi	
 
-        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep  -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+        drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep  -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
     	if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
 
     	   let "scorr=5"
@@ -2714,7 +2714,9 @@ printf "\033[H"; let "correct=lines-7"; if [[ $loc = "ru" ]]; then printf "\r\03
 }
 #################################################################################################
 
-spinny(){ let "i++"; i=$(( (i+1) %4 )); printf "${cm[head_upd_sch_sp]}\b$1${spin:$i:1}${cm[clr]}"; }
+
+spinny(){ let "i++"; i=$(( (i+1) %4 )); printf "\b$1${spin:$i:1}"; }
+
 
 COLOR_HEAD(){
 for i in ${!mlist[@]}; do 
@@ -2745,15 +2747,17 @@ sata_lines=0
 usb_lines=0
 
 		if [[ $loc = "ru" ]]; then
-    printf '\n\n      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  поиск разделов ..... '${cm[clr]}''
+    printf '\n\n      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  поиск разделов ....  '${cm[clr]}''
         else
-    printf '\n\n      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  updating partitions list ..... '${cm[clr]}''
+    printf '\n\n      '${cm[head_upd_sch_num]}'0'${cm[head_upd_sch_br]}')'${cm[head_upd_sch]}'  updating partitions list ....  '${cm[clr]}''
         fi
 
 
 spin='-\|/'
 i=0
-printf "${cm[head_upd_sch_sp]}$1${spin:$i:1}${cm[clr]}"
+printf "${cm[head_upd_sch_sp]}\b$1${spin:$i:1}${cm[clr]}" 
+
+
 
 while [ $var0 != 0 ] 
 do 
@@ -2771,7 +2775,7 @@ do
 		let "corr=9-dlenth"
     spinny
 		
-        drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+        drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
         ################################ получение имени диска для переименования #####################
         ########GET_RENAMEHD
@@ -3338,7 +3342,7 @@ do
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
-dname=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+dname=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "<" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
 
 if [[ "$edname" = "$dname" ]]; then  enum=$pnum;  var2=1
         else
