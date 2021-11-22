@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 20.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -1021,9 +1021,9 @@ if [[ "$mypassword" = "0" ]] || [[ "$1" = "force" ]]; then
         while [[ ! $TRY = 0 ]]; do
         while true; do
         if [[ $loc = "ru" ]]; then
-        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' 2>/dev/null )" 2>/dev/null
         else
-        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2>/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""' 2>/dev/null)" 2>/dev/null
         fi 
         if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
         done
