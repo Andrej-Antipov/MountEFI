@@ -2,11 +2,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 20.11.2021.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 11.12.2021.#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
 edit_vers="015"
-serv_vers="022"
+serv_vers="023"
 
 MOUNT_EFI_WINDOW_UP(){
 if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
