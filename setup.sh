@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.03.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 25.03.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="017"
+s_edit_vers="018"
 ############################################################################################################################################################################################################
 
 clear
@@ -85,7 +85,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
             if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then
                 need_update=1
             else 
-                if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
+                if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -le "600" ]]; then
                 clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
                 oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
                     if [[ ${#clov_vrs} -gt 4 ]]; then clov_vrs=""; fi
@@ -135,7 +135,7 @@ for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.co
 
 NET_UPDATE_CLOVER(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -om1 '[0-9]{4}.zip' | sed s'/.zip//' )
     if [[ ! "${clov_vrs}" = "" ]] || [[ ${#clov_vrs} -le 4 ]]; then echo $clov_vrs > ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
 fi
 }
@@ -149,10 +149,14 @@ fi
 
 NET_UPDATE_LOADERS(){
  if ping -c 1 google.com >> /dev/null 2>&1; then
-                if [[ -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt; fi
+     if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then 
+		if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -gt "600" ]]; then
+				rm -f "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+		fi
+	 fi
                 if [[ -f ~/Library/Application\ Support/MountEFI/latestClover.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestClover.txt; fi
                 if [[ -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt ]]; then rm -f ~/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
-    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    clov_vrs=$( curl -s https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -om1 '[0-9]{4}.zip' | sed s'/.zip//' )
     oc_vrs=$( curl -s https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
     if [[ ! -d ~/Library/Application\ Support/MountEFI ]]; then mkdir -p ~/Library/Application\ Support/MountEFI; fi
         if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
