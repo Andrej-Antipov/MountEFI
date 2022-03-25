@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.03.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 25.03.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="017"
+edit_vers="018"
 serv_vers="025"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
@@ -747,7 +747,7 @@ for i in $(ps -xa -o pid,command | grep -v grep | grep curl | grep api.github.co
 
 NET_UPDATE_CLOVER(){
 if ping -c 1 google.com >> /dev/null 2>&1; then
-    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
+    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -om1 '[0-9]{4}.zip' | sed s'/.zip//' )
     if [[ ! "${clov_vrs}" = "" ]] || [[ ${#clov_vrs} -le 4 ]]; then echo $clov_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt; fi
 fi
 }
@@ -761,17 +761,22 @@ fi
 
 NET_UPDATE_LOADERS(){
  if ping -c 1 google.com >> /dev/null 2>&1; then
-                if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt ]]; then rm -f "${HOME}"/Library/Application\ Support/MountEFI/pdateLoadersVersionsNetTime.txt; fi
+     if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then 
+		if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -gt "600" ]]; then
+				rm -f "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+		fi
+	 fi
                 if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt ]]; then rm -f "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt; fi
                 if [[ -f "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt ]]; then rm -f "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt; fi
-    clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -o '[0-9]{4}.zip' | sed s'/.zip//' )
-    oc_vrs=$(curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
-    if [[ ! -d "${HOME}"/Library/Application\ Support/MountEFI ]]; then mkdir -p "${HOME}"/Library/Application\ Support/MountEFI; fi
-        if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
-            echo $clov_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt
-            echo $oc_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt
-            date +%s > "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
-        fi
+				clov_vrs=$( curl -s  https://api.github.com/repos/CloverHackyColor/CloverBootloader/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | grep Clover | egrep -om1 '[0-9]{4}.zip' | sed s'/.zip//' )
+				oc_vrs=$(curl -s  https://api.github.com/repos/acidanthera/OpenCorePkg/releases/latest | grep browser_download_url | cut -d '"' -f 4 | rev | cut -d '/' -f1  | rev | sed s'/.zip//' | tr -d '.' | egrep -om1  '[0-9]{3,4}-' | tr -d '-' )
+				if [[ ! -d "${HOME}"/Library/Application\ Support/MountEFI ]]; then mkdir -p "${HOME}"/Library/Application\ Support/MountEFI; fi
+					if [[ ! "${clov_vrs}" = "" ]] || [[ ! "${oc_vrs}" = "" ]]; then
+						echo $clov_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestClover.txt
+						echo $oc_vrs > "${HOME}"/Library/Application\ Support/MountEFI/latestOpenCore.txt
+						date +%s > "${HOME}"/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt
+					fi
+	
 fi
 }
 
@@ -824,7 +829,7 @@ if [[ ! "$1" = "-u" ]]; then printf "\033[23;'$v4corr'f"; printf '\e[40m\e[1;33m
             if [[ ! -f ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt ]]; then
                 need_update=1
             else 
-                if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -lt "600" ]]; then
+                if [[ "$(($(date +%s)-$(head -1 ~/Library/Application\ Support/MountEFI/updateLoadersVersionsNetTime.txt)))" -le "600" ]]; then
                 clov_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestClover.txt 2>/dev/null)
                 oc_vrs=$(head -1 ~/Library/Application\ Support/MountEFI/latestOpenCore.txt 2>/dev/null)
                     if [[ ${#clov_vrs} -gt 4 ]]; then clov_vrs=""; fi
