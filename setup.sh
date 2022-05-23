@@ -7182,7 +7182,7 @@ RUN_UNINSTALLER(){
                                     if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIr.plist ]]; then rm  "${HOME}"/Library/LaunchAgents/MountEFIr.plist; fi
                                     if [[ -f "${HOME}"/Library/LaunchAgents/MountEFIrl.plist ]]; then rm -f "${HOME}"/Library/LaunchAgents/MountEFIrl.plist; fi
                                     if [[ -f "${HOME}"/Library/LaunchAgents/MEFIScA.plist ]]; then rm -f "${HOME}"/Library/LaunchAgents/MEFIScA.plist; fi
-                                    if [[ -f "${HOME}"/.MountEFIconfBackups.zip ]]; then rm "${HOME}"/.MountEFIconfBackups.zip; fi
+                                    if [[ -f "${HOME}"/.MountEFIconfBackups.zip ]]; then rm "${HOME}"/.MountEFIconfBackups*.zip; fi
                                     if [[ -d "${HOME}"/.MountEFIst ]]; then rm -Rf "${HOME}"/.MountEFIst; fi
                                 ########################## полная очистка iCloud ################################
                                     if [[ "${RESULT}" = "2" ]]; then  
