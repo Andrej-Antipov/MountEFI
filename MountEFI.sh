@@ -2599,7 +2599,7 @@ if [[ $loc = "ru" ]]; then
     
  fi        
 
-if [[ $mypassword = "0" ]]; then 
+if [[ $mypassword = "0" ]] && [[ ! $flag = 0 ]]; then 
             printf '\r'
             printf ' %.0s' {1..68}; printf ' %.0s' {1..68}
             printf '\r\033[1A'
