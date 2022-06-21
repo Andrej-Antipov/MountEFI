@@ -1,14 +1,13 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.05.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="018"
-serv_vers="026"
+edit_vers="019"
+serv_vers="027"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
-
 
 clear  && printf '\e[3J'
 printf "\033[?25l"
@@ -186,6 +185,7 @@ MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания 
 DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null; }
 MSG_WAIT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Подготовка данных о загрузчиках .... !"' ; else MESSAGE='"Waiting for the end of data synchro .... !"' ; fi; DISPLAY_MESSAGE >>/dev/null 2>/dev/null; }
 KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... ' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- | cut -d "—" -f1) ; }
 
 POSTCONTROL_RELAUNCH_MEFIScA(){
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
@@ -704,8 +704,8 @@ if [[ ! $CheckLoaders = 0 ]]; then
         for pnum in ${!dlist[@]}
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
-            if [[ ! $mounted_check = "" ]]; then 
-            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+            if [[ ! $mounted_check = "" ]]; then
+            GET_VNAME ${dlist[$pnum]}
 					loaderPath=""
 					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
 					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
@@ -1154,7 +1154,7 @@ if [[ ! $am_enabled = 0 ]]; then
 
                 string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '" \n\t'`
                 if [[ $string = "" ]]; then string=$(diskutil info ${alist[$posa]} | grep "Device Identifier:" | awk '{print $NF}'); fi
-                vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+                GET_VNAME ${string}
 				open "$vname"
             fi
 
@@ -1398,7 +1398,7 @@ unset IFS
 PREMOUNT_DELETED(){ 
 if [[ $mefisca = 1  && $(df | grep ${lddlist[i]}) = "" ]]; then 
     string=${lddlist[i]}; DO_MOUNT
-    vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+     GET_VNAME ${string}
         if [[ ! "$vname" = "" ]]; then 
 					loaderPath=""
 					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
@@ -2315,7 +2315,7 @@ do
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
     if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi; else was_mounted=1; fi
 
-    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+    GET_VNAME ${string}
 
 	if [[ -d "$vname"/EFI ]]; then
 					check_loader=""
@@ -2386,7 +2386,7 @@ do
 		was_mounted=1
     fi
 
-    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+    GET_VNAME ${string}
 
 	if [[ -d "$vname"/EFI/BOOT ]]; then
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] && [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] && [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
@@ -2617,7 +2617,7 @@ DO_MOUNT
 else
 wasmounted=1
 	fi
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+GET_VNAME ${string}
 
 clear
 		if [[ $loc = "ru" ]]; then
@@ -2657,7 +2657,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
 
-vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+GET_VNAME ${string}
 			loaderPath=""
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/BOOTX64.efi"; 
 				elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
@@ -3579,7 +3579,7 @@ else
 	
 		wasmounted=0; DO_MOUNT; if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi; else wasmounted=1; fi
 		string=${strng0}; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
-		vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+		GET_VNAME ${string}
 	
 		if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
 				if [[ $ldrname = "" ]];then open "$vname"; else open "$vname/EFI"; fi

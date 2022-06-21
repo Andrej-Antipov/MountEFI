@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 18.05.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="018"
+s_edit_vers="019"
 ############################################################################################################################################################################################################
 
 clear
@@ -242,6 +242,8 @@ if [[ $locale = "auto" ]]; then loc_set="auto"; loc_corr=26; fi
             fi
 
 }
+
+GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- | cut -d "—" -f1) ; }
 
 GET_MENUE(){
 menue=0
@@ -5643,7 +5645,7 @@ echo >> ${HOME}/.MountEFIa.sh
 echo 'if  [[ $autom_open = 1 ]]; then ' >> ${HOME}/.MountEFIa.sh
 echo '                string=`ioreg -c IOMedia -r  | egrep -A12 -B12 ${alist[$posa]} | grep -m 1 "BSD Name" | cut -f2 -d "=" | tr -d '"'"'"'" \\\n\\\t'"'`' >> ${HOME}/.MountEFIa.sh
 echo '                if [[ $string = "" ]]; then string=$(diskutil info ${alist[$posa]} | grep "Device Identifier:" | awk '"'{print "'$'"NF}'"'); fi' >> ${HOME}/.MountEFIa.sh
-echo '                vname=`df | egrep ${string} | sed '"'s#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#'"' | cut -c 2-`' >> ${HOME}/.MountEFIa.sh
+echo '                vname=`df | egrep ${string} | cut -f2 -d: | sed '"'s#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#'"' | cut -c 2-`' >> ${HOME}/.MountEFIa.sh
 echo '				open "$vname"' >> ${HOME}/.MountEFIa.sh
 echo 'fi' >> ${HOME}/.MountEFIa.sh
 echo >> ${HOME}/.MountEFIa.sh
@@ -6502,7 +6504,7 @@ while true; do
                     if [[ $flag = 0 ]]; then diskutil quiet mount  /dev/${answer} 2>/dev/null; else IF_GET_PASSWORD; echo "$mypassword" | sudo -S diskutil quiet mount  /dev/${answer} 2>/dev/null; fi
                     mflag=1
                     fi
-                     vname=$(df | egrep ${answer} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+                     GET_VNAME ${answer} 
                      loaderPath=""
 					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
 					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
