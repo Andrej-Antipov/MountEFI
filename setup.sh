@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 21.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
@@ -243,7 +243,7 @@ if [[ $locale = "auto" ]]; then loc_set="auto"; loc_corr=26; fi
 
 }
 
-GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- | cut -d "—" -f1) ; }
+GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
 
 GET_MENUE(){
 menue=0

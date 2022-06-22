@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 21.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
@@ -185,7 +185,7 @@ MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания 
 DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null; }
 MSG_WAIT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Подготовка данных о загрузчиках .... !"' ; else MESSAGE='"Waiting for the end of data synchro .... !"' ; fi; DISPLAY_MESSAGE >>/dev/null 2>/dev/null; }
 KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... ' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
-GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- | cut -d "—" -f1) ; }
+GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
 
 POSTCONTROL_RELAUNCH_MEFIScA(){
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
