@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.03.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
-edit_vers="018"
-serv_vers="026"
+edit_vers="019"
+serv_vers="027"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -41,11 +41,12 @@ WAIT_CLIENT_OFFLINE(){ CLIENT_RESTARTING || ( CLIENT_RUN && CLIENT_NOT_DOWN ); }
 CLIENT_ONLINE(){ CLIENT_RUN && CLIENT_READY; }
 HOTPLUG(){ [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; }
 GET_OC_LIST_ITEM(){ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"; }
+GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
 
 if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF; else reloadFlag=0; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
 touch "${MEFIScA_PATH}"/WaitSynchro; DBG "MEFIScA WAIT ON"
 
-DBG "MEFIScA launch up v.008-007"
+DBG "MEFIScA launch up v.027"
 
 #############################################################################################
 SAVE_LOADERS_STACK(){
@@ -138,7 +139,7 @@ if [[ $pauser = "" ]] || [[ $pauser = 0 ]]; then
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then 
-            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+            GET_VNAME ${dlist[$pnum]} 
             loaderPath=""
 					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
 					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
@@ -163,7 +164,7 @@ FIND_LOADERS(){
 
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
-vname=$(df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-)
+	GET_VNAME ${string}
 			loaderPath=""
 			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/BOOTX64.efi"; 
 				elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
