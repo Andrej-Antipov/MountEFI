@@ -23,7 +23,8 @@ SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
 
 rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
 
-DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true"); if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
+if [[ -f "${CONFPATH}" ]]; then DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG</key>" | egrep -o "false|true"); fi
+if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
 
 DBG "CLIENT started +++++++++++++++++++++++++++++++++++++++++++++++++"
 
@@ -1347,7 +1348,6 @@ oc_revision=$(echo "${ocHashes32string}" | egrep -o "${md5_loader}=[\.0-9][\.0-9
 fi
 
 }
-
 
 GET_CONFIG_VERS(){
 if [[ ! ${md5_loader} = "" ]]; then
