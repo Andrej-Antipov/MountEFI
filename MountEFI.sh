@@ -13,7 +13,7 @@ clear  && printf '\e[3J'
 printf "\033[?25l"
 
 logfile="${HOME}/Desktop/temp.txt"
-TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> "${logfile}" 2>/dev/null; }
+TSP(){ printf "$(date '+%M:%S')    "  >> "${logfile}" 2>/dev/null; }
 DBG(){ if $DEBUG; then TSP; echo $1 >> "${logfile}" 2>/dev/null; fi;  }
 
 cd "$(dirname "$0")"; ROOT="$(dirname "$0")"
@@ -706,7 +706,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then
-            GET_VNAME ${dlist[$pnum]}
+             GET_VNAME ${dlist[$pnum]} 
 					loaderPath=""
 					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
 					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
@@ -1340,11 +1340,11 @@ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null 
 if [[ ${oc_revision} = "" ]]; then
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
-oc_revision=$(echo "${ocHashes64string}" | egrep -o "${oc_list[pnum]}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
+oc_revision=$(echo "${ocHashes64string}" | egrep -om1 "${oc_list[pnum]}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
 fi
 
 if [[ ${oc_revision} = "" ]]; then
-oc_revision=$(echo "${ocHashes32string}" | egrep -o "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=)
+oc_revision=$(echo "${ocHashes32string}" | egrep -om1 "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=)
 fi
 
 }
@@ -1354,9 +1354,9 @@ if [[ ! ${md5_loader} = "" ]]; then
     target=$1
     if [[ ${target} = "OpenCore" ]] || [[ ${target} = "ALL" ]]; then 
 
-        if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[rd]" | cut -f2 -d= ); fi
+        if [[ ! ${#ocr_list[@]} = 0 ]]; then oc_revision=$( echo "${ocr_list[@]}" | egrep -om1 "${md5_loader}=[.0-9]{3}[rd]" | cut -f2 -d= ); fi
         if [[ ${oc_revision} = "" ]]; then 
-        if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -o "${md5_loader}=[.0-9]{3}[®ðn∂]" | cut -f2 -d= ); fi
+        if [[ ! ${#ocd_list[@]} = 0 ]]; then oc_revision=$( echo "${ocd_list[@]}" | egrep -om1 "${md5_loader}=[.0-9]{3}[®ðn∂]" | cut -f2 -d= ); fi
         fi
     fi
 
