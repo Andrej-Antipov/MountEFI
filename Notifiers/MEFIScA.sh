@@ -9,8 +9,8 @@ serv_vers="027"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
-logfile="${HOME}/Desktop/temp.txt"
-TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  >> "${logfile}" 2>/dev/null; }
+logfile="${HOME}/Desktop/temp2.txt"
+TSP(){ printf "$(date '+%M:%S')    "  >> "${logfile}" 2>/dev/null; }
 DBG(){ if $DEBUG; then TSP; echo $1 >> "${logfile}" 2>/dev/null; fi;  }
 
 CONFPATH="${HOME}/.MountEFIconf.plist"
@@ -40,7 +40,7 @@ CLIENT_RUN(){ [[ ! $(ps xao tty,command | grep -v grep | egrep -o "MountEFI$" | 
 WAIT_CLIENT_OFFLINE(){ CLIENT_RESTARTING || ( CLIENT_RUN && CLIENT_NOT_DOWN ); }
 CLIENT_ONLINE(){ CLIENT_RUN && CLIENT_READY; }
 HOTPLUG(){ [[ $hotplug = 1 ]] || [[ $update_screen_flag = 1 ]]; }
-GET_OC_LIST_ITEM(){ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"; }
+GET_OC_LIST_ITEM(){ oc_list[pnum]="${md5_loader}$( md5 -qq "$vname"/EFI/OC/OpenCore.efi 2>/dev/null )"; DBG "OC_ITEM md5_loader = $md5_loader oc_list_PNUM = oc_list[pnum]" ; }
 GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
 
 if [[ -f "${MEFIScA_PATH}"/reloadFlag ]]; then reloadFlag=1; RELOADFLAG_OFF; else reloadFlag=0; if [[ -d "${MEFIScA_PATH}" ]]; then rm -Rf "${STACK_PATH}"; fi; fi
@@ -76,7 +76,9 @@ IFS=';'; mounted_loaders_list=( $(cat "${STACK_PATH}"/mounted_loaders_list | tr 
 ldlist=( $(cat "${STACK_PATH}"/ldlist | tr '\n' ';' ) )
 lddlist=( $(cat "${STACK_PATH}"/lddlist | tr '\n' ';' ) )
 oc_list=( $(cat "${STACK_PATH}"/oc_list 2>/dev/null | tr '\n' ';' ) )
-#DBG "MEFIScA oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+DBG "MEFIScA oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+DBG "MEFIScA ld_list got = $(for i in ${!ldlist[@]}; do printf "$i) ${ldlist[i]} "; done)"
+DBG "MEFIScA ldd_list got = $(for i in ${!lddlist[@]}; do printf "$i) ${lddlist[i]} "; done)"
 if [[ -f "${STACK_PATH}"/dlist ]]; then dlist=( $(cat "${STACK_PATH}"/dlist | tr '\n' ';' ) ); fi;  unset IFS
 for i in ${!mounted_loaders_list[@]}; do old_mounted[i]=${mounted_loaders_list[i]}; done
 for i in ${!ldlist[@]}; do old_ldlist[i]="${ldlist[i]}"; done
@@ -96,12 +98,12 @@ oc_revision=""
 if [[ ${oc_revision} = "" ]]; then
 ############################### уточняем версияю Open Core по OpenCore.efi ###################
 ############################### CORRECT_OC_VERS ##############################################
-oc_revision=$(echo "${ocHashes64string}" | egrep -o "${oc_list[pnum]}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
+oc_revision=$(echo "${ocHashes64string}" | egrep -om1 "${oc_list[pnum]}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
 fi
 if [[ ${oc_revision} = "" ]]; then
-oc_revision=$(echo "${ocHashes32string}" | egrep -o "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=)
+oc_revision=$(echo "${ocHashes32string}" | egrep -om1 "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=)
 fi
-
+DBG "OC_VERS oc_revision = $oc_revision"
 }
 
 ##################### проверка на загрузчик после монтирования ##################################################################################
@@ -116,7 +118,7 @@ GET_LOADER_STRING(){
                                 loader+="${revision:0:4}"
                                 ;;
   
-                    "OpenCore"  ) GET_OC_LIST_ITEM; GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"
+                    "OpenCore"  ) GET_OC_LIST_ITEM; GET_OC_VERS; DBG "Got OC vers = $loader"; loader="OpenCore"; loader+="${oc_revision}"
                         ;;
                     "GNU/Linux" ) loader="GNU/Linux"                                       
                         ;;
@@ -127,7 +129,7 @@ GET_LOADER_STRING(){
                                *) loader="unrecognized"                                    
                         ;;
                     esac    
-                fi
+                fi 
 }
 #######################################################################################################################################################
 
@@ -458,12 +460,12 @@ DO_MOUNT(){
 }
 
 STARTUP_FIND_LOADERS(){
+DBG "STARTUP FIND LOADERS"
 if [[ $startup = 0 ]] && [[ $reloadFlag = 1 ]]; then
 DBG "M: Reload detected"
 GET_MOUNTEFI_STACK; reloadFlag=0
 match=0; for i in ${ldlist[@]}; do if [[ ${i::8} = "OpenCore" ]]; then match=1; break; fi; done
     if [[ $match = 1 ]] && [[ ! ${#oc_list[@]} = 0 ]]; then 
-#    echo "reload" > "${MEFIScA_PATH}"/serverRflag; DBG "MEFIScA Reload flag SET UP"
     DBG "M: OpenCore found in ldlist" 
     for pnum in ${!ldlist[@]}; do if [[ ${ldlist[pnum]::8} = "OpenCore" ]]; then GET_OC_VERS; loader="OpenCore"; loader+="${oc_revision}"; ldlist[pnum]="${loader}"; DBG "M: OC corection loader = $loader"; fi; done
     startup=1; sendData=1; WAITFLAG_OFF
@@ -471,11 +473,9 @@ match=0; for i in ${ldlist[@]}; do if [[ ${i::8} = "OpenCore" ]]; then match=1; 
 fi
 
 if [[ $startup = 0 ]] && [[ ! $reloadFlag = 1 ]]; then
-#    echo "restart" > "${MEFIScA_PATH}"/serverRflag; DBG "MEFIScA Restart flag SET UP"
     DBG "MEFIScA Поиск загрузчиков при первом запуске"
     if [[ ! $mypassword = "0"  &&  ! $mypassword = "" ]] || [[ $flag = 0 ]]; then
         echo "$mypassword" | sudo -S printf ""
-#        DBG "MEFIScA mypassword = $mypassword, flag = $flag"
         for i in ${!dlist[@]}; do 
         pnum=${nlist[i]}
             string=${dlist[$pnum]}
@@ -549,7 +549,7 @@ while [ $var0 != 0 ]; do
 	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
     if [[ $mcheck = "Yes" ]]; then
-    FIND_LOADERS 
+    FIND_LOADERS
     if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
     fi                
 	let "num++"; let "var0--"
@@ -583,7 +583,6 @@ while true; do
         GETARR
         WAIT_SYNCHRO
         GETLIST
-        
         STARTUP_FIND_LOADERS
 
     while true; do
