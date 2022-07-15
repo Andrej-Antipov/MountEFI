@@ -57,6 +57,7 @@ BACK_OLD_APPLET(){
                 rm -f "${ROOT}/script" "${ROOT}/AppSettings.plist" "$TARGET/MacOS/MountEFI"*
                 mv -f "${SOURCE}/Info.plist" "$TARGET/Info.plist" 2>/dev/null 
                 mv -f "${SOURCE}/Application Stub" "$TARGET/MacOS/Application Stub" 2>/dev/null
+                chmod +x "$TARGET/MacOS/Application Stub" 2>/dev/null
                 mv -f "${SOURCE}/document.wflow" "$TARGET/document.wflow" 2>/dev/null
                 plutil -replace CFBundleShortVersionString -string "$vers" ../MountEFI.app/Contents/Info.plist
                 rm -Rf "${SOURCE}"
