@@ -1,0 +1,56 @@
+#!/bin/sh
+
+loc=`defaults read -g AppleLocale | cut -d "_" -f1`
+
+ROOT="$(dirname "$0")"
+
+ENTER_PASSWORD(){
+
+		PASSWORD=""
+
+        if [[ $loc = "ru" ]]; then
+        PASSWORD="$(osascript -e 'display dialog "Для отмена карантина приложений в текущей\nпапке с вложенными папками и файлами нужен пароль\n\nПользователь:  '"$(id -F)"'\nПароль:"  with icon note giving up after (110) with hidden answer  default answer ""' -e 'text returned of result' 2>/dev/null)" 
+        else
+        PASSWORD="$(osascript -e 'display dialog "To disable the quarantine of applications in the\ncurrent folder with subfolders and files\nthe password is required.\n\nUser Name:  '"$(id -F )"'\nPassword:" with icon note giving up after (110) with hidden answer  default answer ""' -e 'text returned of result' 2>/dev/null)"
+        fi      
+                if [[ "${PASSWORD}" = "" ]]; then PASSWORD="?"; fi
+
+                if echo "${PASSWORD}" | sudo -Sk printf '' 2>/dev/null >>/dev/null; then
+                    MESSAGE_PASSWORD_OK &
+ 
+                else     
+					MESSAGE_PASSWORD_FAIL &
+               fi
+
+}
+
+DISPLAY_NOTIFICATION(){
+osascript -e 'display dialog '"${MESSAGE}"'  '"${icon_string}"'  buttons { "OK"}  giving up after 2' 
+}
+
+MESSAGE_PASSWORD_OK(){
+	icon_string="with icon note"
+echo "${PASSWORD}" | sudo -Sk xattr -rd com.apple.quarantine "${ROOT}" 2>/dev/null >>/dev/null
+        if [[ $loc = "ru" ]]; then
+        MESSAGE='"Карантин для всех файлов в папке отменён"'
+        else
+        MESSAGE='"The quarantine for this folder files disabled. "'
+        fi
+DISPLAY_NOTIFICATION
+}
+
+MESSAGE_PASSWORD_FAIL(){
+icon_string="with icon stop"	
+        if [[ $loc = "ru" ]]; then        
+        MESSAGE='"Пароль не опознан. Продолжения не будет."'
+        else
+        MESSAGE='"The Password get failed. Exiting"'
+        fi
+DISPLAY_NOTIFICATION
+}
+
+
+ENTER_PASSWORD
+
+osascript -e 'tell application "Terminal" to close (every window whose name contains "gatekeeperoff")' & exit
+
