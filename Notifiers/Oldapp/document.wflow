@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>AMApplicationBuild</key>
-	<string>444.7</string>
+	<string>515</string>
 	<key>AMApplicationVersion</key>
-	<string>2.8</string>
+	<string>2.10</string>
 	<key>AMDocumentVersion</key>
 	<string>2</string>
 	<key>actions</key>
@@ -59,13 +59,34 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>COMMAND_STRING</key>
-					<string>export LC_ALL=en_US.UTF-8  
+					<string>#!/bin/bash
+					pkill ScriptMonitor
+					
+export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 10.10.2020.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 22.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
 
-prog_vers="1.8.0"
-edit_vers="057"
+prog_vers="1.9.0"
+edit_vers="019"
+serv_vers="027"
+
+MOUNT_EFI_WINDOW_UP(){
+if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
+    osascript -e 'tell application "Terminal" to set frontmost of (every window whose name contains "MountEFI")  to true'
+    osascript -e 'tell application "Terminal" to activate'
+fi
+}
+
+if [[ $(ps xao command | grep -i "MountEFI$" | grep -v grep | wc -l | bc) = 2 ]]; then MOUNT_EFI_WINDOW_UP; exit; fi
+
+logfile="${HOME}/Desktop/temp.txt"
+TSP(){ printf "$(date '+%M:%S.'$(echo $(python -c 'import time; print repr(time.time())') | cut -f2 -d.))    "  &gt;&gt; "${logfile}" 2&gt;/dev/null; }
+DBG(){ if $DEBUG; then TSP; echo $1 &gt;&gt; "${logfile}" 2&gt;/dev/null; fi;  }
+CONFPATH="${HOME}/.MountEFIconf.plist"
+DEBUG=$(cat "${CONFPATH}" | grep -A1 "DEBUG&lt;/key&gt;" | egrep -o "false|true"); if [[ $DEBUG = "" ]]; then DEBUG="false"; fi
+DEBUG_MODE(){ if $DEBUG; then mean="No"; DEBUG="false";else mean="Yes"; DEBUG=true; fi;  plutil -replace DEBUG -bool $mean "${CONFPATH}"; UPDATE_CACHE; }
+DBG "SCRIPT: start applet ___________________________________________________"
 
 RESTART_APP(){
 MEFI_PATH="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | sed 's/[^/]*$//' | sed 's/.$//' | xargs)"
@@ -92,7 +113,7 @@ echo ''             &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'export LC_ALL=en_US.UTF-8;export LANG=en_US.UTF-8' &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'sleep 1'             &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' &gt;&gt; ${HOME}/.MountEFIr.sh
-echo 'i=60; while [[ ! $i = 0 ]]; do' &gt;&gt; ${HOME}/.MountEFIr.sh
+echo 'i=120; while [[ ! $i = 0 ]]; do' &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]] || [[ -f ~/Library/Application\ Support/MountEFI/UpdateRestartLock.txt  ]]; then' &gt;&gt; ${HOME}/.MountEFIr.sh
 echo 'i=$((i-1)); sleep 0.25; else break; fi; done' &gt;&gt; ${HOME}/.MountEFIr.sh
 echo '            open "${ProgPath}"'  &gt;&gt; ${HOME}/.MountEFIr.sh
@@ -106,26 +127,21 @@ if [[ ! $(launchctl list | grep "MountEFIr.job" | cut -f3 | grep -x "MountEFIr.j
 plutil -replace EasyEFImode -bool NO ~/.MountEFIconf.plist
 plutil -replace Restart -bool Yes ~/.MountEFIconf.plist
 
-if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi
-mkdir ~/.MountEFIst
+if [[ -d ~/.MountEFIst ]]; then rm -Rf ~/.MountEFIst; fi; mkdir ~/.MountEFIst
 
-if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.mounted_loaders_list
-            max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h&lt;=max;h++)); do echo ${mounted_loaders_list[h]} &gt;&gt; ~/.MountEFIst/.mounted_loaders_list; done
-fi
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then touch ~/.MountEFIst/.mounted_loaders_list; max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+   for ((h=0;h&lt;=max;h++)); do echo ${mounted_loaders_list[h]} &gt;&gt; ~/.MountEFIst/.mounted_loaders_list; done; fi
+if [[ ! ${#ldlist[@]} = 0 ]]; then touch ~/.MountEFIst/.ldlist; max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+   for ((h=0;h&lt;=max;h++)); do echo "${ldlist[h]}" &gt;&gt; ~/.MountEFIst/.ldlist; done; fi
+if [[ ! ${#lddlist[@]} = 0 ]]; then touch ~/.MountEFIst/.lddlist; max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+   for ((h=0;h&lt;=max;h++)); do echo ${lddlist[h]} &gt;&gt; ~/.MountEFIst/.lddlist; done; fi
+            DBG "SCRIPT oc_list до преобразования для .MountEFIst = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+for i in ${!mounted_loaders_list[@]}; do if [[ ! $(echo ${oc_list[i]}  | egrep -o '[a-f0-9]{32}' | awk 'NR==1' ) = "" ]]; then oc_list[i]="${mounted_loaders_list[i]::32}${oc_list[i]::32}"; fi; done
+            DBG "SCRIPT oc_list после преобразования для .MountEFIst = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+if [[ ! ${#oc_list[@]} = 0 ]]; then touch ~/.MountEFIst/.oc_list; max=0; for y in ${!oc_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+   for ((h=0;h&lt;=max;h++)); do echo ${oc_list[h]} &gt;&gt; ~/.MountEFIst/.oc_list; done; fi
 
-if [[ ! ${#ldlist[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.ldlist
-            max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h&lt;=max;h++)); do echo "${ldlist[h]}" &gt;&gt; ~/.MountEFIst/.ldlist; done
-fi
-
-if [[ ! ${#lddlist[@]} = 0 ]]; then 
-            touch ~/.MountEFIst/.lddlist
-            max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-            for ((h=0;h&lt;=max;h++)); do echo ${lddlist[h]} &gt;&gt; ~/.MountEFIst/.lddlist; done
-fi
+if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientRestart; sleep 0.5; fi
 
 }
 
@@ -133,6 +149,7 @@ if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
 kill $(ps -xa -o pid,command | grep -v grep | grep curl | grep MountEFI | xargs | cut -f1 -d " ")
 rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
 fi
+
 
 if [[ $(launchctl list | grep "MountEFIu.job" | cut -f3 | grep -x "MountEFIu.job") ]]; then
     MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )   
@@ -152,6 +169,16 @@ pkill ScriptMonitor
 
 ROOT="$(ps xao command | grep -i "MountEFI.app" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)./../Resources"
 
+######################## подготовка данных для вычисления hotplug ###################
+ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
+        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
+
+pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
+#####################################################################################
+
+if [[ -f "${HOME}/Library/Application Support/MountEFI"/MEFIScA/clientDown ]]; then rm -f "${HOME}/Library/Application Support/MountEFI"/MEFIScA/clientDown; fi
+
 GET_LOCALE(){
 if [[ ! ${MountEFIconf} = "" ]]; then 
         locale=`echo "$MountEFIconf" | grep -A 1 "Locale" | grep string | sed -e 's/.*&gt;\(.*\)&lt;.*/\1/' | tr -d '\n'`
@@ -164,13 +191,8 @@ else
 fi
 }
 
-UPDATE_CACHE(){
-cache=1
-if [[ -f ${HOME}/.MountEFIconf.plist ]]; then MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist )
+UPDATE_CACHE(){ cache=1; if [[ -f ${HOME}/.MountEFIconf.plist ]]; then MountEFIconf=$( cat ${HOME}/.MountEFIconf.plist ); else unset MountEFIconf; cache=0; fi; }
 #elif [[ -f ~/Library/Application\ Support/EasyEFI/EasyEFIconf.plist ]]; then MountEFIconf=$( cat ~/Library/Application\ Support/EasyEFI/EasyEFIconf.plist )
-else unset MountEFIconf; cache=0
-fi
-}
 
 GET_APP_ICON(){
 icon_string=""
@@ -184,9 +206,12 @@ osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "
 if [[ ${menu_mode} = 0 ]]; then EXIT_PROGRAM; fi
 }
 
-ERROR_OS_VERSION(){
-menu_mode=0
-if [[ $loc = "ru" ]]; then error_message='"Mac OS '$(sw_vers -productVersion)' не поддерживается !"'; else error_message='"The Mac OS '$(sw_vers -productVersion)' is not supported !"'; fi; ERROR_MSG
+WARNING_MSG(){
+if [[ $loc = "ru" ]]; then
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Продолжить", "Прекратить" } default button "Прекратить" giving up after 110'  2&gt;/dev/null
+else
+osascript -e 'display dialog '"${error_message}"'  with icon caution buttons { "Continue", "Abort" } default button "Abort" giving up after 110'  2&gt;/dev/null
+fi
 }
 
 DISPLAY_NOTIFICATION(){
@@ -225,7 +250,15 @@ if [[ -f "$ROOT"/version.txt ]]; then
 fi   
 }
 
+
+DISPLAY_MESSAGE1(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' &gt;&gt;/dev/null 2&gt;/dev/null; }
+MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания вышло !"'; else MESSAGE='"The waiting time is up !"'; fi; DISPLAY_MESSAGE1 &gt;&gt;/dev/null 2&gt;/dev/null; }
+DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' &gt;&gt;/dev/null 2&gt;/dev/null; }
+MSG_WAIT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Подготовка данных о загрузчиках .... !"' ; else MESSAGE='"Waiting for the end of data synchro .... !"' ; fi; DISPLAY_MESSAGE &gt;&gt;/dev/null 2&gt;/dev/null; }
+
 CHECK_SANDBOX
+
+GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
 
 ################ запрос пароля sudo #################################
 PROMT_SUDO_PASSWORD(){
@@ -249,9 +282,9 @@ mypassword=""
         while [[ ! $TRY = 0 ]]; do
         while true; do
         if [[ $loc = "ru" ]]; then
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(id -F)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2&gt;/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nВы можете выбрать его хранение в связке ключей\n\nПользователь:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nВведите ваш пароль:" buttons {"OK", "Сохранить в связке", "Отмена"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2&gt;/dev/null
         else
-        PASS_ANSWER="$(osascript -e 'Tell application "System Events" to display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(id -F)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2&gt;/dev/null
+        PASS_ANSWER="$(osascript -e 'display dialog "'"${sudo_message}"'\nYou can choose to store the password in the keychain\n\nUser Name:  '"$(if [[ ${macos:0:3} = "109" ]]; then id -P | cut -f8 -d: ; else id -F ; fi)"'\nEnter your password:" buttons {"OK", "Store in keychain", "Cancel"  } default button "OK" '"${icon_string}"' giving up after (110) with hidden answer  default answer ""')" 2&gt;/dev/null
         fi 
         if [[ $(echo "${PASS_ANSWER}" | egrep -o "gave up:.*" | cut -f2 -d:) = "false" ]]; then break; fi
         done  
@@ -323,17 +356,24 @@ fi
 }
 
 GET_LOADERS(){
-CheckLoaders=0
-strng=$( echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders&lt;/key&gt;" | grep false | tr -d "&lt;&gt;/"'\n\t')
-if [[ $strng = "true" ]]; then CheckLoaders=1
-fi
+if $(echo "$MountEFIconf" | grep -A 1 -e "CheckLoaders&lt;/key&gt;" | egrep -o "true|false"); then CheckLoaders=1; else CheckLoaders=0; fi
 }
 
 GET_FLAG(){
-macos=$(sw_vers -productVersion | tr -d .); macos=${macos:0:4}
-if [[ ${#macos} = 3 ]]; then macos+="0"; fi
-if [[ "${macos}" -gt "1100" ]] || [[ "${macos}" -lt "1011" ]]; then ERROR_OS_VERSION; fi
-if [[ "$macos" = "1011" ]] || [[ "$macos" = "1012" ]]; then flag=0; else flag=1; GET_PASSWORD; fi
+mac_vers=($(sw_vers -productVersion | tr "." " "))
+macos="$((${mac_vers[0]}*10000+${mac_vers[1]}*100))"; if [[ ! ${mac_vers[2]} = "" ]]; then macos=$(($macos+${mac_vers[2]})); fi
+if [[ "${macos:0:4}" -gt "1209" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then 
+    if [[ ! $(sw_vers -productVersion | tr -d .) = $(echo "$MountEFIconf" | grep -A1 "&lt;key&gt;UnsupportedExecution&lt;/key&gt;" | grep string | sed -e 's/.*&gt;\(.*\)&lt;.*/\1/') ]]; then
+############## ERROR_OS_VERSION
+        if [[ $loc = "ru" ]]; then 
+        error_message='"Работа программы не проверялась с этой\nверсией Mac OS : '$(sw_vers -productVersion)' !\nПосле подтверждения работа программы\nбудет продолжена, но корректное исполнение функций не гарантируется.\n"'
+        else error_message='"This program has not been tested\non Mac OS version: '$(sw_vers -productVersion)' !\nAfter confirmation, the execution will continue\nBut the correct execution is not guaranteed."'; fi
+        warn_answer=$(echo $(WARNING_MSG) | egrep -o "button returned:Continue,|Abort,|Продолжить,|Прекратить," | tr -d ',' | cut -f2 -d:)
+        if [[ "$warn_answer" = "Продолжить" || "$warn_answer" = "Continue" ]]; then plutil -replace UnsupportedExecution -string $(sw_vers -productVersion | tr -d .) "${CONFPATH}"; UPDATE_CACHE; else EXIT_PROGRAM; fi
+##############################
+    fi
+fi
+if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
 }
 
 CHECK_USB(){
@@ -351,7 +391,7 @@ GET_EFI_S(){
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
 drives_iomedia=$( echo "$ioreg_iomedia" |  egrep -A 22 "&lt;class IOMedia," )
-string=$( diskutil list | grep EFI | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
+string=$( diskutil list | egrep "EFI|Apple_APFS_ISC" | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
 disk_images=$( echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';' )
 syspart=$( df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n' )
 IFS=';'; dlist=($string); ilist=($disk_images); usb_iolist=($usb_iomedia); unset IFS; pos=${#dlist[@]}; posi=${#ilist[@]}; pusb=${#usb_iolist[@]}
@@ -381,7 +421,7 @@ usbnames=(); for (( i=0; i&lt;$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]}
 
 for (( i=0; i&lt;$posd; i++ ))
  do
-    dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "&lt;" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
+    dmname=$( echo "$drives_iomedia" | grep -B 10 -w ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "&lt;" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
     if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
         for (( n=0; n&lt;$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then rmlist+=( ${dmlist[i]} ); fi; done
  done                            
@@ -393,13 +433,6 @@ if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
 
 # подготовка данных для вычисления размеров
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
-
-# подготовка данных для вычисления hotplug
-ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
-        if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
-
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
-        if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
 }
 
@@ -515,13 +548,21 @@ GETARR
 var1=$pos
 num=0
 
-cd "${ROOT}"
+cd "${ROOT}"; if [[ ! $flag = 0 ]]; then CHECK_PASSWORD; fi
 
 while [ $var1 != 0 ] 
 do 
 
 	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
-    if [[ $mcheck = "Yes" ]]; then diskutil quiet umount force  /dev/${string}; UNMOUNTED_CHECK; fi
+    if [[ $mcheck = "Yes" ]]; then 
+    
+    if osascript -e 'tell application "Finder" to get window "EFI"' &gt;&gt;/dev/null 2&gt;/dev/null 
+        then osascript -e 'tell application "Finder" to close  window "EFI"' &gt;&gt;/dev/null 2&gt;/dev/null; fi
+
+    diskutil quiet umount /dev/${string}; UNMOUNTED_CHECK; fi
+        if [[ ! $flag = 0 ]] &amp;&amp; [[ ${need_password} = 0 ]]; then 
+            sudo fsck_msdos -fy "/dev/${string}" &gt;&gt;/dev/null 2&gt;/dev/null; else fsck_msdos -fy "/dev/${string}" &gt;&gt;/dev/null 2&gt;/dev/null; fi
+
 
     let "num++"
 	let "var1--"
@@ -529,6 +570,7 @@ done
 
 kill $mspid
 KILL_DIALOG
+
 }
 
 MOUNTED_CHECK(){
@@ -558,13 +600,15 @@ IF_MOUNT_ALL(){
 for string in ${disk_mount_list[@]}; do
         mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
         if [[ ! $mcheck = "Yes" ]]; then wasmounted=0; DO_MOUNT; else wasmounted=1; fi
-        vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-        if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then open "$vname"; fi; fi
+        GET_VNAME ${string}
+        if [[ $mcheck = "Yes" ]]; then 
+        if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then open "$vname"; fi; fi
     done
 }
 
 DO_MOUNT(){
-    	if [[ $flag = 0 ]]; then 
+    	if [[ $flag = 0 ]]; then
+                    fsck_msdos -fy ${string} &gt;&gt;/dev/null 2&gt;/dev/null 
                     if ! diskutil quiet mount  /dev/${string} 2&gt;/dev/null; then
                     sleep 1
                     diskutil quiet mount  /dev/${string} 2&gt;/dev/null; fi  
@@ -574,6 +618,7 @@ DO_MOUNT(){
                     if [[ ! $mypassword = "" ]]; then
                         CHECK_PASSWORD
                         if [[ ${need_password} = 0 ]]; then
+                            sudo fsck_msdos -fy ${string} &gt;&gt;/dev/null 2&gt;/dev/null
                             if ! sudo diskutil quiet mount  /dev/${string} 2&gt;/dev/null; then 
                                 sleep 1
                                 sudo diskutil quiet mount  /dev/${string} 2&gt;/dev/null
@@ -593,35 +638,7 @@ if [[ $strng = "false" ]]; then OpenFinder=0; fi
 ################################################### детект загрузчиков ##########################################################################################
 
 CORRECT_OC_VERS(){
-case "${md5_full}" in
-58c4b4a88f8c41f84683bdf4afa3e77cf6bcc6d06d95a1e657e61a15666cde9f ) oc_revision=.62r;;
-5ef1fc5a81e8e4e6aeb504c91d4a1d7786652faf1a336a446b187ae283d2cc9a ) oc_revision=.62d;;
-75624767ed4f08a1ebc9f655711ba95d8ef8d1803e91c6718dfee59408b6a468 ) oc_revision=.61d;;
-58c4b4a88f8c41f84683bdf4afa3e77c3255c15833abcb05789af00c0e50bf82 ) oc_revision=.61r;;
-58c4b4a88f8c41f84683bdf4afa3e77c5010a4db83dacbcc14b090e00472c661 ) oc_revision=.60r;;
-bb901639773a1c319a3ff804128bdfb4f663a56f66b9d95fd053a46b0829fa5c ) oc_revision=.60d;;
-01dfbdd3175793d729999c52882dd3b6da4a5e54641317b2aa7715f8b4273791 ) oc_revision=.59r;;
-efbad161ffbf7a17374d08ec924651fef46456574b8b67f603de74c201b4e130 ) oc_revision=.59d;;
-10610877a9cc0ed958ff74ed7a192474dd2bb459dfbb1fe04ca0cb61bb8f9581 ) oc_revision=.58r;;
-d90190bfea64112ed83621079371277ab85c28aa004291a96bf74d95eea3364a ) oc_revision=.58d;;
-10610877a9cc0ed958ff74ed7a1924743e99e56bc16ed23129b3659a3d536ae9 ) oc_revision=.57r;;
-9ff8a0c61dc1332dd58ecc311e0938b088e8aec480eb24e757241580731d2023 ) oc_revision=.57d;;
-12e5d34064fed06441b86b21f3fa3b7d947f8ccfec961d02f54d1a2f5c808504 ) oc_revision=.56r;;
-9004a000df355d09a79ba510c055a5f0db78c5fef3550213e947b8d6fa5338e4 ) oc_revision=.56d;;
-f3b1534643d3eb11fc18ac5a56528d794bdb27730c0c06275e2fc389348d46d0 ) oc_revision=.55r;;
-07b64c16f48d61e5e9f2364467250912217a07b161306324d147681914a319c3 ) oc_revision=.55d;;
-91e8abcf647af737d4a22fe3f98d00c021aa72da926ec362ab58626b60c36ac8 ) oc_revision=.54r;;
-5758e9b672486b863b18f6e5ff001b27d36cb1eafafcd9b94d3526aece5bc8b4 ) oc_revision=.54d;;
-97f744526c733aa2e6505f01f37de6d78cc62a1017afa01c2c75ad4b6fca8df2 ) oc_revision=.53r;;
-b09cd76fadd2f7a14e76003b2ff4016f1d821f7a51eab7c39999328438770fa7 ) oc_revision=.53d;;
-1ca142bf009ed537d84c980196c36d72ba2a5846697e7895753e7b05989738e5 ) oc_revision=.52r;;
-eaba9d5b467da41f5a872630d4ad7ff552f819181055f501b6882c2a73268dbc ) oc_revision=.52d;;
-eb66a8a986762b9cadecb6408ecb1ec7ff42893722bc0a3278c7d8029b797342 ) oc_revision=.51r;;
-c31035549f86156ff5e79b9d87240ec54be8a2620c923129b3bac0b2d1b8fd6b ) oc_revision=.51d;;
-7844acab1d74aeccc5d2696627c1ed3d081f9922be27b2d1e82fc8dbd3426498 ) oc_revision=.50r;;
-c221f59769bd185857b2c30858fe3aa2ec0e6c7dfa2ab84eaad52f167e85466f ) oc_revision=.50d;;
-                                                                *)     oc_revision=""
-esac 
+oc_revision=$(echo "${ocHashes64string}" | egrep -o "${md5_full}=[\.0-9][\.0-9][\.0-9][\.0-9rd]\b" | cut -f2 -d=)
 }
 
 ################################ получение имени диска для переименования #####################
@@ -638,44 +655,7 @@ if [[ ${oc_revision} = "" ]]; then
 fi
 
 if [[ ${oc_revision} = "" ]]; then
-
-case "${md5_loader}" in
-############## oc_hashes_strings 29 #################
-5ef1fc5a81e8e4e6aeb504c91d4a1d77 ) oc_revision=.62x;;
-75624767ed4f08a1ebc9f655711ba95d ) oc_revision=.61x;;
-58c4b4a88f8c41f84683bdf4afa3e77c ) oc_revision=.6xr;;
-bb901639773a1c319a3ff804128bdfb4 ) oc_revision=.60x;;
-01dfbdd3175793d729999c52882dd3b6 ) oc_revision=.59x;;
-efbad161ffbf7a17374d08ec924651fe ) oc_revision=.59x;;
-d90190bfea64112ed83621079371277a ) oc_revision=.58x;;
-9ff8a0c61dc1332dd58ecc311e0938b0 ) oc_revision=.57x;;
-10610877a9cc0ed958ff74ed7a192474 ) oc_revision=.5xr;;
-12e5d34064fed06441b86b21f3fa3b7d ) oc_revision=.56x;;
-9004a000df355d09a79ba510c055a5f0 ) oc_revision=.56x;;
-f3b1534643d3eb11fc18ac5a56528d79 ) oc_revision=.55x;;
-07b64c16f48d61e5e9f2364467250912 ) oc_revision=.55x;;
-91e8abcf647af737d4a22fe3f98d00c0 ) oc_revision=.54x;;
-5758e9b672486b863b18f6e5ff001b27 ) oc_revision=.54x;;
-97f744526c733aa2e6505f01f37de6d7 ) oc_revision=.53x;;
-b09cd76fadd2f7a14e76003b2ff4016f ) oc_revision=.53x;;
-1ca142bf009ed537d84c980196c36d72 ) oc_revision=.52x;;
-eaba9d5b467da41f5a872630d4ad7ff5 ) oc_revision=.52x;;
-eb66a8a986762b9cadecb6408ecb1ec7 ) oc_revision=.51x;;
-c31035549f86156ff5e79b9d87240ec5 ) oc_revision=.51x;;
-7844acab1d74aeccc5d2696627c1ed3d ) oc_revision=.50x;;
-c221f59769bd185857b2c30858fe3aa2 ) oc_revision=.50x;;
-91ea6c185c31a25c791da956c79808f9 ) oc_revision=.04r;;
-5bb02432d1d1272fdcdff91fcf33d75b ) oc_revision=.04d;;
-303a7f1391743e6bc52a38d614b5dd93 ) oc_revision=.03r;;
-52195547d645623036effeadd31e21a9 ) oc_revision=.03d;;
-7805dc51bd280055d85775c512a832b0 ) oc_revision=.02r;;
-bb222980e4823798202b3a9cff63b604 ) oc_revision=.02d;;
-297e30883f3db26a30e48f6b757fd968 ) oc_revision=.01r;;
-e2c2dd105dc03dc16a69fd10ff2d0eac ) oc_revision=.01d;;
-                                *)     oc_revision=""
-                    esac
-fi
-
+oc_revision=$(echo "${ocHashes32string}" | egrep -o "${md5_loader}=[\.0-9][\.0-9][\.0-9x][\.0-9rdx]\b" | cut -f2 -d=); fi
 
 }
 
@@ -732,13 +712,13 @@ GET_LOADER_STRING(){
                GET_OTHER_LOADERS_STRING
                
                if [[ ! "${loader:0:5}" = "Other" ]]; then
-                
-                    check_loader=$( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "Clover|OpenCore|GNU/Linux|Microsoft C|Refind" )
+                    check_loader=$( xxd -l 40000 "$vname$loaderPath"| egrep -om1  "OpenCore" )
+                    if [[ "${check_loader}" = "" ]]; then check_loader=$( xxd "$vname$loaderPath" | egrep -om1  "Clover|GNU/Linux|Microsoft C|Refind" ); fi
                     case "${check_loader}" in
                     "Clover"    ) loader="Clover"; GET_CONFIG_VERS "Clover"
                                 if [[ ${revision} = "" ]]; then
-                                revision=$( xxd "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
-                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname"/EFI/BOOT/BOOTX64.efi | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                revision=$( xxd "$vname$loaderPath" | grep -a1 "Clover" | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
+                                if [[ ${revision} = "" ]]; then revision=$( xxd  "$vname$loaderPath" | grep -a1 'revision:' | cut -c 50-68 | tr -d ' \n' | egrep -o  'revision:[0-9]{4}' | cut -f2 -d: ); fi
                                 loader+="${revision:0:4}"
                                 ;;
   
@@ -758,41 +738,32 @@ GET_LOADER_STRING(){
                 fi
 }
 
-
-SHIFT_UP(){
-if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                     for ((y=$((max+1));y&gt;pnum;y--)); do mounted_loaders_list[y]=${mounted_loaders_list[((y-1))]}; done
-fi
-}
-
 FIND_LOADERS(){
     unset loader; lflag=0
     if [[ $mcheck = "Yes" ]]; then 
 
-vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-
-			if  [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] &amp;&amp; [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] &amp;&amp; [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then  
-                md5_loader=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi )                 
+	GET_VNAME ${string}
+			loaderPath=""
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/BOOTX64.efi"; 
+				elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
+			if  [[ ! "${loaderPath}" = "" ]]; then
+			    md5_loader=$( md5 -qq "$vname$loaderPath" )                 
                 if [[ ${md5_loader} = "" ]]; then loader=""
                         else
                             if [[ ${mounted_loaders_list[$pnum]} = ${md5_loader} ]]; then loader=""
                                 else
-                                    SHIFT_UP
                                     mounted_loaders_list[$pnum]="${md5_loader}"; lflag=1
                                     GET_LOADER_STRING
                   fi
                 fi
             else
-                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then SHIFT_UP; loader="empty"; mounted_loaders_list[pnum]=0; fi
+                   if [[ ${mounted_loaders_list[pnum]} = "" ]] || [[ ! ${mounted_loaders_list[pnum]} = 0 ]]; then loader="empty"; mounted_loaders_list[pnum]=0; fi
             fi
     fi
 }
 
 ##############################################################################################################################################################
 UPDATE_SCREEN(){
-
-#DBG "UPDATE_SCREEN 1"
 
 ask_efi_list=(); num=0; unset string; sata_lines=0; usb_lines=0; usb_screen_buffer=""; screen_buffer=""; var0=$pos; ldname=0
 
@@ -803,7 +774,7 @@ while [[ $var0 != 0 ]]; do
 	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
     dlenth=`echo ${#dstring}`
 	let "corr=9-dlenth"
-    drive=`echo "$drives_iomedia" | grep -B 10 ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "&lt;" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
+    drive=`echo "$drives_iomedia" | grep -B 10 -w ${dstring} | grep -m 1 -w "IOMedia"  | cut -f1 -d "&lt;" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n"`
         if [[ ${#drive} -gt 30 ]]; then drive=$( echo "$drive" | cut -f1-2 -d " " ); fi
         GET_RENAMEHD
 		dcorr=${#drive}
@@ -825,13 +796,9 @@ while [[ $var0 != 0 ]]; do
     mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
     CHECK_USB
 
-        if [[ ! $CheckLoaders = 0 ]]; then FIND_LOADERS 
+        if [[ $CheckLoaders = 1 ]]; then FIND_LOADERS 
           if [[ $mefi_stack_got = 0 ]]; then
             if [[ ! ${loader} = "" ]];then
-                if [[ ! ${lddlist[pnum]} = "" ]]; then
-                     max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-                      for ((y=$((max+1));y&gt;pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-                fi
                 ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}
             fi
           fi
@@ -902,19 +869,14 @@ unset IFS
 
 if [[ $mefi_stack_got = 1 ]]; then mefi_stack_got=0; fi
 
-#DBG "UPDATE_SCREEN 2"
-
 }
 
 
 GETLIST(){
-
-#DBG "GET_LIST"
-
-GET_LOADERS
-CheckLoaders=1
-if [[ ! $CheckLoaders = 0 ]]; then mounted_loaders_list=(); ldlist=(); lddlist=(); else lname=""; fi 
-
+if [[ $CheckLoaders = 1 ]]; then 
+if [[ ! $mefisca = 1 ]]; then 
+mounted_loaders_list=(); ldlist=(); lddlist=(); else lname=""; fi 
+fi
 UPDATE_SCREEN
 }
 
@@ -929,11 +891,16 @@ if [[ ${ldname} = 1 ]]; then
     if [[ $loc = "ru" ]]; then
     efi_prompt_list+='"'"                                                                                "'"'","
     efi_prompt_list+='"'"*********************************** дополнительно *****************************************"'"'","
+    if $DEBUG &amp;&amp; [[ ${menu_mode} = 1 ]]; then
+        efi_prompt_list+='"                                              • Отключить лог ( DEBUG ) • "'","
+    fi
         efi_prompt_list+='"                                  Отключить все подключенные EFI разделы  "'","
     if [[ ${menu_mode} = 1 ]]; then
+      if [[ $CheckLoaders = 1 ]]; then
         efi_prompt_list+='"                                  Найти и подключить разделы с OpenCore  "'","
         efi_prompt_list+='"                                  Найти и подключить разделы с Clover  "'","
         efi_prompt_list+='"                                  Проверить все BOOTx64.efi в разделах EFI  "'","
+      fi
 #        efi_prompt_list+='"                                  Авто-подключение EFI при входе в систему  "'","
         efi_prompt_list+='"                                  Переключить в режим окна терминала  "'","
         efi_prompt_list+='"                                  Включить упрощённый режим управления  "'
@@ -942,11 +909,16 @@ if [[ ${ldname} = 1 ]]; then
     fi
 else
     efi_prompt_list+='"'"*************************************** additionally: ****************************************"'"'","
+    if $DEBUG &amp;&amp; [[ ${menu_mode} = 1 ]]; then
+        efi_prompt_list+='"                                            • Disable log (DEBUG mode) • "'","
+    fi
         efi_prompt_list+='"                                       Unmount ALL mounted EFI partitions  "'","
     if [[ ${menu_mode} = 1 ]]; then
+      if [[ $CheckLoaders = 1 ]]; then
         efi_prompt_list+='"                                       Find and mount EFI partitions with OpenCore  "'","
         efi_prompt_list+='"                                       Find and mount EFI partitions with Clover  "'","
         efi_prompt_list+='"                                       Searching all BOOTx64.efi in EFI partitions "'","
+      fi
 #        efi_prompt_list+='"                                       EFI auto-mount on login  "'","
         efi_prompt_list+='"                                       Switch to terminal window mode  "'","
         efi_prompt_list+='"                                       Switch menu to simple management mode "'
@@ -958,11 +930,16 @@ else
 efi_prompt_list+='"'"                                                                         "'"'","
 if [[ $loc = "ru" ]]; then
 efi_prompt_list+='"'"***************************** дополнительно: ******************************"'"'","
+        if $DEBUG &amp;&amp; [[ ${menu_mode} = 1 ]]; then
+            efi_prompt_list+='"                                    • Отключить лог ( DEBUG ) • "'","
+        fi
             efi_prompt_list+='"                          Отключить все подключенные EFI разделы  "'","
         if [[ ${menu_mode} = 1 ]]; then
+          if [[ $CheckLoaders = 1 ]]; then
             efi_prompt_list+='"                          Найти и подключить разделы с OpenCore  "'","
             efi_prompt_list+='"                          Найти и подключить разделы с Clover  "'","
             efi_prompt_list+='"                          Проверить все BOOTx64.efi в разделах EFI  "'","
+          fi
 #            efi_prompt_list+='"                          Авто-подключение EFI при входе в систему  "'","
             efi_prompt_list+='"                          Переключить в режим окна терминала  "'","
             efi_prompt_list+='"                          Включить упрощённый режим управления  "'
@@ -971,11 +948,16 @@ efi_prompt_list+='"'"***************************** дополнительно: *
         fi
 else
 efi_prompt_list+='"'"******************************* additionally: *********************************"'"'","
+        if $DEBUG &amp;&amp; [[ ${menu_mode} = 1 ]]; then
+            efi_prompt_list+='"                                     • Disable log (DEBUG mode) • "'","
+        fi
             efi_prompt_list+='"                                Unmount ALL mounted EFI partitions  "'","
         if [[ ${menu_mode} = 1 ]]; then
+          if [[ $CheckLoaders = 1 ]]; then
             efi_prompt_list+='"                                Find and mount EFI partitions with OpenCore  "'","
             efi_prompt_list+='"                                Find and mount EFI partitions with Clover  "'","
             efi_prompt_list+='"                                Searching all BOOTx64.efi in EFI partitions "'","
+          fi
 #            efi_prompt_list+='"                                EFI auto-mount on login  "'","
             efi_prompt_list+='"                                Switch to terminal window mode  "'","
             efi_prompt_list+='"                                Switch menu to simple management mode "'
@@ -985,21 +967,23 @@ efi_prompt_list+='"'"******************************* additionally: *************
 fi
 fi
 
+if $DEBUG; then deb_mode=" • DEBUG is ON • "; else deb_mode=""; fi
+
 if [[ $loc = "ru" ]]; then
 osascript &lt;&lt;EOD
-tell application "System Events"    activate
+
 set ThemeList to {$efi_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) / Список EFI (ESP) разделов:"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed OK button name {"Поехали!"} cancel button name {"Выход"}
-end tell
+set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) $deb_mode/ Список EFI (ESP) разделов:"  with prompt "Выберите один или несколько (CMD + клик) для подключения:\nЗнаком + отмечены подключенные." with multiple selections allowed OK button name {"Поехали!"} cancel button name {"Выход"}
+
 EOD
 
 else
 
 osascript &lt;&lt;EOD
-tell application "System Events"    activate
+
 set ThemeList to {$efi_prompt_list}
-set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) / EFI (ESP) partition list"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed cancel button name {"Exit"}
-end tell
+set FavoriteThemeAnswer to choose from list ThemeList with title "MountEFI v.${prog_vers:0:3}($edit_vers) $deb_mode/ EFI (ESP) partition list:"  with prompt "Select one or more (CMD + click) to mount:\nA + sign indicates mounted.." with multiple selections allowed cancel button name {"Exit"}
+
 EOD
 
 fi
@@ -1025,7 +1009,7 @@ while [ $var1 != 0 ]; do
     pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; else was_mounted=1; fi
 
-    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+    GET_VNAME ${string}
     if [[ -d "$vname"/EFI/BOOT ]]; then
 	     if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] &amp;&amp; [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] &amp;&amp; [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
             check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "Clover"` ; check_loader=`echo ${check_loader:0:6}`
@@ -1036,7 +1020,7 @@ while [ $var1 != 0 ]; do
 	     fi
 	fi
 
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
@@ -1067,12 +1051,15 @@ while [ $var1 != 0 ]; do
     pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; else was_mounted=1; fi
 
-    vname=`df | egrep ${string} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+    GET_VNAME ${string}
 
-	if [[ -d "$vname"/EFI/BOOT ]]; then
-			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]] &amp;&amp; [[ -f "$vname"/EFI/BOOT/bootx64.efi ]] &amp;&amp; [[ -f "$vname"/EFI/BOOT/BOOTx64.efi ]]; then 
 
-					check_loader=`xxd "$vname"/EFI/BOOT/BOOTX64.EFI | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
+	if [[ -d "$vname"/EFI ]]; then
+					loaderPath=""
+					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
+					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi			
+			if [[ ! "${loaderPath}" = "" ]]; then
+					check_loader=`xxd -l 40000 "$vname$loaderPath" | grep -Eo "OpenCore"` ; check_loader=`echo ${check_loader:0:8}`
                 					if [[ ${check_loader} = "OpenCore" ]]; then
                        						 if [[ ! $OpenFinder = 0 ]]; then open "$vname/EFI"; fi
 							 was_mounted=1
@@ -1080,7 +1067,7 @@ while [ $var1 != 0 ]; do
 	   fi
 	fi
 
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
@@ -1114,15 +1101,9 @@ while [ $var1 != 0 ]; do
 
     FIND_LOADERS
 
-    if [[ ! ${loader} = "" ]];then
-       if [[ ! ${lddlist[pnum]} = "" ]]; then
-              max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
-              for ((y=$((max+1));y&gt;pnum;y--)); do lddlist[y]=${lddlist[((y-1))]}; ldlist[y]=${ldlist[((y-1))]}; done
-       fi
-             ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}
-    fi
+    if [[ ! ${loader} = "" ]];then ldlist[pnum]="${loader}"; lddlist[pnum]=${dlist[pnum]}; fi
 
-    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount  force /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
+    if [[ "$was_mounted" = 0 ]]; then diskutil quiet  umount /dev/${string}; mounted=0; UNMOUNTED_CHECK; fi
 		
     let "num++"
     let "var1--"
@@ -1134,10 +1115,7 @@ KILL_DIALOG
 fi
 }
 
-KILL_DIALOG(){
-if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi
-}
+KILL_DIALOG(){ if [[ ! $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' ') = "" ]]; then kill $(ps ax | grep -v grep | grep "display dialog" | xargs | cut -f1 -d' '); fi; }
 
 EXIT_PROGRAM(){
 KILL_DIALOG
@@ -1149,27 +1127,32 @@ exit
 
 GET_MOUNTEFI_STACK(){
 
-if [[ -f ~/.MountEFIst/.mounted_loaders_list ]] &amp;&amp; [[ -f ~/.MountEFIst/.ldlist ]] &amp;&amp; [[ -f ~/.MountEFIst/.lddlist ]]; then
-    mounted_loaders_list_string=$( cat ~/.MountEFIst/.mounted_loaders_list | tr '\n' ';' )
-    ldlist_string=$( cat ~/.MountEFIst/.ldlist | tr '\n' ';' )
-    lddlist_string=$( cat ~/.MountEFIst/.lddlist | tr '\n' ';' )
-    IFS=';' mounted_loaders_list=(${mounted_loaders_list_string}); ldlist=(${ldlist_string}); lddlist=(${lddlist_string}); unset IFS
-    for i in ${!mounted_loaders_list[@]}
-    do   
-        if [[ ! $( df | grep ${dlist[i]} ) = "" ]] &amp;&amp; [[ ! ${mounted_loaders_list[i]} = 0 ]]; then 
-            vname=`df | egrep ${dlist[i]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-            if [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1  "OpenCore" ) = "OpenCore" ]]; then
-                oc_list[i]=$( md5 -qq "$vname"/EFI/OC/OpenCore.efi ); fi
-        fi
-    done
-
-mefi_stack_got=1
+if [[ -d ~/.MountEFIst ]]; then
+    IFS=';'; mounted_loaders_list=( $(cat "${HOME}"/.MountEFIst/.mounted_loaders_list 2&gt;/dev/null | tr '\n' ';' ) )
+    ldlist=( $(cat "${HOME}"/.MountEFIst/.ldlist 2&gt;/dev/null | tr '\n' ';' ) )
+    lddlist=( $(cat "${HOME}"/.MountEFIst/.lddlist 2&gt;/dev/null | tr '\n' ';' ) )
+    oc_list=( $(cat "${HOME}"/.MountEFIst/.oc_list 2&gt;/dev/null | tr '\n' ';' ) ); unset IFS
+    if [[ ! ${#oc_list[@]} = 0 ]]; then
+         for i in ${!oc_list[@]}; do oc_list[i]=${oc_list[i]:32}; done
+         DBG "SCRIPT oc_list •1• got .MountEFIst = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+    else
+        for i in ${!mounted_loaders_list[@]}; do   
+            if [[ ! $( df | grep ${dlist[i]} ) = "" ]] &amp;&amp; [[ ! ${mounted_loaders_list[i]} = 0 ]]; then 
+                GET_VNAME ${dlist[i]}
+					loaderPath=""
+					if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/bootx64.efi"; 
+					elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
+                if [[ $( xxd -l 40000 "$vname$loaderPath" | egrep -om1  "OpenCore" ) = "OpenCore" ]]; then
+                    oc_list[i]=$( md5 -qq "$vname"/EFI/OC/OpenCore.efi ); fi
+            fi
+        done
+    DBG "SCRIPT oc_list •2• got .MountEFIst = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+    fi
+    mefi_stack_got=1
 
 fi
 
 rm -Rf ~/.MountEFIst
-
-#DBG "GET MEFI STACK"
 
 if [[ -f ~/.hashes_list.txt.back ]]; then mv -f ~/.hashes_list.txt.back ~/.hashes_list.txt; fi
 if [[ -f ~/.other_loaders_list.txt.back ]]; then mv -f ~/.other_loaders_list.txt.back ~/.other_loaders_list.txt; fi
@@ -1202,13 +1185,13 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
             autoupdate_string=$( cat ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt | tr '\n' ';' ); IFS=';' autoupdate_list=(${autoupdate_string}); unset IFS
             rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; rm -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt
             rm -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip"
-            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+            if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
                 if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s &gt;&gt; ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
 
             fi 2&gt;/dev/null
           fi
     else
-        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
+        if curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/AutoupdatesInfo.txt -L -o ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ; then
                 if [[ -f ~/Library/Application\ Support/MountEFI/AutoupdatesInfo.txt ]]; then date +%s &gt;&gt; ~/Library/Application\ Support/MountEFI/AutoUpdateInfoTime.txt; fi
         fi 2&gt;/dev/null
     fi
@@ -1219,7 +1202,7 @@ if [[ ! -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]]; then
         last_e=$(echo ${autoupdate_list[1]} | bc)
     if [[ $( echo "${autoupdate_list[0]}000+${last_e}" | bc) -gt $( echo "${current_vers}000+${vers_e}"  | bc) ]]; then
       if [[ ! -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]] || [[ ! $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then
-        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/Updates/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
+        if curl -s https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/${autoupdate_list[0]}/${autoupdate_list[1]}".zip" -L -o ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ; then
            if [[ -f ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip" ]]; then 
                 if [[ $(md5 -qq ~/Library/Application\ Support/MountEFI/${autoupdate_list[1]}".zip") = ${autoupdate_list[2]} ]]; then 
                       if [[ ! -d ~/.MountEFIupdates ]]; then mkdir ~/.MountEFIupdates; else rm -Rf ~/.MountEFIupdates/*; fi 
@@ -1277,9 +1260,9 @@ echo 'ProgPath=''"'$(echo "$MEFI_PATH")'"''' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'DirPath="$( echo "$ProgPath" | sed '"'s/[^/]*$//'"' | xargs)"'  &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ -d "${DirPath}" ]]; then ' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'rm -f "${DirPath}""version.txt"; echo ${current_release}";"${current_edit} &gt;&gt; "${DirPath}""version.txt"' &gt;&gt; ${HOME}/.MountEFIu.sh
-echo 'i=600; while [[ ! $i = 0 ]]; do' &gt;&gt; ${HOME}/.MountEFIu.sh
+echo 'i=1200; while [[ ! $i = 0 ]]; do' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ ! $(ps -xa -o pid,command |  grep -v grep | grep -ow "MountEFI.app" | wc -l | bc) = 0 ]]; then' &gt;&gt; ${HOME}/.MountEFIu.sh
-echo 'i=$((i-1)); sleep 0.25; else break; fi; done'&gt;&gt; ${HOME}/.MountEFIu.sh
+echo 'i=$((i-1)); sleep 0.25; else break; fi; done' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'mv -f ~/.MountEFIupdates/$latest_edit/MountEFI "${ProgPath}"' &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'chmod +x "${ProgPath}"'  &gt;&gt; ${HOME}/.MountEFIu.sh
 echo 'if [[ -f ~/.MountEFIupdates/$latest_edit/setup ]]; then'             &gt;&gt; ${HOME}/.MountEFIu.sh
@@ -1317,10 +1300,17 @@ CHECK_AUTOUPDATE(){
 AutoUpdate=1
 strng=`echo "$MountEFIconf"  | grep -A 1 -e "UpdateSelfAuto&lt;/key&gt;" | grep false | tr -d "&lt;&gt;/"'\n\t'`
 if [[ $strng = "false" ]]; then AutoUpdate=0; fi
+if [[ ${AutoUpdate} = 1 ]] &amp;&amp; [[ -f "${ROOT}"/../../../MountEFI.app/Contents/Info.plist ]]; then 
+             if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] &amp;&amp; [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "60" ]]; then
+                    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
+                    fi
+                    START_AUTOUPDATE &amp;
+fi
 }
 
 NO_RETURN(){
 plutil -replace NO_RETURN_EASYEFI -bool Yes ~/.MountEFIconf.plist
+rm -f "${SERVFOLD_PATH}"/MEFIScA/clientIsScript
 }
 
 SETCONF_MENUMODE(){
@@ -1414,21 +1404,34 @@ pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstri
         fi
 fi
 
+#DBG "3 HOTPLUG = $hotplug"
+#DBG "SCRIPT ldlist = $(for i in ${ldlist[@]}; do printf "$i "; done)"
+#DBG "SCRIPT oc_list = $(for i in ${!oc_list[@]}; do printf "$i).${oc_list[i]}. "; done)"
+#DBG "SCRIPT mounted_loaders_list = $(for i in ${mounted_loaders_list[@]}; do printf "$i "; done)"
+
 if [[ $hotplug = 0 ]]; then synchro=0
 ###### recheck loaders #############################
-    if [[ ! $CheckLoaders = 0 ]]; then
+    if [[ $CheckLoaders = 1 ]]; then
         for pnum in ${!dlist[@]}
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then 
-            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-                    if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi 2&gt;/dev/null); then loader_sum=0 ; fi
-                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || ( [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]] &amp;&amp; [[ ! ${oc_list[pnum]} = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi ) ]]  ); then
+            vname=`df | egrep ${dlist[$pnum]} | cut -f2 -d: |sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
+            loaderPath=""
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/BOOTX64.efi"; 
+				elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi                    
+                    if ! loader_sum=$( md5 -qq "$vname$loaderPath" 2&gt;/dev/null); then loader_sum=0 ; fi
+                    if [[ ! ${mounted_loaders_list[$pnum]} = ${loader_sum} ]] || ( [[ $( xxd "$vname$loaderPath" | egrep -om1 "OpenCore" ) = "OpenCore" ]] &amp;&amp; [[ ! ${oc_list[pnum]} = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi ) ]]  ); then
                     hotplug=1; echo "1" &gt; ~/Library/Application\ Support/MountEFI/recheckLoadersFlag; break; fi
             fi
         done        
     fi
 fi
+
+#DBG "2 HOTPLUG = $hotplug"
+#DBG "SCRIPT ldlist = $(for i in ${ldlist[@]}; do printf "$i "; done)"
+#DBG "SCRIPT oc_list = $(for i in ${!oc_list[@]}; do printf "$i).${oc_list[i]}. "; done)"
+#DBG "SCRIPT mounted_loaders_list = $(for i in ${mounted_loaders_list[@]}; do printf "$i "; done)"
 
 if [[ $hotplug = 0 ]]; then synchro=0; fi
 
@@ -1468,7 +1471,7 @@ usbnames=(); for (( i=0; i&lt;$pusb; i++ )); do usbname="$(echo ${usb_iolist[i]}
 
 for (( i=0; i&lt;$posd; i++ ))
  do
-    dmname=$( echo "$drives_iomedia" | grep -B 10 ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "&lt;" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
+    dmname=$( echo "$drives_iomedia" | grep -B 10 -w ${dmlist[i]} | grep -m 1 -w "IOMedia"  | cut -f1 -d "&lt;" | sed -e s'/-o //'  | sed -e s'/Media//' | sed 's/ *$//' | tr -d "\n")
     if [[ ${#dmname} -gt 30 ]]; then dmname=$( echo "$dmname" | cut -f1-2 -d " " ); fi
         for (( n=0; n&lt;$pusb; n++ )); do if [[ ! $( echo "$dmname" | grep -oE "${usbnames[n]}" ) = ""  ]]; then rmlist+=( ${dmlist[i]} ); fi; done
  done                            
@@ -1506,11 +1509,16 @@ if [[ ! $pos = 0 ]]; then
 	done
 fi
 
+#DBG "1 HOTPLUG = $hotplug"
+
+new_remlist=()
+
 new_rmlist=( $( echo ${rmlist[@]} ${past_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
 
 if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     init_time="$(date +%s)"; usblist=(); warning_sent=0
     for z in ${dlist[@]}; do for y in ${new_rmlist[@]}; do if [[ "$y" = "$( echo $z | rev | cut -f2-3 -d"s" | rev )" ]]; then usblist+=( $z ); break; fi; done; done
+    new_remlist=(${usblist[@]})
     if [[ ! ${#usblist[@]} = 0 ]]; then
         realEFI_list=($(ioreg -c IOMedia -r | tr -d '"|+{}\t' | egrep -A 22 "&lt;class IOMedia," | grep -ib22  "EFI system partition" | grep "BSD Name" | egrep -o "disk[0-9]{1,3}s[0-9]{1,3}" | tr '\n' ' '))
         if [[ ! ${#realEFI_list[@]} = 0 ]]; then
@@ -1545,8 +1553,13 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
 fi
 fi
 if [[ $hotplug = 1 ]]; then
-echo "${msgpid}" &gt; ~/Library/Application\ Support/MountEFI/hotplugFlag
-pkill  "System Events"
+echo "${msgpid}" &gt; ~/Library/Application\ Support/MountEFI/hotplugFlag; #DBG "0 HOTPLUG = $hotplug"
+if [[ $mefisca = 1 ]] &amp;&amp; [[ ${synchro} = 1 ]] &amp;&amp; [[ ! ${#new_remlist[@]} = 0 ]]; then
+    rm -f ~/Library/Application\ Support/MountEFI/new_remlist
+    max=0; for y in ${!new_remlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done
+    for ((h=0;h&lt;=max;h++)); do echo ${new_remlist[h]} &gt;&gt; ~/Library/Application\ Support/MountEFI/new_remlist; done
+fi
+pkill "osascript"
 break
 fi
 
@@ -1555,15 +1568,18 @@ exit
 }
 
 RECHECK_LOADERS(){
-if [[ ! $CheckLoaders = 0 ]] &amp;&amp; [[ -f ~/Library/Application\ Support/MountEFI/recheckLoadersFlag ]]; then
+if [[ $CheckLoaders = 1 ]] &amp;&amp; [[ -f ~/Library/Application\ Support/MountEFI/recheckLoadersFlag ]]; then
 		update_screen_flag=0
         for pnum in ${!dlist[@]}
         do
         mounted_check=$( df | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then 
-            vname=`df | egrep ${dlist[$pnum]} | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2-`
-                    if ! loader_sum=$( md5 -qq "$vname"/EFI/BOOT/BOOTx64.efi ); then loader_sum=0; fi
-                    if [[ ! ${loader_sum} = 0 ]] &amp;&amp; ( [[ $( xxd "$vname"/EFI/BOOT/BOOTX64.EFI | egrep -om1 "OpenCore" ) = "OpenCore" ]] &amp;&amp; [[ ! ${oc_list[pnum]} = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi ) ]] ); then 
+            GET_VNAME ${dlist[$pnum]}
+            loaderPath=""
+			if [[ -f "$vname"/EFI/BOOT/BOOTX64.efi ]]; then loaderPath="/EFI/BOOT/BOOTX64.efi"; 
+				elif [[ -f "$vname"/System/Library/CoreServices/boot.efi ]]; then loaderPath="/System/Library/CoreServices/boot.efi"; fi
+                    if ! loader_sum=$( md5 -qq "$vname$loaderPath" ); then loader_sum=0; fi
+                    if [[ ! ${loader_sum} = 0 ]] &amp;&amp; ( [[ $( xxd "$vname$loaderPath" | egrep -om1 "OpenCore" ) = "OpenCore" ]] &amp;&amp; [[ ! ${oc_list[pnum]} = $( md5 -qq "$vname"/EFI/OC/OpenCore.efi ) ]] ); then 
                             oc_list[pnum]=$( md5 -qq "$vname"/EFI/OC/OpenCore.efi )
                             md5_loader=${loader_sum}; GET_OC_VERS; update_screen_flag=1
                     fi
@@ -1612,7 +1628,7 @@ fi
 ############################# корректировка списка разделов с загрузчиками ######################################### 
 CORRECT_LOADERS_LIST(){
 
-           temp_lddlist=(); temp_ldlist=(); temp_mllist=()
+           temp_lddlist=(); temp_ldlist=(); temp_mllist=(); temp_oc_list=()
 
     for k in ${!dlist[@]}; do
         for y in ${!lddlist[@]}; do
@@ -1620,48 +1636,267 @@ CORRECT_LOADERS_LIST(){
                 temp_ldlist[k]=${ldlist[y]}
                 temp_lddlist[k]=${lddlist[y]}
                 temp_mllist[k]=${mounted_loaders_list[y]}
+                temp_oc_list[k]=${oc_list[y]}
                 break
         fi
         done
     done
     
-    ldlist=(); lddlist=(); mounted_loaders_list=()
+    ldlist=(); lddlist=(); mounted_loaders_list=(); oc_list=()
     for k in ${!temp_lddlist[@]}; do lddlist[k]=${temp_lddlist[k]}; done
     for k in ${!temp_ldlist[@]}; do ldlist[k]=${temp_ldlist[k]}; done
     for k in ${!temp_mllist[@]}; do mounted_loaders_list[k]=${temp_mllist[k]}; done
+    for k in ${!temp_oc_list[@]}; do oc_list[k]=${temp_oc_list[k]}; done
 
 synchro=0
-
 }
 
+CORRECT_LOADERS_HASH_LINKS(){
+    old_config_hashes=(); temp_lddlist=()
+
+if [[ -f ~/.hashes_list.txt ]]; then old_config_hashes=( $( cat ~/.hashes_list.txt | tr '\n' ' ' ) ); fi
+rm -f ~/.hashes_list.txt
+if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then
+    for i in ${!mounted_loaders_list[@]}; do
+        if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
+                loader=""; oc_revision=""; revision=""
+                md5_loader=${mounted_loaders_list[i]}; GET_CONFIG_VERS "ALL"
+                            if [[ ! "${loader}" = "" ]]; then ldlist[i]="$loader"
+                                 elif [[ ! ${#old_config_hashes[@]} = 0 ]]; then
+                                    for hh in ${old_config_hashes[@]}; do
+                                        if [[ ${hh} = ${md5_loader} ]]; then
+                                                unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                        fi
+                                    done                  
+                            fi
+         fi
+    done 
+
+    old_other_loaders=(); deleted_other_loaders=()
+    if [[ -f ~/.other_loaders_list.txt ]]; then old_other_loaders=( $( cat ~/.other_loaders_list.txt | tr '\n' ' ' ) ); fi; rm -f ~/.other_loaders_list.txt
+     
+        if [[ ! ${#old_other_loaders[@]} = 0 ]] ; then
+                      for y in "${old_other_loaders[@]}"; do
+                                match=0
+                                    for z in "${oth_list[@]}"; do
+                                        if [[ ${y:0:32} = ${z:0:32} ]]; then match=1; break; fi
+                                    done
+                                if [[ ${match} = 0 ]]; then deleted_other_loaders+=( ${y} ); fi
+                      done
+        fi
+     if [[ ! ${#deleted_other_loaders[@]} = 0 ]] ; then
+                for i in ${!mounted_loaders_list[@]}; do
+                            md5_loader=${mounted_loaders_list[i]}
+                            for y in ${!deleted_other_loaders[@]}; do
+                               if [[ ${md5_loader} = ${deleted_other_loaders[y]:0:32} ]]; then 
+                                    unset mounted_loaders_list[i]; unset ldlist[i]; unset lddlist[i]; break
+                                fi
+                            done
+                done
+    fi
+
+     if [[ ! ${#oth_list[@]} = 0 ]] ; then 
+        for i in ${!mounted_loaders_list[@]}; do
+            if [[ ! ${mounted_loaders_list[i]} = 0 ]]; then
+                md5_loader=${mounted_loaders_list[i]}
+                for x in ${!oth_list[@]}; do
+                    if [[ ${md5_loader} = ${oth_list[x]:0:32} ]]; then  
+                                ldlist[i]="Other""${oth_list[x]:33}"; break
+                    fi
+                done
+            fi
+        done
+    fi
+    
+fi
+}
+
+KILL_DIALOG2(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... !' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
+
+###################### GET MEFIScA DATA ########################################
+GET_DATA_STACK(){
+if [[ $mefisca = 1 ]]; then
+DBG "reset = $rst"
+if [[ ${rst} = 0 ]]; then i=64; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/ServerGetReady ]]; do sleep 0.125; let "i--"; if [[ $i -lt 1 ]]; then break; fi; done
+   DBG "SCRIPT: CLIENT waiting ServerGetReady was $((64-i)) cycles"
+fi
+i=240; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 228 ]]; then MSG_WAIT &amp;
+        fi; if [[ $i = 0 ]]; then break; fi; done 
+        KILL_DIALOG2
+         DBG "SCRIPT CLIENT waiting WaitSychro gone off was $((240-i)) cycles"
+        if [[ $i = 0 ]]; then MSG_TIMEOUT
+        rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+ if [[ ! $i = 0 ]]; then 
+ IFS=';'; mounted_loaders_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/mounted_loaders_list | tr '\n' ';' ) )
+ ldlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist | tr '\n' ';' ) )
+ lddlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/lddlist | tr '\n' ';' ) )
+ oc_list=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/oc_list | tr '\n' ';' ) ); for i in ${!oc_list[@]}; do oc_list[i]=${oc_list[i]:32}; done
+ DBG "SCRIPT oc_list got = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+ if [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist ]]; then dlist=( $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/dlist | tr '\n' ';' ) ); fi;  unset IFS
+ rm -f "${SERVFOLD_PATH}/MEFIScA/ServerGetReady"; rm -f "${SERVFOLD_PATH}/MEFIScA/clientReady"
+ fi
+fi
+}
+
+CHECK_MEFIScA(){
+if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] &amp;&amp; [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then
+mefisca=1; old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+else mefisca=0; fi
+}
+
+MEFIScA_DATA(){
+if [[ $mefisca = 1 ]]; then 
+    if [[ ${old_dlist[@]} = ${dlist[@]} ]] &amp;&amp; [[ ${old_mounted[@]} = ${mounted_loaders_list[@]} ]] &amp;&amp; [[ ${old_ldlist[@]} = ${ldlist[@]} ]] &amp;&amp; [[ ${old_lddlist[@]} = ${lddlist[@]} ]]; then
+    true
+    else
+            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack; else rm -Rf "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/*; fi
+            pushd "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack &gt;/dev/null 2&gt;/dev/null
+            touch dlist
+            if [[ ! ${#dlist[@]} = 0 ]]; then max=0; for y in ${!dlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h&lt;=max;h++)); do echo "${dlist[h]}" &gt;&gt; dlist; done; fi
+            touch mounted_loaders_list
+            if [[ ! ${#mounted_loaders_list[@]} = 0 ]]; then max=0; for y in ${!mounted_loaders_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h&lt;=max;h++)); do echo ${mounted_loaders_list[h]} &gt;&gt; mounted_loaders_list; done; fi
+            touch ldlist
+            if [[ ! ${#ldlist[@]} = 0 ]]; then max=0; for y in ${!ldlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h&lt;=max;h++)); do echo "${ldlist[h]}" &gt;&gt; ldlist; done; fi
+            touch lddlist
+            if [[ ! ${#lddlist[@]} = 0 ]]; then max=0; for y in ${!lddlist[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h&lt;=max;h++)); do echo ${lddlist[h]} &gt;&gt; lddlist; done; fi
+            DBG "SCRIPT oc_list до преобразования = $(for i in ${!oc_list[@]}; do printf "$i) ${oc_list[i]} "; done)"
+            toc_list=(); for i in ${!mounted_loaders_list[@]}; do if [[ ! $(echo ${oc_list[i]}  | egrep -o '[a-f0-9]{32}' | awk 'NR==1' ) = "" ]]; then toc_list[i]="${mounted_loaders_list[i]::32}${oc_list[i]::32}"; fi; done
+            DBG "SCRIPT oc_list после преобразования = $(for i in ${!toc_list[@]}; do printf "$i) ${toc_list[i]} "; done)" 
+            touch oc_list
+            if [[ ! ${#toc_list[@]} = 0 ]]; then max=0; for y in ${!toc_list[@]}; do if [[ ${max} -lt ${y} ]]; then max=${y}; fi; done; for ((h=0;h&lt;=max;h++)); do echo ${toc_list[h]} &gt;&gt; oc_list; done; fi
+            popd &gt;/dev/null 2&gt;/dev/null
+            old_dlist=(${dlist[@]}); old_mounted=(${mounted_loaders_list[@]}); old_ldlist=(${ldlist[@]}); old_lddlist=(${lddlist[@]})
+    fi
+fi
+}
+
+GET_LOADERS_FROM_NEW_PARTS(){
+if [[ $mefisca = 1 ]]; then
+if [[ -f ~/Library/Application\ Support/MountEFI/new_remlist ]]; then 
+IFS=';'; new_remlist=( $(cat ~/Library/Application\ Support/MountEFI/new_remlist | tr '\n' ';' ) ); unset IFS
+rm -f ~/Library/Application\ Support/MountEFI/new_remlist
+fi
+ if [[ ! ${#new_remlist[@]} = 0 ]]; then
+    NEED_PASSWORD
+    for i in ${!dlist[@]}; do pnum=${nlist[i]}; string=${dlist[$pnum]}
+        for z in ${new_remlist[@]}; do 
+        if [[ $string = $z ]] &amp;&amp; [[ $(df | grep ${string}) = "" ]]; then
+            DO_MOUNT
+            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+            FIND_LOADERS
+            if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
+            diskutil quiet  umount force /dev/${string}
+            fi
+        fi
+        done
+    done
+ fi
+fi
+}
+
+POSTCONTROL_RELAUNCH_MEFIScA(){
+            DBG "SCRIPT: MEFIScA was relounched for relevant SCRIPT version"
+            i=16; while [[ ! -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 0 ]]; then break; fi; done
+            i=140; while [[ -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro ]]; do sleep 0.125; let "i--"; if [[ $i = 128 ]]; then MSG_WAIT &amp;
+            fi; if [[ $i = 0 ]]; then break; fi; done; KILL_DIALOG2 ; if [[ $i = 0 ]]; then MSG_TIMEOUT; rm -f "${SERVFOLD_PATH}"/MEFIScA/WaitSynchro; fi
+#            DBG "SCRIPT ••• wait WaitSynchro OFF $((140-i)) cycles"
+}
+
+IF_RELOAD_MEFISCA(){
+       DBG "Проверям наличие поискового агента"
+    if [[ ! $(launchctl list | grep -o "MEFIScA.job") = "" ]] &amp;&amp; [[ -f "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh ]]; then  
+         if [[ $(launchctl list | grep "MEFIScA.job" | awk '{print $1}'| grep -o "[0-9]*") = "" ]] || [[ ! $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh | grep 'serv_vers="[0-9]*"' | cut -f2 -d= | tr -d '"' ) = "$serv_vers" ]]; then
+            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
+            touch "${SERVFOLD_PATH}"/MEFIScA/reloadFlag    
+            launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2&gt;&gt;/dev/null
+            sleep 0.5
+            launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2&gt;&gt;/dev/null
+            POSTCONTROL_RELAUNCH_MEFIScA
+         fi
+      else
+          DBG " SCRIPT проверяет должен ли быть запущен MEFIScA"
+          if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount&lt;/key&gt;" | egrep -o "false|true") &amp;&amp; [[ -f "${ROOT}"/MEFIScA.sh ]]; then
+            DBG "CLIENT агент должен быть запущен. Запуск."
+            if [[ ! -d "${SERVFOLD_PATH}"/MEFIScA ]]; then mkdir -p "${SERVFOLD_PATH}"/MEFIScA; fi
+            cp -a "${ROOT}"/MEFIScA.sh "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh; chmod +x "${SERVFOLD_PATH}"/MEFIScA/MEFIScA.sh
+
+            echo '&lt;?xml version="1.0" encoding="UTF-8"?&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '&lt;plist version="1.0"&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '&lt;dict&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;key&gt;Label&lt;/key&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;string&gt;MEFIScA.job&lt;/string&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;key&gt;Nicer&lt;/key&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;integer&gt;1&lt;/integer&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;key&gt;ProgramArguments&lt;/key&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;array&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '      &lt;string&gt;/Users/'"$(whoami)"'/Library/Application Support/MountEFI/MEFIScA/MEFIScA.sh&lt;/string&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;/array&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;key&gt;RunAtLoad&lt;/key&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '  &lt;true/&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '&lt;/dict&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+            echo '&lt;/plist&gt;' &gt;&gt; ${HOME}/.MEFIScA.plist
+
+            mv -f ${HOME}/.MEFIScA.plist ~/Library/LaunchAgents/MEFIScA.plist
+            launchctl load -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2&gt;&gt;/dev/null
+            DBG "SCRIPT поисковый агент запущен"
+            POSTCONTROL_RELAUNCH_MEFIScA
+          fi 
+    fi
+}
+
+CLIENT_READY(){ 
+if [[ $mefisca = 1 ]]; then
+    if [[ -f "${SERVFOLD_PATH}"/MEFIScA/clientUpdated ]]; then DBG "SCRIPT get Client Updated"; rst=0; touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; rm -f "${SERVFOLD_PATH}"/MEFIScA/clientUpdated; fi
+    if [[ -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart ]]; then rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart; else touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; fi
+fi 
+}
+
+CLIENT_DONE(){ if [[ $mefisca = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientDown; DBG "SCRIPT CLIENT DONE"; fi; }
+
+GET_OC_REL_VERS(){
+ocHashes32string=$(echo "${MountEFIconf}" | grep -A3  "&lt;key&gt;YHashes&lt;/key&gt;" | grep -A1 -o "&lt;key&gt;ocHashes32&lt;/key&gt;" | grep string |  sed -e 's/.*&gt;\(.*\)&lt;.*/\1/' | tr ';' '\n')
+ocHashes64string=$(echo "${MountEFIconf}" | grep -A5  "&lt;key&gt;YHashes&lt;/key&gt;" | grep -A1 -o "&lt;key&gt;ocHashes64&lt;/key&gt;" | grep string |  sed -e 's/.*&gt;\(.*\)&lt;.*/\1/' | tr ';' '\n')
+}
 
 ################################### INIT ##################################################
-if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
+#if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
+#   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
 
-GET_FLAG
+SERVFOLD_PATH="${HOME}/Library/Application Support/MountEFI"
+
+DBG "checkpoint 1 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
+
+rm -f "${SERVFOLD_PATH}"/UpdateRestartLock.txt
+
+GET_APP_ICON
+
 UPDATE_CACHE
 
+GET_OC_REL_VERS
+
+GET_LOCALE 
+GET_FLAG
+GET_LOADERS
 CHANGE_PSW
+
+CHECK_RESTART
+
+CHECK_MEFIScA
+CLIENT_READY
+
+MEFI_MD5=$(md5 -qq "$ROOT"/MountEFI); if [[ ! -f "${SERVFOLD_PATH}"/validconf/${MEFI_MD5} ]]; then IF_RELOAD_MEFISCA; fi
 
 menu_mode=0
 if [[ $(echo "$MountEFIconf"  | grep -A 1 -e "EasyEFIsimple&lt;/key&gt;" | grep false | tr -d "&lt;&gt;/"'\n\t') = "false" ]]; then menu_mode=1; fi
 
-CHECK_RESTART
-
 CHECK_AUTOUPDATE
-if [[ ${AutoUpdate} = 1 ]] &amp;&amp; [[ -f "${ROOT}"/../../../MountEFI.app/Contents/Info.plist ]]; then 
-                    if [[ -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt ]] &amp;&amp; [[ "$(($(date +%s)-$(cat ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt)))" -gt "60" ]]; then
-                    rm -f ~/Library/Application\ Support/MountEFI/AutoUpdateLock.txt
-                    fi
-                    START_AUTOUPDATE &amp;
-fi
 
 GET_CONFIG_HASHES
-GET_LOCALE 
-GET_APP_ICON
-
 hotplug_flag=0
+
+DBG "SCRIPT rst = $rst"
+DBG "checkpoint 2 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
 
 ############################################################################################
 #################################### MAIN ##################################################
@@ -1669,7 +1904,7 @@ hotplug_flag=0
 if [[ $loc = "ru" ]]; then
 MESSAGE='"Поиск EFI разделов .... !"'
 else
-MESSAGE='"Searching for EFI partitions ....!"'
+MESSAGE='"Searching for EFI partitions .... !"'
 fi
 MESSAGE_SEARCH &amp;
 mspid=$(($!+2))
@@ -1683,10 +1918,12 @@ if [[ ${pos} = 1 ]]; then KILL_DIALOG; ONE_EFI_FOUND; if [[ $cansel = 0 ]]; then
 fi
 
 mefi_stack_got=0
-if [[ ${rst} = 0 ]]; then GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; UPDATE_SCREEN; fi
+if [[ ${rst} = 0 ]]; then GET_DATA_STACK; CORRECT_LOADERS_HASH_LINKS; GETLIST; else GET_MOUNTEFI_STACK; CORRECT_LOADERS_LIST; CORRECT_LOADERS_HASH_LINKS; UPDATE_SCREEN; fi
 kill $mspid
-KILL_DIALOG
+KILL_DIALOG2
+DBG "checkpoint 3 $(echo $(cat "${SERVFOLD_PATH}"/MEFIScA/MEFIscanAgentStack/ldlist))"
 while true; do
+
 #################### MAIN MENU #####################
 START_CHECK_HOTPLUG &amp;
 hotplug_pid=$!
@@ -1699,20 +1936,21 @@ if [[ -f ~/Library/Application\ Support/MountEFI/hotplugFlag ]]; then
 fi
 kill ${hotplug_pid}
 
-if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
-   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
-if [[ ${result_names} = "false" ]]; then break; fi
+#if [[ ! $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' ') = "" ]]; then 
+#   kill $(ps ax | grep -v grep | grep "System Events" | xargs | cut -f1 -d' '); fi
+if [[ ${result_names} = "false" ]]; then CLIENT_DONE; break; fi
 
-    modename=$(echo "${result_names}" | egrep -o "расширенный|advanced|упрощённый|simple|terminal|терминала|Авто-подключение|auto-mount")
+    modename=$(echo "${result_names}" | egrep -o "расширенный|advanced|упрощённый|simple|terminal|терминала|Авто-подключение|auto-mount|DEBUG")
         case ${modename} in
             расширенный         ) menu_mode=1 ; SETCONF_MENUMODE ;;
             advanced            ) menu_mode=1 ; SETCONF_MENUMODE ;;
             упрощённый          ) menu_mode=0 ; SETCONF_MENUMODE ;;
             simple              ) menu_mode=0 ; SETCONF_MENUMODE ;;
-            terminal            ) RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
-            терминала           ) RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
+            terminal            ) MEFIScA_DATA; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
+            терминала           ) MEFIScA_DATA; RESTART_APP; NO_RETURN; EXIT_PROGRAM ;;
             Авто-подключение    ) SETUP_AUTOMOUNT ;;
             auto-mount          ) SETUP_AUTOMOUNT ;;
+            DEBUG               ) DEBUG_MODE ;;
         esac
 
 if [[ ${modename} = "" ]]; then
@@ -1750,10 +1988,11 @@ if [[ ! ${#disk_mount_list[@]} = "0" ]]; then
         fi
     fi
 fi
-if [[ ${hotplug_flag} = 1 ]]; then GETARR; hotplug_flag=0; CORRECT_LOADERS_LIST; fi
+if [[ ${hotplug_flag} = 1 ]]; then GETARR; hotplug_flag=0; CORRECT_LOADERS_LIST; GET_LOADERS_FROM_NEW_PARTS; fi
 
 UPDATE_SCREEN
 
+MEFIScA_DATA
 done
 
 EXIT_PROGRAM
@@ -1774,11 +2013,14 @@ if [ "${MountEFI_count}" -lt "1" ]; then
 	if [[ $(cat ~/.MountEFIconf.plist | grep -A 1 -e "EasyEFImode&lt;/key&gt;" | grep -o true) = "true" ]] &amp;&amp; [[ $(echo "$MountEFIconf"| grep -e "&lt;key&gt;Updating&lt;/key&gt;" | grep key | sed -e 's/.*&gt;\(.*\)&lt;.*/\1/' | tr -d '\t\n') = "Updating" ]]; then RESTART_APP; fi
 
     app_path="$(ps xao command | grep -i "MountEFI" | grep -v grep | grep -v /bin/bash | sed 's/[^/]*$//' | xargs)"
-    osascript -e 'tell application "Terminal" to close (every window whose name contains "MountEFI")'
     open -a Terminal "$app_path"./../Resources/MountEFI
 else
     MOUNT_EFI_WINDOW_UP
-fi</string>
+fi
+
+
+
+</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>
@@ -1803,7 +2045,7 @@ fi</string>
 				<key>Class Name</key>
 				<string>RunShellScriptAction</string>
 				<key>InputUUID</key>
-				<string>3B82A20C-EE34-43DA-B438-611D05A1B51B</string>
+				<string>53995735-8FD5-4E36-9314-BFEE4C4803BA</string>
 				<key>Keywords</key>
 				<array>
 					<string>Shell</string>
@@ -1813,9 +2055,9 @@ fi</string>
 					<string>Unix</string>
 				</array>
 				<key>OutputUUID</key>
-				<string>D6D9AC7E-1A49-4AEB-AB16-671B8494162C</string>
+				<string>06C2DF28-7535-4644-BF1C-84239E5980BB</string>
 				<key>UUID</key>
-				<string>AA8E457C-7226-43A5-A969-378A1FACD5CC</string>
+				<string>7C473C4E-7A50-408A-BF18-1948371A91F1</string>
 				<key>UnlocalizedApplications</key>
 				<array>
 					<string>Automator</string>
@@ -1838,9 +2080,9 @@ fi</string>
 					<key>1</key>
 					<dict>
 						<key>default value</key>
-						<string></string>
+						<false/>
 						<key>name</key>
-						<string>source</string>
+						<string>CheckedForUserDefaultShell</string>
 						<key>required</key>
 						<string>0</string>
 						<key>type</key>
@@ -1851,9 +2093,9 @@ fi</string>
 					<key>2</key>
 					<dict>
 						<key>default value</key>
-						<false/>
+						<string></string>
 						<key>name</key>
-						<string>CheckedForUserDefaultShell</string>
+						<string>source</string>
 						<key>required</key>
 						<string>0</string>
 						<key>type</key>
@@ -1888,15 +2130,17 @@ fi</string>
 						<string>4</string>
 					</dict>
 				</dict>
+				<key>conversionLabel</key>
+				<integer>0</integer>
 				<key>isViewVisible</key>
-				<true/>
+				<integer>1</integer>
 				<key>location</key>
-				<string>639.500000:716.000000</string>
+				<string>309.000000:252.000000</string>
 				<key>nibPath</key>
-				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/ru.lproj/main.nib</string>
+				<string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
 			</dict>
 			<key>isViewVisible</key>
-			<true/>
+			<integer>1</integer>
 		</dict>
 	</array>
 	<key>connectors</key>
