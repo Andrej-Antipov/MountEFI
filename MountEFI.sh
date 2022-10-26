@@ -3634,6 +3634,15 @@ if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
     done
 fi
 }
+
+
+IF_RESCAN(){
+	if [[ ! $(echo "$MountEFIconf"| grep -o "SignalRescanLdrs") = "" ]]; then 
+		plutil -remove SignalRescanLdrs "${CONFPATH}"; UPDATE_CACHE
+		SPIN_FLOADERS
+		chs=0; nogetlist=0
+		fi
+}
 #   mrel - флаг перезапуска из функции setup (reload), mfupd - флаг выполненного обновления, rst - флаг перезагрузки (restart), no_ret - флаг не возвращаться в EasyEFI mode
 CLIENT_READY(){ if [[ $mefisca = 1 && $mrel = 0 ]]; then if [[ $rst = 0  || $mfupd = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; DBG "CLIENT Ready"; else rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart; DBG "CLIENT does not want to be Ready"; fi; fi; }
 
@@ -3743,7 +3752,7 @@ synchro=0
 
     MEFIScA_DATA
 	GETKEYS	
-
+	IF_RESCAN
 # Если нажата клавиша выхода из программы
 if  [[ $chs = $ch ]]; then
 clear

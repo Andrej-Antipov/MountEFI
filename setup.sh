@@ -5792,6 +5792,7 @@ if [[ "${macos:0:4}" -gt "1309" ]] || [[ "${macos:0:4}" -lt "1009" ]]; then
     fi
 fi
 if [[ "${macos:0:4}" -lt "1013" ]]; then flag=0; else flag=1; fi; macos=${macos:0:4}
+
 }
 
 FORCE_CHECK_PASSWORD(){
@@ -7372,6 +7373,7 @@ fi
         DBG "CLIENT waiting WaitSychro gone off was $((240-i)) cycles"
         if [[ ! $i = 0 ]]; then GET_DATA_STACK; fi
 
+		if [[ ${macos:0:2} = "12" ]]; then plutil -replace SignalRescanLdrs -bool Yes "${CONFPATH}"; UPDATE_CACHE; fi
 }
 
 STOP_RUN_ON_LOGIN_SERVICE(){
