@@ -121,6 +121,7 @@ fi
 if [[ -d MountEFI.app ]]; then
 ditto -c -k --sequesterRsrc --keepParent MountEFI.app  newMountEFI.zip
 mv -f newMountEFI.zip MountEFI.zip
+chmod +x MountEFI.app/Contents/MacOS/MountEFI
 touch MountEFI.app
 fi
 
