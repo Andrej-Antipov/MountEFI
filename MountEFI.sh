@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 26.10.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 21.02.2023.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="020"
-serv_vers="028"
+edit_vers="021"
+serv_vers="029"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -2057,6 +2057,18 @@ ustring=`ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes
 }
 ###################################################################################################################################################################
 ###################### движок детекта EFI разделов ####################################################
+SORT_USB(){
+	 t_rmlist=(); np=1
+		for i in ${!rmlist[@]}; do
+			for k in ${!dlist[@]}; do 
+			if [[ $(echo ${dlist[k]} | egrep -o 'disk[0-9]{1,2}') = ${rmlist[i]} ]]; then t_rmlist[np]=${dlist[k]}; let np++; break; fi
+		done
+	done
+
+dlist=( $( echo ${dlist[@]} ${t_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) ${t_rmlist[@]} )
+}
+
+
 GET_EFI_S(){
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
@@ -2099,7 +2111,7 @@ fi
 
 posrm=${#rmlist[@]}
 
-if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
+if [[ $posrm = 0 ]]; then usb=0; else usb=1; SORT_USB; fi
 
 # подготовка данных для вычисления размеров
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
@@ -2552,9 +2564,9 @@ if [[ ! $mcheck = "Yes" ]]; then
     clear && printf '\e[8;24;80t' && printf '\e[3J' && printf "\033[H"
             
             if [[ $loc = "ru" ]]; then
-        printf '\n'${cm[head_ast]}'*******'${cm[head_str]}'      Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9'${cm[head_str]}' - '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0)   '${cm[head_ast]}'*******'${cm[clr]}'\n\n'
+        printf '\n'${cm[head_ast]}'*******'${cm[head_str]}'     Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9'${cm[head_str]}' - '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0)   '${cm[head_ast]}'*******'${cm[clr]}'\n\n'
 			else
-        printf '\n'${cm[head_ast]}'*******'${cm[head_str]}'    This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9'${cm[head_str]}' - '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0) '${cm[head_ast]}'*******'${cm[clr]}'\n\n'
+        printf '\n'${cm[head_ast]}'*******'${cm[head_str]}'   This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9'${cm[head_str]}' - '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0) '${cm[head_ast]}'*******'${cm[clr]}'\n\n'
 	        fi
                     	dstring=`echo $string | rev | cut -f2-3 -d"s" | rev`
 		
@@ -2994,7 +3006,7 @@ fi
 
 		if [[ $loc = "ru" ]]; then
              if [[ $CheckLoaders = 0 ]]; then
-        	    printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
+        	    printf '\n'${cm[head_ast]}'*******     '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  повторить поиск разделов                     '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- подключенные  '${cm[clr]}'\n\n' 
 	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..32} 
@@ -3014,7 +3026,7 @@ fi
 			else
 
              if [[ $CheckLoaders = 0 ]]; then
-                printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')  '${cm[head_ast]}'*******'${cm[clr]}'\n'
+                printf '\n'${cm[head_ast]}'*******   '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')  '${cm[head_ast]}'*******'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                        '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
 	            printf '     '${cm[dots_line1]}''
 	            printf '.%.0s' {1..32} 
@@ -3022,7 +3034,7 @@ fi
                 printf '.%.0s' {1..31}
                 printf ''${cm[clr]}'\n'
                 else
-                printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')       '${cm[head_ast]}'*********'${cm[clr]}'\n'
+                printf '\n'${cm[head_ast]}'*********       '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')       '${cm[head_ast]}'*********'${cm[clr]}'\n'
                 printf '\n\n'${cm[head_num_sch]}'      0'${cm[head_sch_br]}')'${cm[head_sch]}'  update EFI partitions list                              '${cm[head_pls_qts]}'"'${cm[head_pls]}'+'${cm[head_pls_qts]}'" '${cm[head_pls_str]}'- mounted '${cm[clr]}'\n\n'  
 	            printf '     '${cm[dots_line1]}''
                 printf '.%.0s' {1..39}
@@ -3634,15 +3646,6 @@ if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
     done
 fi
 }
-
-
-IF_RESCAN(){
-	if [[ ! $(echo "$MountEFIconf"| grep -o "SignalRescanLdrs") = "" ]]; then 
-		plutil -remove SignalRescanLdrs "${CONFPATH}"; UPDATE_CACHE
-		SPIN_FLOADERS
-		chs=0; nogetlist=0
-		fi
-}
 #   mrel - флаг перезапуска из функции setup (reload), mfupd - флаг выполненного обновления, rst - флаг перезагрузки (restart), no_ret - флаг не возвращаться в EasyEFI mode
 CLIENT_READY(){ if [[ $mefisca = 1 && $mrel = 0 ]]; then if [[ $rst = 0  || $mfupd = 1 ]]; then touch "${SERVFOLD_PATH}"/MEFIScA/clientReady; DBG "CLIENT Ready"; else rm -f "${SERVFOLD_PATH}"/MEFIScA/clientRestart; DBG "CLIENT does not want to be Ready"; fi; fi; }
 
@@ -3677,15 +3680,15 @@ if [[ ! $nogetlist = 1 ]]; then
 	    ######PRINT_HEADER
     if [[ $loc = "ru" ]]; then
         if [[ $CheckLoaders = 0 ]]; then
-            printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'ƒПрограмма монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*******      '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')    '${cm[head_ast]}'*******'${cm[clr]}'\n'
         else
             printf '\n'${cm[head_ast]}'*********           '${cm[head_str]}'Программа монтирует EFI разделы в Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')        '${cm[head_ast]}'*********'${cm[clr]}'\n'
         fi
     else
         if [[ $CheckLoaders = 0 ]]; then
-            printf '\n'${cm[head_ast]}'*******    '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')  '${cm[head_ast]}'*******'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*******   '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')  '${cm[head_ast]}'*******'${cm[clr]}'\n'
         else
-            printf '\n'${cm[head_ast]}'*********         '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')       '${cm[head_ast]}'*********'${cm[clr]}'\n'
+            printf '\n'${cm[head_ast]}'*********        '${cm[head_str]}'This program mounts EFI partitions on Mac OS  ('${cm[head_X]}'X'${cm[head_str]}'.'${cm[head_os]}'9 '${cm[head_str]}'- '${cm[head_X]}'XIII'${cm[head_str]}'.'${cm[head_os]}'0'${cm[head_str]}')       '${cm[head_ast]}'*********'${cm[clr]}'\n'
         fi
 	fi
         ####################
@@ -3736,7 +3739,7 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
                         DISPLAY_NOTIFICATION
             #################### 
             warning_sent=1; fi
-            if [[ ${exec_time} -ge 36 ]]; then break; fi
+            if [[ ${exec_time} -ge 10 ]]; then break; fi
             sleep 0.25
         done        
     fi
@@ -3752,7 +3755,7 @@ synchro=0
 
     MEFIScA_DATA
 	GETKEYS	
-	IF_RESCAN
+
 # Если нажата клавиша выхода из программы
 if  [[ $chs = $ch ]]; then
 clear
