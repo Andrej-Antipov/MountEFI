@@ -65,11 +65,11 @@
 export LC_ALL=en_US.UTF-8  
 export LANG=en_US.UTF-8
 
-#  Created by Андрей Антипов on 22.06.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.04.2023#  Copyright © 2020 gosvamih. All rights reserved.
 
 prog_vers="1.9.0"
-edit_vers="019"
-serv_vers="027"
+edit_vers="021"
+serv_vers="029"
 
 MOUNT_EFI_WINDOW_UP(){
 if [[ ! $(osascript -e 'tell application "Terminal"  to get id of (every window whose name contains "MountEFI")') = "" ]]; then 
@@ -387,6 +387,17 @@ if [[ ! $posrm = 0 ]]; then
             fi
 }
 
+SORT_USB(){
+	 t_rmlist=(); np=1
+		for i in ${!rmlist[@]}; do
+			for k in ${!dlist[@]}; do 
+			if [[ $(echo ${dlist[k]} | egrep -o 'disk[0-9]{1,2}') = ${rmlist[i]} ]]; then t_rmlist[np]=${dlist[k]}; let np++; break; fi
+		done
+	done
+
+dlist=( $( echo ${dlist[@]} ${t_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) ${t_rmlist[@]} )
+}
+
 GET_EFI_S(){
 ioreg_iomedia=$( ioreg -c IOMedia -r | tr -d '"|+{}\t' )
 usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics" | tr -d '|{}"' | sed s'/Device Characteristics =//' | rev | cut -f2-3 -d, | rev | tr '\n' ';'  | xargs )
@@ -429,7 +440,7 @@ fi
 
 posrm=${#rmlist[@]}
 
-if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
+if [[ $posrm = 0 ]]; then usb=0; else usb=1; SORT_USB; fi
 
 # подготовка данных для вычисления размеров
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
@@ -1479,7 +1490,18 @@ fi
 
 posrm=${#rmlist[@]}
 
-if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
+if [[ $posrm = 0 ]]; then usb=0; else usb=1; 
+
+	 t_rmlist=(); np=1
+		for i in ${!rmlist[@]}; do
+			for k in ${!dlist[@]}; do 
+			if [[ $(echo ${dlist[k]} | egrep -o 'disk[0-9]{1,2}') = ${rmlist[i]} ]]; then t_rmlist[np]=${dlist[k]}; let np++; break; fi
+		done
+	done
+
+dlist=( $( echo ${dlist[@]} ${t_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) ${t_rmlist[@]} )
+
+fi
 
 if [[ ! $pos = 0 ]]; then 
 		var0=$pos; num=0; dnum=0; unset nlist; unset rnlist
