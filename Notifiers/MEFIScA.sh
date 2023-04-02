@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 26.10.2022.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 02.04.2023.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ########################################################################## MountEFI scan agent ###################################################################################################################
 prog_vers="1.9.0"
-edit_vers="020"
-serv_vers="028"
+edit_vers="021"
+serv_vers="029"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -350,6 +350,18 @@ synchro=0
 }
 
 ###################### движок детекта EFI разделов ####################################################
+
+SORT_USB(){
+	 t_rmlist=(); np=1
+		for i in ${!rmlist[@]}; do
+			for k in ${!dlist[@]}; do 
+			if [[ $(echo ${dlist[k]} | egrep -o 'disk[0-9]{1,2}') = ${rmlist[i]} ]]; then t_rmlist[np]=${dlist[k]}; let np++; break; fi
+		done
+	done
+
+dlist=( $( echo ${dlist[@]} ${t_rmlist[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) ${t_rmlist[@]} )
+}
+
 GETARR(){
 
 past_rmlist=( ${rmlist[@]} )
@@ -383,7 +395,7 @@ for (( i=0; i<$posd; i++ )); do
  done                            
 fi
 
-posrm=${#rmlist[@]}; if [[ $posrm = 0 ]]; then usb=0; else usb=1; fi
+posrm=${#rmlist[@]}; if [[ $posrm = 0 ]]; then usb=0; else usb=1; SORT_USB; fi
 
 # подготовка данных для вычисления размеров
 sizes_iomedia=$( echo "$ioreg_iomedia" |  sed -e s'/Logical Block Size =//' | sed -e s'/Physical Block Size =//' | sed -e s'/Preferred Block Size =//' | sed -e s'/EncryptionBlockSize =//')
@@ -563,7 +575,7 @@ CLIENT_IS_OFFLINE(){ CHECK_HOTPLUG_DISKS; CHECK_HOTPLUG_PARTS; if HOTPLUG; then 
 
 ############################################################## INIT #####################################################
 
-if [[ ! -d "${MEFIScA_PATH}" ]]; then mkdir -p "${MEFIScA_PATH}"; fi
+if [[ ! -d "${MEFIScA_PATH}" ]]; then mkdir -p "${MEFIScA_PATH}"; chmod -R 755 "${MEFIScA_PATH}"; fi
 
 nlist=(); dlist=(); mounted_loaders_list=(); ldlist=(); lddlist=(); oc_list=()
 old_dlist=(); old_mounted=(); old_ldlist=(); old_lddlist=()
