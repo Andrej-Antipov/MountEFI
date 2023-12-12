@@ -5,7 +5,7 @@
 # https://github.com/Andrej-Antipov/MountEFI/releases
 ################################################################################## MountEFI SETUP ##########################################################################################################
 s_prog_vers="1.9.0"
-s_edit_vers="020"
+s_edit_vers="021"
 ############################################################################################################################################################################################################
 
 clear
@@ -7419,10 +7419,10 @@ ASK_ARMM_TIMEOUT(){
 
 SET_CM_THEME(){
 cm_background="{4064, 8941, 17101}"; cm_foreground="{65535, 65535, 65535}"; cm_fontname="SF Mono Regular"; cm_fontsize="11"
-osascript -e "tell application \"Terminal\" to set background color of window 1 to $cm_background" \
--e "tell application \"Terminal\" to set normal text color of window 1 to $cm_foreground" \
--e "tell application \"Terminal\" to set the font name of window 1 to \"$cm_fontname\"" \
--e "tell application \"Terminal\" to set the font size of window 1 to $cm_fontsize"
+osascript -e "tell application \"Terminal\" to set background color of window 1 to $cm_background" 2>&- \
+-e "tell application \"Terminal\" to set normal text color of window 1 to $cm_foreground" 2>&- \
+-e "tell application \"Terminal\" to set the font name of window 1 to \"$cm_fontname\"" 2>&- \
+-e "tell application \"Terminal\" to set the font size of window 1 to $cm_fontsize" 2>&-
 }
 
 CHECK_CM(){ if $(cat "${CONFPATH}" | grep -A1 "GUIcolorMode</key>" | egrep -o "false|true"); then cm_check=1; else cm_check=0; fi }
