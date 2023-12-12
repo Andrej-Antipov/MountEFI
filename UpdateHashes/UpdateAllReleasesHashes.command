@@ -28,7 +28,7 @@ cd "$(dirname "$0")"
 rm -f OC_hashes.txt
 echo "############## oc_hashes_strings 00 #################" >> OC_hashes.txt
 
-oc_versions=( 0.5.0 0.5.1 0.5.2 0.5.3 0.5.4 0.5.5 0.5.6 0.7.0 0.7.1 0.7.2 0.7.3 0.7.4)
+oc_versions=( 0.8.6 0.8.7 0.8.8 0.8.9 0.9.0 0.9.1 0.9.2 0.9.3 0.9.4 0.9.5 0.9.6 0.9.7)
 
     echo "list of hashes needs to update. downloading OC releases... "
 if ping -c 1 google.com >> /dev/null 2>&1; then
