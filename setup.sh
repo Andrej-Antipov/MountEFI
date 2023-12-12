@@ -5947,7 +5947,8 @@ echo "${latest_release}" > ~/Library/Application\ Support/MountEFI/MEFILatestRel
 }
 
 GET_LATEST_EDITION(){
-latest_edit=$(curl -s --max-time 30 https://github.com/Andrej-Antipov/MountEFI/tree/master/UpdatesLast/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/UpdatesLast/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+#latest_edit=$(curl -s --max-time 30 https://github.com/Andrej-Antipov/MountEFI/tree/master/UpdatesLast/${latest_release} | grep -w 'href="/Andrej-Antipov/MountEFI/blob/master/UpdatesLast/'${latest_release}'' | awk 'END {print $NF}' | cut -f3 -d '"' | tr  '<>/' ' ' | xargs | cut -f1 -d " " | cut -f1 -d '.')
+latest_edit=$(curl -s  https://github.com/Andrej-Antipov/MountEFI/raw/master/UpdatesLast/AutoupdatesInfo.txt -L | cat | head -2 | tail -1)
 echo "${latest_edit}" > ~/Library/Application\ Support/MountEFI/MEFILatestEdition.txt
 }
 
