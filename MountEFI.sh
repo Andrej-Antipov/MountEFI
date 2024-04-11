@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#  Created by Андрей Антипов on 12.12.2023.#  Copyright © 2020 gosvamih. All rights reserved.
+#  Created by Андрей Антипов on 12.04.2024.#  Copyright © 2020 gosvamih. All rights reserved.
 
 ############################################################################## Mount EFI CM #########################################################################################################################
 prog_vers="1.9.0"
-edit_vers="021"
-serv_vers="029"
+edit_vers="022"
+serv_vers="030"
 ##################################################################################################################################################################################################################
 # https://github.com/Andrej-Antipov/MountEFI/releases
 
@@ -39,7 +39,7 @@ DBG "CLIENT: hotplug data preparation"
 ustring=$( ioreg -c IOMedia -r  | tr -d '"|+{}\t'  | grep -A 10 -B 5  "Whole = Yes" | grep "BSD Name" | grep -oE '[^ ]+$' | xargs | tr ' ' ';') ; IFS=";"; uuid_list=($ustring); unset IFS; uuid_count=${#uuid_list[@]}
         if [[ ! $old_uuid_count = $uuid_count ]]; then old_uuid_count=$uuid_count; fi
 
-pstring=$( df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+pstring=$( df 2>/dev/null 2>&1 | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/") ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then  old_puid_count=$puid_count; old_puid_list=($pstring); old_uuid_list=($ustring); fi
 
 ####################################### кэш конфига #####################################################################################
@@ -180,13 +180,13 @@ efimounter=$(echo 0x7a 0x78 | xxd -r)
 
 ####################################### блок перезапуска поискового агента ########################################################################################################
 GET_APP_ICON(){ icon_string=""; if [[ -f "${ROOT}"/AppIcon.icns ]]; then 
-   icon_string=' with icon file "'"$(echo "$(diskutil info $(df / | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'; fi ; }
+   icon_string=' with icon file "'"$(echo "$(diskutil info $(df /  2>/dev/null 2>&1 | tail -1 | cut -d' ' -f 1 ) |  grep "Volume Name:" | cut -d':'  -f 2 | xargs)")"''"$(echo "${ROOT}" | tr "/" ":" | xargs)"':AppIcon.icns"'; fi ; }
 DISPLAY_MESSAGE1(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"} giving up after 2' >>/dev/null 2>/dev/null; }
 MSG_TIMEOUT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Время ожидания вышло !"'; else MESSAGE='"The waiting time is up !"'; fi; DISPLAY_MESSAGE1 >>/dev/null 2>/dev/null; }
 DISPLAY_MESSAGE(){ osascript -e 'display dialog '"${MESSAGE}"' '"${icon_string}"' buttons { "OK"}' >>/dev/null 2>/dev/null; }
 MSG_WAIT(){ if [[ $loc = "ru" ]]; then MESSAGE='"Подготовка данных о загрузчиках .... !"' ; else MESSAGE='"Waiting for the end of data synchro .... !"' ; fi; DISPLAY_MESSAGE >>/dev/null 2>/dev/null; }
 KILL_DIALOG(){ dial_pid=$(ps ax | grep -v grep | grep -w "display dialog" | grep -w '.... ' | awk '{print $NR}'); if [[ ! $dial_pid = "" ]]; then kill $dial_pid; fi; }
-GET_VNAME(){ vname=$(df | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
+GET_VNAME(){ vname=$(df 2>/dev/null 2>&1 | egrep $1 | cut -f2 -d:  | sed 's#\(^/\)\(.*\)\(/Volumes.*\)#\1\3#' | cut -c 2- ) ; }
 
 POSTCONTROL_RELAUNCH_MEFIScA(){
             launchctl unload -w "${HOME}"/Library/LaunchAgents/MEFIScA.plist 2>>/dev/null
@@ -704,7 +704,7 @@ if [[ ! $CheckLoaders = 0 ]]; then
         let "pauser=3"; update_screen_flag=0
         for pnum in ${!dlist[@]}
         do
-        mounted_check=$( df | grep ${dlist[$pnum]} )   
+        mounted_check=$( df 2>/dev/null 2>&1 | grep ${dlist[$pnum]} )   
             if [[ ! $mounted_check = "" ]]; then
              GET_VNAME ${dlist[$pnum]} 
 					loaderPath=""
@@ -1396,7 +1396,7 @@ unset IFS
 ######################################################################################################################
 
 PREMOUNT_DELETED(){ 
-if [[ $mefisca = 1  && $(df | grep ${lddlist[i]}) = "" ]]; then 
+if [[ $mefisca = 1  && $(df 2>/dev/null 2>&1 | grep ${lddlist[i]}) = "" ]]; then 
     string=${lddlist[i]}; DO_MOUNT
      GET_VNAME ${string}
         if [[ ! "$vname" = "" ]]; then 
@@ -1880,14 +1880,14 @@ if $(echo "$MountEFIconf" | grep -A 1 -e "startupMount</key>" | egrep -o "false|
     pnum=${nlist[i]}; 
         string=${dlist[$pnum]}
 
-        if [[ $(df | grep ${string}) = "" ]]; then 
+        if [[ $(df 2>/dev/null 2>&1 | grep ${string}) = "" ]]; then 
         
             if [[ $flag = 0 ]]; then diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
             elif ! sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null; then 
             sleep 0.5
             sudo diskutil quiet mount readOnly  /dev/${string} 2>/dev/null
             fi
-            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+            if [[ ! $(df 2>/dev/null 2>&1 | grep ${string}) = "" ]]; then mcheck="Yes"
             
             FIND_LOADERS
 
@@ -1984,7 +1984,7 @@ CLEAR_HISTORY &
 
 ################################## функция автодетекта подключения ##############################################################################################
 CHECK_HOTPLUG_PARTS(){
-pstring=`df | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
+pstring=`df 2>/dev/null 2>&1 | cut -f1 -d " " | grep "/dev" | cut -f3 -d "/"` ; puid_list=($pstring);  puid_count=${#puid_list[@]}
         if [[ ! $old_puid_count = $puid_count ]]; then
                 
                if [[  $old_puid_count -lt $puid_count ]]; then                        
@@ -2075,7 +2075,7 @@ usb_iomedia=$( IOreg -c IOBlockStorageServices -r | grep "Device Characteristics
 drives_iomedia=$( echo "$ioreg_iomedia" |  egrep -A 22 "<class IOMedia," )
 string=$( diskutil list | egrep "EFI|Apple_APFS_ISC" | grep -oE '[^ ]+$' | xargs | tr ' ' ';' )
 disk_images=$( echo "$ioreg_iomedia" | egrep -A 22 "Apple " | grep "BSD Name" | cut -f2 -d "="  | tr -d " " | tr '\n' ';' )
-syspart=$( df / | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n' )
+syspart=$( df / 2>/dev/null 2>&1 | grep /dev | cut -f1 -d " " | sed s'/dev//' | tr -d '/ \n' )
 IFS=';'; dlist=($string); ilist=($disk_images); usb_iolist=($usb_iomedia); unset IFS; pos=${#dlist[@]}; posi=${#ilist[@]}; pusb=${#usb_iolist[@]}
 
 # exclude disk images
@@ -2195,7 +2195,7 @@ fi
 
 MOUNTED_CHECK(){
 
- mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+ mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then
 
     SET_TITLE
@@ -2267,14 +2267,14 @@ MOUNTED_CHECK
 
 UNMOUNTED_CHECK(){
 
- mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+ mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[  $mcheck = "Yes" ]]; then
 		
 		sleep 1.5
 
 		diskutil quiet umount force  /dev/${string}
 
- mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+ mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 
 	if [[  $mcheck = "Yes" ]]; then
 
@@ -2324,7 +2324,7 @@ was_mounted=0; var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
 while [ $var1 != 0 ] 
 do 
     pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+    mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
     if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi; else was_mounted=1; fi
 
     GET_VNAME ${string}
@@ -2392,7 +2392,7 @@ was_mounted=0; var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
 while [ $var1 != 0 ] 
 do 
 	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+    mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then  was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi
     else
 		was_mounted=1
@@ -2452,7 +2452,7 @@ was_mounted=0; var1=$pos; num=0; spin='-\|/'; i=0; noefi=1
 while [ $var1 != 0 ] 
 do 
 	pnum=${nlist[num]}; string=`echo ${dlist[$pnum]}`
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+    mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 	if [[ ! $mcheck = "Yes" ]]; then was_mounted=0; DO_MOUNT ; if [[ ${braked} = 1 ]]; then braked=0; break; fi; else was_mounted=1; fi
     FIND_LOADERS   
     if [[ ! ${loader} = "" ]];then
@@ -2501,7 +2501,7 @@ do
 	pnum=${nlist[num]}
 	string=`echo ${dlist[$pnum]}`
 
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+    mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 if [[ $mcheck = "Yes" ]]; then
 	noefi=0
@@ -2556,7 +2556,7 @@ string=`echo ${dlist[0]}`
 
 wasmounted=0
 
-mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 if [[ ! $mcheck = "Yes" ]]; then
 
     if [[ $mypassword = "0" ]] && [[ $flag = 1 ]]; then
@@ -2824,7 +2824,7 @@ do
     		let "scorr=6-scorr"
 
        
-    mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+    mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 
          if [[ $ch -gt 9 ]]; then ncorr=1; else ncorr=2; fi   
@@ -3154,7 +3154,7 @@ while [ $var0 != 0 ]; do
     pnum=${nlist[num]}
     string=`echo ${dlist[$pnum]}`
 	let "ch1++"
-  mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+  mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
   if [[ $mcheck = "Yes" ]]; then
 
         if [[ ${synchro} = 2 ]]; then for x in ${!dlist[@]}; do if [[ ${dlist[x]} = ${latest_hotplugs_parts[0]} ]]; then  let "chs=x+1"; fi; done; synchro=0; fi
@@ -3348,7 +3348,7 @@ TRANS_READ(){
 GET_SYSTEM_EFI(){
 
 if [[ ${lists_updated} = 1 ]]; then
-sysdrive=`df /  | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1' | tr -d "\n"`
+sysdrive=`df /  2>/dev/null 2>&1 | grep /dev | awk '{print $1;}' | cut -c 6- | sed 's/s[0-9].*//1' | tr -d "\n"`
 edname=`diskutil info $sysdrive | grep "Device / Media Name:" | cut -d":" -f2 | rev | sed 's/[ \t]*$//' | rev | tr -d "\n"`
 drives_iomedia=`ioreg -c IOMedia -r | tr -d '"|+{}\t'`
 
@@ -3581,7 +3581,7 @@ let "num=chs-1"
 pnum=${nlist[num]}
 string=`echo ${dlist[$pnum]}`
 strng0=${string}
-mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
+mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi 
 
 if [[ "$(uname -m)" = "arm64" ]] && [[ ${strng0} = $(diskutil list | egrep -m1 "Apple_APFS_ISC" | grep -oE '[^ ]+$') ]]; then APPLE_ISC_WARNING
 
@@ -3590,7 +3590,7 @@ else
 	if [[ ! $mcheck = "Yes" ]]; then 
 	
 		wasmounted=0; DO_MOUNT; if [[ $mcheck = "Yes" ]]; then order=0; UPDATELIST; fi; else wasmounted=1; fi
-		string=${strng0}; mcheck=`df | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
+		string=${strng0}; mcheck=`df 2>/dev/null 2>&1 | grep ${string}`; if [[ ! $mcheck = "" ]]; then mcheck="Yes"; fi
 		GET_VNAME ${string}
 	
 		if [[ $mcheck = "Yes" ]]; then if [[ "${OpenFinder}" = "1" ]] || [[ "${wasmounted}" = "1" ]]; then 
@@ -3634,9 +3634,9 @@ GET_LOADERS_FROM_NEW_PARTS(){
 if [[ $mefisca = 1 ]] && [[ ! ${#new_remlist[@]} = 0 ]]; then
     for i in ${!dlist[@]}; do pnum=${nlist[i]}; string=${dlist[$pnum]}
         for z in ${new_remlist[@]}; do 
-        if [[ $string = $z ]] && [[ $(df | grep ${string}) = "" ]]; then
+        if [[ $string = $z ]] && [[ $(df 2>/dev/null 2>&1 | grep ${string}) = "" ]]; then
             DO_MOUNT
-            if [[ ! $(df | grep ${string}) = "" ]]; then mcheck="Yes"
+            if [[ ! $(df 2>/dev/null 2>&1 | grep ${string}) = "" ]]; then mcheck="Yes"
             FIND_LOADERS
             if [[ ! ${loader} = "" ]];then ldlist[pnum]="$loader"; lddlist[pnum]=${dlist[pnum]}; fi
             diskutil quiet  umount force /dev/${string}
@@ -3722,7 +3722,7 @@ if [[ ! ${#new_rmlist[@]} = 0 ]]; then
     fi
     if [[ ! ${#usblist[@]} = 0 ]]; then
         while true; do
-            mounted_list=( $( df | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
+            mounted_list=( $( df 2>/dev/null 2>&1 | cut -f1 -d" " | grep disk | cut -f3 -d/ | tr '\n' ' ') )
             usb_mounted_list=()
             for z in ${mounted_list[@]}; do for y in ${usblist[@]}; do if [[ ${z} = ${y} ]]; then usb_mounted_list+=( ${z} ); break; fi; done; done
             diff_usb=( $( echo ${usblist[@]} ${usb_mounted_list[@]} | tr ' ' '\n' | sort | uniq -u | tr '\n' ' ' ) )
